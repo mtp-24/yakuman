@@ -126,8 +126,8 @@ aside{display:flex;flex-direction:column;gap:10px;min-width:0}
 .menu-rules{columns:2;column-gap:24px;font-size:13px}
 @media (max-width:700px){.menu-rules{columns:1}}
 .menu-rules p{margin:0 0 8px;break-inside:avoid}
-.deckgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:6px}
-.deckcell{text-align:center;font-size:11px;color:var(--muted)}
+.deckrow{display:flex;gap:6px;flex-wrap:wrap}
+.deckcell{text-align:center;font-size:11px;color:var(--muted);width:52px}
 .deckcell .tile{margin:0 auto 2px;cursor:default}
 .deckcell b{color:var(--fg)}
 .debug{display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:8px 16px;border-top:1px solid var(--line);background:var(--panel);font-size:12px}
