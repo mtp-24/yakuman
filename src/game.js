@@ -486,7 +486,7 @@ function deckHTML() {
   const all = S.phase === 'blind' ? [...S.hand, ...S.wall, ...S.river, ...openTiles(), ...S.played, ...S.indicators] : S.deck;
   const counts = new Array(34).fill(0), inWall = new Array(34).fill(0), reds = new Array(34).fill(0);
   for (const t of all) { counts[idx(t)]++; if (t.red) reds[idx(t)]++; } for (const t of S.wall) inWall[idx(t)]++;
-  let h = `<h2>The Wall</h2><p class="muted" style="margin:0 0 10px">${all.length} tiles in your deck${S.phase === 'blind' ? ` · ${S.wall.length} still face down in the Wall` : ''}. Each cell: total copies${S.phase === 'blind' ? ' (left in Wall)' : ''}.</p>`;
+  let h = `<div class="deckwrap"></div><h2>The Wall</h2><p class="muted" style="margin:0 0 10px">${all.length} tiles in your deck${S.phase === 'blind' ? ` · ${S.wall.length} still face down in the Wall` : ''}. Each cell: total copies${S.phase === 'blind' ? ' (left in Wall)' : ''}.</p>`;
   for (const [label, from, to] of [['Manzu', 0, 9], ['Pinzu', 9, 18], ['Souzu', 18, 27], ['Honors', 27, 34]]) h += `<div class="label" style="margin:8px 0 4px">${label}</div><div class="deckrow" data-from="${from}" data-to="${to}"></div>`;
   const eng = all.filter(t => t.eng); if (eng.length) h += `<p style="margin-top:10px;font-size:12px">Engraved: ${eng.map(t => tileName(t) + ' [' + ENG[t.eng].name + ']').join(', ')}</p>`;
   h += `<div style="margin-top:12px"><button id="mClose" class="primary">Close</button></div>`;
