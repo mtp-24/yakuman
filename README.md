@@ -30,6 +30,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 11: Riichi / Hong Kong terminology toggle (header button, stored per device). Vocabulary lives in the HK_* tables at the end of src/data.js.
 - Build 12: English-only HK terms; E/S/W/N letters on wind tiles; ¥ in Riichi mode, $ in HK mode; Four Melds + Pair rung (reachable only with open melds).
 - Build 15: 5 Plays, ¥8 start, Ante 1-2 targets 250/700, Loan Shark charges ¥1 per Discard action (from the full-run simulation).
+- Build 16: Declare Kan (closed Kan from hand), replacement draw after every Kan, Rinshan Kaihou (+1 Han), "settle the Call" wording, toggle for the green dead-tile dots.
 - Build 7: multi-meld play ladder (Two Melds ... Four Melds), targets 300...45000, retrigger and scaling Talismans, Wall-Builder rewording, scoring animation.
 
 ## Simulators (in `sim/`)

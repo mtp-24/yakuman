@@ -25,6 +25,7 @@ const CFG = {
   // Playtest 7: multi-meld ladder, complete hand 120 chips / 2 Han + Yaku, targets re-based to 300…45000.
   // Playtest 10: Furiten applies only to the winning tile (the newest tile drawn into the played hand).
   // Playtest 15: 5 Plays (was 4), start ¥8 (was ¥4), Ante 1-2 targets 250/700 (were 300/800), Loan Shark charges per Discard action.
+  // Playtest 16: Declare Kan (closed), replacement draw after any Kan, Rinshan Kaihou.
   hanTable: [1, 2, 4, 8, 15, 15, 25, 25, 40, 40, 40, 60, 60, 100],
   tierNames: ['None', 'Standard', 'Advanced', 'Master', 'Mangan', 'Mangan', 'Haneman', 'Haneman', 'Baiman', 'Baiman', 'Baiman', 'Sanbaiman', 'Sanbaiman', 'Yakuman'],
   shopWeights: { talisman: 0.5, omikuji: 0.35, kami: 0.15 },
@@ -229,6 +230,7 @@ const YAKU_SHEET = [
   { n: 'Chinitsu', h: '6 / 5', d: 'Full flush: one suit only.' },
   { n: 'Chiitoitsu', h: '2 / —', c: true, d: 'Seven different pairs (no 4 melds needed). Stacks with Tanyao, Honroutou, Honitsu, Chinitsu.' },
   { n: 'Ryanpeikou', h: '3 / —', c: true, d: 'Two sets of Iipeikou, e.g. 234m 234m 678s 678s.' },
+  { n: 'Rinshan Kaihou', h: '1 / 1', d: 'The winning tile of your complete hand is the replacement tile drawn after a Kan.' },
 ];
 const YAKUMAN_SHEET = [
   { n: 'Kokushi Musou', h: '13', c: true, d: 'Thirteen Orphans: one of every 1, 9, Wind and Dragon, plus one duplicate of any of them.' },
@@ -265,6 +267,6 @@ const HK_TERMS = {
   'Red Fives': '紅五 Red Fives', 'Red Five': '紅五 Red Five', 'Yakuhai': '番牌 Honour Set', 'Yakuman': '限糊 Limit Hand', 'Yaku': 'Faan patterns', 'Han': 'Faan', 'Dora': '寶牌 Bonus Tile', 'Furiten': '振聽 Discard Lock', 'tenpai': '聽牌 listening',
   'Chis': 'Chows', 'Chi': 'Chow 上', 'Pons': 'Pungs', 'Pon': 'Pung 碰', 'Kans': 'Kongs', 'Kan': 'Kong 槓', 'Manzu': '萬子 Characters', 'Pinzu': '筒子 Dots', 'Souzu': '索子 Bamboo', 'Man': 'Characters', 'Pin': 'Dots', 'Sou': 'Bamboo',
   'East Wind': '東風 East', 'South Wind': '南風 South', 'West Wind': '西風 West', 'North Wind': '北風 North', 'White Dragon': '白板 White Dragon', 'Green Dragon': '發財 Green Dragon', 'Red Dragon': '紅中 Red Dragon',
-  '¥': '$', 'The River': '牌河 The River', 'Open melds': '落地 Exposed sets', 'YEN': 'HKD', 'Mangan': '滿糊', 'Haneman': '跳滿', 'Baiman': '倍滿', 'Sanbaiman': '三倍滿', 'Standard': '一番', 'Advanced': '二番', 'Master': '三番',
+  '¥': '$', 'Rinshan Kaihou': '槓上開花 Flower on the Kong', 'The River': '牌河 The River', 'Open melds': '落地 Exposed sets', 'YEN': 'HKD', 'Mangan': '滿糊', 'Haneman': '跳滿', 'Baiman': '倍滿', 'Sanbaiman': '三倍滿', 'Standard': '一番', 'Advanced': '二番', 'Master': '三番',
   'Mahjong roguelite in the Balatro mould': 'Hong Kong mahjong roguelite in the Balatro mould',
 };

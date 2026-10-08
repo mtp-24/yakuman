@@ -1,5 +1,6 @@
 // ===================== TERMINOLOGY SWITCH =====================
 let LANG = 'ja'; try { LANG = localStorage.getItem('yakuman.lang') === 'hk' ? 'hk' : 'ja'; } catch (e) { }
+let SHOW_DOTS = true; try { SHOW_DOTS = localStorage.getItem('yakuman.dots') !== 'off'; } catch (e) { }
 let HK_RE = null, HK_MAP = null;
 function buildHK() {
   HK_MAP = Object.assign({}, HK_TERMS);
@@ -74,8 +75,10 @@ function startBlind() {
   setMsg(S.boss ? `${BOSSES[S.boss].name}: ${BOSSES[S.boss].desc}` : `${kind === 'small' ? 'Small' : 'Big'} Blind. Score ${S.target} to win.`);
 }
 function draw() { S.newIds = []; while (S.hand.length < capacity() && S.wall.length) { const t = S.wall.pop(); t.d = ++S.drawSeq; S.hand.push(t); S.newIds.push(t.id); } }
+function drawReplacement() { if (!S.wall.length) return null; const t = S.wall.pop(); t.d = ++S.drawSeq; t.rinshan = true; S.hand.push(t); S.newIds.push(t.id); return t; }
 function collectDeck() {
   S.deck = [...S.hand, ...S.wall, ...S.river, ...openTiles(), ...S.played, ...S.indicators];
+  for (const t of S.deck) delete t.rinshan;
   S.hand = []; S.wall = []; S.river = []; S.open = []; S.played = []; S.indicators = []; S.dora = []; S.selected = []; S.selRiver = null;
 }
 function winBlind() {
@@ -98,7 +101,7 @@ function newRun() { S = newState(); startBlind(); render(); }
 // ===================== ACTIONS =====================
 function setMsg(m, err) { S.msg = m; S.msgErr = !!err; }
 function playOption() {
-  if (S.pendingDiscard) return { err: `Finish your Call first: discard ${S.pendingDiscard} tile.` };
+  if (S.pendingDiscard) return { err: `Settle your Call first: discard ${S.pendingDiscard} tile.` };
   if (S.plays <= 0) return { err: 'No Plays left.' };
   const sel = selTiles(); if (!sel.length) return { err: 'Select tiles to play.' };
   const need = neededConcealed();
@@ -139,8 +142,8 @@ function doDiscard() {
   if (S.phase !== 'blind' || S.busy) return;
   const sel = selTiles();
   if (S.pendingDiscard) {
-    if (sel.length !== S.pendingDiscard) { setMsg(`Discard exactly ${S.pendingDiscard} tile to finish the Call.`, true); return render(); }
-    S.river.push(...sel); S.hand = S.hand.filter(t => !sel.includes(t)); S.pendingDiscard = 0; S.selected = []; draw(); setMsg('Call complete.'); return render();
+    if (sel.length !== S.pendingDiscard) { setMsg(`Discard exactly ${S.pendingDiscard} tile to settle the Call.`, true); return render(); }
+    S.river.push(...sel); S.hand = S.hand.filter(t => !sel.includes(t)); S.pendingDiscard = 0; S.selected = []; draw(); setMsg('Call settled.'); return render();
   }
   if (S.discards <= 0) { setMsg('No Discards left.', true); return render(); }
   if (!sel.length) { setMsg('Select 1–' + CFG.maxDiscardTiles + ' tiles to discard.', true); return render(); }
@@ -155,7 +158,7 @@ function doDiscard() {
 }
 function doCall() {
   if (S.phase !== 'blind' || S.busy) return;
-  if (S.pendingDiscard) { setMsg('Finish your previous Call first.', true); return render(); }
+  if (S.pendingDiscard) { setMsg('Settle your previous Call first.', true); return render(); }
   const freeCall = S.talismans.some(k => TAL[k].freeCall);
   if (!freeCall && S.plays <= 1) { setMsg(S.plays <= 0 ? 'No Plays left.' : 'Calling would use your last Play and leave nothing to score with.', true); return render(); }
   const rt = S.river.find(t => t.id === S.selRiver); if (!rt) { setMsg('Select a tile in the River to call.', true); return render(); }
@@ -165,8 +168,25 @@ function doCall() {
   if (!freeCall) S.plays--; S.river = S.river.filter(t => t !== rt); S.hand = S.hand.filter(t => !sel.includes(t));
   S.open.push({ type, tiles: sortTiles([rt, ...sel]), calledId: rt.id }); S.selected = []; S.selRiver = null;
   for (const k of S.talismans) if (TAL[k].onCall) TAL[k].onCall(S);
+  const rep = type === 'kan' ? drawReplacement() : null;
   S.pendingDiscard = Math.max(0, S.hand.length - capacity());
-  if (S.pendingDiscard) setMsg(`Called ${MELD_LABEL[type]} (open)${freeCall ? ', no Play spent' : ''}. Now discard ${S.pendingDiscard} tile for free.`); else { draw(); setMsg(`Called ${MELD_LABEL[type]} (open)${freeCall ? ', no Play spent' : ''}.`); }
+  const note = `Called ${MELD_LABEL[type]} (open)${freeCall ? ', no Play spent' : ''}${rep ? `. Replacement tile drawn: ${tileName(rep)}` : ''}`;
+  if (S.pendingDiscard) setMsg(`${note}. Now discard ${S.pendingDiscard} tile to settle the Call.`); else { draw(); setMsg(note + '.'); }
+  render();
+}
+function declareOption() {
+  if (S.phase !== 'blind' || S.busy) return { err: '' };
+  if (S.pendingDiscard) return { err: 'Settle your Call first.' };
+  const sel = selTiles(); if (sel.length !== 4 || !sel.every(t => key(t) === key(sel[0]))) return { err: 'Select 4 identical tiles to declare a closed Kan.' };
+  if (S.open.length >= 4) return { err: 'You already have 4 melds on the table.' };
+  return { ok: true, sel };
+}
+function doDeclareKan() {
+  const o = declareOption(); if (!o.ok) { if (o.err) setMsg(o.err, true); return render(); }
+  const sel = o.sel; S.hand = S.hand.filter(t => !sel.includes(t));
+  S.open.push({ type: 'kan', tiles: sortTiles(sel), calledId: null, closed: true }); S.selected = [];
+  const rep = drawReplacement(); draw();
+  setMsg(`Declared a closed Kan of ${isHonor(sel[0]) ? HONOR_EN[sel[0].rank] : sel[0].rank + ' ' + SUIT_EN[sel[0].suit]}. Hand stays closed.${rep ? ' Replacement tile drawn: ' + tileName(rep) + '.' : ''}`);
   render();
 }
 function useConsumable(i) {
@@ -309,8 +329,9 @@ function renderConsumables() {
 }
 function renderOpen() {
   const box = $('#open'); box.innerHTML = '';
-  $('#openInfo').textContent = S.open.length ? `${S.open.length} open · hand is Open for Yaku` : 'None. Hand is closed.';
-  for (const m of S.open) { const w = document.createElement('div'); w.className = 'meld'; w.innerHTML = `<span class="mt">${MELD_LABEL[m.type].toUpperCase()}</span>`; for (const t of m.tiles) w.appendChild(tileEl(t, { small: true, called: t.id === m.calledId })); box.appendChild(w); }
+  const allClosed = S.open.every(m => m.closed);
+  $('#openInfo').textContent = S.open.length ? (allClosed ? `${S.open.length} declared · hand is still closed for Yaku` : `${S.open.length} on the table · hand is Open for Yaku`) : 'None. Hand is closed.';
+  for (const m of S.open) { const w = document.createElement('div'); w.className = 'meld' + (m.closed ? ' closedmeld' : ''); w.innerHTML = `<span class="mt">${m.closed ? 'CLOSED ' : ''}${MELD_LABEL[m.type].toUpperCase()}</span>`; for (const t of m.tiles) w.appendChild(tileEl(t, { small: true, called: t.id === m.calledId })); box.appendChild(w); }
 }
 function renderRiver() {
   const box = $('#river'); box.innerHTML = '';
@@ -326,6 +347,7 @@ function renderHand() {
   $('#handInfo').textContent = `${S.hand.length} / ${capacity()} tiles · ${S.selected.length} selected · complete hand needs ${neededConcealed()} from hand`;
   renderHint(hidden);
   $('#btnSort').textContent = hidden ? 'Draw order' : (S.sortHand ? 'Sorted' : 'Draw order'); $('#btnSort').disabled = hidden;
+  $('#btnDots').textContent = SHOW_DOTS ? 'Dots on' : 'Dots off'; $('#btnDots').title = 'Green dots mark tiles you can discard without losing progress';
 }
 // Greedy set of tiles that can all be discarded together without raising shanten. Isolated tiles are tried first.
 function deadTiles(hand, openCount, sh, limit) {
@@ -355,21 +377,22 @@ function renderHint(hidden) {
   const sel = selTiles().filter(t => vis.includes(t));
   if (!hidden && sel.length === neededConcealed()) {
     const best = bestHand(sel, S.open, S);
-    if (best) { const win = winningTile(sel); const f = win && S.river.some(t => key(t) === key(win)); h += ` <span class="hint-sel ${f ? 'bad' : 'good'}">· complete hand, winning tile ${tileName(win)}${f ? (S.talismans.includes('kappa') ? ' is in your River: Kappa bonus' : ' is in your River: Furiten, ×0.5') : ''}</span>`; box.innerHTML = h; return; }
+    if (best) { const win = winningTile(sel); const f = win && S.river.some(t => key(t) === key(win)); h += ` <span class="hint-sel ${f ? 'bad' : 'good'}">· complete hand, winning tile ${tileName(win)}${win && win.rinshan ? ' (Kan replacement: Rinshan Kaihou +1 Han)' : ''}${f ? (S.talismans.includes('kappa') ? ' is in your River: Kappa bonus' : ' is in your River: Furiten, ×0.5') : ''}</span>`; box.innerHTML = h; return; }
   }
   if (sel.length && sel.length < vis.length) {
     const rest = vis.filter(t => !sel.includes(t)); const sh2 = handShanten(rest, S.open.length);
     h += ` <span class="hint-sel ${sh2 > sh ? 'bad' : 'good'}">· without ${sel.length === 1 ? 'this tile' : 'these'}: ${sh2 > sh ? 'sets you back to ' + away(sh2).toLowerCase() : 'safe, still ' + away(sh2).toLowerCase()}</span>`;
-  } else h += ` <span class="hint-sel muted">· dotted tiles are dead weight: all of them can go without losing progress</span>`;
+  } else if (SHOW_DOTS) h += ` <span class="hint-sel muted">· dotted tiles are dead weight: all of them can go without losing progress</span>`;
   box.innerHTML = h;
   // mark single tiles whose removal does not raise shanten
-  if (sh >= 0) { const dead = deadTiles(vis, S.open.length, sh, CFG.maxDiscardTiles); const els = $('#hand').children; const tiles = (S.sortHand ? sortTiles(S.hand) : S.hand); for (let i = 0; i < tiles.length; i++) if (dead.includes(tiles[i])) els[i].classList.add('safe'); }
+  if (sh >= 0 && SHOW_DOTS) { const dead = deadTiles(vis, S.open.length, sh, CFG.maxDiscardTiles); const els = $('#hand').children; const tiles = (S.sortHand ? sortTiles(S.hand) : S.hand); for (let i = 0; i < tiles.length; i++) if (dead.includes(tiles[i])) els[i].classList.add('safe'); }
 }
 function renderActions() {
   const inBlind = S.phase === 'blind';
   const opt = inBlind ? playOption() : { err: '' };
   const bp = $('#btnPlay'); bp.disabled = !inBlind || !!opt.err || S.busy; bp.textContent = opt.type ? opt.label : 'Play'; bp.title = opt.err || '';
-  const bd = $('#btnDiscard'); bd.disabled = !inBlind || S.busy || (!S.pendingDiscard && S.discards <= 0); bd.textContent = S.pendingDiscard ? `Discard ${S.pendingDiscard} (free)` : `Discard (${S.discards})`;
+  const bd = $('#btnDiscard'); bd.disabled = !inBlind || S.busy || (!S.pendingDiscard && S.discards <= 0); bd.textContent = S.pendingDiscard ? `Discard ${S.pendingDiscard} to settle the Call` : `Discard (${S.discards})`;
+  const dk = $('#btnKan'); const dko = declareOption(); dk.disabled = !dko.ok; dk.title = dko.err || 'Set these 4 tiles aside as a closed Kan and draw a replacement tile';
   $('#btnCall').disabled = !inBlind || S.busy || !S.selRiver || S.selected.length < 2;
   $('#btnClear').disabled = !inBlind || S.busy;
 }
@@ -461,8 +484,9 @@ function rulesHTML() {
   <p><b>Complete hand.</b> Select 14 tiles (4 melds + a pair, or Seven Pairs / Thirteen Orphans) and press Play. Yaku add Han, and Han sets the multiplier: 1 Han ×2, 2 ×4, 3 ×8, 4–5 ×15, 6–7 ×25, 8–10 ×40, 11–12 ×60, 13+ ×100.</p>
   <p><b>Chips.</b> 2–8 are worth their face value, 1s, 9s and Honors are worth 10. Score = Chips × Multiplier.</p>
   <p><b>Discard.</b> Throw up to ${CFG.maxDiscardTiles} tiles into the River. Costs 1 Discard. The River stays visible for the whole Blind. You get ${CFG.playsPerBlind} Plays and ${CFG.discardsPerBlind} Discards per Blind before Talismans and Flowers.</p>
-  <p><b>Call.</b> Select one River tile and 2–3 hand tiles that form a meld with it, then press Call. Costs 1 Play, no score yet. The meld is set aside as Open and counts toward your complete hand. Open hands get reduced Han on some Yaku, and lose closed-only Yaku (Pinfu, Iipeikou...). After a Chi or Pon call you discard 1 tile for free.</p>
+  <p><b>Call.</b> Select one River tile and 2–3 hand tiles that form a meld with it, then press Call. Costs 1 Play, no score yet. The meld is set aside as Open and counts toward your complete hand. Open hands get reduced Han on some Yaku, and lose closed-only Yaku (Pinfu, Iipeikou...). After a call you discard 1 tile to settle it; this does not use a Discard.</p>
   <p><b>Helper.</b> Under your hand the game shows how many tiles you are from a complete hand, and tiles marked with a green dot can be discarded without losing progress. Select tiles to see whether that discard keeps you on track. Against The Purist it only counts your visible tiles.</p>
+  <p><b>Kan.</b> Four identical tiles can be played as a partial Kan for points, or declared: press Declare Kan (or K) to set them aside as a closed Kan that counts toward your complete hand without opening it. Every Kan, declared or called from the River, draws one replacement tile from the Wall. If that replacement tile ends up as the winning tile of your complete hand, you score Rinshan Kaihou (+1 Han). A called Kan then settles with one discard like any Call.</p>
   <p><b>Furiten.</b> The winning tile of a complete hand is the newest tile you drew among the 14 you play. If a copy of that tile type sits in your River, the hand is in Furiten and the multiplier is halved. The helper shows your waits when you are one tile away and marks the ones already in your River. Kappa turns Furiten into a bonus.</p>
   <p><b>Red Fives &amp; Dora.</b> Each Red Five scored gives +1 Han. Dora indicators (from Omikuji) make matching tiles worth +1 Han each.</p>
   <p><b>Bosses.</b> Every third Blind is a Yakuza boss with a rule twist. Read the red box.</p>
@@ -522,9 +546,10 @@ function buyFree(it) { const m = S.money; S.money = 999; buy(it); S.money = m; }
 
 // ===================== BOOT & EVENTS =====================
 function bindEvents() {
-  $('#btnPlay').onclick = doPlay; $('#btnDiscard').onclick = doDiscard; $('#btnCall').onclick = doCall;
+  $('#btnPlay').onclick = doPlay; $('#btnDiscard').onclick = doDiscard; $('#btnCall').onclick = doCall; $('#btnKan').onclick = doDeclareKan;
   $('#btnClear').onclick = () => { S.selected = []; S.selRiver = null; render(); };
   $('#btnSort').onclick = () => { S.sortHand = !S.sortHand; render(); };
+  $('#btnDots').onclick = () => { SHOW_DOTS = !SHOW_DOTS; try { localStorage.setItem('yakuman.dots', SHOW_DOTS ? 'on' : 'off'); } catch (e) { } render(); };
   $('#btnDeck').onclick = () => showModal(deckHTML(), true);
   $('#btnRules').onclick = () => showModal(rulesHTML(), true);
   $('#btnYaku').onclick = () => showModal(yakuHTML(), true);
@@ -545,7 +570,7 @@ function bindEvents() {
   document.addEventListener('keydown', e => {
     if (S.phase !== 'blind' || !$('#overlay').hidden) return;
     if (S.busy) { skipAnim = true; return; }
-    if (e.key === 'Enter' || e.key === 'p') doPlay(); else if (e.key === 'd') doDiscard(); else if (e.key === 'c') doCall(); else if (e.key === 'Escape') { S.selected = []; S.selRiver = null; render(); }
+    if (e.key === 'Enter' || e.key === 'p') doPlay(); else if (e.key === 'd') doDiscard(); else if (e.key === 'c') doCall(); else if (e.key === 'k') doDeclareKan(); else if (e.key === 'Escape') { S.selected = []; S.selRiver = null; render(); }
   });
 }
 function boot(saved) {

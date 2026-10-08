@@ -58,7 +58,7 @@ function decompose(counts, need) {
 function findStandard(concealed, open) {
   const counts = new Array(34).fill(0); for (const t of concealed) counts[idx(t)]++;
   const need = 4 - open.length; const out = [];
-  const openMelds = open.map(m => ({ type: m.type, i: idx(m.tiles[0]), open: true }));
+  const openMelds = open.map(m => ({ type: m.type, i: idx(m.tiles[0]), open: !m.closed }));
   for (let p = 0; p < 34; p++) {
     if (counts[p] < 2) continue; counts[p] -= 2;
     for (const ms of decompose(counts, need)) out.push({ pair: p, melds: [...openMelds, ...ms.map(m => ({ ...m, open: false }))] });
@@ -142,9 +142,9 @@ function evalSpecial(tiles, S) {
 }
 // Best complete-hand interpretation of concealed tiles + open melds, or null.
 function bestHand(concealed, open, S) {
-  const closed = open.length === 0;
+  const closed = open.every(m => m.closed);
   const cands = findStandard(concealed, open).map(dec => ({ dec, yaku: evalStandard(dec, closed, S) }));
-  if (closed && concealed.length === 14) for (const sp of evalSpecial(concealed, S)) cands.push({ dec: null, special: sp.special, yaku: sp.yaku });
+  if (open.length === 0 && concealed.length === 14) for (const sp of evalSpecial(concealed, S)) cands.push({ dec: null, special: sp.special, yaku: sp.yaku });
   if (!cands.length) return null;
   cands.sort((a, b) => b.yaku.han - a.yaku.han || b.yaku.list.length - a.yaku.list.length);
   return cands[0];
@@ -214,7 +214,9 @@ function scoreCtx(S, kind, tiles, info) {
   if (agg.gold) L(`Gold Foil ×${agg.gold}`, `+¥${agg.gold}`, { info: true });
   // ---- Yaku (complete hands)
   if (kind === 'hand') {
-    const y = info.yaku;
+    const y = { list: info.yaku.list.slice(), han: info.yaku.han, yakuman: info.yaku.yakuman };
+    const winT = winningTile(tiles.filter(t => !S.open.some(m => m.tiles.some(o => o.id === t.id))));
+    if (winT && winT.rinshan && !y.yakuman) { y.list.push({ key: 'rinshan', name: 'Rinshan Kaihou', han: 1 }); y.han += 1; }
     for (const yk of y.list) L(yk.name, `+${yk.han} Han`, { han: yk.han, yaku: true });
     ctx.han += y.han; ctx.yaku = y.list;
     if (y.han === 0) { ctx.han += 1; L('Complete Hand (no Yaku)', '+1 Han', { han: 1, yaku: true }); }
