@@ -17,21 +17,23 @@
     <div class="card lastplay" id="lastPlay"></div>
   </aside>
   <section class="board">
-    <div class="zone">
+    <div class="zone talzone">
       <div class="zhead"><span class="label">Talismans</span><span class="muted" id="talCount"></span><span class="spacer" style="flex:1"></span><span id="talSell"></span></div>
       <div class="slots" id="talismans"></div>
       <div class="zhead" style="margin-top:8px"><span class="label">Consumables</span><span class="muted" id="conCount"></span></div>
       <div class="slots" id="consumables"></div>
     </div>
+    <div class="zone-row">
     <div class="zone">
       <div class="zhead"><span class="label">Open melds</span><span class="muted" id="openInfo"></span></div>
-      <div class="row-tiles" id="open" style="min-height:40px"></div>
+      <div class="row-tiles" id="open"></div>
     </div>
     <div class="zone">
       <div class="zhead"><span class="label">The River</span><span class="muted" id="riverInfo">Discards stay here all Blind. Select one plus 2–3 hand tiles to Call.</span></div>
-      <div class="row-tiles" id="river" style="min-height:52px"></div>
+      <div class="row-tiles" id="river"></div>
     </div>
-    <div class="zone">
+    </div>
+    <div class="zone handzone">
       <div class="zhead"><span class="label">Hand</span><span class="muted" id="handInfo"></span><span style="flex:1"></span><button id="btnDots" class="ghost" style="padding:3px 8px;font-size:12px">Dots on</button><button id="btnSort" class="ghost" style="padding:3px 8px;font-size:12px;margin-left:6px">Sort</button></div>
       <div class="row-tiles" id="hand"></div>
       <div class="hint" id="hint"></div>

@@ -346,7 +346,8 @@ function renderHand() {
   const tiles = (S.sortHand && !hidden) ? sortTiles(S.hand) : S.hand;
   for (const t of tiles) { const e = tileEl(t, { sel: S.selected.includes(t.id), back: hidden && (isHonor(t) || isTerminal(t)) }); if (S.newIds.includes(t.id)) e.classList.add('arrive'); e.onclick = () => { if (S.phase !== 'blind' || S.busy) return; S.selected = S.selected.includes(t.id) ? S.selected.filter(x => x !== t.id) : [...S.selected, t.id]; render(); }; box.appendChild(e); }
   S.newIds = [];
-  $('#handInfo').textContent = `${S.hand.length} / ${capacity()} tiles · ${S.selected.length} selected · complete hand needs ${neededConcealed()} from hand`;
+  const over = S.hand.length - capacity();
+  $('#handInfo').textContent = (over > 0 ? `${S.hand.length} tiles (${over} over the limit of ${capacity()}: no draw until you are back under it)` : `${S.hand.length} / ${capacity()} tiles`) + ` · ${S.selected.length} selected · complete hand needs ${neededConcealed()} from hand`;
   renderHint(hidden);
   $('#btnSort').textContent = hidden ? 'Draw order' : (S.sortHand ? 'Sorted' : 'Draw order'); $('#btnSort').disabled = hidden;
   $('#btnDots').textContent = SHOW_DOTS ? 'Dots on' : 'Dots off'; $('#btnDots').title = 'Green dots mark tiles you can discard without losing progress';

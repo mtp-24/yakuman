@@ -147,7 +147,7 @@ const TAL = {}; TALISMANS.forEach(t => TAL[t.key] = t);
 // ===================== OMIKUJI (Tarot) & KAMI (Spectral) =====================
 function convertTile(t, suit, rank) { t.suit = suit; t.rank = rank; if (!(suit !== 'z' && rank === 5)) t.red = false; }
 const OMIKUJI = [
-  { key: 'dup', name: 'Slip of Duplication', cost: 3, sel: [1, 1], desc: 'Create an exact copy of 1 selected tile. It joins your hand and your Wall permanently.',
+  { key: 'dup', name: 'Slip of Duplication', cost: 3, sel: [1, 1], desc: 'Create an exact copy of 1 selected tile. It joins your hand immediately, even if your hand is full (you simply draw nothing until you are back under the limit), and stays in your Wall for the rest of the run.',
     use: (S, sel) => { const t = sel[0]; const c = mkTile(t.suit, t.rank, t.red); c.eng = t.eng; S.hand.push(c); } },
   { key: 'ascend', name: 'Slip of Ascension', cost: 3, sel: [1, 2], desc: 'Raise the rank of up to 2 selected suited tiles by 1 (a 9 becomes a 1). Honors are unchanged.',
     use: (S, sel) => { for (const t of sel) if (!isHonor(t)) convertTile(t, t.suit, t.rank % 9 + 1); } },
