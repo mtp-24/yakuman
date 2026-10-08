@@ -160,7 +160,7 @@ function tileChips(t, S) {
 }
 function scoreCtx(S, kind, tiles, info) {
   // tiles: for 'meld' the selected tiles; for 'hand' the concealed selection followed by open-meld tiles.
-  const ctx = { kind, tiles: tiles.map(t => ({ ...t })), chips: 0, han: 0, xmult: 1, lines: [], hits: [], yaku: [], furiten: false, total: 0, money: 0, redCount: 0, hasDragonSet: false, desc: '', nChi: 0, nPon: 0, nKan: 0, nMelds: 0, hasPair: false, meldType: null };
+  const ctx = { kind, tiles: tiles.map(t => ({ ...t })), chips: 0, han: 0, xmult: 1, lines: [], hits: [], yaku: [], furiten: false, total: 0, money: 0, redCount: 0, hasDragonSet: false, desc: '', nChi: 0, nPon: 0, nKan: 0, nMelds: 0, hasPair: false, meldType: null, shatter: [] };
   const L = (label, val, d = {}) => ctx.lines.push(Object.assign({ label, val }, d));
   const apply = r => { if (!r) return []; const parts = []; if (r.chips) { ctx.chips += r.chips; parts.push(`+${r.chips} Chips`); } if (r.han) { ctx.han += r.han; parts.push(`+${r.han} Han`); } if (r.xmult) { ctx.xmult *= r.xmult; parts.push(`×${r.xmult} Mult`); } if (r.money) { ctx.money += r.money; parts.push(`+¥${r.money}`); } return parts; };
   // ---- components
@@ -189,9 +189,10 @@ function scoreCtx(S, kind, tiles, info) {
   }
   // ---- per-tile loop with retriggers
   const redPer = S.talismans.includes('koi') ? 2 : 1;
-  const agg = { chips: 0, red: 0, redHan: 0, dora: 0, dm: 0, jade: 0, gold: 0, retrig: {} };
+  const agg = { chips: 0, red: 0, redHan: 0, dora: 0, dm: 0, jade: 0, gold: 0, glass: 0, retrig: {} };
   tiles.forEach((t, ti) => {
     let extra = 0; const who = [];
+    if (t.eng === 'redseal') { extra += 1; who.push('Red Seal'); agg.retrig['Red Seal'] = (agg.retrig['Red Seal'] || 0) + 1; }
     for (const k of S.talismans) { const d = TAL[k]; if (d.retrigger) { const n = d.retrigger(t, ctx, S, ti); if (n) { extra += n; who.push(d.name); agg.retrig[d.name] = (agg.retrig[d.name] || 0) + n; } } }
     const times = 1 + extra; let c = 0, h = 0, x = 1, money = 0;
     for (let r = 0; r < times; r++) {
@@ -201,7 +202,9 @@ function scoreCtx(S, kind, tiles, info) {
       if (t.eng === 'dragonmark') { h += 1; agg.dm++; }
       if (t.eng === 'jade') { x *= 1.5; agg.jade++; }
       if (t.eng === 'gold') { money += 1; agg.gold++; }
+      if (t.eng === 'glass') { x *= 2; agg.glass++; }
     }
+    if (t.eng === 'glass' && Math.random() < 0.25) ctx.shatter.push(t.id);
     ctx.chips += c; ctx.han += h; ctx.xmult *= x; ctx.money += money;
     ctx.hits.push({ id: t.id, chips: c, han: h, xmult: x, times, who });
   });
@@ -212,6 +215,8 @@ function scoreCtx(S, kind, tiles, info) {
   if (agg.dm) L(`Dragon Mark ×${agg.dm}`, `+${agg.dm} Han`, { han: agg.dm, info: true });
   if (agg.jade) { const x = Math.pow(1.5, agg.jade); L(`Jade ×${agg.jade}`, `×${x} Mult`, { xmult: x, info: true }); }
   if (agg.gold) L(`Gold Foil ×${agg.gold}`, `+¥${agg.gold}`, { info: true });
+  if (agg.glass) { const x = Math.pow(2, agg.glass); L(`Glass ×${agg.glass}`, `×${x} Mult`, { xmult: x, info: true }); }
+  if (ctx.shatter.length) L(`Glass shattered ×${ctx.shatter.length}`, 'gone from your Wall', { info: true, bad: true });
   // ---- Yaku (complete hands)
   if (kind === 'hand') {
     const y = { list: info.yaku.list.slice(), han: info.yaku.han, yakuman: info.yaku.yakuman };
@@ -235,6 +240,12 @@ function scoreCtx(S, kind, tiles, info) {
   for (const k of S.talismans) {
     const d = TAL[k]; if (!d.onScore) continue; const r = d.onScore(ctx, S); if (!r) continue;
     const parts = apply(r); if (parts.length) L(d.name, parts.join(', '), { chips: r.chips || 0, han: r.han || 0, xmult: r.xmult || 1, tal: d.name });
+  }
+  // ---- Talisman editions
+  for (const k of S.talismans) {
+    const ed = S.editions && S.editions[k]; if (!ed || !EDITIONS[ed]) continue; const e = EDITIONS[ed];
+    const r = { chips: e.chips || 0, han: e.han || 0, xmult: e.xmult || 0 }; const parts = apply(r);
+    L(`${TAL[k].name} (${e.name})`, parts.join(', '), { chips: r.chips, han: r.han, xmult: r.xmult || 1, tal: TAL[k].name });
   }
   // ---- Boss and Furiten
   if (S.boss === 'wallbuilder' && kind === 'meld' && ctx.nMelds < 3) { ctx.chips = 0; L('The Wall-Builder', 'fewer than 3 melds: 0 Chips', { zero: true }); }
