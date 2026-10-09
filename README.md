@@ -34,6 +34,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 17: Talisman editions (Foil +50 chips, Holographic +1 Han, Polychrome x1.5), Red Seal and Glass engravings, live Chips x Mult preview of the selection, Scroll levels on the cheat sheet, "Again!" retrigger pulses and a fire effect when a play passes the blind target.
 - Build 19: tile-first layout. Tiles scale with the viewport (hand up to 84px, River/open melds up to 62px), open melds and River sit side by side on wide screens, phones get a compact header, the hand directly under the blind strip and a sticky action bar. Over-capacity hand wording after Duplication.
 - Build 20: drag-and-drop hand reordering (mouse and touch); tiles score in hand order; Shikigami uses the leftmost tile.
+- Build 21: header buttons grouped into an even grid on narrow screens; shop reward list names the blind properly; simulator shop rolls editions.
 - Build 7: multi-meld play ladder (Two Melds ... Four Melds), targets 300...45000, retrigger and scaling Talismans, Wall-Builder rewording, scoring animation.
 
 ## Simulators (in `sim/`)
