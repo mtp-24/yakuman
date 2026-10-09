@@ -1260,6 +1260,7 @@ function useConsumable(i) {
   const r = def.use(S, sel); if (r === false) { setMsg('That cannot be used right now.', true); return render(); }
   for (const t of S.hand) if (t.d === undefined) t.d = ++S.drawSeq;
   if (S.hand.length > before) for (const k of S.talismans) if (TAL[k].onTileAdded) TAL[k].onTileAdded(S, S.hand.length - before);
+  if (S.pendingDiscard) { S.pendingDiscard = Math.max(0, S.hand.length - capacity()); if (!S.pendingDiscard) { draw(); setMsg(`${def.name} used. Your Call is settled.`); render(); return; } }
   S.consumables.splice(i, 1); S.selected = []; if (S.phase === 'blind') draw();
   setMsg(`${def.name} used.`); render();
 }
@@ -1511,7 +1512,7 @@ function deadTiles(hand, openCount, sh, limit) {
 function renderHint(hidden) {
   const box = $('#hint');
   if (S.phase !== 'blind' || !S.hand.length) { box.innerHTML = ''; return; }
-  if (S.pendingDiscard) { box.innerHTML = `<span class="pendnote">Settle your Call: select ${S.pendingDiscard} tile and press Discard. It does not use a Discard.${S.selected.length === S.pendingDiscard ? ' Ready, press Discard.' : ''}</span>`; return; }
+  if (S.pendingDiscard) { const n = S.selected.length, need = S.pendingDiscard; box.innerHTML = `<span class="pendnote">Settle your Call: select ${need} tile and press Discard. It does not use a Discard.${n === need ? ' Ready, press Discard.' : n > need ? ` ${n} selected, you need exactly ${need}.` : ''}</span>`; return; }
   // Under The Purist only the visible (simple) tiles are counted; hidden tiles are treated as unknown, so this is a "no better than" estimate.
   const vis = hidden ? S.hand.filter(t => !(isHonor(t) || isTerminal(t))) : S.hand;
   const sh = handShanten(vis, S.open.length);
@@ -1540,7 +1541,7 @@ function renderActions() {
   const inBlind = S.phase === 'blind';
   const opt = inBlind ? playOption() : { err: '' };
   const bp = $('#btnPlay'); bp.disabled = !inBlind || !!opt.err || S.busy; bp.textContent = opt.type ? opt.label : 'Play'; bp.title = opt.err || '';
-  const bd = $('#btnDiscard'); bd.disabled = !inBlind || S.busy || (!S.pendingDiscard && S.discards <= 0); bd.textContent = S.pendingDiscard ? `Discard ${S.pendingDiscard} to settle the Call` : `Discard (${S.discards})`; bd.classList.toggle('pulse', !!S.pendingDiscard);
+  const bd = $('#btnDiscard'); bd.disabled = !inBlind || S.busy || (!S.pendingDiscard && S.discards <= 0) || (S.pendingDiscard && S.selected.length !== S.pendingDiscard); bd.title = S.pendingDiscard && S.selected.length !== S.pendingDiscard ? `Select exactly ${S.pendingDiscard} tile to settle the Call` : ''; bd.textContent = S.pendingDiscard ? `Discard ${S.pendingDiscard} to settle the Call` : `Discard (${S.discards})`; bd.classList.toggle('pulse', !!S.pendingDiscard);
   const dk = $('#btnKan'); const dko = declareOption(); dk.disabled = !dko.ok; dk.title = dko.err || 'Set these 4 tiles aside as a closed Kan and draw a replacement tile';
   $('#preview').innerHTML = '';
   $('#btnCall').disabled = !inBlind || S.busy || !S.selRiver || S.selected.length < 2;
