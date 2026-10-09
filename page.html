@@ -226,7 +226,7 @@ aside{display:flex;flex-direction:column;gap:10px;min-width:0}
 .setup.stacked{grid-template-columns:1fr}
 .modal:has(.setup){max-width:600px}
 .carousel{display:flex;align-items:stretch;gap:6px}
-.carousel .arrow{padding:0 10px;font-size:14px;flex:0 0 auto}
+.carousel .arrow{padding:0 12px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;color:var(--fg)} .carousel .arrow svg{display:block}
 .carcard{flex:1;min-width:0;border:1px solid var(--accent);background:rgba(217,164,65,.08);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:4px;font-size:13px;min-height:84px}
 .carcard span.muted{font-size:12px}
 .carcard .dots{display:flex;gap:4px;margin-top:auto;padding-top:6px} .carcard .dots i{width:6px;height:6px;border-radius:50%;background:var(--line);display:inline-block} .carcard .dots i.on{background:var(--accent)}
@@ -1813,7 +1813,7 @@ function yakuHTML() {
 }
 let setupSel = { deck: 0, stake: 0 };
 function setupHTML() {
-  const car = (name, obj) => { const keys = Object.keys(obj); const i = ((setupSel[name] % keys.length) + keys.length) % keys.length; const v = obj[keys[i]]; return `<div class="carousel" data-car="${name}"><button class="ghost arrow" data-nav="${name}:-1" title="Previous">&#9664;</button><div class="carcard"><input type="hidden" name="${name}" value="${keys[i]}"><b>${v.name}</b><span class="muted">${v.desc}</span><span class="dots">${keys.map((k, j) => `<i class="${j === i ? 'on' : ''}"></i>`).join('')}</span></div><button class="ghost arrow" data-nav="${name}:1" title="Next">&#9654;</button></div>`; };
+  const car = (name, obj) => { const keys = Object.keys(obj); const i = ((setupSel[name] % keys.length) + keys.length) % keys.length; const v = obj[keys[i]]; return `<div class="carousel" data-car="${name}"><button class="ghost arrow" data-nav="${name}:-1" title="Previous" aria-label="Previous"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M10.5 2.5 5 8l5.5 5.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="carcard"><input type="hidden" name="${name}" value="${keys[i]}"><b>${v.name}</b><span class="muted">${v.desc}</span><span class="dots">${keys.map((k, j) => `<i class="${j === i ? 'on' : ''}"></i>`).join('')}</span></div><button class="ghost arrow" data-nav="${name}:1" title="Next" aria-label="Next"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M5.5 2.5 11 8l-5.5 5.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>`; };
   return `<h2>New Run</h2><div class="setup stacked"><div><div class="label">Wall</div>${car('deck', DECKS)}</div><div><div class="label" style="margin-top:10px">Stake</div>${car('stake', STAKES)}</div></div>
   <div class="label" style="margin-top:12px">Seed</div><input id="seedInput" placeholder="random" maxlength="24" autocomplete="off"><div class="muted" style="font-size:11px;margin-top:4px">Share a seed and the same Wall, shops and bosses come up for everyone. Leave blank for a random run.</div>
   <div style="display:flex;gap:8px;margin-top:14px"><button id="mStartRun" class="primary">Start Run</button><button id="mClose">Cancel</button></div>`;
