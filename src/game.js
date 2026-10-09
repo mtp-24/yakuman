@@ -406,9 +406,9 @@ function renderBlind() {
       const lvl = lvlKey ? (S.scrolls.meld[lvlKey] || 0) : 0;
       let chips = base.chips, han = base.han; if (pv.kind === 'hand') han += Math.max(1, c.yaku.reduce((a, y) => a + y.han, 0));
       for (const l of c.lines) if (/^Scroll:/.test(l.label)) { chips += l.chips || 0; han += l.han || 0; }
-      h += `<div class="handbox"><div class="hb-name">${pv.label}${lvlKey ? ` <span class="tag">Lv.${lvl + 1}</span>` : ''}<span class="muted"> · ${han} Han</span></div><div class="hb-math num"><span class="pchips">${chips}</span><span class="px">×</span><span class="pmult">${hanMult(han)}</span></div></div>`;
+      h += `<div class="handbox"><div class="hb-name">${pv.label}${lvlKey ? ` <span class="tag">Lv.${lvl + 1}</span>` : ''}<span class="muted"> · ${han} Han</span></div><div class="hb-math num"><span class="chipbox">${chips}</span><span class="px">×</span><span class="multbox">${hanMult(han)}</span></div></div>`;
     }
-    else h += `<div class="handbox empty"><div class="hb-name muted">${S.selected.length ? (pv && pv.err ? pv.err : 'Not a valid play') : 'Select tiles to see the score'}</div><div class="hb-math num muted"><span>0</span><span class="px">×</span><span>0</span></div></div>`;
+    else h += `<div class="handbox empty"><div class="hb-name muted">${S.selected.length ? (pv && pv.err ? pv.err : 'Not a valid play') : 'Select tiles to see the score'}</div><div class="hb-math num"><span class="chipbox dim">0</span><span class="px">×</span><span class="multbox dim">0</span></div></div>`;
   }
   h += `<div class="stats"><div class="stat plays"><div class="label">Plays</div><div class="v num">${S.plays}</div></div><div class="stat discards"><div class="label">Discards</div><div class="v num">${S.discards}</div></div><div class="stat money"><div class="label">YEN</div><div class="v num">¥${S.money}</div></div><div class="stat"><div class="label">Wall</div><div class="v num">${S.wall.length}</div></div></div>`;
   if (S.indicators.length) { h += `<div class="label" style="margin-top:8px">Dora Indicators</div><div class="dora-ind" id="doraRow"></div>`; }
@@ -582,7 +582,7 @@ let skipAnim = false;
 function wait(ms) { return new Promise(r => setTimeout(r, (motionOK && !skipAnim) ? ms : 0)); }
 async function animateScore(ctx) {
   const stage = $('#stage'); skipAnim = false; stage.hidden = false;
-  stage.innerHTML = `<div class="stage-inner"><div class="stage-title">${ctx.rungName || ''}${ctx.kind === 'hand' ? ' · ' + ctx.desc : ''}</div><div class="stage-tiles"></div><div class="stage-lines"></div><div class="stage-math num"><span class="chips">0</span><span class="x">×</span><span class="mult">1</span><span class="eq">=</span><span class="tot">0</span></div><div class="stage-skip muted">click to skip</div></div>`;
+  stage.innerHTML = `<div class="stage-inner"><div class="stage-title">${ctx.rungName || ''}${ctx.kind === 'hand' ? ' · ' + ctx.desc : ''}</div><div class="stage-tiles"></div><div class="stage-lines"></div><div class="stage-math num"><span class="chips chipbox">0</span><span class="x">×</span><span class="mult multbox">1</span><span class="eq">=</span><span class="tot">0</span></div><div class="stage-skip muted">click to skip</div></div>`;
   stage.onclick = () => { skipAnim = true; };
   translateDOM(stage);
   const tilesBox = stage.querySelector('.stage-tiles'), linesBox = stage.querySelector('.stage-lines');

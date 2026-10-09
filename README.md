@@ -56,6 +56,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 44: dead-tile dots stay visible while settling a Call; hand rows get extra vertical gap so a lifted (selected) tile no longer covers the dots of the row above.
 - Build 45: Settings screen (terminology, dead-tile dots, debug tools, wipe save) replaces the header Terms and Debug buttons; Run Info button is just "Run Info"; the Run tab is organised into cards (Run, Plays, Talismans, Mastery, Flowers, Tags) with a boss timeline.
 - Build 47: side hand box shows only the play's base (rung name, Scroll level, base chips × Mult from base Han, plus Yaku names for a complete hand) like Balatro; tile bonuses, Talismans and the total are revealed by the scoring animation.
+- Build 48: chips and Mult shown as Balatro-style blue and red boxes in the side hand box and the scoring stage.
 - Build 7: multi-meld play ladder (Two Melds ... Four Melds), targets 300...45000, retrigger and scaling Talismans, Wall-Builder rewording, scoring animation.
 
 ## Simulators (in `sim/`)
