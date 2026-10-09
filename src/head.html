@@ -765,7 +765,8 @@ button.pulse{animation:btnpulse2 2.6s ease-out infinite}
 @media (prefers-reduced-motion:reduce){.slot[class*="ed-"]::before,.shopcard[class*="ed-"]::before,.slot[class*="ed-"]::after,.shopcard[class*="ed-"]::after{animation:none}}
 /* Edition overlays sit behind the card's text and contents, so names and descriptions stay crisp */
 .slot[class*="ed-"]::before,.shopcard[class*="ed-"]::before{z-index:0}
-.slot[class*="ed-"] > :not(.pricetag),.shopcard[class*="ed-"] > :not(.pricetag){position:relative;z-index:1}
+.slot[class*="ed-"] > :not(.pricetag):not(.talpop),.shopcard[class*="ed-"] > :not(.pricetag):not(.talpop){position:relative;z-index:1}
+.slot > .talpop{position:absolute;z-index:40}
 .shopcard[class*="ed-"] > .pricetag{z-index:2}
 /* The kind line (order, type, edition pill) stays on one row: the pill keeps its size at the right, the type label gives way */
 .slot .kind,.shopcard .kind{display:flex;align-items:center;gap:6px;flex-wrap:nowrap;white-space:nowrap;overflow:hidden;min-width:0}
