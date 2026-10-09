@@ -789,4 +789,14 @@ button.pulse{animation:btnpulse2 2.6s ease-out infinite}
 .lockico{width:12px;height:9px;margin-top:6px;border-radius:2.5px;background:var(--muted);position:relative;flex:0 0 auto}
 .lockico::before{content:'';position:absolute;left:2.5px;top:-5.5px;width:7px;height:7px;border:1.6px solid var(--muted);border-bottom:0;border-radius:5px 5px 0 0;box-sizing:border-box}
 .lockico::after{content:'';position:absolute;left:5px;top:3px;width:2px;height:3px;border-radius:1px;background:rgba(0,0,0,.45)}
+/* Action button wrappers carry the flex sizing and a live tooltip; disabled buttons pass the hover to the wrapper */
+.actw{position:relative;display:flex;flex:1 1 0;min-width:150px;max-width:240px}
+.actw > .act{flex:1 1 auto;min-width:0;max-width:none;width:100%}
+.act:disabled{pointer-events:none} .actw:has(.act:disabled){cursor:not-allowed}
+.act-tip{position:absolute;left:50%;bottom:calc(100% + 10px);transform:translate(-50%,4px);width:max-content;max-width:250px;padding:7px 10px;border-radius:8px;background:#151d19;border:1px solid #4d6a5c;color:var(--fg);font-size:12px;line-height:1.4;text-align:left;box-shadow:0 8px 20px rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:opacity .12s,transform .12s;z-index:40}
+.act-tip::after{content:'';position:absolute;left:50%;top:100%;margin-left:-6px;border:6px solid transparent;border-top-color:#4d6a5c}
+.actw:hover .act-tip{opacity:1;transform:translate(-50%,0);transition-delay:.35s}
+.act-tip:empty{display:none}
+@media (max-width:900px){.actw{flex:1 1 150px;max-width:none}}
+#kanTip{left:auto;right:0;transform:translateY(4px)} .actw:hover #kanTip{transform:none} #kanTip::after{left:auto;right:28px}
 </style>

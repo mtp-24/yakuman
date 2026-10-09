@@ -937,17 +937,25 @@ function renderActions() {
   const pv = PREVIEW && PREVIEW.ctx ? PREVIEW.label : '';   // the play's name only: the score is revealed by the scoring animation
   sub('#playSub', !inBlind ? '' : hid ? 'face-down tiles: plays its best part' : opt.err ? (S.selected.length ? opt.err.replace(/\.$/, '') : 'select tiles to play') : pv || (opt.label || '').replace(/^Play /, ''));
   $('#playPips').innerHTML = inBlind ? pips(S.plays) : '';
+  // Live tooltips (part of the page, rewritten every render, so never stale; they also show on disabled buttons).
+  const tip = (id, text) => { const el = $(id); const t = tr(text); if (el.textContent !== t) el.textContent = t; };
+  const pl = `${S.plays} Play${S.plays === 1 ? '' : 's'} left.`, dl = `${S.discards} Discard${S.discards === 1 ? '' : 's'} left.`;
+  tip('#playTip', !inBlind ? 'Play selected tiles during a Blind.' : hid ? 'Face-down tiles are selected. If they are not a valid play, the best part scores and the rest go to the River. ' + pl : opt.err ? `${opt.err} ${pl}` : `Play this ${pv || 'selection'}. ${pl}`);
   const maxD = S.boss === 'monk' ? 3 : CFG.maxDiscardTiles, tooMany = !S.pendingDiscard && S.selected.length > maxD;
   const bd = $('#btnDiscard'); bd.disabled = !inBlind || S.busy || (!S.pendingDiscard && (S.discards <= 0 || !S.selected.length)) || (S.pendingDiscard && S.selected.length !== S.pendingDiscard) || tooMany;
   const nSel = S.selected.length;
   $('#discTitle').textContent = S.pendingDiscard ? `Discard ${S.pendingDiscard}` : nSel ? `Discard ${nSel}` : 'Discard';
   sub('#discSub', !inBlind ? '' : S.pendingDiscard ? (nSel === S.pendingDiscard ? 'settles your Call' : `select ${S.pendingDiscard} to settle your Call`) : S.discards <= 0 ? 'no Discards left' : tooMany ? `at most ${maxD} at once` : nSel ? `draws ${nSel} new tile${nSel === 1 ? '' : 's'}` : `select up to ${maxD} tiles`);
   $('#discPips').innerHTML = inBlind && !S.pendingDiscard ? pips(S.discards) : ''; bd.classList.toggle('pulse', !!S.pendingDiscard);
+  tip('#discTip', !inBlind ? 'Discard during a Blind.' : S.pendingDiscard ? `After a Call, discard ${S.pendingDiscard} tile to settle it. This does not use a Discard.` : `Throw up to ${maxD} selected tiles into the River and draw replacements. ${dl}`);
   const dk = $('#btnKan'); const dko = declareOption(); dk.disabled = !dko.ok;
   sub('#kanSub', !inBlind ? '' : dko.ok ? 'draws a replacement tile' : 'needs 4 alike in your hand');
+  const kanRule = 'Set 4 identical tiles aside as a closed Kan and draw a replacement tile. The hand stays closed.';
+  tip('#kanTip', kanRule + (inBlind && !dko.ok && dko.err && !/^Select 4/.test(dko.err) ? ` ${dko.err}` : ''));
   $('#preview').innerHTML = '';
   const bc = $('#btnCall'); bc.disabled = !inBlind || S.busy || !S.selRiver || S.selected.length < 2;
   const freeMax = S.talismans.reduce((m, k) => Math.max(m, +TAL[k].freeCall || 0), 0), freeLeft = Math.max(0, freeMax - (S.freeCallsUsed || 0));
+  tip('#callTip', `Take a River tile to finish a Chi, Pon or Kan with 2–3 of your tiles. ${freeLeft ? `Free (${freeLeft} free Call${freeLeft === 1 ? '' : 's'} left this Blind).` : 'Costs 1 Play.'}${S.boss === 'fisherman' ? ' The Fisherman forbids Calls this Blind.' : ''}`);
   sub('#callSub', !inBlind ? '' : S.boss === 'fisherman' ? 'The Fisherman forbids it' : !S.selRiver ? 'pick a River tile first' : S.selected.length < 2 ? 'plus 2–3 hand tiles' : freeLeft ? `free (${freeLeft} left)` : 'costs 1 Play');
   $('#btnClear').disabled = !inBlind || S.busy;
 }

@@ -790,6 +790,16 @@ button.pulse{animation:btnpulse2 2.6s ease-out infinite}
 .lockico{width:12px;height:9px;margin-top:6px;border-radius:2.5px;background:var(--muted);position:relative;flex:0 0 auto}
 .lockico::before{content:'';position:absolute;left:2.5px;top:-5.5px;width:7px;height:7px;border:1.6px solid var(--muted);border-bottom:0;border-radius:5px 5px 0 0;box-sizing:border-box}
 .lockico::after{content:'';position:absolute;left:5px;top:3px;width:2px;height:3px;border-radius:1px;background:rgba(0,0,0,.45)}
+/* Action button wrappers carry the flex sizing and a live tooltip; disabled buttons pass the hover to the wrapper */
+.actw{position:relative;display:flex;flex:1 1 0;min-width:150px;max-width:240px}
+.actw > .act{flex:1 1 auto;min-width:0;max-width:none;width:100%}
+.act:disabled{pointer-events:none} .actw:has(.act:disabled){cursor:not-allowed}
+.act-tip{position:absolute;left:50%;bottom:calc(100% + 10px);transform:translate(-50%,4px);width:max-content;max-width:250px;padding:7px 10px;border-radius:8px;background:#151d19;border:1px solid #4d6a5c;color:var(--fg);font-size:12px;line-height:1.4;text-align:left;box-shadow:0 8px 20px rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:opacity .12s,transform .12s;z-index:40}
+.act-tip::after{content:'';position:absolute;left:50%;top:100%;margin-left:-6px;border:6px solid transparent;border-top-color:#4d6a5c}
+.actw:hover .act-tip{opacity:1;transform:translate(-50%,0);transition-delay:.35s}
+.act-tip:empty{display:none}
+@media (max-width:900px){.actw{flex:1 1 150px;max-width:none}}
+#kanTip{left:auto;right:0;transform:translateY(4px)} .actw:hover #kanTip{transform:none} #kanTip::after{left:auto;right:28px}
 </style>
 </head><body>
 <div id="app">
@@ -839,11 +849,11 @@ button.pulse{animation:btnpulse2 2.6s ease-out infinite}
       <div class="hint" id="hint"></div>
     </div>
     <div class="actions">
-      <button id="btnPlay" class="act act-play"><span class="act-k" aria-hidden="true">⏎</span><span class="act-t">Play</span><span class="act-s" id="playSub"></span><span class="act-pips" id="playPips"></span></button>
-      <button id="btnDiscard" class="act act-discard"><span class="act-k" aria-hidden="true">D</span><span class="act-t" id="discTitle">Discard</span><span class="act-s" id="discSub"></span><span class="act-pips" id="discPips"></span></button>
+      <span class="actw"><button id="btnPlay" class="act act-play"><span class="act-k" aria-hidden="true">⏎</span><span class="act-t">Play</span><span class="act-s" id="playSub"></span><span class="act-pips" id="playPips"></span></button><span class="act-tip" id="playTip" role="tooltip"></span></span>
+      <span class="actw"><button id="btnDiscard" class="act act-discard"><span class="act-k" aria-hidden="true">D</span><span class="act-t" id="discTitle">Discard</span><span class="act-s" id="discSub"></span><span class="act-pips" id="discPips"></span></button><span class="act-tip" id="discTip" role="tooltip"></span></span>
       <span class="act-sep" aria-hidden="true"></span>
-      <button id="btnCall" class="act act-call"><span class="act-k" aria-hidden="true">C</span><span class="act-t">Call</span><span class="act-s" id="callSub"></span></button>
-      <button id="btnKan" class="act act-kan" title="Set 4 identical tiles aside as a closed Kan and draw a replacement tile. The hand stays closed."><span class="act-k" aria-hidden="true">K</span><span class="act-t">Declare Kan</span><span class="act-s" id="kanSub"></span></button>
+      <span class="actw"><button id="btnCall" class="act act-call"><span class="act-k" aria-hidden="true">C</span><span class="act-t">Call</span><span class="act-s" id="callSub"></span></button><span class="act-tip" id="callTip" role="tooltip"></span></span>
+      <span class="actw"><button id="btnKan" class="act act-kan"><span class="act-k" aria-hidden="true">K</span><span class="act-t">Declare Kan</span><span class="act-s" id="kanSub"></span></button><span class="act-tip" id="kanTip" role="tooltip"></span></span>
       <span class="msg" id="msg"></span>
     </div>
     <div class="preview" id="preview"></div>
@@ -2501,17 +2511,25 @@ function renderActions() {
   const pv = PREVIEW && PREVIEW.ctx ? PREVIEW.label : '';   // the play's name only: the score is revealed by the scoring animation
   sub('#playSub', !inBlind ? '' : hid ? 'face-down tiles: plays its best part' : opt.err ? (S.selected.length ? opt.err.replace(/\.$/, '') : 'select tiles to play') : pv || (opt.label || '').replace(/^Play /, ''));
   $('#playPips').innerHTML = inBlind ? pips(S.plays) : '';
+  // Live tooltips (part of the page, rewritten every render, so never stale; they also show on disabled buttons).
+  const tip = (id, text) => { const el = $(id); const t = tr(text); if (el.textContent !== t) el.textContent = t; };
+  const pl = `${S.plays} Play${S.plays === 1 ? '' : 's'} left.`, dl = `${S.discards} Discard${S.discards === 1 ? '' : 's'} left.`;
+  tip('#playTip', !inBlind ? 'Play selected tiles during a Blind.' : hid ? 'Face-down tiles are selected. If they are not a valid play, the best part scores and the rest go to the River. ' + pl : opt.err ? `${opt.err} ${pl}` : `Play this ${pv || 'selection'}. ${pl}`);
   const maxD = S.boss === 'monk' ? 3 : CFG.maxDiscardTiles, tooMany = !S.pendingDiscard && S.selected.length > maxD;
   const bd = $('#btnDiscard'); bd.disabled = !inBlind || S.busy || (!S.pendingDiscard && (S.discards <= 0 || !S.selected.length)) || (S.pendingDiscard && S.selected.length !== S.pendingDiscard) || tooMany;
   const nSel = S.selected.length;
   $('#discTitle').textContent = S.pendingDiscard ? `Discard ${S.pendingDiscard}` : nSel ? `Discard ${nSel}` : 'Discard';
   sub('#discSub', !inBlind ? '' : S.pendingDiscard ? (nSel === S.pendingDiscard ? 'settles your Call' : `select ${S.pendingDiscard} to settle your Call`) : S.discards <= 0 ? 'no Discards left' : tooMany ? `at most ${maxD} at once` : nSel ? `draws ${nSel} new tile${nSel === 1 ? '' : 's'}` : `select up to ${maxD} tiles`);
   $('#discPips').innerHTML = inBlind && !S.pendingDiscard ? pips(S.discards) : ''; bd.classList.toggle('pulse', !!S.pendingDiscard);
+  tip('#discTip', !inBlind ? 'Discard during a Blind.' : S.pendingDiscard ? `After a Call, discard ${S.pendingDiscard} tile to settle it. This does not use a Discard.` : `Throw up to ${maxD} selected tiles into the River and draw replacements. ${dl}`);
   const dk = $('#btnKan'); const dko = declareOption(); dk.disabled = !dko.ok;
   sub('#kanSub', !inBlind ? '' : dko.ok ? 'draws a replacement tile' : 'needs 4 alike in your hand');
+  const kanRule = 'Set 4 identical tiles aside as a closed Kan and draw a replacement tile. The hand stays closed.';
+  tip('#kanTip', kanRule + (inBlind && !dko.ok && dko.err && !/^Select 4/.test(dko.err) ? ` ${dko.err}` : ''));
   $('#preview').innerHTML = '';
   const bc = $('#btnCall'); bc.disabled = !inBlind || S.busy || !S.selRiver || S.selected.length < 2;
   const freeMax = S.talismans.reduce((m, k) => Math.max(m, +TAL[k].freeCall || 0), 0), freeLeft = Math.max(0, freeMax - (S.freeCallsUsed || 0));
+  tip('#callTip', `Take a River tile to finish a Chi, Pon or Kan with 2–3 of your tiles. ${freeLeft ? `Free (${freeLeft} free Call${freeLeft === 1 ? '' : 's'} left this Blind).` : 'Costs 1 Play.'}${S.boss === 'fisherman' ? ' The Fisherman forbids Calls this Blind.' : ''}`);
   sub('#callSub', !inBlind ? '' : S.boss === 'fisherman' ? 'The Fisherman forbids it' : !S.selRiver ? 'pick a River tile first' : S.selected.length < 2 ? 'plus 2–3 hand tiles' : freeLeft ? `free (${freeLeft} left)` : 'costs 1 Play');
   $('#btnClear').disabled = !inBlind || S.busy;
 }

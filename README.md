@@ -156,6 +156,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 145: The Play button and its tooltip name the play without its score, so the scoring animation reveals it.
 - Build 146: The Plays and Discards counters are back in the left summary, under the scoring box and above the money and Wall row.
 - Build 147: Action buttons no longer carry changing tooltips (browsers could keep showing a cached one, such as a Pung from the previous Blind); the line under each button says the same. Declare Kan keeps a fixed explanation.
+- Build 148: Action buttons get live tooltips built into the page (rewritten on every render so never stale, and shown on disabled buttons too): Play says what will be played or why not (never the score) and Plays left, Discard explains itself and Discards left, Call gives the rule, its Play cost or free Calls left and The Fisherman's ban, Declare Kan gives the rule.
 - Build 7: multi-meld play ladder (Two Melds ... Four Melds), targets 300...45000, retrigger and scaling Talismans, Wall-Builder rewording, scoring animation.
 
 ## Simulators (in `sim/`)
