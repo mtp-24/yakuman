@@ -135,6 +135,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 124: The Wall view shows each tile's count under the tile in a larger label, with dots for copies still face down during a Blind, instead of small badges over the corner.
 - Build 125: Play field theme A, Mahjong Parlour (felt zones with stitching inside a wooden rail, brass name plates, dark wood side cards; zone sizes unchanged). New action bar: Play and Discard say what they will do and show dots for Plays and Discards left, Call and Declare Kan say why they are unavailable, key hints on every button, Clear moved to the Hand header. Chips, Mult and Han numbers use a Balatro-style spring (kicks stack instead of restarting) and only re-fit when their length changes, so the bounce is smooth.
 - Build 126: Money moves from the header into a purse in the left column (in place of the Plays and Discards row, which the action buttons now show as dots), with the interest due at cash-out and a bounce when it changes. Action button descriptions in sentence case; Clear Selection in Title Case. Action bar wraps its message and button descriptions on narrower screens instead of cutting them off.
+- Build 127: Wall view drops the dots under tiles (they only fitted up to 6 copies, so Walls with added tiles showed them on some tiles and not others); every tile shows the same count.
 - Build 7: multi-meld play ladder (Two Melds ... Four Melds), targets 300...45000, retrigger and scaling Talismans, Wall-Builder rewording, scoring animation.
 
 ## Simulators (in `sim/`)
