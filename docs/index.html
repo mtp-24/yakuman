@@ -182,6 +182,7 @@ aside{display:flex;flex-direction:column;gap:10px;min-width:0}
 .edtag.ed-foil{background:linear-gradient(90deg,#9aa5b1,#e6ecf2,#9aa5b1);color:#1b1b1b} .edtag.ed-holo{background:linear-gradient(90deg,#ff7eb3,#7afcff,#feff9c,#ff7eb3);color:#1b1b1b} .edtag.ed-poly{background:linear-gradient(90deg,#f97316,#eab308,#22c55e,#3b82f6,#a855f7);color:#fff}
 .slot.ed-foil,.shopcard.ed-foil{border-color:#c9d3dd;box-shadow:inset 0 0 0 1px rgba(255,255,255,.15)} .slot.ed-holo,.shopcard.ed-holo{border-image:linear-gradient(135deg,#ff7eb3,#7afcff,#feff9c) 1} .slot.ed-poly,.shopcard.ed-poly{border-image:linear-gradient(135deg,#f97316,#eab308,#22c55e,#3b82f6,#a855f7) 1}
 .tile.glass{background:linear-gradient(160deg,#eef7ff 0%,#c6dff2 55%,#a9cbe6 100%);border-color:#86aecd;box-shadow:0 3px 0 #6f93ad,0 4px 6px rgba(0,0,0,.4)}
+.eng-steel{background:#5a6b7a} .edtag.ed-neg{background:#111;color:#fff;border:1px solid #888} .slot.ed-neg,.shopcard.ed-neg{border-color:#888;box-shadow:inset 0 0 12px rgba(0,0,0,.6)}
 .eng-redseal{background:#c9281c;border-radius:50%} .eng-glass{background:#3b7fb8}
 .stage-tiles .float.again{color:var(--bad)}
 .stage-math.hot .tot{color:#ff9f43;text-shadow:0 0 12px #ff6b1a,0 0 28px #ff3d00;animation:flame .5s ease-in-out infinite alternate}
@@ -192,6 +193,13 @@ aside{display:flex;flex-direction:column;gap:10px;min-width:0}
 .ember{position:absolute;bottom:-6px;width:6px;height:6px;border-radius:50%;background:radial-gradient(circle,#ffd166,#ff6b1a 60%,transparent 70%);opacity:0;animation:rise 1.4s ease-out infinite;pointer-events:none}
 @keyframes rise{0%{transform:translateY(0) scale(1);opacity:0}15%{opacity:1}100%{transform:translateY(-220px) scale(.3);opacity:0}}
 @media (prefers-reduced-motion:reduce){.stage-math.hot .tot,.stage-math.blazing,.ember{animation:none}}
+.setup{display:grid;grid-template-columns:1fr 1fr;gap:16px} @media (max-width:700px){.setup{grid-template-columns:1fr}}
+.opt{display:grid;grid-template-columns:auto 1fr;gap:2px 8px;align-items:center;padding:6px 8px;border:1px solid var(--line);border-radius:6px;margin-bottom:6px;cursor:pointer;font-size:12px}
+.opt input{grid-row:span 2} .opt span{grid-column:2;font-size:11px}
+.opt:has(input:checked){border-color:var(--accent);background:rgba(217,164,65,.08)}
+#seedInput{width:100%;background:var(--panel2);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:7px;font-family:var(--body);letter-spacing:.08em;text-transform:uppercase}
+.runinfo{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:12px;color:var(--muted)} .runinfo b{color:var(--fg)}
+.owned{display:flex;flex-wrap:wrap;gap:6px} .own{display:inline-flex;align-items:center;gap:6px;font-size:12px;background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:4px 8px} .own button{padding:2px 7px;font-size:11px}
 .tag{display:inline-block;font-size:10px;padding:1px 6px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);color:var(--muted);margin-left:4px}
 .flowers{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}
 .flowerchip{font-size:11px;background:rgba(240,163,184,.12);border:1px solid rgba(240,163,184,.4);border-radius:10px;padding:1px 7px;color:#f0a3b8}
@@ -333,13 +341,29 @@ function isTerminal(t) { return t.suit !== 'z' && (t.rank === 1 || t.rank === 9)
 function idx(t) { return SUITS.indexOf(t.suit) * 9 + t.rank - 1; }
 function tileFromIdx(i) { return { id: 0, suit: SUITS[Math.floor(i / 9)], rank: i % 9 + 1, red: false, eng: null }; }
 function tileName(t) { return isHonor(t) ? HONOR_EN[t.rank] + (t.rank <= 4 ? ' Wind' : ' Dragon') : `${t.red ? 'Red ' : ''}${t.rank} ${SUIT_EN[t.suit]}`; }
-function buildDeck() {
-  const d = [];
-  for (const s of ['m', 'p', 's']) for (let r = 1; r <= 9; r++) for (let c = 0; c < 4; c++) {
-    const red = r === 5 && (c === 0 || (s === 'p' && c === 1));
+// ===================== DECKS & STAKES =====================
+const DECKS = {
+  standard: { name: 'Standard Wall', desc: '136 tiles: four of every tile, four Red Fives.' },
+  red: { name: 'Vermilion Wall', desc: 'Every 5 is a Red Five: twelve of them.' },
+  lean: { name: 'Lean Wall', desc: 'No Souzu. 100 tiles across two suits and honors, so hands come faster. Sanshoku is impossible.' },
+  monk: { name: "Monk's Wall", desc: 'No Honor tiles. 108 tiles, flushes come easily, honor Yaku are impossible.' },
+  gambler: { name: "Gambler's Wall", desc: '+1 Play and −1 Discard every Blind.' },
+  merchant: { name: "Merchant's Wall", desc: 'Start with ¥20 and +1 consumable slot, but shop prices are +25%.' },
+  abundant: { name: 'Abundant Wall', desc: '+2 hand size, −1 Play every Blind.' },
+};
+const STAKES = {
+  white: { name: 'White Stake', desc: 'The standard game.' },
+  red: { name: 'Red Stake', desc: 'Small Blinds give no reward money.' },
+  green: { name: 'Green Stake', desc: 'Every blind target is ×1.3.' },
+  black: { name: 'Black Stake', desc: 'Targets ×1.3, Small Blinds give no reward, Talismans cost ¥2 more.' },
+};
+function buildDeck(deckKey = 'standard') {
+  const d = []; const suits = deckKey === 'lean' ? ['m', 'p'] : ['m', 'p', 's'];
+  for (const s of suits) for (let r = 1; r <= 9; r++) for (let c = 0; c < 4; c++) {
+    const red = r === 5 && (deckKey === 'red' || c === 0 || (s === 'p' && c === 1));
     d.push(mkTile(s, r, red));
   }
-  for (let r = 1; r <= 7; r++) for (let c = 0; c < 4; c++) d.push(mkTile('z', r));
+  if (deckKey !== 'monk') for (let r = 1; r <= 7; r++) for (let c = 0; c < 4; c++) d.push(mkTile('z', r));
   return d;
 }
 function sortTiles(arr) {
@@ -350,8 +374,12 @@ function nextDora(i) {
   if (i < 31) return 27 + ((i - 27 + 1) % 4);
   return 31 + ((i - 31 + 1) % 3);
 }
-function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
-function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
+// Run RNG: seeded (mulberry32, state kept in S so saves replay) or Math.random when no run is active.
+function rand() { if (typeof S === 'undefined' || !S || S.rngState === undefined) return Math.random(); let t = (S.rngState = (S.rngState + 0x6D2B79F5) >>> 0); t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }
+function hashSeed(str) { let h = 2166136261 >>> 0; for (const ch of String(str)) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0; } return h >>> 0; }
+function randomSeed() { const a = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let s = ''; for (let i = 0; i < 7; i++) s += a[Math.floor(Math.random() * a.length)]; return s; }
+function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function pick(a) { return a[Math.floor(rand() * a.length)]; }
 
 // ===================== ENGRAVINGS =====================
 const ENG = {
@@ -361,14 +389,16 @@ const ENG = {
   jade: { name: 'Jade Inlay', short: 'J', desc: 'x1.5 Mult when this tile scores.' },
   redseal: { name: 'Red Seal', short: 'S', desc: 'This tile scores twice.' },
   glass: { name: 'Glass', short: 'Gl', desc: 'x2 Mult when this tile scores, but a 1 in 4 chance it shatters and leaves your Wall.' },
+  steel: { name: 'Steel Inlay', short: 'St', desc: 'x1.5 Mult on every play while this tile stays in your hand (it scores nothing when played).' },
 };
 // Talisman editions (Balatro's Foil / Holographic / Polychrome). Rolled in the shop; price added to the Talisman's cost.
 const EDITIONS = {
   foil: { name: 'Foil', chips: 50, price: 2, odds: 0.10, desc: '+50 Chips' },
   holo: { name: 'Holographic', han: 1, price: 3, odds: 0.06, desc: '+1 Han' },
   poly: { name: 'Polychrome', xmult: 1.5, price: 5, odds: 0.03, desc: 'x1.5 Mult' },
+  neg: { name: 'Negative', slots: 1, price: 4, odds: 0.02, desc: '+1 Talisman slot' },
 };
-function rollEdition() { const r = Math.random(); let acc = 0; for (const [k, e] of Object.entries(EDITIONS)) { acc += e.odds; if (r < acc) return k; } return null; }
+function rollEdition() { const r = rand(); let acc = 0; for (const [k, e] of Object.entries(EDITIONS)) { acc += e.odds; if (r < acc) return k; } return null; }
 
 // ===================== BOSSES =====================
 const BOSSES = {
@@ -376,6 +406,12 @@ const BOSSES = {
   typhoon: { name: 'The Typhoon', desc: 'Wind tiles score 0 Chips and all Wind-based Yaku are disabled.' },
   wallbuilder: { name: 'The Wall-Builder', desc: 'Only plays of two or more melds score. Smaller partial plays deal 0 damage.' },
   loanshark: { name: 'The Loan Shark', desc: 'Every Discard costs ¥1, however many tiles you throw. At ¥0, discards are locked.' },
+  fisherman: { name: 'The Fisherman', desc: 'Tiles in the River cannot be Called.' },
+  censor: { name: 'The Censor', desc: 'Red Fives score 0 Chips and give no Han.' },
+  gatekeeper: { name: 'The Gatekeeper', desc: 'Your first Play of the Blind scores 0.' },
+  collector: { name: 'The Collector', desc: 'One suit, chosen when the Blind starts, scores 0 Chips.' },
+  miser: { name: 'The Miser', desc: 'Hand size −3.' },
+  monk: { name: 'The Monk', desc: 'Discards may throw at most 3 tiles.' },
 };
 
 // ===================== TALISMANS (Jokers) =====================
@@ -417,6 +453,26 @@ const TALISMANS = [
   // --- Flat Mult, scaling
   { key: 'kasaobake', name: 'Kasa-obake', cost: 5, desc: 'Gains +2 Mult for every Blind you defeat.', onBlindEnd: S => { S.talState.kasaobake = (S.talState.kasaobake || 0) + 2; return 0; }, onScore: (c, S) => S.talState.kasaobake ? { mult: S.talState.kasaobake } : null, status: S => `now +${S.talState.kasaobake || 0} Mult` },
   { key: 'ittanmomen', name: 'Ittan-momen', cost: 4, desc: '+12 Mult on every play, but −30 Chips.', onScore: c => ({ mult: 12, chips: -30 }) },
+  // --- Streaks and scaling (Balatro's Ride the Bus family)
+  { key: 'nopperabo', name: 'Nopperabō', cost: 5, desc: 'Gains +1 Mult per consecutive play with no Honor tiles. Scoring an Honor resets it.', onScore: (c, S) => S.talState.nopperabo ? { mult: S.talState.nopperabo } : null, afterScore: (c, S) => { S.talState.nopperabo = c.tiles.some(isHonor) ? 0 : (S.talState.nopperabo || 0) + 1; }, status: S => `now +${S.talState.nopperabo || 0} Mult` },
+  { key: 'sekito', name: 'Sekitō', cost: 7, desc: 'Gains x0.2 Mult per consecutive play that is not your most-played rung. Playing it resets this.', onScore: (c, S) => S.talState.sekito ? { xmult: 1 + 0.2 * S.talState.sekito } : null, afterScore: (c, S) => { const r = S.stats.rungs || {}; let best = null, n = 0; for (const [k, v] of Object.entries(r)) if (v > n) { n = v; best = k; } S.talState.sekito = (best && c.meldType === best) ? 0 : (S.talState.sekito || 0) + 1; }, status: S => `now x${(1 + 0.2 * (S.talState.sekito || 0)).toFixed(1)}` },
+  { key: 'aobozu', name: 'Aobōzu', cost: 5, desc: '+1 Mult per play, −1 Mult per Discard (never below 0).', onScore: (c, S) => S.talState.aobozu ? { mult: S.talState.aobozu } : null, afterScore: (c, S) => { S.talState.aobozu = (S.talState.aobozu || 0) + 1; }, onDiscard: S => { S.talState.aobozu = Math.max(0, (S.talState.aobozu || 0) - 1); }, status: S => `now +${S.talState.aobozu || 0} Mult` },
+  { key: 'shiro', name: 'Shiro', cost: 5, desc: 'Each Blind picks a suit. Gains +3 Chips for every tile of that suit you discard.', onBlindStart: S => { S.talState.shiroSuit = pick(['m', 'p', 's']); }, onDiscard: (S, tiles) => { S.talState.shiro = (S.talState.shiro || 0) + 3 * tiles.filter(t => t.suit === S.talState.shiroSuit).length; }, onScore: (c, S) => S.talState.shiro ? { chips: S.talState.shiro } : null, status: S => `${S.talState.shiroSuit ? SUIT_EN[S.talState.shiroSuit] + ' this Blind, ' : ''}now +${S.talState.shiro || 0} Chips` },
+  { key: 'takibi', name: 'Takibi', cost: 6, desc: 'Gains x0.25 Mult every time you sell a Talisman.', onSell: S => { S.talState.takibi = (S.talState.takibi || 0) + 1; }, onScore: (c, S) => S.talState.takibi ? { xmult: 1 + 0.25 * S.talState.takibi } : null, status: S => `now x${(1 + 0.25 * (S.talState.takibi || 0)).toFixed(2)}` },
+  { key: 'hoshizora', name: 'Hoshizora', cost: 6, desc: 'Gains x0.1 Mult every time you use a Scroll of Mastery.', onScroll: S => { S.talState.hoshizora = (S.talState.hoshizora || 0) + 1; }, onScore: (c, S) => S.talState.hoshizora ? { xmult: 1 + 0.1 * S.talState.hoshizora } : null, status: S => `now x${(1 + 0.1 * (S.talState.hoshizora || 0)).toFixed(1)}` },
+  { key: 'mabo', name: 'Mabo', cost: 6, desc: 'Gains x0.25 Mult every time a tile is added to your Wall.', onTileAdded: (S, n) => { S.talState.mabo = (S.talState.mabo || 0) + n; }, onScore: (c, S) => S.talState.mabo ? { xmult: 1 + 0.25 * S.talState.mabo } : null, status: S => `now x${(1 + 0.25 * (S.talState.mabo || 0)).toFixed(2)}` },
+  { key: 'chochin', name: 'Chōchin', cost: 6, desc: 'x4 Mult on every sixth play.', onScore: (c, S) => (((S.talState.chochin || 0) + 1) % 6 === 0) ? { xmult: 4 } : null, afterScore: (c, S) => { S.talState.chochin = (S.talState.chochin || 0) + 1; }, status: S => { const left = 6 - (((S.talState.chochin || 0)) % 6); return left === 6 ? 'fires in 6 plays' : left === 1 ? 'fires next play' : `fires in ${left} plays`; } },
+  // --- Run-info powers
+  { key: 'hoshi', name: 'Hoshi', cost: 6, desc: '+1 Mult for every time this play type has been played this run.', onScore: (c, S) => { const n = (S.stats.rungs || {})[c.meldType] || 0; return n ? { mult: n } : null; } },
+  { key: 'hatsumode', name: 'Hatsumōde', cost: 5, desc: '+15 Mult for each Yaku scoring for the first time this run.', onScore: (c, S) => { const n = c.yaku.filter(y => !(S.stats.yaku || {})[y.key]).length; return n ? { mult: 15 * n } : null; } },
+  { key: 'oshi', name: 'Oshi', cost: 6, desc: 'x1.5 Mult if the play contains your most-scored Yaku.', onScore: (c, S) => { let best = null, n = 0; for (const [k, v] of Object.entries(S.stats.yaku || {})) if (v > n) { n = v; best = k; } return best && c.yaku.some(y => y.key === best) ? { xmult: 1.5 } : null; } },
+  // --- Held in hand
+  { key: 'daimyo', name: 'Daimyō', cost: 7, desc: 'x1.5 Mult for each Red Five left in your hand after the play.', onScore: c => { const n = c.held.filter(t => t.red).length; return n ? { xmult: Math.pow(1.5, n) } : null; } },
+  // --- Rule breakers
+  { key: 'hashi', name: 'Hashi', cost: 7, desc: 'A Chi may skip one rank: any three of four consecutive tiles count as a sequence (2-3-5 or 2-4-5).' },
+  // --- Copiers (Balatro's Blueprint and Brainstorm)
+  { key: 'utsushi', name: 'Utsushi', cost: 8, desc: 'Copies the ability of the Talisman to its right.', copies: 'right' },
+  { key: 'kagami', name: 'Kagami', cost: 8, desc: 'Copies the ability of your leftmost Talisman.', copies: 'left' },
   // --- River play
   { key: 'nureonna', name: 'Nure-onna', cost: 6, desc: '+1 Mult for every tile in the River when you score (max +20).', onScore: (c, S) => S.river.length ? { mult: Math.min(20, S.river.length) } : null },
   { key: 'ryujin', name: 'Ryūjin', cost: 8, desc: 'Calling from the River no longer costs a Play.', freeCall: true },
@@ -458,6 +514,7 @@ const OMIKUJI = [
   { key: 'jade', name: 'Slip of Jade', cost: 3, sel: [1, 1], desc: 'Engrave 1 selected tile with Jade Inlay: x1.5 Mult whenever it scores.', use: (S, sel) => { sel[0].eng = 'jade'; } },
   { key: 'redseal', name: 'Slip of the Red Seal', cost: 4, sel: [1, 1], desc: 'Engrave 1 selected tile with a Red Seal: it scores twice whenever it scores.', use: (S, sel) => { sel[0].eng = 'redseal'; } },
   { key: 'glass', name: 'Slip of Glass', cost: 3, sel: [1, 2], desc: 'Turn up to 2 selected tiles into Glass: x2 Mult whenever they score, with a 1 in 4 chance each time of shattering for good.', use: (S, sel) => { for (const t of sel) t.eng = 'glass'; } },
+  { key: 'steel', name: 'Slip of Steel', cost: 3, sel: [1, 1], desc: 'Engrave 1 selected tile with Steel Inlay: x1.5 Mult on every play while it stays in your hand. Keep it as a spare.', use: (S, sel) => { sel[0].eng = 'steel'; } },
 ];
 const KAMI = [
   { key: 'susanoo', name: 'Susanoo', cost: 4, sel: [1, 5], desc: 'Destroy all selected tiles (up to 5). Complete Hands permanently gain +1 level (+10 Chips, +1 Han).',
@@ -506,6 +563,32 @@ const FLOWERS = [
 ];
 const FLW = {}; FLOWERS.forEach(f => FLW[f.key] = f);
 
+// ===================== TAGS (rewards for skipping a Small or Big Blind) =====================
+const TAGS = {
+  coupon: { name: 'Coupon Tag', desc: 'Talismans and consumables in the next shop cost ¥0.' },
+  reroll: { name: 'Reroll Tag', desc: 'Rerolls in the next shop are free.' },
+  foil: { name: 'Foil Tag', desc: 'The first Talisman in the next shop is Foil.' },
+  holo: { name: 'Holographic Tag', desc: 'The first Talisman in the next shop is Holographic.' },
+  poly: { name: 'Polychrome Tag', desc: 'The first Talisman in the next shop is Polychrome.' },
+  neg: { name: 'Negative Tag', desc: 'The first Talisman in the next shop is Negative (+1 slot).' },
+  omikuji: { name: 'Charm Tag', desc: 'A free Omikuji pack opens in the next shop.' },
+  scroll: { name: 'Scroll Tag', desc: 'A free Scroll pack opens in the next shop.' },
+  talisman: { name: 'Buffoon Tag', desc: 'A free Talisman pack opens in the next shop.' },
+  kami: { name: 'Kami Tag', desc: 'A free Kami pack opens in the next shop.' },
+  investment: { name: 'Investment Tag', desc: '+¥25 after you defeat the next Boss.' },
+  economy: { name: 'Economy Tag', desc: 'Doubles your money, up to +¥40, right away.' },
+  juggle: { name: 'Juggle Tag', desc: '+3 hand size for the next Blind.' },
+  boss: { name: 'Boss Tag', desc: 'Rerolls the next Boss.' },
+  speed: { name: 'Speed Tag', desc: '+¥5 for every Blind you have skipped this run, right away.' },
+};
+// ===================== PACKS =====================
+const PACKS = {
+  omikuji: { name: 'Omikuji Pack', cost: 4, show: 3, keep: 1, desc: 'Open 3 Omikuji, keep 1.' },
+  scroll: { name: 'Scroll Pack', cost: 4, show: 3, keep: 1, desc: 'Open 3 Scrolls of Mastery, use 1 now.' },
+  talisman: { name: 'Talisman Pack', cost: 6, show: 2, keep: 1, desc: 'Open 2 Talismans, keep 1.' },
+  kami: { name: 'Kami Pack', cost: 6, show: 2, keep: 1, desc: 'Open 2 Kami Spirits, keep 1.' },
+  mega: { name: 'Mega Omikuji Pack', cost: 7, show: 5, keep: 2, desc: 'Open 5 Omikuji, keep 2.' },
+};
 // ===================== YAKU CHEAT SHEET =====================
 const YAKU_SHEET = [
   { k: 'tanyao', n: 'Tanyao', h: '1 / 1', d: 'All simples: only 2–8 suited tiles, no 1s, 9s or honors.' },
@@ -543,12 +626,12 @@ const YAKUMAN_SHEET = [
 
 // ===================== TERMINOLOGY: Riichi (default) vs Hong Kong =====================
 // Display strings are translated at render time by whole-word replacement. Logic and saves never change.
-const HK_TALISMAN = { kasaobake: '傘妖 Umbrella Ghost', ittanmomen: '布妖 Cloth Ghost', kappa: '水鬼 Water Ghost', kitsune: '狐仙 Fox Spirit', tanuki: '貔貅 Pixiu', maneki: '招財貓 Lucky Cat', tengu: '雷震子 Leizhenzi', oni: '牛魔王 Bull Demon King', daruma: '達摩 Bodhidharma', tsuru: '仙鶴 Crane', koi: '錦鯉 Golden Carp', ryu: '龍王 Dragon King', jizo: '地藏 Dizang', komainu: '石獅 Stone Lion', yukionna: '雪妖 Snow Demon', baku: '貘 Mo', nue: '四不像 Sibuxiang', kodama: '樹精 Tree Spirit', hannya: '夜叉 Yaksha', tsukumogami: '器靈 Object Spirit', nurikabe: '門神 Door God', tengoku: '馬騮精 Monkey Spirit', hitotsume: '獨眼鬼 One-eyed Ghost', nekomata: '貓妖 Cat Demon', shikigami: '紙人 Paper Effigy', kirin: '麒麟 Qilin', hakutaku: '白澤 Bai Ze', yatagarasu: '金烏 Golden Crow', gashadokuro: '骷髏精 Skeleton Spirit', jorogumo: '蜘蛛精 Spider Spirit', rokurokubi: '長頸鬼 Long-neck Ghost', ushioni: '牛頭 Ox-Head', nurarihyon: '無常 Wuchang', zashiki: '福童 Fortune Child', nureonna: '白蛇 White Snake', ryujin: '龍母 Dragon Mother', namazu: '鯉魚精 Carp Spirit', funayurei: '鬼船 Ghost Ship', sazaeoni: '螺精 Conch Spirit', amabie: '人魚 Mermaid', mizuchi: '蛟 Flood Dragon' };
-const HK_CONS = { redseal: '紅印籤 Red Seal', glass: '玻璃籤 Glass', dup: '分身籤 Duplication', ascend: '升籤 Ascension', descend: '降籤 Descent', toman: '萬子籤 Characters', topin: '筒子籤 Dots', tosou: '索子籤 Bamboo', destroy: '化灰籤 Dust', dragon: '紅中籤 Red Dragon', redfive: '紅五籤 Red Five', indicator: '寶牌籤 Bonus Tile', wealth: '橫財籤 Windfall', gold: '金箔籤 Gold Foil', obsidian: '黑曜籤 Obsidian', dragonmark: '龍紋籤 Dragon Mark', jade: '翡翠籤 Jade', susanoo: '哪吒 Nezha', inari: '財神 God of Wealth', raijin: '雷公 Lei Gong', tsukuyomi: '嫦娥 Chang’e', amaterasu: '媽祖 Mazu' };
+const HK_TALISMAN = { hashi: '橋 Bridge', nopperabo: '無面鬼 Faceless Ghost', sekito: '石塔 Stone Pagoda', aobozu: '青僧 Blue Monk', shiro: '城 Castle', takibi: '篝火 Bonfire', hoshizora: '星空 Starry Sky', mabo: '魔寶 Phantom Treasure', chochin: '燈籠 Lantern', hoshi: '星 Star', hatsumode: '頭炷香 First Incense', oshi: '偶像 Idol', daimyo: '大名 Lord', utsushi: '影印 Mirror Copy', kagami: '鏡 Mirror', kasaobake: '傘妖 Umbrella Ghost', ittanmomen: '布妖 Cloth Ghost', kappa: '水鬼 Water Ghost', kitsune: '狐仙 Fox Spirit', tanuki: '貔貅 Pixiu', maneki: '招財貓 Lucky Cat', tengu: '雷震子 Leizhenzi', oni: '牛魔王 Bull Demon King', daruma: '達摩 Bodhidharma', tsuru: '仙鶴 Crane', koi: '錦鯉 Golden Carp', ryu: '龍王 Dragon King', jizo: '地藏 Dizang', komainu: '石獅 Stone Lion', yukionna: '雪妖 Snow Demon', baku: '貘 Mo', nue: '四不像 Sibuxiang', kodama: '樹精 Tree Spirit', hannya: '夜叉 Yaksha', tsukumogami: '器靈 Object Spirit', nurikabe: '門神 Door God', tengoku: '馬騮精 Monkey Spirit', hitotsume: '獨眼鬼 One-eyed Ghost', nekomata: '貓妖 Cat Demon', shikigami: '紙人 Paper Effigy', kirin: '麒麟 Qilin', hakutaku: '白澤 Bai Ze', yatagarasu: '金烏 Golden Crow', gashadokuro: '骷髏精 Skeleton Spirit', jorogumo: '蜘蛛精 Spider Spirit', rokurokubi: '長頸鬼 Long-neck Ghost', ushioni: '牛頭 Ox-Head', nurarihyon: '無常 Wuchang', zashiki: '福童 Fortune Child', nureonna: '白蛇 White Snake', ryujin: '龍母 Dragon Mother', namazu: '鯉魚精 Carp Spirit', funayurei: '鬼船 Ghost Ship', sazaeoni: '螺精 Conch Spirit', amabie: '人魚 Mermaid', mizuchi: '蛟 Flood Dragon' };
+const HK_CONS = { steel: '鋼籤 Steel', redseal: '紅印籤 Red Seal', glass: '玻璃籤 Glass', dup: '分身籤 Duplication', ascend: '升籤 Ascension', descend: '降籤 Descent', toman: '萬子籤 Characters', topin: '筒子籤 Dots', tosou: '索子籤 Bamboo', destroy: '化灰籤 Dust', dragon: '紅中籤 Red Dragon', redfive: '紅五籤 Red Five', indicator: '寶牌籤 Bonus Tile', wealth: '橫財籤 Windfall', gold: '金箔籤 Gold Foil', obsidian: '黑曜籤 Obsidian', dragonmark: '龍紋籤 Dragon Mark', jade: '翡翠籤 Jade', susanoo: '哪吒 Nezha', inari: '財神 God of Wealth', raijin: '雷公 Lei Gong', tsukuyomi: '嫦娥 Chang’e', amaterasu: '媽祖 Mazu' };
 const HK_SCROLL = { 'm:pair': '對子秘笈 Pairs Manual', 'm:chi': '上牌秘笈 Chow Manual', 'm:pon': '碰牌秘笈 Pung Manual', 'm:kan': '槓牌秘笈 Kong Manual', 'm:hand': '食糊秘笈 Winning Manual', 'y:tanyao': '斷幺九秘笈 All Simples Manual', 'y:pinfu': '平糊秘笈 All Chows Manual', 'y:yakuhai': '番牌秘笈 Honour Set Manual', 'y:honitsu': '混一色秘笈 Mixed Suit Manual', 'y:chinitsu': '清一色秘笈 Pure Suit Manual', 'y:toitoi': '對對糊秘笈 All Pungs Manual', 'y:chiitoitsu': '七對子秘笈 Seven Pairs Manual', 'y:sanshoku': '三色同順秘笈 Triple Chow Manual', 'y:ittsu': '一條龍秘笈 Straight Manual', 'y:chanta': '混全帶幺秘笈 Outside Hand Manual' };
 const HK_FLOWER = { plum: '梅 Plum', orchid: '蘭 Orchid', chrysanthemum: '菊 Chrysanthemum', bamboo: '竹 Bamboo', spring: '春 Spring', summer: '夏 Summer', autumn: '秋 Autumn', winter: '冬 Winter' };
-const HK_ENG = { redseal: '紅印 Red Seal', glass: '玻璃 Glass', gold: '金箔 Gold Foil', obsidian: '黑曜 Obsidian Inlay', dragonmark: '龍紋 Dragon Mark', jade: '翡翠 Jade Inlay' };
-const HK_BOSS = { purist: '蒙眼佬 The Purist', typhoon: '打風 The Typhoon', wallbuilder: '砌牆佬 The Wall-Builder', loanshark: '大耳窿 The Loan Shark' };
+const HK_ENG = { steel: '鋼 Steel Inlay', redseal: '紅印 Red Seal', glass: '玻璃 Glass', gold: '金箔 Gold Foil', obsidian: '黑曜 Obsidian Inlay', dragonmark: '龍紋 Dragon Mark', jade: '翡翠 Jade Inlay' };
+const HK_BOSS = { fisherman: '漁夫 The Fisherman', censor: '審查官 The Censor', gatekeeper: '守門人 The Gatekeeper', collector: '收藏家 The Collector', miser: '孤寒鬼 The Miser', monk: '和尚 The Monk', purist: '蒙眼佬 The Purist', typhoon: '打風 The Typhoon', wallbuilder: '砌牆佬 The Wall-Builder', loanshark: '大耳窿 The Loan Shark' };
 // Generic terms and hand names. Longer keys are matched first.
 const HK_TERMS = {
   'Sanshoku Doujun': '三色同順 Mixed Triple Chow', 'Sanshoku Doukou': '三色同刻 Mixed Triple Pung', 'Kokushi Musou': '十三幺 Thirteen Orphans', 'Chuuren Poutou': '九蓮寶燈 Nine Gates',
@@ -567,6 +650,10 @@ const HK_TERMS = {
   'Mahjong roguelite in the Balatro mould': 'Hong Kong mahjong roguelite in the Balatro mould',
 };
 // ===================== MELDS & DECOMPOSITION =====================
+// Rule switches set from the run state (Hashi: a Chi may skip one rank).
+let GAP_CHI = false;
+function setRules(S) { GAP_CHI = !!(S && S.talismans && S.talismans.includes('hashi')); }
+const CHI_SHAPES = () => GAP_CHI ? [[0, 1, 2], [0, 1, 3], [0, 2, 3]] : [[0, 1, 2]];
 function meldType(tiles) {
   const n = tiles.length;
   if (n < 3 || n > 4) return null;
@@ -576,7 +663,9 @@ function meldType(tiles) {
   if (tiles.some(isHonor)) return null;
   const s = tiles[0].suit; if (!tiles.every(t => t.suit === s)) return null;
   const r = tiles.map(t => t.rank).sort((a, b) => a - b);
-  return (r[1] === r[0] + 1 && r[2] === r[1] + 1) ? 'chi' : null;
+  if (r[1] === r[0] + 1 && r[2] === r[1] + 1) return 'chi';
+  if (GAP_CHI && r[0] !== r[1] && r[1] !== r[2] && r[2] - r[0] === 3) return 'chi';
+  return null;
 }
 // Partition a selection into up to 4 melds (Chi/Pon/Kan) plus at most one pair, or exactly two pairs with no melds (Two Pair),
 // covering every tile. Prefers more melds, then Kans. Returns {melds:[{type,i}], pairs:[i...], single:bool} or null.
@@ -591,7 +680,7 @@ function partitionPlay(tiles) {
     if (melds.length < 4) {
       if (counts[i] >= 4) { counts[i] -= 4; melds.push({ type: 'kan', i }); rec(i, melds, pairs); melds.pop(); counts[i] += 4; }
       if (counts[i] >= 3) { counts[i] -= 3; melds.push({ type: 'pon', i }); rec(i, melds, pairs); melds.pop(); counts[i] += 3; }
-      if (i < 27 && i % 9 <= 6 && counts[i + 1] && counts[i + 2]) { counts[i]--; counts[i + 1]--; counts[i + 2]--; melds.push({ type: 'chi', i }); rec(i, melds, pairs); melds.pop(); counts[i]++; counts[i + 1]++; counts[i + 2]++; }
+      if (i < 27) for (const sh of CHI_SHAPES()) { const a = i + sh[1], b = i + sh[2]; if ((i % 9) + sh[2] > 8 || !counts[a] || !counts[b]) continue; counts[i]--; counts[a]--; counts[b]--; melds.push({ type: 'chi', i, shape: sh }); rec(i, melds, pairs); melds.pop(); counts[i]++; counts[a]++; counts[b]++; }
     }
     if (pairs.length < 2 && counts[i] >= 2) { counts[i] -= 2; pairs.push(i); rec(i, melds, pairs); pairs.pop(); counts[i] += 2; }
   }
@@ -617,9 +706,7 @@ function decompose(counts, need) {
     if (i >= 34) { if (acc.length === need) res.push(acc.slice()); return; }
     if (acc.length >= need) return;
     if (counts[i] >= 3) { counts[i] -= 3; acc.push({ type: 'pon', i }); rec(i, acc); acc.pop(); counts[i] += 3; }
-    if (i < 27 && (i % 9) <= 6 && counts[i + 1] > 0 && counts[i + 2] > 0) {
-      counts[i]--; counts[i + 1]--; counts[i + 2]--; acc.push({ type: 'chi', i }); rec(i, acc); acc.pop(); counts[i]++; counts[i + 1]++; counts[i + 2]++;
-    }
+    if (i < 27) for (const sh of CHI_SHAPES()) { const a = i + sh[1], b = i + sh[2]; if ((i % 9) + sh[2] > 8 || !counts[a] || !counts[b]) continue; counts[i]--; counts[a]--; counts[b]--; acc.push({ type: 'chi', i, shape: sh }); rec(i, acc); acc.pop(); counts[i]++; counts[a]++; counts[b]++; }
   }
   rec(0, []); return res;
 }
@@ -650,7 +737,7 @@ function evalStandard(dec, closed, S) {
   const ym = (key, name) => list.push({ key, name, han: 13, yakuman: true });
   const melds = dec.melds, pair = dec.pair;
   const pons = melds.filter(m => m.type !== 'chi'), chis = melds.filter(m => m.type === 'chi'), kans = melds.filter(m => m.type === 'kan');
-  const all = []; for (const m of melds) { if (m.type === 'chi') all.push(m.i, m.i + 1, m.i + 2); else all.push(m.i, m.i, m.i); } all.push(pair, pair);
+  const all = []; for (const m of melds) { if (m.type === 'chi') { const sh = m.shape || [0, 1, 2]; all.push(m.i + sh[0], m.i + sh[1], m.i + sh[2]); } else all.push(m.i, m.i, m.i); } all.push(pair, pair);
   if (all.every(i => !orphI(i))) add('tanyao', 'Tanyao', 1, 1);
   for (const m of pons) {
     if (drgI(m.i)) add('yakuhai', `Yakuhai (${HONOR_EN[rI(m.i)]} Dragon)`, 1, 1);
@@ -665,7 +752,7 @@ function evalStandard(dec, closed, S) {
   for (let r = 0; r <= 6; r++) if ([0, 1, 2].every(s => chis.some(m => m.i === s * 9 + r))) { add('sanshoku', 'Sanshoku Doujun', 2, 1); break; }
   for (let r = 0; r < 9; r++) if ([0, 1, 2].every(s => pons.some(m => m.i === s * 9 + r))) { add('doukou', 'Sanshoku Doukou', 2, 2); break; }
   for (let s = 0; s < 3; s++) if ([0, 3, 6].every(r => chis.some(m => m.i === s * 9 + r))) { add('ittsu', 'Ittsu', 2, 1); break; }
-  const setsOrphan = melds.every(m => m.type === 'chi' ? (m.i % 9 === 0 || m.i % 9 === 6) : orphI(m.i)) && orphI(pair);
+  const setsOrphan = melds.every(m => m.type === 'chi' ? (m.i % 9 === 0 || (m.i % 9) + (m.shape ? m.shape[2] : 2) === 8) : orphI(m.i)) && orphI(pair);
   const hasHonor = all.some(honI);
   if (setsOrphan) {
     if (chis.length === 0) { if (all.every(honI)) { /* tsuuiisou below */ } else if (all.every(termI)) ym('chinroutou', 'Chinroutou'); else add('honroutou', 'Honroutou', 2, 2); }
@@ -722,13 +809,23 @@ function bestHand(concealed, open, S) {
 function tileChips(t, S) {
   let c = (isHonor(t) || isTerminal(t)) ? 10 : t.rank;
   if (S.boss === 'typhoon' && isWind(t)) c = 0;
+  if (S.boss === 'censor' && t.red) c = 0;
+  if (S.boss === 'collector' && t.suit === S.bossSuit) c = 0;
   if (t.eng === 'obsidian') c += 20;
   for (const k of S.talismans) { const d = TAL[k]; if (d.onTile) { const r = d.onTile(t, S); if (r && r.chips) c += r.chips; } }
   return c;
 }
+// Resolve a copier Talisman to the Talisman whose ability it copies (never another copier).
+function talTarget(S, k) {
+  const d = TAL[k]; if (!d.copies) return d;
+  const i = S.talismans.indexOf(k);
+  if (d.copies === 'right') { for (let j = i + 1; j < S.talismans.length; j++) if (!TAL[S.talismans[j]].copies) return TAL[S.talismans[j]]; return null; }
+  for (let j = 0; j < S.talismans.length; j++) if (!TAL[S.talismans[j]].copies) return TAL[S.talismans[j]]; return null;
+}
 function scoreCtx(S, kind, tiles, info) {
   // tiles: for 'meld' the selected tiles; for 'hand' the concealed selection followed by open-meld tiles.
-  const ctx = { kind, tiles: tiles.map(t => ({ ...t })), chips: 0, han: 0, xmult: 1, lines: [], hits: [], yaku: [], furiten: false, total: 0, money: 0, redCount: 0, hasDragonSet: false, desc: '', nChi: 0, nPon: 0, nKan: 0, nMelds: 0, hasPair: false, meldType: null, shatter: [] };
+  const playedIds = new Set(tiles.map(t => t.id));
+  const ctx = { kind, tiles: tiles.map(t => ({ ...t })), held: S.hand.filter(t => !playedIds.has(t.id)), chips: 0, han: 0, xmult: 1, lines: [], hits: [], yaku: [], furiten: false, total: 0, money: 0, redCount: 0, hasDragonSet: false, desc: '', nChi: 0, nPon: 0, nKan: 0, nMelds: 0, hasPair: false, meldType: null, shatter: [] };
   const L = (label, val, d = {}) => ctx.lines.push(Object.assign({ label, val }, d));
   const apply = r => { if (!r) return []; const parts = []; if (r.chips) { ctx.chips += r.chips; parts.push(`+${r.chips} Chips`); } if (r.han) { ctx.han += r.han; parts.push(`+${r.han} Han`); } if (r.xmult) { ctx.xmult *= r.xmult; parts.push(`×${r.xmult} Mult`); } if (r.money) { ctx.money += r.money; parts.push(`+¥${r.money}`); } return parts; };
   // ---- components
@@ -761,18 +858,18 @@ function scoreCtx(S, kind, tiles, info) {
   tiles.forEach((t, ti) => {
     let extra = 0; const who = [];
     if (t.eng === 'redseal') { extra += 1; who.push('Red Seal'); agg.retrig['Red Seal'] = (agg.retrig['Red Seal'] || 0) + 1; }
-    for (const k of S.talismans) { const d = TAL[k]; if (d.retrigger) { const n = d.retrigger(t, ctx, S, ti); if (n) { extra += n; who.push(d.name); agg.retrig[d.name] = (agg.retrig[d.name] || 0) + n; } } }
+    for (const k of S.talismans) { const d = talTarget(S, k); if (d && d.retrigger) { const n = d.retrigger(t, ctx, S, ti); if (n) { extra += n; who.push(TAL[k].name); agg.retrig[TAL[k].name] = (agg.retrig[TAL[k].name] || 0) + n; } } }
     const times = 1 + extra; let c = 0, h = 0, x = 1, money = 0;
     for (let r = 0; r < times; r++) {
       const tc = tileChips(t, S); c += tc; agg.chips += tc;
-      if (t.red) { h += redPer; agg.redHan += redPer; if (r === 0) { agg.red++; ctx.redCount++; } }
+      if (t.red && S.boss !== 'censor') { h += redPer; agg.redHan += redPer; if (r === 0) { agg.red++; ctx.redCount++; } }
       for (const di of S.dora) if (idx(t) === di) { h += 1; agg.dora++; }
       if (t.eng === 'dragonmark') { h += 1; agg.dm++; }
       if (t.eng === 'jade') { x *= 1.5; agg.jade++; }
       if (t.eng === 'gold') { money += 1; agg.gold++; }
       if (t.eng === 'glass') { x *= 2; agg.glass++; }
     }
-    if (t.eng === 'glass' && Math.random() < 0.25) ctx.shatter.push(t.id);
+    if (t.eng === 'glass' && (info.preview ? false : rand() < 0.25)) ctx.shatter.push(t.id);
     ctx.chips += c; ctx.han += h; ctx.xmult *= x; ctx.money += money;
     ctx.hits.push({ id: t.id, chips: c, han: h, xmult: x, times, who });
   });
@@ -804,10 +901,14 @@ function scoreCtx(S, kind, tiles, info) {
       else ctx.furiten = true;
     }
   }
+  // ---- Steel tiles kept in hand
+  const steel = ctx.held.filter(t => t.eng === 'steel').length;
+  if (steel) { const x = Math.pow(1.5, steel); ctx.xmult *= x; L(`Steel held ×${steel}`, `×${x} Mult`, { info: true }); }
   // ---- Talismans, pass 1: Han (feeds the Han table) in slot order
   const results = [];
   for (const k of S.talismans) {
-    const d = TAL[k]; const r = d.onScore ? (d.onScore(ctx, S) || null) : null; const ed = S.editions && S.editions[k] && EDITIONS[S.editions[k]];
+    const src = talTarget(S, k); const d = Object.assign({}, src || {}, { name: TAL[k].name + (src && src !== TAL[k] ? ' → ' + src.name : '') });
+    const r = src && src.onScore ? (src.onScore(ctx, S) || null) : null; const ed = S.editions && S.editions[k] && EDITIONS[S.editions[k]];
     results.push({ k, d, r, ed });
     if (r && r.han) { ctx.han += r.han; L(d.name, `+${r.han} Han`, { han: r.han, tal: d.name }); }
     if (ed && ed.han) { ctx.han += ed.han; L(`${d.name} (${ed.name})`, `+${ed.han} Han`, { han: ed.han, tal: d.name }); }
@@ -830,6 +931,7 @@ function scoreCtx(S, kind, tiles, info) {
   }
   // ---- Boss and Furiten
   if (S.boss === 'wallbuilder' && kind === 'meld' && ctx.nMelds < 2) { ctx.chips = 0; L('The Wall-Builder', 'fewer than 2 melds: 0 Chips', { zero: true }); }
+  if (S.boss === 'gatekeeper' && !S.firstPlayDone) { ctx.chips = 0; L('The Gatekeeper', 'first Play of the Blind: 0 Chips', { zero: true }); }
   if (ctx.furiten) { ctx.mult *= 0.5; L(`Furiten (${ctx.winningTile} is in your River)`, '×0.5 Mult', { xmult: 0.5 }); }
   ctx.mult = Math.round(ctx.mult * 100) / 100; ctx.chips = Math.max(0, ctx.chips);
   ctx.total = Math.floor(ctx.chips * ctx.mult);
@@ -846,7 +948,7 @@ function shantenRegular(counts, M) {
     while (i < 34 && counts[i] === 0) i++;
     if (i >= 34) { const mm = Math.min(m, M); let tt = t; if (mm + tt > M) tt = M - mm; const s = 2 * M - 2 * mm - tt - (p ? 1 : 0); if (s < best) best = s; return; }
     if (counts[i] >= 3) { counts[i] -= 3; dfs(i, m + 1, t, p); counts[i] += 3; }
-    if (i < 27 && i % 9 <= 6 && counts[i + 1] && counts[i + 2]) { counts[i]--; counts[i + 1]--; counts[i + 2]--; dfs(i, m + 1, t, p); counts[i]++; counts[i + 1]++; counts[i + 2]++; }
+    if (i < 27) for (const sh of CHI_SHAPES()) { const a = i + sh[1], b = i + sh[2]; if ((i % 9) + sh[2] > 8 || !counts[a] || !counts[b]) continue; counts[i]--; counts[a]--; counts[b]--; dfs(i, m + 1, t, p); counts[i]++; counts[a]++; counts[b]++; }
     if (!p && counts[i] >= 2) { counts[i] -= 2; dfs(i, m, t, true); counts[i] += 2; }
     if (m + t < M) {
       if (counts[i] >= 2) { counts[i] -= 2; dfs(i, m, t + 1, p); counts[i] += 2; }
@@ -912,23 +1014,28 @@ function setLang(l) { LANG = l; try { localStorage.setItem('yakuman.lang', l); }
 // ===================== STATE =====================
 let S = null;
 const SAVE_KEY = 'yakuman.save.v1';
-function newState() {
-  const bosses = shuffle(Object.keys(BOSSES)).concat(shuffle(Object.keys(BOSSES)));
-  return {
-    phase: 'blind', deck: buildDeck(), wall: [], hand: [], river: [], open: [], played: [], selected: [], selRiver: null,
-    ante: 1, blindIndex: 0, boss: null, bossOrder: bosses, target: 0, score: 0, plays: 0, discards: 0, money: CFG.startMoney,
+function newState(opts = {}) {
+  const seed = (opts.seed || '').trim() || randomSeed();
+  const st = { seed, rngState: hashSeed(seed), deckKey: DECKS[opts.deck] ? opts.deck : 'standard', stake: STAKES[opts.stake] ? opts.stake : 'white' };
+  S = st; // rand() reads S.rngState from here on
+  const bosses = shuffle(Object.keys(BOSSES)).slice(0, CFG.antes);
+  return Object.assign(st, {
+    phase: 'blind', deck: buildDeck(st.deckKey), wall: [], hand: [], river: [], open: [], played: [], selected: [], selRiver: null,
+    ante: 1, blindIndex: 0, boss: null, bossOrder: bosses, target: 0, score: 0, plays: 0, discards: 0, money: CFG.startMoney + (st.deckKey === 'merchant' ? 16 : 0),
     talismans: [], consumables: [], scrolls: { meld: {}, yaku: {} }, flowers: [], dora: [], indicators: [], pendingDiscard: 0,
-    shop: null, lastPlay: null, bonusPlays: 0, bonusDiscards: 0, revealed: false, sortHand: true, selTal: null, talState: {}, editions: {}, busy: false, newIds: [], drawSeq: 0,
-    stats: { best: 0, bestDesc: '', hands: 0, melds: 0, blinds: 0 }, reward: null, msg: '',
-  };
+    shop: null, tags: [], pack: null, lastPlay: null, bonusPlays: 0, bonusDiscards: 0, revealed: false, sortHand: true, selTal: null, talState: {}, editions: {}, busy: false, newIds: [], drawSeq: 0,
+    stats: { best: 0, bestDesc: '', hands: 0, melds: 0, blinds: 0, rungs: {}, yaku: {}, bosses: [], calls: 0, kans: 0, discards: 0, skipped: 0 }, reward: null, msg: '',
+  });
 }
 const blindKind = () => ['small', 'big', 'boss'][S.blindIndex];
 const hasF = k => S.flowers.includes(k);
-const handSize = () => CFG.handSize + (hasF('plum') ? 1 : 0);
+const handSize = () => Math.max(8, CFG.handSize + (hasF('plum') ? 1 : 0) + (S.deckKey === 'abundant' ? 2 : 0) + (S.blindMods && S.blindMods.handSize || 0) - (S.boss === 'miser' && S.phase === 'blind' ? 3 : 0));
 const capacity = () => handSize() - 3 * S.open.length;
 const neededConcealed = () => 14 - 3 * S.open.length;
-const conSlots = () => CFG.consumableSlots + (hasF('spring') ? 1 : 0);
-const price = c => hasF('chrysanthemum') ? Math.max(1, Math.ceil(c * 0.8)) : c;
+const conSlots = () => CFG.consumableSlots + (hasF('spring') ? 1 : 0) + (S.deckKey === 'merchant' ? 1 : 0);
+const price = c => { let p = c; if (S.deckKey === 'merchant') p = Math.ceil(p * 1.25); if (hasF('chrysanthemum')) p = Math.ceil(p * 0.8); return Math.max(1, p); };
+const talSlots = () => CFG.talismanSlots + S.talismans.filter(k => S.editions[k] === 'neg').length;
+const stakeTargets = () => (S.stake === 'green' || S.stake === 'black') ? 1.3 : 1;
 const rerollCost = () => hasF('autumn') ? 2 : CFG.rerollCost;
 function talMod(f) { return S.talismans.reduce((a, k) => a + (TAL[k][f] || 0), 0); }
 function selTiles() { return S.selected.map(id => S.hand.find(t => t.id === id)).filter(Boolean); }
@@ -942,12 +1049,14 @@ function clearSave() { try { localStorage.removeItem(SAVE_KEY); } catch (e) { } 
 function startBlind() {
   S.phase = 'blind';
   const kind = blindKind();
-  S.boss = kind === 'boss' ? S.bossOrder[S.ante - 1] : null;
-  S.target = Math.floor(CFG.anteBase[S.ante - 1] * CFG.blindMult[kind]);
-  S.plays = Math.max(1, CFG.playsPerBlind + S.bonusPlays + talMod('plays') + (hasF('bamboo') ? 1 : 0));
-  S.discards = CFG.discardsPerBlind + S.bonusDiscards + talMod('discards') + (hasF('orchid') ? 1 : 0);
+  S.boss = kind === 'boss' ? S.bossOrder[S.ante - 1] : null; if (S.boss && !S.stats.bosses.includes(S.boss)) S.stats.bosses.push(S.boss);
+  S.target = Math.floor(CFG.anteBase[S.ante - 1] * CFG.blindMult[kind] * stakeTargets());
+  S.plays = Math.max(1, CFG.playsPerBlind + S.bonusPlays + talMod('plays') + (hasF('bamboo') ? 1 : 0) + (S.deckKey === 'gambler' ? 1 : 0) - (S.deckKey === 'abundant' ? 1 : 0));
+  S.discards = Math.max(0, CFG.discardsPerBlind + S.bonusDiscards + talMod('discards') + (hasF('orchid') ? 1 : 0) - (S.deckKey === 'gambler' ? 1 : 0));
   S.wall = shuffle(S.deck.slice()); S.deck = []; S.hand = []; S.river = []; S.open = []; S.played = [];
   S.selected = []; S.selRiver = null; S.dora = []; S.indicators = []; S.pendingDiscard = 0; S.revealed = false; S.score = 0; S.lastPlay = null; S.reward = null; S.selTal = null;
+  S.firstPlayDone = false; S.bossSuit = S.boss === 'collector' ? pick(['m', 'p', 's']) : null;
+  S.blindMods = S.nextBlindMods || {}; S.nextBlindMods = null;
   draw();
   for (const k of S.talismans) if (TAL[k].onBlindStart) TAL[k].onBlindStart(S);
   setMsg(S.boss ? `${BOSSES[S.boss].name}: ${BOSSES[S.boss].desc}` : `${kind === 'small' ? 'Small' : 'Big'} Blind. Score ${S.target} to win.`);
@@ -961,12 +1070,13 @@ function collectDeck() {
 }
 function winBlind() {
   const kind = blindKind();
-  const base = CFG.blindReward[kind], left = S.plays, interest = Math.min(hasF('winter') ? 10 : CFG.interestCap, Math.floor(S.money / CFG.interestPer));
+  const base = (kind === 'small' && (S.stake === 'red' || S.stake === 'black')) ? 0 : CFG.blindReward[kind], left = S.plays, interest = Math.min(hasF('winter') ? 10 : CFG.interestCap, Math.floor(S.money / CFG.interestPer));
   let tal = 0; for (const k of S.talismans) if (TAL[k].onBlindEnd) tal += TAL[k].onBlindEnd(S);
   const summer = hasF('summer') ? 2 : 0;
-  const total = base + left + interest + tal + summer;
+  let invest = 0; if (kind === 'boss' && S.tags.includes('investment')) { invest = 25; S.tags = S.tags.filter(t => t !== 'investment'); }
+  const total = base + left + interest + tal + summer + invest;
   S.money += total; S.stats.blinds++; S.msg = ''; S.msgErr = false;
-  S.reward = { kind, base, left, interest, tal, summer, total };
+  S.reward = { kind, base, left, interest, tal, summer, invest, total };
   collectDeck();
   const finished = S.ante === CFG.antes && S.blindIndex === 2;
   S.blindIndex++; if (S.blindIndex > 2) { S.blindIndex = 0; S.ante++; }
@@ -974,7 +1084,7 @@ function winBlind() {
   genShop(); S.phase = 'shop';
 }
 function loseRun() { S.phase = 'gameover'; }
-function newRun() { S = newState(); startBlind(); render(); }
+function newRun(opts) { S = newState(opts || {}); startBlind(); render(); }
 
 // ===================== ACTIONS =====================
 function setMsg(m, err) { S.msg = m; S.msgErr = !!err; }
@@ -995,7 +1105,7 @@ function playOption() {
   return { err: `Selection must split into melds (Chi, Pon, Kan) plus at most one pair, up to 4 melds. Or select ${need} tiles for a complete hand.` };
 }
 async function doPlay() {
-  if (S.phase !== 'blind' || S.busy) return;
+  if (S.phase !== 'blind' || S.busy) return; setRules(S);
   const opt = playOption(); if (opt.err) { setMsg(opt.err, true); return render(); }
   const sel = S.hand.filter(t => S.selected.includes(t.id)); let ctx;
   if (opt.type === 'hand') { ctx = scoreCtx(S, 'hand', sel.concat(openTiles()), { yaku: opt.best.yaku, dec: opt.best.dec }); S.stats.hands++; }
@@ -1004,7 +1114,8 @@ async function doPlay() {
   await animateScore(ctx);
   S.busy = false;
   for (const k of S.talismans) if (TAL[k].afterScore) TAL[k].afterScore(ctx, S);
-  S.plays--; S.score += ctx.total; S.money += ctx.money; S.lastPlay = ctx;
+  S.plays--; S.score += ctx.total; S.money += ctx.money; S.lastPlay = ctx; S.firstPlayDone = true;
+  S.stats.rungs[ctx.meldType] = (S.stats.rungs[ctx.meldType] || 0) + 1; for (const yk of ctx.yaku) S.stats.yaku[yk.key] = (S.stats.yaku[yk.key] || 0) + 1;
   if (ctx.total > S.stats.best) { S.stats.best = ctx.total; S.stats.bestDesc = ctx.desc; }
   const keep = t => !ctx.shatter.includes(t.id);
   S.played.push(...sel.filter(keep)); S.hand = S.hand.filter(t => !sel.includes(t));
@@ -1026,18 +1137,20 @@ function doDiscard() {
   }
   if (S.discards <= 0) { setMsg('No Discards left.', true); return render(); }
   if (!sel.length) { setMsg('Select 1–' + CFG.maxDiscardTiles + ' tiles to discard.', true); return render(); }
-  if (sel.length > CFG.maxDiscardTiles) { setMsg(`You can discard at most ${CFG.maxDiscardTiles} tiles at once.`, true); return render(); }
+  const maxD = S.boss === 'monk' ? 3 : CFG.maxDiscardTiles;
+  if (sel.length > maxD) { setMsg(`You can discard at most ${maxD} tiles at once${S.boss === 'monk' ? ' against The Monk' : ''}.`, true); return render(); }
   if (S.boss === 'loanshark') {
     if (S.money < 1) { setMsg('The Loan Shark has locked your discards: ¥0 left.', true); return render(); }
     S.money -= 1;
   }
-  S.discards--; S.river.push(...sel); S.hand = S.hand.filter(t => !sel.includes(t)); S.selected = []; draw();
+  S.discards--; S.stats.discards++; S.river.push(...sel); S.hand = S.hand.filter(t => !sel.includes(t)); S.selected = []; draw();
   for (const k of S.talismans) if (TAL[k].onDiscard) TAL[k].onDiscard(S, sel);
   setMsg(`Discarded ${sel.length} tile${sel.length > 1 ? 's' : ''} to the River.`); render();
 }
 function doCall() {
   if (S.phase !== 'blind' || S.busy) return;
   if (S.pendingDiscard) { setMsg('Settle your previous Call first.', true); return render(); }
+  if (S.boss === 'fisherman') { setMsg('The Fisherman: River tiles cannot be Called this Blind.', true); return render(); }
   const freeCall = S.talismans.some(k => TAL[k].freeCall);
   if (!freeCall && S.plays <= 1) { setMsg(S.plays <= 0 ? 'No Plays left.' : 'Calling would use your last Play and leave nothing to score with.', true); return render(); }
   const rt = S.river.find(t => t.id === S.selRiver); if (!rt) { setMsg('Select a tile in the River to call.', true); return render(); }
@@ -1046,7 +1159,7 @@ function doCall() {
   const type = meldType([rt, ...sel]); if (!type) { setMsg('That River tile and your selection do not form a Chi, Pon or Kan.', true); return render(); }
   if (!freeCall) S.plays--; S.river = S.river.filter(t => t !== rt); S.hand = S.hand.filter(t => !sel.includes(t));
   S.open.push({ type, tiles: sortTiles([rt, ...sel]), calledId: rt.id }); S.selected = []; S.selRiver = null;
-  for (const k of S.talismans) if (TAL[k].onCall) TAL[k].onCall(S);
+  for (const k of S.talismans) if (TAL[k].onCall) TAL[k].onCall(S); S.stats.calls++; if (type === 'kan') S.stats.kans++;
   const rep = type === 'kan' ? drawReplacement() : null;
   S.pendingDiscard = Math.max(0, S.hand.length - capacity());
   const note = `Called ${MELD_LABEL[type]} (open)${freeCall ? ', no Play spent' : ''}${rep ? `. Replacement tile drawn: ${tileName(rep)}` : ''}`;
@@ -1063,7 +1176,7 @@ function declareOption() {
 function doDeclareKan() {
   const o = declareOption(); if (!o.ok) { if (o.err) setMsg(o.err, true); return render(); }
   const sel = o.sel; S.hand = S.hand.filter(t => !sel.includes(t));
-  S.open.push({ type: 'kan', tiles: sortTiles(sel), calledId: null, closed: true }); S.selected = [];
+  S.open.push({ type: 'kan', tiles: sortTiles(sel), calledId: null, closed: true }); S.selected = []; S.stats.kans++;
   const rep = drawReplacement(); draw();
   setMsg(`Declared a closed Kan of ${isHonor(sel[0]) ? HONOR_EN[sel[0].rank] : sel[0].rank + ' ' + SUIT_EN[sel[0].suit]}. Hand stays closed.${rep ? ' Replacement tile drawn: ' + tileName(rep) + '.' : ''}`);
   render();
@@ -1074,13 +1187,16 @@ function useConsumable(i) {
   if (S.phase !== 'blind' && !def.anywhere) { setMsg('Use this during a Blind, with tiles in hand.', true); return render(); }
   const sel = S.phase === 'blind' ? selTiles() : [];
   if (sel.length < def.sel[0] || sel.length > def.sel[1]) { setMsg(def.sel[0] === def.sel[1] ? (def.sel[0] === 0 ? 'Clear your selection first.' : `Select exactly ${def.sel[0]} tile${def.sel[0] > 1 ? 's' : ''}.`) : `Select ${def.sel[0]}–${def.sel[1]} tiles.`, true); return render(); }
+  const before = S.hand.length;
   const r = def.use(S, sel); if (r === false) { setMsg('That cannot be used right now.', true); return render(); }
   for (const t of S.hand) if (t.d === undefined) t.d = ++S.drawSeq;
+  if (S.hand.length > before) for (const k of S.talismans) if (TAL[k].onTileAdded) TAL[k].onTileAdded(S, S.hand.length - before);
   S.consumables.splice(i, 1); S.selected = []; if (S.phase === 'blind') draw();
   setMsg(`${def.name} used.`); render();
 }
 function talValue(k) { return TAL[k].cost + (S.editions[k] ? EDITIONS[S.editions[k]].price : 0); }
-function sellTalisman(k) { const i = S.talismans.indexOf(k); if (i < 0) return; S.talismans.splice(i, 1); S.money += Math.max(1, Math.floor(talValue(k) / 2)); delete S.editions[k]; S.selTal = null; setMsg(`Sold ${TAL[k].name}.`); render(); }
+function sellTalisman(k) { const i = S.talismans.indexOf(k); if (i < 0) return; S.talismans.splice(i, 1); S.money += Math.max(1, Math.floor(talValue(k) / 2)); delete S.editions[k]; S.selTal = null; for (const t of S.talismans) if (TAL[t].onSell) TAL[t].onSell(S); setMsg(`Sold ${TAL[k].name}.`); render(); }
+function sellConsumable(i) { const c = S.consumables[i]; if (!c) return; const v = Math.max(1, Math.floor(CONS[c.key].cost / 2)); S.consumables.splice(i, 1); S.money += v; setMsg(`Sold ${CONS[c.key].name} for ¥${v}.`); render(); }
 
 // ===================== SHOP =====================
 function rollCard() {
@@ -1091,19 +1207,57 @@ function rollCard() {
 }
 function genShop() {
   const fl = FLOWERS.filter(f => !S.flowers.includes(f.key));
-  S.shop = { cards: [rollCard(), rollCard()], scroll: { kind: 'scroll', key: pick(SCROLLS).key }, flower: fl.length ? { kind: 'flower', key: pick(fl).key } : null };
+  const packKey = pick(['omikuji', 'omikuji', 'scroll', 'scroll', 'talisman', 'kami', 'mega']);
+  S.shop = { cards: [rollCard(), rollCard()], scroll: { kind: 'scroll', key: pick(SCROLLS).key }, flower: fl.length ? { kind: 'flower', key: pick(fl).key } : null, pack: { kind: 'pack', key: packKey }, coupon: false, freeReroll: false, freePacks: [] };
+  // consume tags that act on this shop
+  const take = t => { const i = S.tags.indexOf(t); if (i >= 0) { S.tags.splice(i, 1); return true; } return false; };
+  if (take('coupon')) S.shop.coupon = true;
+  if (take('reroll')) S.shop.freeReroll = true;
+  for (const ed of ['foil', 'holo', 'poly', 'neg']) if (take(ed)) { const c = S.shop.cards.find(x => x.kind === 'talisman'); if (c) c.edition = ed; else S.shop.cards[0] = { kind: 'talisman', key: pick(TALISMANS.filter(t => !S.talismans.includes(t.key))).key, edition: ed }; }
+  for (const pk of ['omikuji', 'scroll', 'talisman', 'kami']) while (take(pk)) S.shop.freePacks.push(pk);
 }
-function itemDef(it) { return it.kind === 'talisman' ? TAL[it.key] : it.kind === 'scroll' ? SCR[it.key] : it.kind === 'flower' ? FLW[it.key] : CONS[it.key]; }
+function openPack(key, free) {
+  const def = PACKS[key]; let pool;
+  if (key === 'omikuji' || key === 'mega') pool = OMIKUJI.map(o => ({ kind: 'omikuji', key: o.key }));
+  else if (key === 'scroll') pool = SCROLLS.map(o => ({ kind: 'scroll', key: o.key }));
+  else if (key === 'kami') pool = KAMI.map(o => ({ kind: 'kami', key: o.key }));
+  else pool = TALISMANS.filter(t => !S.talismans.includes(t.key)).map(t => ({ kind: 'talisman', key: t.key, edition: rollEdition() }));
+  const choices = shuffle(pool.slice()).slice(0, def.show);
+  S.pack = { key, choices, left: def.keep, free: !!free };
+}
+function takeFromPack(i) {
+  const it = S.pack.choices[i]; if (!it || it.sold) return;
+  if (it.kind === 'talisman') { if (S.talismans.length >= talSlots()) { setMsg('Talisman slots are full. Sell one from the list below first.', true); return render(); } S.talismans.push(it.key); if (it.edition) S.editions[it.key] = it.edition; }
+  else if (it.kind === 'scroll') { const [t, k] = it.key.split(':'); S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] = (S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] || 0) + 1; for (const tk of S.talismans) if (TAL[tk].onScroll) TAL[tk].onScroll(S); }
+  else { if (S.consumables.length >= conSlots()) { setMsg('Consumable slots are full. Use or sell one first.', true); return render(); } S.consumables.push({ kind: it.kind, key: it.key }); }
+  it.sold = true; S.pack.left--; setMsg(`Took ${itemDef(it).name}.`);
+  if (S.pack.left <= 0) S.pack = null;
+  render();
+}
+function itemDef(it) { return it.kind === 'talisman' ? TAL[it.key] : it.kind === 'scroll' ? SCR[it.key] : it.kind === 'flower' ? FLW[it.key] : it.kind === 'pack' ? PACKS[it.key] : CONS[it.key]; }
 function buy(it) {
-  const def = itemDef(it), p = price(def.cost + (it.edition ? EDITIONS[it.edition].price : 0));
+  const def = itemDef(it), p = itemPrice(it);
   if (S.money < p) { setMsg(`Not enough YEN: ${def.name} costs ¥${p}.`, true); return render(); }
-  if (it.kind === 'talisman') { if (S.talismans.length >= CFG.talismanSlots) { setMsg('All 5 Talisman slots are full. Sell one first.', true); return render(); } S.talismans.push(it.key); if (it.edition) S.editions[it.key] = it.edition; }
+  if (it.kind === 'pack') { S.money -= p; it.sold = true; openPack(it.key, false); return render(); }
+  if (it.kind === 'talisman') { if (S.talismans.length >= talSlots()) { setMsg(`All ${talSlots()} Talisman slots are full. Sell one first.`, true); return render(); } S.talismans.push(it.key); if (it.edition) S.editions[it.key] = it.edition; }
   else if (it.kind === 'omikuji' || it.kind === 'kami') { if (S.consumables.length >= conSlots()) { setMsg('Consumable slots are full. Use one first.', true); return render(); } S.consumables.push({ kind: it.kind, key: it.key }); }
-  else if (it.kind === 'scroll') { const [t, k] = it.key.split(':'); S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] = (S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] || 0) + 1; }
+  else if (it.kind === 'scroll') { const [t, k] = it.key.split(':'); S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] = (S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] || 0) + 1; for (const tk of S.talismans) if (TAL[tk].onScroll) TAL[tk].onScroll(S); }
   else if (it.kind === 'flower') { S.flowers.push(it.key); }
   S.money -= p; it.sold = true; setMsg(`Bought ${def.name}.`); render();
 }
-function reroll() { const c = rerollCost(); if (S.money < c) { setMsg(`Reroll costs ¥${c}.`, true); return render(); } S.money -= c; S.shop.cards = [rollCard(), rollCard()]; render(); }
+function itemPrice(it) { const def = itemDef(it); let base = def.cost + (it.edition ? EDITIONS[it.edition].price : 0); if (it.kind === 'talisman' && S.stake === 'black') base += 2; if (S.shop && S.shop.coupon && (it.kind === 'talisman' || it.kind === 'omikuji' || it.kind === 'kami')) return 0; return price(base); }
+function reroll() { const c = S.shop.freeReroll ? 0 : rerollCost(); if (S.money < c) { setMsg(`Reroll costs ¥${c}.`, true); return render(); } S.money -= c; S.shop.cards = [rollCard(), rollCard()]; render(); }
+function skipBlind() {
+  if (S.phase !== 'shop' || blindKind() === 'boss') return;
+  const tag = pick(Object.keys(TAGS)); S.stats.skipped++;
+  if (tag === 'economy') S.money += Math.min(40, S.money);
+  else if (tag === 'speed') S.money += 5 * S.stats.skipped;
+  else if (tag === 'juggle') S.nextBlindMods = { handSize: 3 };
+  else if (tag === 'boss') { const used = new Set(S.bossOrder); const pool = Object.keys(BOSSES).filter(b => !used.has(b)); S.bossOrder[S.ante - 1] = pool.length ? pick(pool) : pick(Object.keys(BOSSES).filter(b => b !== S.bossOrder[S.ante - 1])); }
+  else S.tags.push(tag);
+  S.blindIndex++; S.shop = null; S.pack = null;
+  startBlind(); setMsg(`Skipped for the ${TAGS[tag].name}: ${TAGS[tag].desc}`); render();
+}
 
 // ===================== RENDER =====================
 const $ = s => document.querySelector(s);
@@ -1159,14 +1313,15 @@ function tileSVG(t) {
   return `<svg viewBox="0 0 54 74" aria-hidden="true">${body}</svg>`;
 }
 function render() {
-  if (!S) return;
+  if (!S) return; setRules(S);
   $('#hdrRound').innerHTML = `Ante <b>${Math.min(S.ante, CFG.antes)}</b> / ${CFG.antes} · ${S.phase === 'blind' ? ({ small: 'Small Blind', big: 'Big Blind', boss: 'Boss' })[blindKind()] : S.phase === 'shop' ? 'Shop' : ''}`;
+  $('#hdrRound').title = `Seed ${S.seed} · ${DECKS[S.deckKey].name} · ${STAKES[S.stake].name}`;
   $('#hdrMoney').innerHTML = `YEN <b class="num">¥${S.money}</b>`;
   renderBlind(); renderTalismans(); renderConsumables(); renderOpen(); renderRiver(); renderHand(); renderActions(); renderLast();
   $('#msg').textContent = S.msg || ''; $('#msg').className = 'msg' + (S.msgErr ? ' err' : '');
-  if (S.phase === 'shop') showModal(shopHTML()); else if (S.phase === 'gameover') showModal(overHTML(false)); else if (S.phase === 'win') showModal(overHTML(true)); else if (!modalPinned) hideModal();
+  if (S.phase === 'shop' && S.pack) showModal(packHTML()); else if (S.phase === 'shop') showModal(shopHTML()); else if (S.phase === 'gameover') showModal(overHTML(false)); else if (S.phase === 'win') showModal(overHTML(true)); else if (!modalPinned) hideModal();
   $('#btnLang').textContent = LANG === 'hk' ? 'Riichi terms' : 'HK terms';
-  $('#btnYaku').textContent = LANG === 'hk' ? 'Faan' : 'Yaku';
+  $('#btnYaku').textContent = LANG === 'hk' ? 'Run info · Faan' : 'Run info · Yaku';
   translateDOM($('#app'));
   save();
 }
@@ -1175,7 +1330,8 @@ function renderBlind() {
   const name = inBlind && S.boss ? BOSSES[S.boss].name : ({ small: 'Small Blind', big: 'Big Blind', boss: 'Boss Blind' })[kind];
   const pct = S.target ? Math.min(100, 100 * S.score / S.target) : 0;
   let h = `<div class="label">Ante ${Math.min(S.ante, CFG.antes)} · ${inBlind ? 'Current blind' : 'Next up'}</div><div class="blind-name${S.boss && inBlind ? ' boss' : ''}">${name}</div>`;
-  if (inBlind && S.boss) h += `<div class="boss-desc">${BOSSES[S.boss].desc}</div>`;
+  if (inBlind && S.boss) h += `<div class="boss-desc">${BOSSES[S.boss].desc}${S.boss === 'collector' && S.bossSuit ? ` <b>This Blind: ${SUIT_EN[S.bossSuit]}.</b>` : ''}${S.boss === 'gatekeeper' ? (S.firstPlayDone ? ' <b>First Play done.</b>' : ' <b>Your next Play scores 0.</b>') : ''}</div>`;
+  if (S.tags && S.tags.length) h += `<div class="label" style="margin-top:8px">Tags</div><div class="flowers">${S.tags.map(t => `<span class="flowerchip" title="${TAGS[t].desc}">${TAGS[t].name}</span>`).join('')}</div>`;
   h += `<div class="label" style="margin-top:8px">Score at least</div><div class="target num">${inBlind ? S.target.toLocaleString() : Math.floor(CFG.anteBase[Math.min(S.ante, CFG.antes) - 1] * CFG.blindMult[kind]).toLocaleString()}</div>`;
   if (inBlind) h += `<div class="bar"><i style="width:${pct}%"></i></div><div class="num" style="font-size:13px">Scored <b style="color:var(--accent)">${S.score.toLocaleString()}</b></div>`;
   h += `<div class="stats"><div class="stat plays"><div class="label">Plays</div><div class="v num">${S.plays}</div></div><div class="stat discards"><div class="label">Discards</div><div class="v num">${S.discards}</div></div><div class="stat money"><div class="label">YEN</div><div class="v num">¥${S.money}</div></div><div class="stat"><div class="label">Wall</div><div class="v num">${S.wall.length}</div></div></div>`;
@@ -1188,10 +1344,10 @@ function renderBlind() {
 }
 function renderTalismans() {
   const box = $('#talismans'); box.innerHTML = '';
-  $('#talCount').textContent = `${S.talismans.length} / ${CFG.talismanSlots} · fire left to right, drag to reorder`;
-  for (let i = 0; i < CFG.talismanSlots; i++) {
+  $('#talCount').textContent = `${S.talismans.length} / ${talSlots()} · fire left to right, drag to reorder`;
+  for (let i = 0; i < talSlots(); i++) {
     const k = S.talismans[i]; const el = document.createElement('div');
-    if (k) { const ed = S.editions[k]; el.className = 'slot filled' + (S.selTal === k ? ' sel' : '') + (ed ? ' ed-' + ed : ''); el.dataset.tal = TAL[k].name; el.innerHTML = `<div class="n"><span class="order">${i + 1}</span>${TAL[k].name}${ed ? ` <span class="edtag ed-${ed}">${EDITIONS[ed].name}</span>` : ''}</div><div class="d">${TAL[k].desc}${ed ? ` <b>${EDITIONS[ed].desc}.</b>` : ''}${TAL[k].status ? ' <b>(' + TAL[k].status(S) + ')</b>' : ''}</div>`; bindSlotDrag(el, k); }
+    if (k) { const ed = S.editions[k]; el.className = 'slot filled' + (S.selTal === k ? ' sel' : '') + (ed ? ' ed-' + ed : ''); el.dataset.tal = TAL[k].name; const tgt = TAL[k].copies ? talTarget(S, k) : null; el.innerHTML = `<div class="n"><span class="order">${i + 1}</span>${TAL[k].name}${ed ? ` <span class="edtag ed-${ed}">${EDITIONS[ed].name}</span>` : ''}</div><div class="d">${TAL[k].desc}${tgt ? ` <b>Now: ${tgt.name}.</b>` : TAL[k].copies ? ' <b>Nothing to copy.</b>' : ''}${ed ? ` <b>${EDITIONS[ed].desc}.</b>` : ''}${TAL[k].status ? ' <b>(' + TAL[k].status(S) + ')</b>' : ''}</div>`; bindSlotDrag(el, k); }
     else { el.className = 'slot'; el.innerHTML = `<div class="d">Empty slot</div>`; }
     box.appendChild(el);
   }
@@ -1382,22 +1538,34 @@ let modalPinned = false;
 function showModal(html, pinned) { modalPinned = !!pinned; $('#modal').innerHTML = html; $('#overlay').hidden = false; translateDOM($('#modal')); }
 function hideModal() { modalPinned = false; $('#overlay').hidden = true; }
 function cardHTML(it, idx) {
-  const d = itemDef(it); const p = price(d.cost + (it.edition ? EDITIONS[it.edition].price : 0));
-  const kindLabel = { talisman: 'Talisman', omikuji: 'Omikuji', kami: 'Kami Spirit', scroll: 'Scroll of Mastery', flower: 'Flower / Season' }[it.kind];
+  const d = itemDef(it); const p = it.free ? 0 : itemPrice(it);
+  const kindLabel = { talisman: 'Talisman', omikuji: 'Omikuji', kami: 'Kami Spirit', scroll: 'Scroll of Mastery', flower: 'Flower / Season', pack: 'Booster pack' }[it.kind];
   const ed = it.edition ? EDITIONS[it.edition] : null;
-  return `<div class="shopcard ${it.kind}${it.sold ? ' sold' : ''}${ed ? ' ed-' + it.edition : ''}"><div class="kind">${kindLabel}${ed ? ` · <span class="edtag ed-${it.edition}">${ed.name}</span>` : ''}</div><div class="n">${d.name}</div><div class="d">${d.desc}${ed ? ` <b>${ed.name}: ${ed.desc}.</b>` : ''}</div><div class="buy"><span class="num" style="color:var(--accent)">¥${p}</span>${it.sold ? '<span class="muted">Sold</span>' : `<button class="primary" data-buy="${idx}">Buy</button>`}</div></div>`;
+  return `<div class="shopcard ${it.kind}${it.sold ? ' sold' : ''}${ed ? ' ed-' + it.edition : ''}"><div class="kind">${kindLabel}${ed ? ` · <span class="edtag ed-${it.edition}">${ed.name}</span>` : ''}</div><div class="n">${d.name}</div><div class="d">${d.desc}${ed ? ` <b>${ed.name}: ${ed.desc}.</b>` : ''}</div><div class="buy"><span class="num" style="color:var(--accent)">${p === 0 ? 'Free' : '¥' + p}</span>${it.sold ? '<span class="muted">Sold</span>' : `<button class="primary" data-buy="${idx}">${it.kind === 'pack' ? 'Open' : 'Buy'}</button>`}</div></div>`;
 }
 function shopHTML() {
-  const r = S.reward; const items = [...S.shop.cards, S.shop.scroll, S.shop.flower].filter(Boolean);
+  const r = S.reward; const items = [...S.shop.cards, S.shop.scroll, S.shop.flower, S.shop.pack].filter(Boolean);
   const next = ({ small: 'Small Blind', big: 'Big Blind', boss: 'Boss Blind' })[blindKind()];
   const nextBoss = blindKind() === 'boss' ? BOSSES[S.bossOrder[S.ante - 1]] : null;
   let h = `<h2>Shop</h2>`;
-  if (r) h += `<div class="label">Blind defeated · reward</div><div class="reward-list num"><span>${({ small: 'Small Blind', big: 'Big Blind', boss: 'Boss Blind' })[r.kind]} defeated</span><span>¥${r.base}</span><span>Unused Plays</span><span>¥${r.left}</span><span>Interest (¥1 per ¥5)</span><span>¥${r.interest}</span>${r.tal ? `<span>Talismans</span><span>¥${r.tal}</span>` : ''}${r.summer ? `<span>Summer</span><span>¥${r.summer}</span>` : ''}<span><b>Total</b></span><span><b>¥${r.total}</b></span></div>`;
-  h += `<div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center"><span>YEN: <b class="num" style="color:var(--accent)">¥${S.money}</b></span><span class="muted">Talismans ${S.talismans.length}/${CFG.talismanSlots} · Consumables ${S.consumables.length}/${conSlots()}</span></div>`;
+  if (r) h += `<div class="label">Blind defeated · reward</div><div class="reward-list num"><span>${({ small: 'Small Blind', big: 'Big Blind', boss: 'Boss Blind' })[r.kind]} defeated</span><span>¥${r.base}</span><span>Unused Plays</span><span>¥${r.left}</span><span>Interest (¥1 per ¥5)</span><span>¥${r.interest}</span>${r.tal ? `<span>Talismans</span><span>¥${r.tal}</span>` : ''}${r.summer ? `<span>Summer</span><span>¥${r.summer}</span>` : ''}${r.invest ? `<span>Investment Tag</span><span>¥${r.invest}</span>` : ''}<span><b>Total</b></span><span><b>¥${r.total}</b></span></div>`;
+  h += `<div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center"><span>YEN: <b class="num" style="color:var(--accent)">¥${S.money}</b></span><span class="muted">Talismans ${S.talismans.length}/${talSlots()} · Consumables ${S.consumables.length}/${conSlots()}</span></div>`;
+  if (S.shop.coupon) h += `<div class="msg">Coupon Tag: Talismans and consumables are free in this shop.</div>`;
+  if (S.shop.freePacks.length) h += `<div style="display:flex;gap:8px;flex-wrap:wrap;margin:6px 0">${S.shop.freePacks.map((pk, i) => `<button class="primary" data-freepack="${i}">Open free ${PACKS[pk].name}</button>`).join('')}</div>`;
   h += `<div class="shop-grid">${items.map((it, i) => cardHTML(it, i)).join('')}</div>`;
+  h += `<div class="label" style="margin:6px 0 4px">Yours · sell to make room</div><div class="owned">${S.talismans.map(k => `<span class="own"><b>${TAL[k].name}</b>${S.editions[k] ? ' <span class="edtag ed-' + S.editions[k] + '">' + EDITIONS[S.editions[k]].name + '</span>' : ''} <button class="ghost" data-sell="${k}">Sell ¥${Math.max(1, Math.floor(talValue(k) / 2))}</button></span>`).join('')}${S.consumables.map((c, i) => `<span class="own"><b>${CONS[c.key].name}</b> ${CONS[c.key].anywhere ? `<button class="ghost" data-usecon="${i}">Use</button>` : ''}<button class="ghost" data-sellcon="${i}">Sell ¥${Math.max(1, Math.floor(CONS[c.key].cost / 2))}</button></span>`).join('')}${!S.talismans.length && !S.consumables.length ? '<span class="muted">Nothing yet.</span>' : ''}</div>`;
   h += `<div class="msg${S.msgErr ? ' err' : ''}" style="margin-bottom:8px">${S.msg || ''}</div>`;
-  h += `<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><button id="mReroll">Reroll cards (¥${rerollCost()})</button><button id="mDeck" class="ghost">View Wall</button><span style="flex:1"></span><span class="muted">Next: Ante ${S.ante} ${next}${nextBoss ? ' · ' + nextBoss.name : ''}</span><button id="mNext" class="primary">Next Blind →</button></div>`;
+  h += `<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px"><button id="mReroll">Reroll cards (${S.shop.freeReroll ? 'free' : '¥' + rerollCost()})</button><button id="mDeck" class="ghost">View Wall</button><span style="flex:1"></span><span class="muted">Next: Ante ${S.ante} ${next}${nextBoss ? ' · ' + nextBoss.name : ''}</span>${blindKind() !== 'boss' ? `<button id="mSkip" class="ghost" title="Skip this Blind: no reward money, but you gain a random Tag">Skip for a Tag</button>` : ''}<button id="mNext" class="primary">Next Blind →</button></div>`;
   if (S.consumables.length) h += `<div class="muted" style="font-size:12px;margin-top:8px">Consumables that need tiles are used during a Blind. Click one on the board to use it now if it needs none.</div>`;
+  return h;
+}
+function packHTML() {
+  const pk = PACKS[S.pack.key];
+  let h = `<h2>${pk.name}</h2><p class="muted" style="margin:0 0 8px">${pk.desc} Choose ${S.pack.left} more.${S.pack.free ? ' (Free, from a Tag.)' : ''}</p>`;
+  h += `<div class="shop-grid">${S.pack.choices.map((it, i) => { const d = itemDef(it); const ed = it.edition ? EDITIONS[it.edition] : null; return `<div class="shopcard ${it.kind}${it.sold ? ' sold' : ''}${ed ? ' ed-' + it.edition : ''}"><div class="kind">${{ talisman: 'Talisman', omikuji: 'Omikuji', kami: 'Kami Spirit', scroll: 'Scroll of Mastery' }[it.kind]}${ed ? ` · <span class="edtag ed-${it.edition}">${ed.name}</span>` : ''}</div><div class="n">${d.name}</div><div class="d">${d.desc}${ed ? ` <b>${ed.name}: ${ed.desc}.</b>` : ''}</div><div class="buy"><span></span>${it.sold ? '<span class="muted">Taken</span>' : `<button class="primary" data-take="${i}">Take</button>`}</div></div>`; }).join('')}</div>`;
+  h += `<div class="msg${S.msgErr ? ' err' : ''}" style="margin:6px 0">${S.msg || ''}</div>`;
+  h += `<div class="label" style="margin:6px 0 4px">Yours</div><div class="owned">${S.talismans.map(k => `<span class="own"><b>${TAL[k].name}</b> <button class="ghost" data-sell="${k}">Sell ¥${Math.max(1, Math.floor(talValue(k) / 2))}</button></span>`).join('')}${S.consumables.map((c, i) => `<span class="own"><b>${CONS[c.key].name}</b><button class="ghost" data-sellcon="${i}">Sell ¥${Math.max(1, Math.floor(CONS[c.key].cost / 2))}</button></span>`).join('')}</div>`;
+  h += `<div style="margin-top:12px"><button id="mPackDone" class="ghost">Skip the rest</button></div>`;
   return h;
 }
 function overHTML(won) {
@@ -1428,6 +1596,8 @@ function rulesHTML() {
   <p><b>Discard.</b> Throw up to ${CFG.maxDiscardTiles} tiles into the River. Costs 1 Discard. The River stays visible for the whole Blind. You get ${CFG.playsPerBlind} Plays and ${CFG.discardsPerBlind} Discards per Blind before Talismans and Flowers.</p>
   <p><b>Call.</b> Select one River tile and 2–3 hand tiles that form a meld with it, then press Call. Costs 1 Play, no score yet. The meld is set aside as Open and counts toward your complete hand. Open hands get reduced Han on some Yaku, and lose closed-only Yaku (Pinfu, Iipeikou...). After a call you discard 1 tile to settle it; this does not use a Discard.</p>
   <p><b>Arranging your hand.</b> Drag any hand tile to reorder it, with a mouse or a finger. Dragging switches off auto-sort; the Sort button sorts the hand again and keeps new tiles sorted in. Tiles score in the order they sit in your hand, which matters for Shikigami and for the scoring animation.</p>
+  <p><b>Shop extras.</b> Every shop sells a booster pack: open it and keep one (or two) of what's inside. Before a Small or Big Blind you may skip it for a random Tag instead of its reward: free packs, editions, coupons, cash, a bigger hand or a different Boss. Tags you hold show in the side panel. You can sell Talismans and consumables from inside the shop.</p>
+  <p><b>Setup.</b> New runs let you choose a Wall (deck), a Stake (difficulty) and a seed. Sharing a seed replays the same Wall, shops and bosses.</p>
   <p><b>Helper.</b> Under your hand the game shows how many tiles you are from a complete hand, and tiles marked with a green dot can be discarded without losing progress. Select tiles to see whether that discard keeps you on track. Against The Purist it only counts your visible tiles.</p>
   <p><b>Kan.</b> Four identical tiles can be played as a partial Kan for points, or declared: press Declare Kan (or K) to set them aside as a closed Kan that counts toward your complete hand without opening it. Every Kan, declared or called from the River, draws one replacement tile from the Wall. If that replacement tile ends up as the winning tile of your complete hand, you score Rinshan Kaihou (+1 Han). A called Kan then settles with one discard like any Call.</p>
   <p><b>Furiten.</b> The winning tile of a complete hand is the newest tile you drew among the 14 you play. If a copy of that tile type sits in your River, the hand is in Furiten and the multiplier is halved. The helper shows your waits when you are one tile away and marks the ones already in your River. Kappa turns Furiten into a bonus.</p>
@@ -1437,28 +1607,39 @@ function rulesHTML() {
   <p><b>Shop.</b> After each Blind, spend YEN on Talismans (passive, 5 slots), Omikuji and Kami (consumables, use on selected hand tiles), Scrolls of Mastery (permanent upgrades) and Flowers (run-long perks). Click a Talisman on the board to sell it.</p>
   </div><div style="margin-top:12px"><button id="mClose" class="primary">Close</button></div>`;
 }
+function mostPlayedRung() { let best = null, n = 0; for (const [k, v] of Object.entries(S.stats.rungs || {})) if (v > n) { n = v; best = k; } return best; }
+function mostScoredYaku() { let best = null, n = 0; for (const [k, v] of Object.entries(S.stats.yaku || {})) if (v > n) { n = v; best = k; } return best; }
 function yakuHTML() {
-  const row = y => { const b = y.k && S && S.scrolls.yaku[y.k]; return `<tr><td><b>${y.n}</b>${y.c ? ' <span class="tag">closed only</span>' : ''}${b ? ` <span class="tag">Scroll +${b}</span>` : ''}</td><td class="num">${y.h}${b ? ` <span style="color:var(--good)">+${b}</span>` : ''}</td><td>${y.d}</td></tr>`; };
-  let h = `<h2>Yaku cheat sheet</h2><p class="muted" style="margin:0 0 10px">A complete hand is 4 melds + 1 pair (14 tiles) unless noted. Han values are shown as closed / open. A hand is Open once you have Called from the River. A complete hand with no Yaku still counts as 1 Han.</p>`;
-  h += `<div style="overflow-x:auto"><table class="sheet"><thead><tr><th>Play ladder</th><th>Base</th><th></th></tr></thead><tbody>`;
+  const yc = k => (S && S.stats.yaku[k]) || 0;
+  const row = y => { const b = y.k && S && S.scrolls.yaku[y.k]; const n = y.k ? yc(y.k) : 0; return `<tr><td><b>${y.n}</b>${y.c ? ' <span class="tag">closed only</span>' : ''}${b ? ` <span class="tag">Scroll +${b}</span>` : ''}</td><td class="num">${y.h}${b ? ` <span style="color:var(--good)">+${b}</span>` : ''}</td><td class="num">${n || '—'}</td><td>${y.d}</td></tr>`; };
+  const st = S.stats; const most = mostPlayedRung();
+  let h = `<h2>Run info</h2><div class="runinfo"><span><b>Seed</b> ${S.seed}</span><span><b>${DECKS[S.deckKey].name}</b> · ${STAKES[S.stake].name}</span><span><b>Blinds won</b> ${st.blinds}</span><span><b>Complete hands</b> ${st.hands}</span><span><b>Partial plays</b> ${st.melds}</span><span><b>Calls</b> ${st.calls} · <b>Kans</b> ${st.kans}</span><span><b>Discards</b> ${st.discards}</span><span><b>Skipped blinds</b> ${st.skipped}</span><span><b>Best play</b> ${st.best.toLocaleString()}${st.bestDesc ? ' (' + st.bestDesc + ')' : ''}</span><span><b>Bosses faced</b> ${st.bosses.map(b => BOSSES[b].name).join(', ') || '—'}</span>${S.flowers.length ? `<span><b>Flowers</b> ${S.flowers.map(f => FLW[f].name).join(', ')}</span>` : ''}${S.tags && S.tags.length ? `<span><b>Tags held</b> ${S.tags.map(t => TAGS[t].name).join(', ')}</span>` : ''}</div>`;
+  h += `<p class="muted" style="margin:10px 0">A complete hand is 4 melds + 1 pair (14 tiles) unless noted. Han values are shown as closed / open. A hand is Open once you have Called from the River. A complete hand with no Yaku still counts as 1 Han. "Played" counts this run; your most-played rung is marked.</p>`;
+  h += `<div style="overflow-x:auto"><table class="sheet"><thead><tr><th>Play ladder</th><th>Base</th><th>Played</th><th></th></tr></thead><tbody>`;
   const lv = k => (S && S.scrolls.meld[k]) || 0; const lvTag = k => lv(k) ? ` <span class="tag">Lv.${lv(k) + 1}</span>` : '';
   const val = k => `${CFG.meldBase[k].chips + lv(k) * CFG.scrollChips} chips, ${CFG.meldBase[k].han + lv(k) * CFG.scrollHan} Han`;
-  for (const k of ['single', 'pair', 'twopair', 'chi', 'pon', 'kan']) h += `<tr><td><b>${MELD_LABEL[k]}</b>${lvTag(k)}</td><td class="num">${val(k)}</td><td>${{ single: 'Any 1 tile.', pair: '2 identical tiles.', twopair: 'Two different pairs, no melds.', chi: '3 consecutive tiles of one suit. Add a pair for +10 chips.', pon: '3 identical tiles. Honor Pon adds Yakuhai (+1 Han).', kan: '4 identical tiles. Honor Kan adds Yakuhai.' }[k]}</td></tr>`;
-  for (const [k, r] of Object.entries(CFG.rungs)) h += `<tr><td><b>${r.name}</b></td><td class="num">${r.chips} chips, ${r.han} Han</td><td>${k.split(',')[0]} melds${k.endsWith('1') ? ' + a pair' : ''} played together. Each Kan inside adds +${CFG.kanBonus.chips} chips, +${CFG.kanBonus.han} Han. Honor sets add Yakuhai.</td></tr>`;
-  h += `<tr><td><b>Complete Hand</b>${lvTag('hand')}</td><td class="num">${val('hand')}</td><td>4 melds + a pair, 14 tiles. Yaku below add Han (at least +1).</td></tr>`;
-  h += `<tr><td colspan="3" class="muted">Multi-meld rungs use the per-component Scroll levels above: each Chi, Pon, Kan or Pair inside the play adds its Scroll bonus.</td></tr>`;
+  const played = k => { const n = (S && S.stats.rungs[k]) || 0; return `<td class="num">${n || '—'}${k === most && n ? ' <span class="tag">most</span>' : ''}</td>`; };
+  for (const k of ['single', 'pair', 'twopair', 'chi', 'pon', 'kan']) h += `<tr><td><b>${MELD_LABEL[k]}</b>${lvTag(k)}</td><td class="num">${val(k)}</td>${played(k)}<td>${{ single: 'Any 1 tile.', pair: '2 identical tiles.', twopair: 'Two different pairs, no melds.', chi: '3 consecutive tiles of one suit. Add a pair for +10 chips.', pon: '3 identical tiles. Honor Pon adds Yakuhai (+1 Han).', kan: '4 identical tiles. Honor Kan adds Yakuhai.' }[k]}</td></tr>`;
+  for (const [k, r] of Object.entries(CFG.rungs)) h += `<tr><td><b>${r.name}</b></td><td class="num">${r.chips} chips, ${r.han} Han</td>${played('rung' + k.replace(',', ''))}<td>${k.split(',')[0]} melds${k.endsWith('1') ? ' + a pair' : ''} played together. Each Kan inside adds +${CFG.kanBonus.chips} chips, +${CFG.kanBonus.han} Han. Honor sets add Yakuhai.</td></tr>`;
+  h += `<tr><td><b>Complete Hand</b>${lvTag('hand')}</td><td class="num">${val('hand')}</td>${played('hand')}<td>4 melds + a pair, 14 tiles. Yaku below add Han (at least +1).</td></tr>`;
+  h += `<tr><td colspan="4" class="muted">Multi-meld rungs use the per-component Scroll levels above: each Chi, Pon, Kan or Pair inside the play adds its Scroll bonus.</td></tr>`;
   h += `</tbody></table></div>`;
   h += `<div style="overflow-x:auto;margin-top:10px"><table class="sheet"><thead><tr><th>Han</th><th>Mult</th><th>Tier</th></tr></thead><tbody>`;
   for (const [hh, m, t] of [[0, 1, '—'], [1, 2, 'Standard'], [2, 4, 'Advanced'], [3, 8, 'Master'], ['4–5', 15, 'Mangan'], ['6–7', 25, 'Haneman'], ['8–10', 40, 'Baiman'], ['11–12', 60, 'Sanbaiman'], ['13+', 100, 'Yakuman']]) h += `<tr><td class="num">${hh}</td><td class="num">×${m}</td><td>${t}</td></tr>`;
   h += `</tbody></table></div>`;
   h += `<p style="margin:12px 0 6px"><b>Extra Han on any play:</b> each Red Five +1 (Koi: +2). Each tile matching a flipped Dora indicator +1. Dragon Mark engraving +1. Han is converted through the table once; after that Talismans fire left to right, adding Chips, adding flat Mult or multiplying Mult, so put +Mult Talismans before ×Mult ones. Furiten (the newest-drawn tile of your complete hand has a copy in your River) halves the final Mult.</p>`;
-  h += `<div style="overflow-x:auto"><table class="sheet"><thead><tr><th>Yaku</th><th>Han</th><th>Pattern</th></tr></thead><tbody>`;
+  h += `<div style="overflow-x:auto"><table class="sheet"><thead><tr><th>Yaku</th><th>Han</th><th>Scored</th><th>Pattern</th></tr></thead><tbody>`;
   for (const y of YAKU_SHEET) h += row(y);
   h += `</tbody></table></div>`;
-  h += `<div style="overflow-x:auto;margin-top:10px"><table class="sheet"><thead><tr><th>Yakuman</th><th>Han</th><th>Pattern</th></tr></thead><tbody>`;
+  h += `<div style="overflow-x:auto;margin-top:10px"><table class="sheet"><thead><tr><th>Yakuman</th><th>Han</th><th>Scored</th><th>Pattern</th></tr></thead><tbody>`;
   for (const y of YAKUMAN_SHEET) h += row(y);
   h += `</tbody></table></div><div style="margin-top:12px"><button id="mClose" class="primary">Close</button></div>`;
   return h;
+}
+function setupHTML() {
+  const radio = (name, obj, cur) => Object.entries(obj).map(([k, v]) => `<label class="opt"><input type="radio" name="${name}" value="${k}" ${k === cur ? 'checked' : ''}><b>${v.name}</b><span class="muted">${v.desc}</span></label>`).join('');
+  return `<h2>New run</h2><div class="setup"><div><div class="label">Wall</div>${radio('deck', DECKS, 'standard')}</div><div><div class="label">Stake</div>${radio('stake', STAKES, 'white')}<div class="label" style="margin-top:12px">Seed</div><input id="seedInput" placeholder="random" maxlength="24" autocomplete="off"><div class="muted" style="font-size:11px;margin-top:4px">Share a seed and the same Wall, shops and bosses come up for everyone. Leave blank for a random run.</div></div></div>
+  <div style="display:flex;gap:8px;margin-top:14px"><button id="mStartRun" class="primary">Start run</button><button id="mClose">Cancel</button></div>`;
 }
 function menuHTML(hasSave) {
   return `<h2 style="font-size:40px" data-notr>Yakuman</h2><p class="muted">A Mahjong roguelite in the Balatro mould. Playtest build. Switch between Riichi and Hong Kong terminology with the button in the header.</p>
@@ -1485,7 +1666,7 @@ function renderDebug() {
     render();
   });
   $('#dbgBoss').onchange = e => { const k = e.target.value; if (!k) return; const i = S.ante - 1; S.bossOrder[i] = k; if (S.phase === 'blind' && blindKind() === 'boss') { S.boss = k; } setMsg(`Boss for Ante ${S.ante} set to ${BOSSES[k].name}.`); render(); };
-  $('#dbgTal').onchange = e => { const k = e.target.value; if (!k) return; if (S.talismans.length < CFG.talismanSlots && !S.talismans.includes(k)) S.talismans.push(k); e.target.value = ''; render(); };
+  $('#dbgTal').onchange = e => { const k = e.target.value; if (!k) return; if (S.talismans.length < talSlots() && !S.talismans.includes(k)) S.talismans.push(k); e.target.value = ''; render(); };
   $('#dbgCon').onchange = e => { const k = e.target.value; if (!k) return; if (S.consumables.length < conSlots()) S.consumables.push({ kind: CONS[k].kind, key: k }); e.target.value = ''; render(); };
   $('#dbgScr').onchange = e => { const k = e.target.value; if (!k) return; buyFree({ kind: 'scroll', key: k }); e.target.value = ''; render(); };
   $('#dbgEd').onchange = e => { const k = e.target.value; if (!k || !S.selTal) return; if (k === 'none') delete S.editions[S.selTal]; else S.editions[S.selTal] = k; e.target.value = ''; render(); };
@@ -1508,13 +1689,21 @@ function bindEvents() {
   $('#overlay').addEventListener('click', e => {
     const t = e.target.closest('button'); if (!t) return;
     if (t.id === 'mClose') { hideModal(); render(); }
-    else if (t.id === 'mNewRun' || t.id === 'mStart') { hideModal(); newRun(); }
+    else if (t.id === 'mNewRun' || t.id === 'mStart') { showModal(setupHTML(), true); }
+    else if (t.id === 'mStartRun') { const deck = ($('#modal input[name=deck]:checked') || {}).value, stake = ($('#modal input[name=stake]:checked') || {}).value, seed = ($('#seedInput') || {}).value; hideModal(); newRun({ deck, stake, seed }); }
     else if (t.id === 'mContinue') { hideModal(); render(); }
     else if (t.id === 'mRules') { showModal(rulesHTML() + '', true); $('#mClose').onclick = () => { showModal(menuHTML(!!load()), true); }; }
     else if (t.id === 'mNext') { S.shop = null; S.msg = ''; startBlind(); render(); }
     else if (t.id === 'mReroll') reroll();
+    else if (t.id === 'mSkip') skipBlind();
+    else if (t.dataset.freepack != null) { const pk = S.shop.freePacks.splice(+t.dataset.freepack, 1)[0]; openPack(pk, true); render(); }
+    else if (t.dataset.take != null) takeFromPack(+t.dataset.take);
+    else if (t.id === 'mPackDone') { S.pack = null; render(); }
     else if (t.id === 'mDeck') { showModal(deckHTML(), true); $('#mClose').onclick = () => { modalPinned = false; render(); }; }
     else if (t.dataset.buy != null) { const items = [...S.shop.cards, S.shop.scroll, S.shop.flower].filter(Boolean); buy(items[+t.dataset.buy]); }
+    else if (t.dataset.sell) sellTalisman(t.dataset.sell);
+    else if (t.dataset.sellcon != null) sellConsumable(+t.dataset.sellcon);
+    else if (t.dataset.usecon != null) useConsumable(+t.dataset.usecon);
   });
   document.addEventListener('keydown', e => {
     if (S.phase !== 'blind' || !$('#overlay').hidden) return;
@@ -1524,7 +1713,7 @@ function bindEvents() {
 }
 function boot(saved) {
   bindEvents();
-  if (saved && saved.phase && saved.deck) { S = saved; S.talState = S.talState || {}; S.editions = S.editions || {}; S.busy = false; S.newIds = []; S.drawSeq = S.drawSeq || 0; render(); showModal(menuHTML(true), true); }
+  if (saved && saved.phase && saved.deck) { S = saved; S.talState = S.talState || {}; S.editions = S.editions || {}; S.seed = S.seed || 'legacy'; S.deckKey = S.deckKey || 'standard'; S.stake = S.stake || 'white'; if (S.rngState === undefined) S.rngState = hashSeed(S.seed + Date.now()); S.stats.rungs = S.stats.rungs || {}; S.stats.yaku = S.stats.yaku || {}; S.stats.bosses = S.stats.bosses || []; S.tags = S.tags || []; S.stats.skipped = S.stats.skipped || 0; S.stats.calls = S.stats.calls || 0; S.stats.kans = S.stats.kans || 0; S.stats.discards = S.stats.discards || 0; S.busy = false; S.newIds = []; S.drawSeq = S.drawSeq || 0; render(); showModal(menuHTML(true), true); }
   else { S = newState(); startBlind(); render(); showModal(menuHTML(false), true); }
 }
 try { if (window.claude && window.claude.hot) window.claude.hot.snapshot(() => S); } catch (e) { }

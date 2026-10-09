@@ -53,13 +53,29 @@ function isTerminal(t) { return t.suit !== 'z' && (t.rank === 1 || t.rank === 9)
 function idx(t) { return SUITS.indexOf(t.suit) * 9 + t.rank - 1; }
 function tileFromIdx(i) { return { id: 0, suit: SUITS[Math.floor(i / 9)], rank: i % 9 + 1, red: false, eng: null }; }
 function tileName(t) { return isHonor(t) ? HONOR_EN[t.rank] + (t.rank <= 4 ? ' Wind' : ' Dragon') : `${t.red ? 'Red ' : ''}${t.rank} ${SUIT_EN[t.suit]}`; }
-function buildDeck() {
-  const d = [];
-  for (const s of ['m', 'p', 's']) for (let r = 1; r <= 9; r++) for (let c = 0; c < 4; c++) {
-    const red = r === 5 && (c === 0 || (s === 'p' && c === 1));
+// ===================== DECKS & STAKES =====================
+const DECKS = {
+  standard: { name: 'Standard Wall', desc: '136 tiles: four of every tile, four Red Fives.' },
+  red: { name: 'Vermilion Wall', desc: 'Every 5 is a Red Five: twelve of them.' },
+  lean: { name: 'Lean Wall', desc: 'No Souzu. 100 tiles across two suits and honors, so hands come faster. Sanshoku is impossible.' },
+  monk: { name: "Monk's Wall", desc: 'No Honor tiles. 108 tiles, flushes come easily, honor Yaku are impossible.' },
+  gambler: { name: "Gambler's Wall", desc: '+1 Play and −1 Discard every Blind.' },
+  merchant: { name: "Merchant's Wall", desc: 'Start with ¥20 and +1 consumable slot, but shop prices are +25%.' },
+  abundant: { name: 'Abundant Wall', desc: '+2 hand size, −1 Play every Blind.' },
+};
+const STAKES = {
+  white: { name: 'White Stake', desc: 'The standard game.' },
+  red: { name: 'Red Stake', desc: 'Small Blinds give no reward money.' },
+  green: { name: 'Green Stake', desc: 'Every blind target is ×1.3.' },
+  black: { name: 'Black Stake', desc: 'Targets ×1.3, Small Blinds give no reward, Talismans cost ¥2 more.' },
+};
+function buildDeck(deckKey = 'standard') {
+  const d = []; const suits = deckKey === 'lean' ? ['m', 'p'] : ['m', 'p', 's'];
+  for (const s of suits) for (let r = 1; r <= 9; r++) for (let c = 0; c < 4; c++) {
+    const red = r === 5 && (deckKey === 'red' || c === 0 || (s === 'p' && c === 1));
     d.push(mkTile(s, r, red));
   }
-  for (let r = 1; r <= 7; r++) for (let c = 0; c < 4; c++) d.push(mkTile('z', r));
+  if (deckKey !== 'monk') for (let r = 1; r <= 7; r++) for (let c = 0; c < 4; c++) d.push(mkTile('z', r));
   return d;
 }
 function sortTiles(arr) {
@@ -70,8 +86,12 @@ function nextDora(i) {
   if (i < 31) return 27 + ((i - 27 + 1) % 4);
   return 31 + ((i - 31 + 1) % 3);
 }
-function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
-function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
+// Run RNG: seeded (mulberry32, state kept in S so saves replay) or Math.random when no run is active.
+function rand() { if (typeof S === 'undefined' || !S || S.rngState === undefined) return Math.random(); let t = (S.rngState = (S.rngState + 0x6D2B79F5) >>> 0); t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }
+function hashSeed(str) { let h = 2166136261 >>> 0; for (const ch of String(str)) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0; } return h >>> 0; }
+function randomSeed() { const a = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let s = ''; for (let i = 0; i < 7; i++) s += a[Math.floor(Math.random() * a.length)]; return s; }
+function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function pick(a) { return a[Math.floor(rand() * a.length)]; }
 
 // ===================== ENGRAVINGS =====================
 const ENG = {
@@ -81,14 +101,16 @@ const ENG = {
   jade: { name: 'Jade Inlay', short: 'J', desc: 'x1.5 Mult when this tile scores.' },
   redseal: { name: 'Red Seal', short: 'S', desc: 'This tile scores twice.' },
   glass: { name: 'Glass', short: 'Gl', desc: 'x2 Mult when this tile scores, but a 1 in 4 chance it shatters and leaves your Wall.' },
+  steel: { name: 'Steel Inlay', short: 'St', desc: 'x1.5 Mult on every play while this tile stays in your hand (it scores nothing when played).' },
 };
 // Talisman editions (Balatro's Foil / Holographic / Polychrome). Rolled in the shop; price added to the Talisman's cost.
 const EDITIONS = {
   foil: { name: 'Foil', chips: 50, price: 2, odds: 0.10, desc: '+50 Chips' },
   holo: { name: 'Holographic', han: 1, price: 3, odds: 0.06, desc: '+1 Han' },
   poly: { name: 'Polychrome', xmult: 1.5, price: 5, odds: 0.03, desc: 'x1.5 Mult' },
+  neg: { name: 'Negative', slots: 1, price: 4, odds: 0.02, desc: '+1 Talisman slot' },
 };
-function rollEdition() { const r = Math.random(); let acc = 0; for (const [k, e] of Object.entries(EDITIONS)) { acc += e.odds; if (r < acc) return k; } return null; }
+function rollEdition() { const r = rand(); let acc = 0; for (const [k, e] of Object.entries(EDITIONS)) { acc += e.odds; if (r < acc) return k; } return null; }
 
 // ===================== BOSSES =====================
 const BOSSES = {
@@ -96,6 +118,12 @@ const BOSSES = {
   typhoon: { name: 'The Typhoon', desc: 'Wind tiles score 0 Chips and all Wind-based Yaku are disabled.' },
   wallbuilder: { name: 'The Wall-Builder', desc: 'Only plays of two or more melds score. Smaller partial plays deal 0 damage.' },
   loanshark: { name: 'The Loan Shark', desc: 'Every Discard costs ¥1, however many tiles you throw. At ¥0, discards are locked.' },
+  fisherman: { name: 'The Fisherman', desc: 'Tiles in the River cannot be Called.' },
+  censor: { name: 'The Censor', desc: 'Red Fives score 0 Chips and give no Han.' },
+  gatekeeper: { name: 'The Gatekeeper', desc: 'Your first Play of the Blind scores 0.' },
+  collector: { name: 'The Collector', desc: 'One suit, chosen when the Blind starts, scores 0 Chips.' },
+  miser: { name: 'The Miser', desc: 'Hand size −3.' },
+  monk: { name: 'The Monk', desc: 'Discards may throw at most 3 tiles.' },
 };
 
 // ===================== TALISMANS (Jokers) =====================
@@ -137,6 +165,26 @@ const TALISMANS = [
   // --- Flat Mult, scaling
   { key: 'kasaobake', name: 'Kasa-obake', cost: 5, desc: 'Gains +2 Mult for every Blind you defeat.', onBlindEnd: S => { S.talState.kasaobake = (S.talState.kasaobake || 0) + 2; return 0; }, onScore: (c, S) => S.talState.kasaobake ? { mult: S.talState.kasaobake } : null, status: S => `now +${S.talState.kasaobake || 0} Mult` },
   { key: 'ittanmomen', name: 'Ittan-momen', cost: 4, desc: '+12 Mult on every play, but −30 Chips.', onScore: c => ({ mult: 12, chips: -30 }) },
+  // --- Streaks and scaling (Balatro's Ride the Bus family)
+  { key: 'nopperabo', name: 'Nopperabō', cost: 5, desc: 'Gains +1 Mult per consecutive play with no Honor tiles. Scoring an Honor resets it.', onScore: (c, S) => S.talState.nopperabo ? { mult: S.talState.nopperabo } : null, afterScore: (c, S) => { S.talState.nopperabo = c.tiles.some(isHonor) ? 0 : (S.talState.nopperabo || 0) + 1; }, status: S => `now +${S.talState.nopperabo || 0} Mult` },
+  { key: 'sekito', name: 'Sekitō', cost: 7, desc: 'Gains x0.2 Mult per consecutive play that is not your most-played rung. Playing it resets this.', onScore: (c, S) => S.talState.sekito ? { xmult: 1 + 0.2 * S.talState.sekito } : null, afterScore: (c, S) => { const r = S.stats.rungs || {}; let best = null, n = 0; for (const [k, v] of Object.entries(r)) if (v > n) { n = v; best = k; } S.talState.sekito = (best && c.meldType === best) ? 0 : (S.talState.sekito || 0) + 1; }, status: S => `now x${(1 + 0.2 * (S.talState.sekito || 0)).toFixed(1)}` },
+  { key: 'aobozu', name: 'Aobōzu', cost: 5, desc: '+1 Mult per play, −1 Mult per Discard (never below 0).', onScore: (c, S) => S.talState.aobozu ? { mult: S.talState.aobozu } : null, afterScore: (c, S) => { S.talState.aobozu = (S.talState.aobozu || 0) + 1; }, onDiscard: S => { S.talState.aobozu = Math.max(0, (S.talState.aobozu || 0) - 1); }, status: S => `now +${S.talState.aobozu || 0} Mult` },
+  { key: 'shiro', name: 'Shiro', cost: 5, desc: 'Each Blind picks a suit. Gains +3 Chips for every tile of that suit you discard.', onBlindStart: S => { S.talState.shiroSuit = pick(['m', 'p', 's']); }, onDiscard: (S, tiles) => { S.talState.shiro = (S.talState.shiro || 0) + 3 * tiles.filter(t => t.suit === S.talState.shiroSuit).length; }, onScore: (c, S) => S.talState.shiro ? { chips: S.talState.shiro } : null, status: S => `${S.talState.shiroSuit ? SUIT_EN[S.talState.shiroSuit] + ' this Blind, ' : ''}now +${S.talState.shiro || 0} Chips` },
+  { key: 'takibi', name: 'Takibi', cost: 6, desc: 'Gains x0.25 Mult every time you sell a Talisman.', onSell: S => { S.talState.takibi = (S.talState.takibi || 0) + 1; }, onScore: (c, S) => S.talState.takibi ? { xmult: 1 + 0.25 * S.talState.takibi } : null, status: S => `now x${(1 + 0.25 * (S.talState.takibi || 0)).toFixed(2)}` },
+  { key: 'hoshizora', name: 'Hoshizora', cost: 6, desc: 'Gains x0.1 Mult every time you use a Scroll of Mastery.', onScroll: S => { S.talState.hoshizora = (S.talState.hoshizora || 0) + 1; }, onScore: (c, S) => S.talState.hoshizora ? { xmult: 1 + 0.1 * S.talState.hoshizora } : null, status: S => `now x${(1 + 0.1 * (S.talState.hoshizora || 0)).toFixed(1)}` },
+  { key: 'mabo', name: 'Mabo', cost: 6, desc: 'Gains x0.25 Mult every time a tile is added to your Wall.', onTileAdded: (S, n) => { S.talState.mabo = (S.talState.mabo || 0) + n; }, onScore: (c, S) => S.talState.mabo ? { xmult: 1 + 0.25 * S.talState.mabo } : null, status: S => `now x${(1 + 0.25 * (S.talState.mabo || 0)).toFixed(2)}` },
+  { key: 'chochin', name: 'Chōchin', cost: 6, desc: 'x4 Mult on every sixth play.', onScore: (c, S) => (((S.talState.chochin || 0) + 1) % 6 === 0) ? { xmult: 4 } : null, afterScore: (c, S) => { S.talState.chochin = (S.talState.chochin || 0) + 1; }, status: S => { const left = 6 - (((S.talState.chochin || 0)) % 6); return left === 6 ? 'fires in 6 plays' : left === 1 ? 'fires next play' : `fires in ${left} plays`; } },
+  // --- Run-info powers
+  { key: 'hoshi', name: 'Hoshi', cost: 6, desc: '+1 Mult for every time this play type has been played this run.', onScore: (c, S) => { const n = (S.stats.rungs || {})[c.meldType] || 0; return n ? { mult: n } : null; } },
+  { key: 'hatsumode', name: 'Hatsumōde', cost: 5, desc: '+15 Mult for each Yaku scoring for the first time this run.', onScore: (c, S) => { const n = c.yaku.filter(y => !(S.stats.yaku || {})[y.key]).length; return n ? { mult: 15 * n } : null; } },
+  { key: 'oshi', name: 'Oshi', cost: 6, desc: 'x1.5 Mult if the play contains your most-scored Yaku.', onScore: (c, S) => { let best = null, n = 0; for (const [k, v] of Object.entries(S.stats.yaku || {})) if (v > n) { n = v; best = k; } return best && c.yaku.some(y => y.key === best) ? { xmult: 1.5 } : null; } },
+  // --- Held in hand
+  { key: 'daimyo', name: 'Daimyō', cost: 7, desc: 'x1.5 Mult for each Red Five left in your hand after the play.', onScore: c => { const n = c.held.filter(t => t.red).length; return n ? { xmult: Math.pow(1.5, n) } : null; } },
+  // --- Rule breakers
+  { key: 'hashi', name: 'Hashi', cost: 7, desc: 'A Chi may skip one rank: any three of four consecutive tiles count as a sequence (2-3-5 or 2-4-5).' },
+  // --- Copiers (Balatro's Blueprint and Brainstorm)
+  { key: 'utsushi', name: 'Utsushi', cost: 8, desc: 'Copies the ability of the Talisman to its right.', copies: 'right' },
+  { key: 'kagami', name: 'Kagami', cost: 8, desc: 'Copies the ability of your leftmost Talisman.', copies: 'left' },
   // --- River play
   { key: 'nureonna', name: 'Nure-onna', cost: 6, desc: '+1 Mult for every tile in the River when you score (max +20).', onScore: (c, S) => S.river.length ? { mult: Math.min(20, S.river.length) } : null },
   { key: 'ryujin', name: 'Ryūjin', cost: 8, desc: 'Calling from the River no longer costs a Play.', freeCall: true },
@@ -178,6 +226,7 @@ const OMIKUJI = [
   { key: 'jade', name: 'Slip of Jade', cost: 3, sel: [1, 1], desc: 'Engrave 1 selected tile with Jade Inlay: x1.5 Mult whenever it scores.', use: (S, sel) => { sel[0].eng = 'jade'; } },
   { key: 'redseal', name: 'Slip of the Red Seal', cost: 4, sel: [1, 1], desc: 'Engrave 1 selected tile with a Red Seal: it scores twice whenever it scores.', use: (S, sel) => { sel[0].eng = 'redseal'; } },
   { key: 'glass', name: 'Slip of Glass', cost: 3, sel: [1, 2], desc: 'Turn up to 2 selected tiles into Glass: x2 Mult whenever they score, with a 1 in 4 chance each time of shattering for good.', use: (S, sel) => { for (const t of sel) t.eng = 'glass'; } },
+  { key: 'steel', name: 'Slip of Steel', cost: 3, sel: [1, 1], desc: 'Engrave 1 selected tile with Steel Inlay: x1.5 Mult on every play while it stays in your hand. Keep it as a spare.', use: (S, sel) => { sel[0].eng = 'steel'; } },
 ];
 const KAMI = [
   { key: 'susanoo', name: 'Susanoo', cost: 4, sel: [1, 5], desc: 'Destroy all selected tiles (up to 5). Complete Hands permanently gain +1 level (+10 Chips, +1 Han).',
@@ -226,6 +275,32 @@ const FLOWERS = [
 ];
 const FLW = {}; FLOWERS.forEach(f => FLW[f.key] = f);
 
+// ===================== TAGS (rewards for skipping a Small or Big Blind) =====================
+const TAGS = {
+  coupon: { name: 'Coupon Tag', desc: 'Talismans and consumables in the next shop cost ¥0.' },
+  reroll: { name: 'Reroll Tag', desc: 'Rerolls in the next shop are free.' },
+  foil: { name: 'Foil Tag', desc: 'The first Talisman in the next shop is Foil.' },
+  holo: { name: 'Holographic Tag', desc: 'The first Talisman in the next shop is Holographic.' },
+  poly: { name: 'Polychrome Tag', desc: 'The first Talisman in the next shop is Polychrome.' },
+  neg: { name: 'Negative Tag', desc: 'The first Talisman in the next shop is Negative (+1 slot).' },
+  omikuji: { name: 'Charm Tag', desc: 'A free Omikuji pack opens in the next shop.' },
+  scroll: { name: 'Scroll Tag', desc: 'A free Scroll pack opens in the next shop.' },
+  talisman: { name: 'Buffoon Tag', desc: 'A free Talisman pack opens in the next shop.' },
+  kami: { name: 'Kami Tag', desc: 'A free Kami pack opens in the next shop.' },
+  investment: { name: 'Investment Tag', desc: '+¥25 after you defeat the next Boss.' },
+  economy: { name: 'Economy Tag', desc: 'Doubles your money, up to +¥40, right away.' },
+  juggle: { name: 'Juggle Tag', desc: '+3 hand size for the next Blind.' },
+  boss: { name: 'Boss Tag', desc: 'Rerolls the next Boss.' },
+  speed: { name: 'Speed Tag', desc: '+¥5 for every Blind you have skipped this run, right away.' },
+};
+// ===================== PACKS =====================
+const PACKS = {
+  omikuji: { name: 'Omikuji Pack', cost: 4, show: 3, keep: 1, desc: 'Open 3 Omikuji, keep 1.' },
+  scroll: { name: 'Scroll Pack', cost: 4, show: 3, keep: 1, desc: 'Open 3 Scrolls of Mastery, use 1 now.' },
+  talisman: { name: 'Talisman Pack', cost: 6, show: 2, keep: 1, desc: 'Open 2 Talismans, keep 1.' },
+  kami: { name: 'Kami Pack', cost: 6, show: 2, keep: 1, desc: 'Open 2 Kami Spirits, keep 1.' },
+  mega: { name: 'Mega Omikuji Pack', cost: 7, show: 5, keep: 2, desc: 'Open 5 Omikuji, keep 2.' },
+};
 // ===================== YAKU CHEAT SHEET =====================
 const YAKU_SHEET = [
   { k: 'tanyao', n: 'Tanyao', h: '1 / 1', d: 'All simples: only 2–8 suited tiles, no 1s, 9s or honors.' },
@@ -263,12 +338,12 @@ const YAKUMAN_SHEET = [
 
 // ===================== TERMINOLOGY: Riichi (default) vs Hong Kong =====================
 // Display strings are translated at render time by whole-word replacement. Logic and saves never change.
-const HK_TALISMAN = { kasaobake: '傘妖 Umbrella Ghost', ittanmomen: '布妖 Cloth Ghost', kappa: '水鬼 Water Ghost', kitsune: '狐仙 Fox Spirit', tanuki: '貔貅 Pixiu', maneki: '招財貓 Lucky Cat', tengu: '雷震子 Leizhenzi', oni: '牛魔王 Bull Demon King', daruma: '達摩 Bodhidharma', tsuru: '仙鶴 Crane', koi: '錦鯉 Golden Carp', ryu: '龍王 Dragon King', jizo: '地藏 Dizang', komainu: '石獅 Stone Lion', yukionna: '雪妖 Snow Demon', baku: '貘 Mo', nue: '四不像 Sibuxiang', kodama: '樹精 Tree Spirit', hannya: '夜叉 Yaksha', tsukumogami: '器靈 Object Spirit', nurikabe: '門神 Door God', tengoku: '馬騮精 Monkey Spirit', hitotsume: '獨眼鬼 One-eyed Ghost', nekomata: '貓妖 Cat Demon', shikigami: '紙人 Paper Effigy', kirin: '麒麟 Qilin', hakutaku: '白澤 Bai Ze', yatagarasu: '金烏 Golden Crow', gashadokuro: '骷髏精 Skeleton Spirit', jorogumo: '蜘蛛精 Spider Spirit', rokurokubi: '長頸鬼 Long-neck Ghost', ushioni: '牛頭 Ox-Head', nurarihyon: '無常 Wuchang', zashiki: '福童 Fortune Child', nureonna: '白蛇 White Snake', ryujin: '龍母 Dragon Mother', namazu: '鯉魚精 Carp Spirit', funayurei: '鬼船 Ghost Ship', sazaeoni: '螺精 Conch Spirit', amabie: '人魚 Mermaid', mizuchi: '蛟 Flood Dragon' };
-const HK_CONS = { redseal: '紅印籤 Red Seal', glass: '玻璃籤 Glass', dup: '分身籤 Duplication', ascend: '升籤 Ascension', descend: '降籤 Descent', toman: '萬子籤 Characters', topin: '筒子籤 Dots', tosou: '索子籤 Bamboo', destroy: '化灰籤 Dust', dragon: '紅中籤 Red Dragon', redfive: '紅五籤 Red Five', indicator: '寶牌籤 Bonus Tile', wealth: '橫財籤 Windfall', gold: '金箔籤 Gold Foil', obsidian: '黑曜籤 Obsidian', dragonmark: '龍紋籤 Dragon Mark', jade: '翡翠籤 Jade', susanoo: '哪吒 Nezha', inari: '財神 God of Wealth', raijin: '雷公 Lei Gong', tsukuyomi: '嫦娥 Chang’e', amaterasu: '媽祖 Mazu' };
+const HK_TALISMAN = { hashi: '橋 Bridge', nopperabo: '無面鬼 Faceless Ghost', sekito: '石塔 Stone Pagoda', aobozu: '青僧 Blue Monk', shiro: '城 Castle', takibi: '篝火 Bonfire', hoshizora: '星空 Starry Sky', mabo: '魔寶 Phantom Treasure', chochin: '燈籠 Lantern', hoshi: '星 Star', hatsumode: '頭炷香 First Incense', oshi: '偶像 Idol', daimyo: '大名 Lord', utsushi: '影印 Mirror Copy', kagami: '鏡 Mirror', kasaobake: '傘妖 Umbrella Ghost', ittanmomen: '布妖 Cloth Ghost', kappa: '水鬼 Water Ghost', kitsune: '狐仙 Fox Spirit', tanuki: '貔貅 Pixiu', maneki: '招財貓 Lucky Cat', tengu: '雷震子 Leizhenzi', oni: '牛魔王 Bull Demon King', daruma: '達摩 Bodhidharma', tsuru: '仙鶴 Crane', koi: '錦鯉 Golden Carp', ryu: '龍王 Dragon King', jizo: '地藏 Dizang', komainu: '石獅 Stone Lion', yukionna: '雪妖 Snow Demon', baku: '貘 Mo', nue: '四不像 Sibuxiang', kodama: '樹精 Tree Spirit', hannya: '夜叉 Yaksha', tsukumogami: '器靈 Object Spirit', nurikabe: '門神 Door God', tengoku: '馬騮精 Monkey Spirit', hitotsume: '獨眼鬼 One-eyed Ghost', nekomata: '貓妖 Cat Demon', shikigami: '紙人 Paper Effigy', kirin: '麒麟 Qilin', hakutaku: '白澤 Bai Ze', yatagarasu: '金烏 Golden Crow', gashadokuro: '骷髏精 Skeleton Spirit', jorogumo: '蜘蛛精 Spider Spirit', rokurokubi: '長頸鬼 Long-neck Ghost', ushioni: '牛頭 Ox-Head', nurarihyon: '無常 Wuchang', zashiki: '福童 Fortune Child', nureonna: '白蛇 White Snake', ryujin: '龍母 Dragon Mother', namazu: '鯉魚精 Carp Spirit', funayurei: '鬼船 Ghost Ship', sazaeoni: '螺精 Conch Spirit', amabie: '人魚 Mermaid', mizuchi: '蛟 Flood Dragon' };
+const HK_CONS = { steel: '鋼籤 Steel', redseal: '紅印籤 Red Seal', glass: '玻璃籤 Glass', dup: '分身籤 Duplication', ascend: '升籤 Ascension', descend: '降籤 Descent', toman: '萬子籤 Characters', topin: '筒子籤 Dots', tosou: '索子籤 Bamboo', destroy: '化灰籤 Dust', dragon: '紅中籤 Red Dragon', redfive: '紅五籤 Red Five', indicator: '寶牌籤 Bonus Tile', wealth: '橫財籤 Windfall', gold: '金箔籤 Gold Foil', obsidian: '黑曜籤 Obsidian', dragonmark: '龍紋籤 Dragon Mark', jade: '翡翠籤 Jade', susanoo: '哪吒 Nezha', inari: '財神 God of Wealth', raijin: '雷公 Lei Gong', tsukuyomi: '嫦娥 Chang’e', amaterasu: '媽祖 Mazu' };
 const HK_SCROLL = { 'm:pair': '對子秘笈 Pairs Manual', 'm:chi': '上牌秘笈 Chow Manual', 'm:pon': '碰牌秘笈 Pung Manual', 'm:kan': '槓牌秘笈 Kong Manual', 'm:hand': '食糊秘笈 Winning Manual', 'y:tanyao': '斷幺九秘笈 All Simples Manual', 'y:pinfu': '平糊秘笈 All Chows Manual', 'y:yakuhai': '番牌秘笈 Honour Set Manual', 'y:honitsu': '混一色秘笈 Mixed Suit Manual', 'y:chinitsu': '清一色秘笈 Pure Suit Manual', 'y:toitoi': '對對糊秘笈 All Pungs Manual', 'y:chiitoitsu': '七對子秘笈 Seven Pairs Manual', 'y:sanshoku': '三色同順秘笈 Triple Chow Manual', 'y:ittsu': '一條龍秘笈 Straight Manual', 'y:chanta': '混全帶幺秘笈 Outside Hand Manual' };
 const HK_FLOWER = { plum: '梅 Plum', orchid: '蘭 Orchid', chrysanthemum: '菊 Chrysanthemum', bamboo: '竹 Bamboo', spring: '春 Spring', summer: '夏 Summer', autumn: '秋 Autumn', winter: '冬 Winter' };
-const HK_ENG = { redseal: '紅印 Red Seal', glass: '玻璃 Glass', gold: '金箔 Gold Foil', obsidian: '黑曜 Obsidian Inlay', dragonmark: '龍紋 Dragon Mark', jade: '翡翠 Jade Inlay' };
-const HK_BOSS = { purist: '蒙眼佬 The Purist', typhoon: '打風 The Typhoon', wallbuilder: '砌牆佬 The Wall-Builder', loanshark: '大耳窿 The Loan Shark' };
+const HK_ENG = { steel: '鋼 Steel Inlay', redseal: '紅印 Red Seal', glass: '玻璃 Glass', gold: '金箔 Gold Foil', obsidian: '黑曜 Obsidian Inlay', dragonmark: '龍紋 Dragon Mark', jade: '翡翠 Jade Inlay' };
+const HK_BOSS = { fisherman: '漁夫 The Fisherman', censor: '審查官 The Censor', gatekeeper: '守門人 The Gatekeeper', collector: '收藏家 The Collector', miser: '孤寒鬼 The Miser', monk: '和尚 The Monk', purist: '蒙眼佬 The Purist', typhoon: '打風 The Typhoon', wallbuilder: '砌牆佬 The Wall-Builder', loanshark: '大耳窿 The Loan Shark' };
 // Generic terms and hand names. Longer keys are matched first.
 const HK_TERMS = {
   'Sanshoku Doujun': '三色同順 Mixed Triple Chow', 'Sanshoku Doukou': '三色同刻 Mixed Triple Pung', 'Kokushi Musou': '十三幺 Thirteen Orphans', 'Chuuren Poutou': '九蓮寶燈 Nine Gates',

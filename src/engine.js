@@ -1,4 +1,8 @@
 // ===================== MELDS & DECOMPOSITION =====================
+// Rule switches set from the run state (Hashi: a Chi may skip one rank).
+let GAP_CHI = false;
+function setRules(S) { GAP_CHI = !!(S && S.talismans && S.talismans.includes('hashi')); }
+const CHI_SHAPES = () => GAP_CHI ? [[0, 1, 2], [0, 1, 3], [0, 2, 3]] : [[0, 1, 2]];
 function meldType(tiles) {
   const n = tiles.length;
   if (n < 3 || n > 4) return null;
@@ -8,7 +12,9 @@ function meldType(tiles) {
   if (tiles.some(isHonor)) return null;
   const s = tiles[0].suit; if (!tiles.every(t => t.suit === s)) return null;
   const r = tiles.map(t => t.rank).sort((a, b) => a - b);
-  return (r[1] === r[0] + 1 && r[2] === r[1] + 1) ? 'chi' : null;
+  if (r[1] === r[0] + 1 && r[2] === r[1] + 1) return 'chi';
+  if (GAP_CHI && r[0] !== r[1] && r[1] !== r[2] && r[2] - r[0] === 3) return 'chi';
+  return null;
 }
 // Partition a selection into up to 4 melds (Chi/Pon/Kan) plus at most one pair, or exactly two pairs with no melds (Two Pair),
 // covering every tile. Prefers more melds, then Kans. Returns {melds:[{type,i}], pairs:[i...], single:bool} or null.
@@ -23,7 +29,7 @@ function partitionPlay(tiles) {
     if (melds.length < 4) {
       if (counts[i] >= 4) { counts[i] -= 4; melds.push({ type: 'kan', i }); rec(i, melds, pairs); melds.pop(); counts[i] += 4; }
       if (counts[i] >= 3) { counts[i] -= 3; melds.push({ type: 'pon', i }); rec(i, melds, pairs); melds.pop(); counts[i] += 3; }
-      if (i < 27 && i % 9 <= 6 && counts[i + 1] && counts[i + 2]) { counts[i]--; counts[i + 1]--; counts[i + 2]--; melds.push({ type: 'chi', i }); rec(i, melds, pairs); melds.pop(); counts[i]++; counts[i + 1]++; counts[i + 2]++; }
+      if (i < 27) for (const sh of CHI_SHAPES()) { const a = i + sh[1], b = i + sh[2]; if ((i % 9) + sh[2] > 8 || !counts[a] || !counts[b]) continue; counts[i]--; counts[a]--; counts[b]--; melds.push({ type: 'chi', i, shape: sh }); rec(i, melds, pairs); melds.pop(); counts[i]++; counts[a]++; counts[b]++; }
     }
     if (pairs.length < 2 && counts[i] >= 2) { counts[i] -= 2; pairs.push(i); rec(i, melds, pairs); pairs.pop(); counts[i] += 2; }
   }
@@ -49,9 +55,7 @@ function decompose(counts, need) {
     if (i >= 34) { if (acc.length === need) res.push(acc.slice()); return; }
     if (acc.length >= need) return;
     if (counts[i] >= 3) { counts[i] -= 3; acc.push({ type: 'pon', i }); rec(i, acc); acc.pop(); counts[i] += 3; }
-    if (i < 27 && (i % 9) <= 6 && counts[i + 1] > 0 && counts[i + 2] > 0) {
-      counts[i]--; counts[i + 1]--; counts[i + 2]--; acc.push({ type: 'chi', i }); rec(i, acc); acc.pop(); counts[i]++; counts[i + 1]++; counts[i + 2]++;
-    }
+    if (i < 27) for (const sh of CHI_SHAPES()) { const a = i + sh[1], b = i + sh[2]; if ((i % 9) + sh[2] > 8 || !counts[a] || !counts[b]) continue; counts[i]--; counts[a]--; counts[b]--; acc.push({ type: 'chi', i, shape: sh }); rec(i, acc); acc.pop(); counts[i]++; counts[a]++; counts[b]++; }
   }
   rec(0, []); return res;
 }
@@ -82,7 +86,7 @@ function evalStandard(dec, closed, S) {
   const ym = (key, name) => list.push({ key, name, han: 13, yakuman: true });
   const melds = dec.melds, pair = dec.pair;
   const pons = melds.filter(m => m.type !== 'chi'), chis = melds.filter(m => m.type === 'chi'), kans = melds.filter(m => m.type === 'kan');
-  const all = []; for (const m of melds) { if (m.type === 'chi') all.push(m.i, m.i + 1, m.i + 2); else all.push(m.i, m.i, m.i); } all.push(pair, pair);
+  const all = []; for (const m of melds) { if (m.type === 'chi') { const sh = m.shape || [0, 1, 2]; all.push(m.i + sh[0], m.i + sh[1], m.i + sh[2]); } else all.push(m.i, m.i, m.i); } all.push(pair, pair);
   if (all.every(i => !orphI(i))) add('tanyao', 'Tanyao', 1, 1);
   for (const m of pons) {
     if (drgI(m.i)) add('yakuhai', `Yakuhai (${HONOR_EN[rI(m.i)]} Dragon)`, 1, 1);
@@ -97,7 +101,7 @@ function evalStandard(dec, closed, S) {
   for (let r = 0; r <= 6; r++) if ([0, 1, 2].every(s => chis.some(m => m.i === s * 9 + r))) { add('sanshoku', 'Sanshoku Doujun', 2, 1); break; }
   for (let r = 0; r < 9; r++) if ([0, 1, 2].every(s => pons.some(m => m.i === s * 9 + r))) { add('doukou', 'Sanshoku Doukou', 2, 2); break; }
   for (let s = 0; s < 3; s++) if ([0, 3, 6].every(r => chis.some(m => m.i === s * 9 + r))) { add('ittsu', 'Ittsu', 2, 1); break; }
-  const setsOrphan = melds.every(m => m.type === 'chi' ? (m.i % 9 === 0 || m.i % 9 === 6) : orphI(m.i)) && orphI(pair);
+  const setsOrphan = melds.every(m => m.type === 'chi' ? (m.i % 9 === 0 || (m.i % 9) + (m.shape ? m.shape[2] : 2) === 8) : orphI(m.i)) && orphI(pair);
   const hasHonor = all.some(honI);
   if (setsOrphan) {
     if (chis.length === 0) { if (all.every(honI)) { /* tsuuiisou below */ } else if (all.every(termI)) ym('chinroutou', 'Chinroutou'); else add('honroutou', 'Honroutou', 2, 2); }
@@ -154,13 +158,23 @@ function bestHand(concealed, open, S) {
 function tileChips(t, S) {
   let c = (isHonor(t) || isTerminal(t)) ? 10 : t.rank;
   if (S.boss === 'typhoon' && isWind(t)) c = 0;
+  if (S.boss === 'censor' && t.red) c = 0;
+  if (S.boss === 'collector' && t.suit === S.bossSuit) c = 0;
   if (t.eng === 'obsidian') c += 20;
   for (const k of S.talismans) { const d = TAL[k]; if (d.onTile) { const r = d.onTile(t, S); if (r && r.chips) c += r.chips; } }
   return c;
 }
+// Resolve a copier Talisman to the Talisman whose ability it copies (never another copier).
+function talTarget(S, k) {
+  const d = TAL[k]; if (!d.copies) return d;
+  const i = S.talismans.indexOf(k);
+  if (d.copies === 'right') { for (let j = i + 1; j < S.talismans.length; j++) if (!TAL[S.talismans[j]].copies) return TAL[S.talismans[j]]; return null; }
+  for (let j = 0; j < S.talismans.length; j++) if (!TAL[S.talismans[j]].copies) return TAL[S.talismans[j]]; return null;
+}
 function scoreCtx(S, kind, tiles, info) {
   // tiles: for 'meld' the selected tiles; for 'hand' the concealed selection followed by open-meld tiles.
-  const ctx = { kind, tiles: tiles.map(t => ({ ...t })), chips: 0, han: 0, xmult: 1, lines: [], hits: [], yaku: [], furiten: false, total: 0, money: 0, redCount: 0, hasDragonSet: false, desc: '', nChi: 0, nPon: 0, nKan: 0, nMelds: 0, hasPair: false, meldType: null, shatter: [] };
+  const playedIds = new Set(tiles.map(t => t.id));
+  const ctx = { kind, tiles: tiles.map(t => ({ ...t })), held: S.hand.filter(t => !playedIds.has(t.id)), chips: 0, han: 0, xmult: 1, lines: [], hits: [], yaku: [], furiten: false, total: 0, money: 0, redCount: 0, hasDragonSet: false, desc: '', nChi: 0, nPon: 0, nKan: 0, nMelds: 0, hasPair: false, meldType: null, shatter: [] };
   const L = (label, val, d = {}) => ctx.lines.push(Object.assign({ label, val }, d));
   const apply = r => { if (!r) return []; const parts = []; if (r.chips) { ctx.chips += r.chips; parts.push(`+${r.chips} Chips`); } if (r.han) { ctx.han += r.han; parts.push(`+${r.han} Han`); } if (r.xmult) { ctx.xmult *= r.xmult; parts.push(`×${r.xmult} Mult`); } if (r.money) { ctx.money += r.money; parts.push(`+¥${r.money}`); } return parts; };
   // ---- components
@@ -193,18 +207,18 @@ function scoreCtx(S, kind, tiles, info) {
   tiles.forEach((t, ti) => {
     let extra = 0; const who = [];
     if (t.eng === 'redseal') { extra += 1; who.push('Red Seal'); agg.retrig['Red Seal'] = (agg.retrig['Red Seal'] || 0) + 1; }
-    for (const k of S.talismans) { const d = TAL[k]; if (d.retrigger) { const n = d.retrigger(t, ctx, S, ti); if (n) { extra += n; who.push(d.name); agg.retrig[d.name] = (agg.retrig[d.name] || 0) + n; } } }
+    for (const k of S.talismans) { const d = talTarget(S, k); if (d && d.retrigger) { const n = d.retrigger(t, ctx, S, ti); if (n) { extra += n; who.push(TAL[k].name); agg.retrig[TAL[k].name] = (agg.retrig[TAL[k].name] || 0) + n; } } }
     const times = 1 + extra; let c = 0, h = 0, x = 1, money = 0;
     for (let r = 0; r < times; r++) {
       const tc = tileChips(t, S); c += tc; agg.chips += tc;
-      if (t.red) { h += redPer; agg.redHan += redPer; if (r === 0) { agg.red++; ctx.redCount++; } }
+      if (t.red && S.boss !== 'censor') { h += redPer; agg.redHan += redPer; if (r === 0) { agg.red++; ctx.redCount++; } }
       for (const di of S.dora) if (idx(t) === di) { h += 1; agg.dora++; }
       if (t.eng === 'dragonmark') { h += 1; agg.dm++; }
       if (t.eng === 'jade') { x *= 1.5; agg.jade++; }
       if (t.eng === 'gold') { money += 1; agg.gold++; }
       if (t.eng === 'glass') { x *= 2; agg.glass++; }
     }
-    if (t.eng === 'glass' && Math.random() < 0.25) ctx.shatter.push(t.id);
+    if (t.eng === 'glass' && (info.preview ? false : rand() < 0.25)) ctx.shatter.push(t.id);
     ctx.chips += c; ctx.han += h; ctx.xmult *= x; ctx.money += money;
     ctx.hits.push({ id: t.id, chips: c, han: h, xmult: x, times, who });
   });
@@ -236,10 +250,14 @@ function scoreCtx(S, kind, tiles, info) {
       else ctx.furiten = true;
     }
   }
+  // ---- Steel tiles kept in hand
+  const steel = ctx.held.filter(t => t.eng === 'steel').length;
+  if (steel) { const x = Math.pow(1.5, steel); ctx.xmult *= x; L(`Steel held ×${steel}`, `×${x} Mult`, { info: true }); }
   // ---- Talismans, pass 1: Han (feeds the Han table) in slot order
   const results = [];
   for (const k of S.talismans) {
-    const d = TAL[k]; const r = d.onScore ? (d.onScore(ctx, S) || null) : null; const ed = S.editions && S.editions[k] && EDITIONS[S.editions[k]];
+    const src = talTarget(S, k); const d = Object.assign({}, src || {}, { name: TAL[k].name + (src && src !== TAL[k] ? ' → ' + src.name : '') });
+    const r = src && src.onScore ? (src.onScore(ctx, S) || null) : null; const ed = S.editions && S.editions[k] && EDITIONS[S.editions[k]];
     results.push({ k, d, r, ed });
     if (r && r.han) { ctx.han += r.han; L(d.name, `+${r.han} Han`, { han: r.han, tal: d.name }); }
     if (ed && ed.han) { ctx.han += ed.han; L(`${d.name} (${ed.name})`, `+${ed.han} Han`, { han: ed.han, tal: d.name }); }
@@ -262,6 +280,7 @@ function scoreCtx(S, kind, tiles, info) {
   }
   // ---- Boss and Furiten
   if (S.boss === 'wallbuilder' && kind === 'meld' && ctx.nMelds < 2) { ctx.chips = 0; L('The Wall-Builder', 'fewer than 2 melds: 0 Chips', { zero: true }); }
+  if (S.boss === 'gatekeeper' && !S.firstPlayDone) { ctx.chips = 0; L('The Gatekeeper', 'first Play of the Blind: 0 Chips', { zero: true }); }
   if (ctx.furiten) { ctx.mult *= 0.5; L(`Furiten (${ctx.winningTile} is in your River)`, '×0.5 Mult', { xmult: 0.5 }); }
   ctx.mult = Math.round(ctx.mult * 100) / 100; ctx.chips = Math.max(0, ctx.chips);
   ctx.total = Math.floor(ctx.chips * ctx.mult);
@@ -278,7 +297,7 @@ function shantenRegular(counts, M) {
     while (i < 34 && counts[i] === 0) i++;
     if (i >= 34) { const mm = Math.min(m, M); let tt = t; if (mm + tt > M) tt = M - mm; const s = 2 * M - 2 * mm - tt - (p ? 1 : 0); if (s < best) best = s; return; }
     if (counts[i] >= 3) { counts[i] -= 3; dfs(i, m + 1, t, p); counts[i] += 3; }
-    if (i < 27 && i % 9 <= 6 && counts[i + 1] && counts[i + 2]) { counts[i]--; counts[i + 1]--; counts[i + 2]--; dfs(i, m + 1, t, p); counts[i]++; counts[i + 1]++; counts[i + 2]++; }
+    if (i < 27) for (const sh of CHI_SHAPES()) { const a = i + sh[1], b = i + sh[2]; if ((i % 9) + sh[2] > 8 || !counts[a] || !counts[b]) continue; counts[i]--; counts[a]--; counts[b]--; dfs(i, m + 1, t, p); counts[i]++; counts[a]++; counts[b]++; }
     if (!p && counts[i] >= 2) { counts[i] -= 2; dfs(i, m, t, true); counts[i] += 2; }
     if (m + t < M) {
       if (counts[i] >= 2) { counts[i] -= 2; dfs(i, m, t + 1, p); counts[i] += 2; }

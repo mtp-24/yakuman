@@ -181,6 +181,7 @@ aside{display:flex;flex-direction:column;gap:10px;min-width:0}
 .edtag.ed-foil{background:linear-gradient(90deg,#9aa5b1,#e6ecf2,#9aa5b1);color:#1b1b1b} .edtag.ed-holo{background:linear-gradient(90deg,#ff7eb3,#7afcff,#feff9c,#ff7eb3);color:#1b1b1b} .edtag.ed-poly{background:linear-gradient(90deg,#f97316,#eab308,#22c55e,#3b82f6,#a855f7);color:#fff}
 .slot.ed-foil,.shopcard.ed-foil{border-color:#c9d3dd;box-shadow:inset 0 0 0 1px rgba(255,255,255,.15)} .slot.ed-holo,.shopcard.ed-holo{border-image:linear-gradient(135deg,#ff7eb3,#7afcff,#feff9c) 1} .slot.ed-poly,.shopcard.ed-poly{border-image:linear-gradient(135deg,#f97316,#eab308,#22c55e,#3b82f6,#a855f7) 1}
 .tile.glass{background:linear-gradient(160deg,#eef7ff 0%,#c6dff2 55%,#a9cbe6 100%);border-color:#86aecd;box-shadow:0 3px 0 #6f93ad,0 4px 6px rgba(0,0,0,.4)}
+.eng-steel{background:#5a6b7a} .edtag.ed-neg{background:#111;color:#fff;border:1px solid #888} .slot.ed-neg,.shopcard.ed-neg{border-color:#888;box-shadow:inset 0 0 12px rgba(0,0,0,.6)}
 .eng-redseal{background:#c9281c;border-radius:50%} .eng-glass{background:#3b7fb8}
 .stage-tiles .float.again{color:var(--bad)}
 .stage-math.hot .tot{color:#ff9f43;text-shadow:0 0 12px #ff6b1a,0 0 28px #ff3d00;animation:flame .5s ease-in-out infinite alternate}
@@ -191,6 +192,13 @@ aside{display:flex;flex-direction:column;gap:10px;min-width:0}
 .ember{position:absolute;bottom:-6px;width:6px;height:6px;border-radius:50%;background:radial-gradient(circle,#ffd166,#ff6b1a 60%,transparent 70%);opacity:0;animation:rise 1.4s ease-out infinite;pointer-events:none}
 @keyframes rise{0%{transform:translateY(0) scale(1);opacity:0}15%{opacity:1}100%{transform:translateY(-220px) scale(.3);opacity:0}}
 @media (prefers-reduced-motion:reduce){.stage-math.hot .tot,.stage-math.blazing,.ember{animation:none}}
+.setup{display:grid;grid-template-columns:1fr 1fr;gap:16px} @media (max-width:700px){.setup{grid-template-columns:1fr}}
+.opt{display:grid;grid-template-columns:auto 1fr;gap:2px 8px;align-items:center;padding:6px 8px;border:1px solid var(--line);border-radius:6px;margin-bottom:6px;cursor:pointer;font-size:12px}
+.opt input{grid-row:span 2} .opt span{grid-column:2;font-size:11px}
+.opt:has(input:checked){border-color:var(--accent);background:rgba(217,164,65,.08)}
+#seedInput{width:100%;background:var(--panel2);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:7px;font-family:var(--body);letter-spacing:.08em;text-transform:uppercase}
+.runinfo{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:12px;color:var(--muted)} .runinfo b{color:var(--fg)}
+.owned{display:flex;flex-wrap:wrap;gap:6px} .own{display:inline-flex;align-items:center;gap:6px;font-size:12px;background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:4px 8px} .own button{padding:2px 7px;font-size:11px}
 .tag{display:inline-block;font-size:10px;padding:1px 6px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);color:var(--muted);margin-left:4px}
 .flowers{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}
 .flowerchip{font-size:11px;background:rgba(240,163,184,.12);border:1px solid rgba(240,163,184,.4);border-radius:10px;padding:1px 7px;color:#f0a3b8}

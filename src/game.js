@@ -34,23 +34,28 @@ function setLang(l) { LANG = l; try { localStorage.setItem('yakuman.lang', l); }
 // ===================== STATE =====================
 let S = null;
 const SAVE_KEY = 'yakuman.save.v1';
-function newState() {
-  const bosses = shuffle(Object.keys(BOSSES)).concat(shuffle(Object.keys(BOSSES)));
-  return {
-    phase: 'blind', deck: buildDeck(), wall: [], hand: [], river: [], open: [], played: [], selected: [], selRiver: null,
-    ante: 1, blindIndex: 0, boss: null, bossOrder: bosses, target: 0, score: 0, plays: 0, discards: 0, money: CFG.startMoney,
+function newState(opts = {}) {
+  const seed = (opts.seed || '').trim() || randomSeed();
+  const st = { seed, rngState: hashSeed(seed), deckKey: DECKS[opts.deck] ? opts.deck : 'standard', stake: STAKES[opts.stake] ? opts.stake : 'white' };
+  S = st; // rand() reads S.rngState from here on
+  const bosses = shuffle(Object.keys(BOSSES)).slice(0, CFG.antes);
+  return Object.assign(st, {
+    phase: 'blind', deck: buildDeck(st.deckKey), wall: [], hand: [], river: [], open: [], played: [], selected: [], selRiver: null,
+    ante: 1, blindIndex: 0, boss: null, bossOrder: bosses, target: 0, score: 0, plays: 0, discards: 0, money: CFG.startMoney + (st.deckKey === 'merchant' ? 16 : 0),
     talismans: [], consumables: [], scrolls: { meld: {}, yaku: {} }, flowers: [], dora: [], indicators: [], pendingDiscard: 0,
-    shop: null, lastPlay: null, bonusPlays: 0, bonusDiscards: 0, revealed: false, sortHand: true, selTal: null, talState: {}, editions: {}, busy: false, newIds: [], drawSeq: 0,
-    stats: { best: 0, bestDesc: '', hands: 0, melds: 0, blinds: 0 }, reward: null, msg: '',
-  };
+    shop: null, tags: [], pack: null, lastPlay: null, bonusPlays: 0, bonusDiscards: 0, revealed: false, sortHand: true, selTal: null, talState: {}, editions: {}, busy: false, newIds: [], drawSeq: 0,
+    stats: { best: 0, bestDesc: '', hands: 0, melds: 0, blinds: 0, rungs: {}, yaku: {}, bosses: [], calls: 0, kans: 0, discards: 0, skipped: 0 }, reward: null, msg: '',
+  });
 }
 const blindKind = () => ['small', 'big', 'boss'][S.blindIndex];
 const hasF = k => S.flowers.includes(k);
-const handSize = () => CFG.handSize + (hasF('plum') ? 1 : 0);
+const handSize = () => Math.max(8, CFG.handSize + (hasF('plum') ? 1 : 0) + (S.deckKey === 'abundant' ? 2 : 0) + (S.blindMods && S.blindMods.handSize || 0) - (S.boss === 'miser' && S.phase === 'blind' ? 3 : 0));
 const capacity = () => handSize() - 3 * S.open.length;
 const neededConcealed = () => 14 - 3 * S.open.length;
-const conSlots = () => CFG.consumableSlots + (hasF('spring') ? 1 : 0);
-const price = c => hasF('chrysanthemum') ? Math.max(1, Math.ceil(c * 0.8)) : c;
+const conSlots = () => CFG.consumableSlots + (hasF('spring') ? 1 : 0) + (S.deckKey === 'merchant' ? 1 : 0);
+const price = c => { let p = c; if (S.deckKey === 'merchant') p = Math.ceil(p * 1.25); if (hasF('chrysanthemum')) p = Math.ceil(p * 0.8); return Math.max(1, p); };
+const talSlots = () => CFG.talismanSlots + S.talismans.filter(k => S.editions[k] === 'neg').length;
+const stakeTargets = () => (S.stake === 'green' || S.stake === 'black') ? 1.3 : 1;
 const rerollCost = () => hasF('autumn') ? 2 : CFG.rerollCost;
 function talMod(f) { return S.talismans.reduce((a, k) => a + (TAL[k][f] || 0), 0); }
 function selTiles() { return S.selected.map(id => S.hand.find(t => t.id === id)).filter(Boolean); }
@@ -64,12 +69,14 @@ function clearSave() { try { localStorage.removeItem(SAVE_KEY); } catch (e) { } 
 function startBlind() {
   S.phase = 'blind';
   const kind = blindKind();
-  S.boss = kind === 'boss' ? S.bossOrder[S.ante - 1] : null;
-  S.target = Math.floor(CFG.anteBase[S.ante - 1] * CFG.blindMult[kind]);
-  S.plays = Math.max(1, CFG.playsPerBlind + S.bonusPlays + talMod('plays') + (hasF('bamboo') ? 1 : 0));
-  S.discards = CFG.discardsPerBlind + S.bonusDiscards + talMod('discards') + (hasF('orchid') ? 1 : 0);
+  S.boss = kind === 'boss' ? S.bossOrder[S.ante - 1] : null; if (S.boss && !S.stats.bosses.includes(S.boss)) S.stats.bosses.push(S.boss);
+  S.target = Math.floor(CFG.anteBase[S.ante - 1] * CFG.blindMult[kind] * stakeTargets());
+  S.plays = Math.max(1, CFG.playsPerBlind + S.bonusPlays + talMod('plays') + (hasF('bamboo') ? 1 : 0) + (S.deckKey === 'gambler' ? 1 : 0) - (S.deckKey === 'abundant' ? 1 : 0));
+  S.discards = Math.max(0, CFG.discardsPerBlind + S.bonusDiscards + talMod('discards') + (hasF('orchid') ? 1 : 0) - (S.deckKey === 'gambler' ? 1 : 0));
   S.wall = shuffle(S.deck.slice()); S.deck = []; S.hand = []; S.river = []; S.open = []; S.played = [];
   S.selected = []; S.selRiver = null; S.dora = []; S.indicators = []; S.pendingDiscard = 0; S.revealed = false; S.score = 0; S.lastPlay = null; S.reward = null; S.selTal = null;
+  S.firstPlayDone = false; S.bossSuit = S.boss === 'collector' ? pick(['m', 'p', 's']) : null;
+  S.blindMods = S.nextBlindMods || {}; S.nextBlindMods = null;
   draw();
   for (const k of S.talismans) if (TAL[k].onBlindStart) TAL[k].onBlindStart(S);
   setMsg(S.boss ? `${BOSSES[S.boss].name}: ${BOSSES[S.boss].desc}` : `${kind === 'small' ? 'Small' : 'Big'} Blind. Score ${S.target} to win.`);
@@ -83,12 +90,13 @@ function collectDeck() {
 }
 function winBlind() {
   const kind = blindKind();
-  const base = CFG.blindReward[kind], left = S.plays, interest = Math.min(hasF('winter') ? 10 : CFG.interestCap, Math.floor(S.money / CFG.interestPer));
+  const base = (kind === 'small' && (S.stake === 'red' || S.stake === 'black')) ? 0 : CFG.blindReward[kind], left = S.plays, interest = Math.min(hasF('winter') ? 10 : CFG.interestCap, Math.floor(S.money / CFG.interestPer));
   let tal = 0; for (const k of S.talismans) if (TAL[k].onBlindEnd) tal += TAL[k].onBlindEnd(S);
   const summer = hasF('summer') ? 2 : 0;
-  const total = base + left + interest + tal + summer;
+  let invest = 0; if (kind === 'boss' && S.tags.includes('investment')) { invest = 25; S.tags = S.tags.filter(t => t !== 'investment'); }
+  const total = base + left + interest + tal + summer + invest;
   S.money += total; S.stats.blinds++; S.msg = ''; S.msgErr = false;
-  S.reward = { kind, base, left, interest, tal, summer, total };
+  S.reward = { kind, base, left, interest, tal, summer, invest, total };
   collectDeck();
   const finished = S.ante === CFG.antes && S.blindIndex === 2;
   S.blindIndex++; if (S.blindIndex > 2) { S.blindIndex = 0; S.ante++; }
@@ -96,7 +104,7 @@ function winBlind() {
   genShop(); S.phase = 'shop';
 }
 function loseRun() { S.phase = 'gameover'; }
-function newRun() { S = newState(); startBlind(); render(); }
+function newRun(opts) { S = newState(opts || {}); startBlind(); render(); }
 
 // ===================== ACTIONS =====================
 function setMsg(m, err) { S.msg = m; S.msgErr = !!err; }
@@ -117,7 +125,7 @@ function playOption() {
   return { err: `Selection must split into melds (Chi, Pon, Kan) plus at most one pair, up to 4 melds. Or select ${need} tiles for a complete hand.` };
 }
 async function doPlay() {
-  if (S.phase !== 'blind' || S.busy) return;
+  if (S.phase !== 'blind' || S.busy) return; setRules(S);
   const opt = playOption(); if (opt.err) { setMsg(opt.err, true); return render(); }
   const sel = S.hand.filter(t => S.selected.includes(t.id)); let ctx;
   if (opt.type === 'hand') { ctx = scoreCtx(S, 'hand', sel.concat(openTiles()), { yaku: opt.best.yaku, dec: opt.best.dec }); S.stats.hands++; }
@@ -126,7 +134,8 @@ async function doPlay() {
   await animateScore(ctx);
   S.busy = false;
   for (const k of S.talismans) if (TAL[k].afterScore) TAL[k].afterScore(ctx, S);
-  S.plays--; S.score += ctx.total; S.money += ctx.money; S.lastPlay = ctx;
+  S.plays--; S.score += ctx.total; S.money += ctx.money; S.lastPlay = ctx; S.firstPlayDone = true;
+  S.stats.rungs[ctx.meldType] = (S.stats.rungs[ctx.meldType] || 0) + 1; for (const yk of ctx.yaku) S.stats.yaku[yk.key] = (S.stats.yaku[yk.key] || 0) + 1;
   if (ctx.total > S.stats.best) { S.stats.best = ctx.total; S.stats.bestDesc = ctx.desc; }
   const keep = t => !ctx.shatter.includes(t.id);
   S.played.push(...sel.filter(keep)); S.hand = S.hand.filter(t => !sel.includes(t));
@@ -148,18 +157,20 @@ function doDiscard() {
   }
   if (S.discards <= 0) { setMsg('No Discards left.', true); return render(); }
   if (!sel.length) { setMsg('Select 1–' + CFG.maxDiscardTiles + ' tiles to discard.', true); return render(); }
-  if (sel.length > CFG.maxDiscardTiles) { setMsg(`You can discard at most ${CFG.maxDiscardTiles} tiles at once.`, true); return render(); }
+  const maxD = S.boss === 'monk' ? 3 : CFG.maxDiscardTiles;
+  if (sel.length > maxD) { setMsg(`You can discard at most ${maxD} tiles at once${S.boss === 'monk' ? ' against The Monk' : ''}.`, true); return render(); }
   if (S.boss === 'loanshark') {
     if (S.money < 1) { setMsg('The Loan Shark has locked your discards: ¥0 left.', true); return render(); }
     S.money -= 1;
   }
-  S.discards--; S.river.push(...sel); S.hand = S.hand.filter(t => !sel.includes(t)); S.selected = []; draw();
+  S.discards--; S.stats.discards++; S.river.push(...sel); S.hand = S.hand.filter(t => !sel.includes(t)); S.selected = []; draw();
   for (const k of S.talismans) if (TAL[k].onDiscard) TAL[k].onDiscard(S, sel);
   setMsg(`Discarded ${sel.length} tile${sel.length > 1 ? 's' : ''} to the River.`); render();
 }
 function doCall() {
   if (S.phase !== 'blind' || S.busy) return;
   if (S.pendingDiscard) { setMsg('Settle your previous Call first.', true); return render(); }
+  if (S.boss === 'fisherman') { setMsg('The Fisherman: River tiles cannot be Called this Blind.', true); return render(); }
   const freeCall = S.talismans.some(k => TAL[k].freeCall);
   if (!freeCall && S.plays <= 1) { setMsg(S.plays <= 0 ? 'No Plays left.' : 'Calling would use your last Play and leave nothing to score with.', true); return render(); }
   const rt = S.river.find(t => t.id === S.selRiver); if (!rt) { setMsg('Select a tile in the River to call.', true); return render(); }
@@ -168,7 +179,7 @@ function doCall() {
   const type = meldType([rt, ...sel]); if (!type) { setMsg('That River tile and your selection do not form a Chi, Pon or Kan.', true); return render(); }
   if (!freeCall) S.plays--; S.river = S.river.filter(t => t !== rt); S.hand = S.hand.filter(t => !sel.includes(t));
   S.open.push({ type, tiles: sortTiles([rt, ...sel]), calledId: rt.id }); S.selected = []; S.selRiver = null;
-  for (const k of S.talismans) if (TAL[k].onCall) TAL[k].onCall(S);
+  for (const k of S.talismans) if (TAL[k].onCall) TAL[k].onCall(S); S.stats.calls++; if (type === 'kan') S.stats.kans++;
   const rep = type === 'kan' ? drawReplacement() : null;
   S.pendingDiscard = Math.max(0, S.hand.length - capacity());
   const note = `Called ${MELD_LABEL[type]} (open)${freeCall ? ', no Play spent' : ''}${rep ? `. Replacement tile drawn: ${tileName(rep)}` : ''}`;
@@ -185,7 +196,7 @@ function declareOption() {
 function doDeclareKan() {
   const o = declareOption(); if (!o.ok) { if (o.err) setMsg(o.err, true); return render(); }
   const sel = o.sel; S.hand = S.hand.filter(t => !sel.includes(t));
-  S.open.push({ type: 'kan', tiles: sortTiles(sel), calledId: null, closed: true }); S.selected = [];
+  S.open.push({ type: 'kan', tiles: sortTiles(sel), calledId: null, closed: true }); S.selected = []; S.stats.kans++;
   const rep = drawReplacement(); draw();
   setMsg(`Declared a closed Kan of ${isHonor(sel[0]) ? HONOR_EN[sel[0].rank] : sel[0].rank + ' ' + SUIT_EN[sel[0].suit]}. Hand stays closed.${rep ? ' Replacement tile drawn: ' + tileName(rep) + '.' : ''}`);
   render();
@@ -196,13 +207,16 @@ function useConsumable(i) {
   if (S.phase !== 'blind' && !def.anywhere) { setMsg('Use this during a Blind, with tiles in hand.', true); return render(); }
   const sel = S.phase === 'blind' ? selTiles() : [];
   if (sel.length < def.sel[0] || sel.length > def.sel[1]) { setMsg(def.sel[0] === def.sel[1] ? (def.sel[0] === 0 ? 'Clear your selection first.' : `Select exactly ${def.sel[0]} tile${def.sel[0] > 1 ? 's' : ''}.`) : `Select ${def.sel[0]}–${def.sel[1]} tiles.`, true); return render(); }
+  const before = S.hand.length;
   const r = def.use(S, sel); if (r === false) { setMsg('That cannot be used right now.', true); return render(); }
   for (const t of S.hand) if (t.d === undefined) t.d = ++S.drawSeq;
+  if (S.hand.length > before) for (const k of S.talismans) if (TAL[k].onTileAdded) TAL[k].onTileAdded(S, S.hand.length - before);
   S.consumables.splice(i, 1); S.selected = []; if (S.phase === 'blind') draw();
   setMsg(`${def.name} used.`); render();
 }
 function talValue(k) { return TAL[k].cost + (S.editions[k] ? EDITIONS[S.editions[k]].price : 0); }
-function sellTalisman(k) { const i = S.talismans.indexOf(k); if (i < 0) return; S.talismans.splice(i, 1); S.money += Math.max(1, Math.floor(talValue(k) / 2)); delete S.editions[k]; S.selTal = null; setMsg(`Sold ${TAL[k].name}.`); render(); }
+function sellTalisman(k) { const i = S.talismans.indexOf(k); if (i < 0) return; S.talismans.splice(i, 1); S.money += Math.max(1, Math.floor(talValue(k) / 2)); delete S.editions[k]; S.selTal = null; for (const t of S.talismans) if (TAL[t].onSell) TAL[t].onSell(S); setMsg(`Sold ${TAL[k].name}.`); render(); }
+function sellConsumable(i) { const c = S.consumables[i]; if (!c) return; const v = Math.max(1, Math.floor(CONS[c.key].cost / 2)); S.consumables.splice(i, 1); S.money += v; setMsg(`Sold ${CONS[c.key].name} for ¥${v}.`); render(); }
 
 // ===================== SHOP =====================
 function rollCard() {
@@ -213,19 +227,57 @@ function rollCard() {
 }
 function genShop() {
   const fl = FLOWERS.filter(f => !S.flowers.includes(f.key));
-  S.shop = { cards: [rollCard(), rollCard()], scroll: { kind: 'scroll', key: pick(SCROLLS).key }, flower: fl.length ? { kind: 'flower', key: pick(fl).key } : null };
+  const packKey = pick(['omikuji', 'omikuji', 'scroll', 'scroll', 'talisman', 'kami', 'mega']);
+  S.shop = { cards: [rollCard(), rollCard()], scroll: { kind: 'scroll', key: pick(SCROLLS).key }, flower: fl.length ? { kind: 'flower', key: pick(fl).key } : null, pack: { kind: 'pack', key: packKey }, coupon: false, freeReroll: false, freePacks: [] };
+  // consume tags that act on this shop
+  const take = t => { const i = S.tags.indexOf(t); if (i >= 0) { S.tags.splice(i, 1); return true; } return false; };
+  if (take('coupon')) S.shop.coupon = true;
+  if (take('reroll')) S.shop.freeReroll = true;
+  for (const ed of ['foil', 'holo', 'poly', 'neg']) if (take(ed)) { const c = S.shop.cards.find(x => x.kind === 'talisman'); if (c) c.edition = ed; else S.shop.cards[0] = { kind: 'talisman', key: pick(TALISMANS.filter(t => !S.talismans.includes(t.key))).key, edition: ed }; }
+  for (const pk of ['omikuji', 'scroll', 'talisman', 'kami']) while (take(pk)) S.shop.freePacks.push(pk);
 }
-function itemDef(it) { return it.kind === 'talisman' ? TAL[it.key] : it.kind === 'scroll' ? SCR[it.key] : it.kind === 'flower' ? FLW[it.key] : CONS[it.key]; }
+function openPack(key, free) {
+  const def = PACKS[key]; let pool;
+  if (key === 'omikuji' || key === 'mega') pool = OMIKUJI.map(o => ({ kind: 'omikuji', key: o.key }));
+  else if (key === 'scroll') pool = SCROLLS.map(o => ({ kind: 'scroll', key: o.key }));
+  else if (key === 'kami') pool = KAMI.map(o => ({ kind: 'kami', key: o.key }));
+  else pool = TALISMANS.filter(t => !S.talismans.includes(t.key)).map(t => ({ kind: 'talisman', key: t.key, edition: rollEdition() }));
+  const choices = shuffle(pool.slice()).slice(0, def.show);
+  S.pack = { key, choices, left: def.keep, free: !!free };
+}
+function takeFromPack(i) {
+  const it = S.pack.choices[i]; if (!it || it.sold) return;
+  if (it.kind === 'talisman') { if (S.talismans.length >= talSlots()) { setMsg('Talisman slots are full. Sell one from the list below first.', true); return render(); } S.talismans.push(it.key); if (it.edition) S.editions[it.key] = it.edition; }
+  else if (it.kind === 'scroll') { const [t, k] = it.key.split(':'); S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] = (S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] || 0) + 1; for (const tk of S.talismans) if (TAL[tk].onScroll) TAL[tk].onScroll(S); }
+  else { if (S.consumables.length >= conSlots()) { setMsg('Consumable slots are full. Use or sell one first.', true); return render(); } S.consumables.push({ kind: it.kind, key: it.key }); }
+  it.sold = true; S.pack.left--; setMsg(`Took ${itemDef(it).name}.`);
+  if (S.pack.left <= 0) S.pack = null;
+  render();
+}
+function itemDef(it) { return it.kind === 'talisman' ? TAL[it.key] : it.kind === 'scroll' ? SCR[it.key] : it.kind === 'flower' ? FLW[it.key] : it.kind === 'pack' ? PACKS[it.key] : CONS[it.key]; }
 function buy(it) {
-  const def = itemDef(it), p = price(def.cost + (it.edition ? EDITIONS[it.edition].price : 0));
+  const def = itemDef(it), p = itemPrice(it);
   if (S.money < p) { setMsg(`Not enough YEN: ${def.name} costs ¥${p}.`, true); return render(); }
-  if (it.kind === 'talisman') { if (S.talismans.length >= CFG.talismanSlots) { setMsg('All 5 Talisman slots are full. Sell one first.', true); return render(); } S.talismans.push(it.key); if (it.edition) S.editions[it.key] = it.edition; }
+  if (it.kind === 'pack') { S.money -= p; it.sold = true; openPack(it.key, false); return render(); }
+  if (it.kind === 'talisman') { if (S.talismans.length >= talSlots()) { setMsg(`All ${talSlots()} Talisman slots are full. Sell one first.`, true); return render(); } S.talismans.push(it.key); if (it.edition) S.editions[it.key] = it.edition; }
   else if (it.kind === 'omikuji' || it.kind === 'kami') { if (S.consumables.length >= conSlots()) { setMsg('Consumable slots are full. Use one first.', true); return render(); } S.consumables.push({ kind: it.kind, key: it.key }); }
-  else if (it.kind === 'scroll') { const [t, k] = it.key.split(':'); S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] = (S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] || 0) + 1; }
+  else if (it.kind === 'scroll') { const [t, k] = it.key.split(':'); S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] = (S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] || 0) + 1; for (const tk of S.talismans) if (TAL[tk].onScroll) TAL[tk].onScroll(S); }
   else if (it.kind === 'flower') { S.flowers.push(it.key); }
   S.money -= p; it.sold = true; setMsg(`Bought ${def.name}.`); render();
 }
-function reroll() { const c = rerollCost(); if (S.money < c) { setMsg(`Reroll costs ¥${c}.`, true); return render(); } S.money -= c; S.shop.cards = [rollCard(), rollCard()]; render(); }
+function itemPrice(it) { const def = itemDef(it); let base = def.cost + (it.edition ? EDITIONS[it.edition].price : 0); if (it.kind === 'talisman' && S.stake === 'black') base += 2; if (S.shop && S.shop.coupon && (it.kind === 'talisman' || it.kind === 'omikuji' || it.kind === 'kami')) return 0; return price(base); }
+function reroll() { const c = S.shop.freeReroll ? 0 : rerollCost(); if (S.money < c) { setMsg(`Reroll costs ¥${c}.`, true); return render(); } S.money -= c; S.shop.cards = [rollCard(), rollCard()]; render(); }
+function skipBlind() {
+  if (S.phase !== 'shop' || blindKind() === 'boss') return;
+  const tag = pick(Object.keys(TAGS)); S.stats.skipped++;
+  if (tag === 'economy') S.money += Math.min(40, S.money);
+  else if (tag === 'speed') S.money += 5 * S.stats.skipped;
+  else if (tag === 'juggle') S.nextBlindMods = { handSize: 3 };
+  else if (tag === 'boss') { const used = new Set(S.bossOrder); const pool = Object.keys(BOSSES).filter(b => !used.has(b)); S.bossOrder[S.ante - 1] = pool.length ? pick(pool) : pick(Object.keys(BOSSES).filter(b => b !== S.bossOrder[S.ante - 1])); }
+  else S.tags.push(tag);
+  S.blindIndex++; S.shop = null; S.pack = null;
+  startBlind(); setMsg(`Skipped for the ${TAGS[tag].name}: ${TAGS[tag].desc}`); render();
+}
 
 // ===================== RENDER =====================
 const $ = s => document.querySelector(s);
@@ -281,14 +333,15 @@ function tileSVG(t) {
   return `<svg viewBox="0 0 54 74" aria-hidden="true">${body}</svg>`;
 }
 function render() {
-  if (!S) return;
+  if (!S) return; setRules(S);
   $('#hdrRound').innerHTML = `Ante <b>${Math.min(S.ante, CFG.antes)}</b> / ${CFG.antes} · ${S.phase === 'blind' ? ({ small: 'Small Blind', big: 'Big Blind', boss: 'Boss' })[blindKind()] : S.phase === 'shop' ? 'Shop' : ''}`;
+  $('#hdrRound').title = `Seed ${S.seed} · ${DECKS[S.deckKey].name} · ${STAKES[S.stake].name}`;
   $('#hdrMoney').innerHTML = `YEN <b class="num">¥${S.money}</b>`;
   renderBlind(); renderTalismans(); renderConsumables(); renderOpen(); renderRiver(); renderHand(); renderActions(); renderLast();
   $('#msg').textContent = S.msg || ''; $('#msg').className = 'msg' + (S.msgErr ? ' err' : '');
-  if (S.phase === 'shop') showModal(shopHTML()); else if (S.phase === 'gameover') showModal(overHTML(false)); else if (S.phase === 'win') showModal(overHTML(true)); else if (!modalPinned) hideModal();
+  if (S.phase === 'shop' && S.pack) showModal(packHTML()); else if (S.phase === 'shop') showModal(shopHTML()); else if (S.phase === 'gameover') showModal(overHTML(false)); else if (S.phase === 'win') showModal(overHTML(true)); else if (!modalPinned) hideModal();
   $('#btnLang').textContent = LANG === 'hk' ? 'Riichi terms' : 'HK terms';
-  $('#btnYaku').textContent = LANG === 'hk' ? 'Faan' : 'Yaku';
+  $('#btnYaku').textContent = LANG === 'hk' ? 'Run info · Faan' : 'Run info · Yaku';
   translateDOM($('#app'));
   save();
 }
@@ -297,7 +350,8 @@ function renderBlind() {
   const name = inBlind && S.boss ? BOSSES[S.boss].name : ({ small: 'Small Blind', big: 'Big Blind', boss: 'Boss Blind' })[kind];
   const pct = S.target ? Math.min(100, 100 * S.score / S.target) : 0;
   let h = `<div class="label">Ante ${Math.min(S.ante, CFG.antes)} · ${inBlind ? 'Current blind' : 'Next up'}</div><div class="blind-name${S.boss && inBlind ? ' boss' : ''}">${name}</div>`;
-  if (inBlind && S.boss) h += `<div class="boss-desc">${BOSSES[S.boss].desc}</div>`;
+  if (inBlind && S.boss) h += `<div class="boss-desc">${BOSSES[S.boss].desc}${S.boss === 'collector' && S.bossSuit ? ` <b>This Blind: ${SUIT_EN[S.bossSuit]}.</b>` : ''}${S.boss === 'gatekeeper' ? (S.firstPlayDone ? ' <b>First Play done.</b>' : ' <b>Your next Play scores 0.</b>') : ''}</div>`;
+  if (S.tags && S.tags.length) h += `<div class="label" style="margin-top:8px">Tags</div><div class="flowers">${S.tags.map(t => `<span class="flowerchip" title="${TAGS[t].desc}">${TAGS[t].name}</span>`).join('')}</div>`;
   h += `<div class="label" style="margin-top:8px">Score at least</div><div class="target num">${inBlind ? S.target.toLocaleString() : Math.floor(CFG.anteBase[Math.min(S.ante, CFG.antes) - 1] * CFG.blindMult[kind]).toLocaleString()}</div>`;
   if (inBlind) h += `<div class="bar"><i style="width:${pct}%"></i></div><div class="num" style="font-size:13px">Scored <b style="color:var(--accent)">${S.score.toLocaleString()}</b></div>`;
   h += `<div class="stats"><div class="stat plays"><div class="label">Plays</div><div class="v num">${S.plays}</div></div><div class="stat discards"><div class="label">Discards</div><div class="v num">${S.discards}</div></div><div class="stat money"><div class="label">YEN</div><div class="v num">¥${S.money}</div></div><div class="stat"><div class="label">Wall</div><div class="v num">${S.wall.length}</div></div></div>`;
@@ -310,10 +364,10 @@ function renderBlind() {
 }
 function renderTalismans() {
   const box = $('#talismans'); box.innerHTML = '';
-  $('#talCount').textContent = `${S.talismans.length} / ${CFG.talismanSlots} · fire left to right, drag to reorder`;
-  for (let i = 0; i < CFG.talismanSlots; i++) {
+  $('#talCount').textContent = `${S.talismans.length} / ${talSlots()} · fire left to right, drag to reorder`;
+  for (let i = 0; i < talSlots(); i++) {
     const k = S.talismans[i]; const el = document.createElement('div');
-    if (k) { const ed = S.editions[k]; el.className = 'slot filled' + (S.selTal === k ? ' sel' : '') + (ed ? ' ed-' + ed : ''); el.dataset.tal = TAL[k].name; el.innerHTML = `<div class="n"><span class="order">${i + 1}</span>${TAL[k].name}${ed ? ` <span class="edtag ed-${ed}">${EDITIONS[ed].name}</span>` : ''}</div><div class="d">${TAL[k].desc}${ed ? ` <b>${EDITIONS[ed].desc}.</b>` : ''}${TAL[k].status ? ' <b>(' + TAL[k].status(S) + ')</b>' : ''}</div>`; bindSlotDrag(el, k); }
+    if (k) { const ed = S.editions[k]; el.className = 'slot filled' + (S.selTal === k ? ' sel' : '') + (ed ? ' ed-' + ed : ''); el.dataset.tal = TAL[k].name; const tgt = TAL[k].copies ? talTarget(S, k) : null; el.innerHTML = `<div class="n"><span class="order">${i + 1}</span>${TAL[k].name}${ed ? ` <span class="edtag ed-${ed}">${EDITIONS[ed].name}</span>` : ''}</div><div class="d">${TAL[k].desc}${tgt ? ` <b>Now: ${tgt.name}.</b>` : TAL[k].copies ? ' <b>Nothing to copy.</b>' : ''}${ed ? ` <b>${EDITIONS[ed].desc}.</b>` : ''}${TAL[k].status ? ' <b>(' + TAL[k].status(S) + ')</b>' : ''}</div>`; bindSlotDrag(el, k); }
     else { el.className = 'slot'; el.innerHTML = `<div class="d">Empty slot</div>`; }
     box.appendChild(el);
   }
@@ -504,22 +558,34 @@ let modalPinned = false;
 function showModal(html, pinned) { modalPinned = !!pinned; $('#modal').innerHTML = html; $('#overlay').hidden = false; translateDOM($('#modal')); }
 function hideModal() { modalPinned = false; $('#overlay').hidden = true; }
 function cardHTML(it, idx) {
-  const d = itemDef(it); const p = price(d.cost + (it.edition ? EDITIONS[it.edition].price : 0));
-  const kindLabel = { talisman: 'Talisman', omikuji: 'Omikuji', kami: 'Kami Spirit', scroll: 'Scroll of Mastery', flower: 'Flower / Season' }[it.kind];
+  const d = itemDef(it); const p = it.free ? 0 : itemPrice(it);
+  const kindLabel = { talisman: 'Talisman', omikuji: 'Omikuji', kami: 'Kami Spirit', scroll: 'Scroll of Mastery', flower: 'Flower / Season', pack: 'Booster pack' }[it.kind];
   const ed = it.edition ? EDITIONS[it.edition] : null;
-  return `<div class="shopcard ${it.kind}${it.sold ? ' sold' : ''}${ed ? ' ed-' + it.edition : ''}"><div class="kind">${kindLabel}${ed ? ` · <span class="edtag ed-${it.edition}">${ed.name}</span>` : ''}</div><div class="n">${d.name}</div><div class="d">${d.desc}${ed ? ` <b>${ed.name}: ${ed.desc}.</b>` : ''}</div><div class="buy"><span class="num" style="color:var(--accent)">¥${p}</span>${it.sold ? '<span class="muted">Sold</span>' : `<button class="primary" data-buy="${idx}">Buy</button>`}</div></div>`;
+  return `<div class="shopcard ${it.kind}${it.sold ? ' sold' : ''}${ed ? ' ed-' + it.edition : ''}"><div class="kind">${kindLabel}${ed ? ` · <span class="edtag ed-${it.edition}">${ed.name}</span>` : ''}</div><div class="n">${d.name}</div><div class="d">${d.desc}${ed ? ` <b>${ed.name}: ${ed.desc}.</b>` : ''}</div><div class="buy"><span class="num" style="color:var(--accent)">${p === 0 ? 'Free' : '¥' + p}</span>${it.sold ? '<span class="muted">Sold</span>' : `<button class="primary" data-buy="${idx}">${it.kind === 'pack' ? 'Open' : 'Buy'}</button>`}</div></div>`;
 }
 function shopHTML() {
-  const r = S.reward; const items = [...S.shop.cards, S.shop.scroll, S.shop.flower].filter(Boolean);
+  const r = S.reward; const items = [...S.shop.cards, S.shop.scroll, S.shop.flower, S.shop.pack].filter(Boolean);
   const next = ({ small: 'Small Blind', big: 'Big Blind', boss: 'Boss Blind' })[blindKind()];
   const nextBoss = blindKind() === 'boss' ? BOSSES[S.bossOrder[S.ante - 1]] : null;
   let h = `<h2>Shop</h2>`;
-  if (r) h += `<div class="label">Blind defeated · reward</div><div class="reward-list num"><span>${({ small: 'Small Blind', big: 'Big Blind', boss: 'Boss Blind' })[r.kind]} defeated</span><span>¥${r.base}</span><span>Unused Plays</span><span>¥${r.left}</span><span>Interest (¥1 per ¥5)</span><span>¥${r.interest}</span>${r.tal ? `<span>Talismans</span><span>¥${r.tal}</span>` : ''}${r.summer ? `<span>Summer</span><span>¥${r.summer}</span>` : ''}<span><b>Total</b></span><span><b>¥${r.total}</b></span></div>`;
-  h += `<div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center"><span>YEN: <b class="num" style="color:var(--accent)">¥${S.money}</b></span><span class="muted">Talismans ${S.talismans.length}/${CFG.talismanSlots} · Consumables ${S.consumables.length}/${conSlots()}</span></div>`;
+  if (r) h += `<div class="label">Blind defeated · reward</div><div class="reward-list num"><span>${({ small: 'Small Blind', big: 'Big Blind', boss: 'Boss Blind' })[r.kind]} defeated</span><span>¥${r.base}</span><span>Unused Plays</span><span>¥${r.left}</span><span>Interest (¥1 per ¥5)</span><span>¥${r.interest}</span>${r.tal ? `<span>Talismans</span><span>¥${r.tal}</span>` : ''}${r.summer ? `<span>Summer</span><span>¥${r.summer}</span>` : ''}${r.invest ? `<span>Investment Tag</span><span>¥${r.invest}</span>` : ''}<span><b>Total</b></span><span><b>¥${r.total}</b></span></div>`;
+  h += `<div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center"><span>YEN: <b class="num" style="color:var(--accent)">¥${S.money}</b></span><span class="muted">Talismans ${S.talismans.length}/${talSlots()} · Consumables ${S.consumables.length}/${conSlots()}</span></div>`;
+  if (S.shop.coupon) h += `<div class="msg">Coupon Tag: Talismans and consumables are free in this shop.</div>`;
+  if (S.shop.freePacks.length) h += `<div style="display:flex;gap:8px;flex-wrap:wrap;margin:6px 0">${S.shop.freePacks.map((pk, i) => `<button class="primary" data-freepack="${i}">Open free ${PACKS[pk].name}</button>`).join('')}</div>`;
   h += `<div class="shop-grid">${items.map((it, i) => cardHTML(it, i)).join('')}</div>`;
+  h += `<div class="label" style="margin:6px 0 4px">Yours · sell to make room</div><div class="owned">${S.talismans.map(k => `<span class="own"><b>${TAL[k].name}</b>${S.editions[k] ? ' <span class="edtag ed-' + S.editions[k] + '">' + EDITIONS[S.editions[k]].name + '</span>' : ''} <button class="ghost" data-sell="${k}">Sell ¥${Math.max(1, Math.floor(talValue(k) / 2))}</button></span>`).join('')}${S.consumables.map((c, i) => `<span class="own"><b>${CONS[c.key].name}</b> ${CONS[c.key].anywhere ? `<button class="ghost" data-usecon="${i}">Use</button>` : ''}<button class="ghost" data-sellcon="${i}">Sell ¥${Math.max(1, Math.floor(CONS[c.key].cost / 2))}</button></span>`).join('')}${!S.talismans.length && !S.consumables.length ? '<span class="muted">Nothing yet.</span>' : ''}</div>`;
   h += `<div class="msg${S.msgErr ? ' err' : ''}" style="margin-bottom:8px">${S.msg || ''}</div>`;
-  h += `<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><button id="mReroll">Reroll cards (¥${rerollCost()})</button><button id="mDeck" class="ghost">View Wall</button><span style="flex:1"></span><span class="muted">Next: Ante ${S.ante} ${next}${nextBoss ? ' · ' + nextBoss.name : ''}</span><button id="mNext" class="primary">Next Blind →</button></div>`;
+  h += `<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px"><button id="mReroll">Reroll cards (${S.shop.freeReroll ? 'free' : '¥' + rerollCost()})</button><button id="mDeck" class="ghost">View Wall</button><span style="flex:1"></span><span class="muted">Next: Ante ${S.ante} ${next}${nextBoss ? ' · ' + nextBoss.name : ''}</span>${blindKind() !== 'boss' ? `<button id="mSkip" class="ghost" title="Skip this Blind: no reward money, but you gain a random Tag">Skip for a Tag</button>` : ''}<button id="mNext" class="primary">Next Blind →</button></div>`;
   if (S.consumables.length) h += `<div class="muted" style="font-size:12px;margin-top:8px">Consumables that need tiles are used during a Blind. Click one on the board to use it now if it needs none.</div>`;
+  return h;
+}
+function packHTML() {
+  const pk = PACKS[S.pack.key];
+  let h = `<h2>${pk.name}</h2><p class="muted" style="margin:0 0 8px">${pk.desc} Choose ${S.pack.left} more.${S.pack.free ? ' (Free, from a Tag.)' : ''}</p>`;
+  h += `<div class="shop-grid">${S.pack.choices.map((it, i) => { const d = itemDef(it); const ed = it.edition ? EDITIONS[it.edition] : null; return `<div class="shopcard ${it.kind}${it.sold ? ' sold' : ''}${ed ? ' ed-' + it.edition : ''}"><div class="kind">${{ talisman: 'Talisman', omikuji: 'Omikuji', kami: 'Kami Spirit', scroll: 'Scroll of Mastery' }[it.kind]}${ed ? ` · <span class="edtag ed-${it.edition}">${ed.name}</span>` : ''}</div><div class="n">${d.name}</div><div class="d">${d.desc}${ed ? ` <b>${ed.name}: ${ed.desc}.</b>` : ''}</div><div class="buy"><span></span>${it.sold ? '<span class="muted">Taken</span>' : `<button class="primary" data-take="${i}">Take</button>`}</div></div>`; }).join('')}</div>`;
+  h += `<div class="msg${S.msgErr ? ' err' : ''}" style="margin:6px 0">${S.msg || ''}</div>`;
+  h += `<div class="label" style="margin:6px 0 4px">Yours</div><div class="owned">${S.talismans.map(k => `<span class="own"><b>${TAL[k].name}</b> <button class="ghost" data-sell="${k}">Sell ¥${Math.max(1, Math.floor(talValue(k) / 2))}</button></span>`).join('')}${S.consumables.map((c, i) => `<span class="own"><b>${CONS[c.key].name}</b><button class="ghost" data-sellcon="${i}">Sell ¥${Math.max(1, Math.floor(CONS[c.key].cost / 2))}</button></span>`).join('')}</div>`;
+  h += `<div style="margin-top:12px"><button id="mPackDone" class="ghost">Skip the rest</button></div>`;
   return h;
 }
 function overHTML(won) {
@@ -550,6 +616,8 @@ function rulesHTML() {
   <p><b>Discard.</b> Throw up to ${CFG.maxDiscardTiles} tiles into the River. Costs 1 Discard. The River stays visible for the whole Blind. You get ${CFG.playsPerBlind} Plays and ${CFG.discardsPerBlind} Discards per Blind before Talismans and Flowers.</p>
   <p><b>Call.</b> Select one River tile and 2–3 hand tiles that form a meld with it, then press Call. Costs 1 Play, no score yet. The meld is set aside as Open and counts toward your complete hand. Open hands get reduced Han on some Yaku, and lose closed-only Yaku (Pinfu, Iipeikou...). After a call you discard 1 tile to settle it; this does not use a Discard.</p>
   <p><b>Arranging your hand.</b> Drag any hand tile to reorder it, with a mouse or a finger. Dragging switches off auto-sort; the Sort button sorts the hand again and keeps new tiles sorted in. Tiles score in the order they sit in your hand, which matters for Shikigami and for the scoring animation.</p>
+  <p><b>Shop extras.</b> Every shop sells a booster pack: open it and keep one (or two) of what's inside. Before a Small or Big Blind you may skip it for a random Tag instead of its reward: free packs, editions, coupons, cash, a bigger hand or a different Boss. Tags you hold show in the side panel. You can sell Talismans and consumables from inside the shop.</p>
+  <p><b>Setup.</b> New runs let you choose a Wall (deck), a Stake (difficulty) and a seed. Sharing a seed replays the same Wall, shops and bosses.</p>
   <p><b>Helper.</b> Under your hand the game shows how many tiles you are from a complete hand, and tiles marked with a green dot can be discarded without losing progress. Select tiles to see whether that discard keeps you on track. Against The Purist it only counts your visible tiles.</p>
   <p><b>Kan.</b> Four identical tiles can be played as a partial Kan for points, or declared: press Declare Kan (or K) to set them aside as a closed Kan that counts toward your complete hand without opening it. Every Kan, declared or called from the River, draws one replacement tile from the Wall. If that replacement tile ends up as the winning tile of your complete hand, you score Rinshan Kaihou (+1 Han). A called Kan then settles with one discard like any Call.</p>
   <p><b>Furiten.</b> The winning tile of a complete hand is the newest tile you drew among the 14 you play. If a copy of that tile type sits in your River, the hand is in Furiten and the multiplier is halved. The helper shows your waits when you are one tile away and marks the ones already in your River. Kappa turns Furiten into a bonus.</p>
@@ -559,28 +627,39 @@ function rulesHTML() {
   <p><b>Shop.</b> After each Blind, spend YEN on Talismans (passive, 5 slots), Omikuji and Kami (consumables, use on selected hand tiles), Scrolls of Mastery (permanent upgrades) and Flowers (run-long perks). Click a Talisman on the board to sell it.</p>
   </div><div style="margin-top:12px"><button id="mClose" class="primary">Close</button></div>`;
 }
+function mostPlayedRung() { let best = null, n = 0; for (const [k, v] of Object.entries(S.stats.rungs || {})) if (v > n) { n = v; best = k; } return best; }
+function mostScoredYaku() { let best = null, n = 0; for (const [k, v] of Object.entries(S.stats.yaku || {})) if (v > n) { n = v; best = k; } return best; }
 function yakuHTML() {
-  const row = y => { const b = y.k && S && S.scrolls.yaku[y.k]; return `<tr><td><b>${y.n}</b>${y.c ? ' <span class="tag">closed only</span>' : ''}${b ? ` <span class="tag">Scroll +${b}</span>` : ''}</td><td class="num">${y.h}${b ? ` <span style="color:var(--good)">+${b}</span>` : ''}</td><td>${y.d}</td></tr>`; };
-  let h = `<h2>Yaku cheat sheet</h2><p class="muted" style="margin:0 0 10px">A complete hand is 4 melds + 1 pair (14 tiles) unless noted. Han values are shown as closed / open. A hand is Open once you have Called from the River. A complete hand with no Yaku still counts as 1 Han.</p>`;
-  h += `<div style="overflow-x:auto"><table class="sheet"><thead><tr><th>Play ladder</th><th>Base</th><th></th></tr></thead><tbody>`;
+  const yc = k => (S && S.stats.yaku[k]) || 0;
+  const row = y => { const b = y.k && S && S.scrolls.yaku[y.k]; const n = y.k ? yc(y.k) : 0; return `<tr><td><b>${y.n}</b>${y.c ? ' <span class="tag">closed only</span>' : ''}${b ? ` <span class="tag">Scroll +${b}</span>` : ''}</td><td class="num">${y.h}${b ? ` <span style="color:var(--good)">+${b}</span>` : ''}</td><td class="num">${n || '—'}</td><td>${y.d}</td></tr>`; };
+  const st = S.stats; const most = mostPlayedRung();
+  let h = `<h2>Run info</h2><div class="runinfo"><span><b>Seed</b> ${S.seed}</span><span><b>${DECKS[S.deckKey].name}</b> · ${STAKES[S.stake].name}</span><span><b>Blinds won</b> ${st.blinds}</span><span><b>Complete hands</b> ${st.hands}</span><span><b>Partial plays</b> ${st.melds}</span><span><b>Calls</b> ${st.calls} · <b>Kans</b> ${st.kans}</span><span><b>Discards</b> ${st.discards}</span><span><b>Skipped blinds</b> ${st.skipped}</span><span><b>Best play</b> ${st.best.toLocaleString()}${st.bestDesc ? ' (' + st.bestDesc + ')' : ''}</span><span><b>Bosses faced</b> ${st.bosses.map(b => BOSSES[b].name).join(', ') || '—'}</span>${S.flowers.length ? `<span><b>Flowers</b> ${S.flowers.map(f => FLW[f].name).join(', ')}</span>` : ''}${S.tags && S.tags.length ? `<span><b>Tags held</b> ${S.tags.map(t => TAGS[t].name).join(', ')}</span>` : ''}</div>`;
+  h += `<p class="muted" style="margin:10px 0">A complete hand is 4 melds + 1 pair (14 tiles) unless noted. Han values are shown as closed / open. A hand is Open once you have Called from the River. A complete hand with no Yaku still counts as 1 Han. "Played" counts this run; your most-played rung is marked.</p>`;
+  h += `<div style="overflow-x:auto"><table class="sheet"><thead><tr><th>Play ladder</th><th>Base</th><th>Played</th><th></th></tr></thead><tbody>`;
   const lv = k => (S && S.scrolls.meld[k]) || 0; const lvTag = k => lv(k) ? ` <span class="tag">Lv.${lv(k) + 1}</span>` : '';
   const val = k => `${CFG.meldBase[k].chips + lv(k) * CFG.scrollChips} chips, ${CFG.meldBase[k].han + lv(k) * CFG.scrollHan} Han`;
-  for (const k of ['single', 'pair', 'twopair', 'chi', 'pon', 'kan']) h += `<tr><td><b>${MELD_LABEL[k]}</b>${lvTag(k)}</td><td class="num">${val(k)}</td><td>${{ single: 'Any 1 tile.', pair: '2 identical tiles.', twopair: 'Two different pairs, no melds.', chi: '3 consecutive tiles of one suit. Add a pair for +10 chips.', pon: '3 identical tiles. Honor Pon adds Yakuhai (+1 Han).', kan: '4 identical tiles. Honor Kan adds Yakuhai.' }[k]}</td></tr>`;
-  for (const [k, r] of Object.entries(CFG.rungs)) h += `<tr><td><b>${r.name}</b></td><td class="num">${r.chips} chips, ${r.han} Han</td><td>${k.split(',')[0]} melds${k.endsWith('1') ? ' + a pair' : ''} played together. Each Kan inside adds +${CFG.kanBonus.chips} chips, +${CFG.kanBonus.han} Han. Honor sets add Yakuhai.</td></tr>`;
-  h += `<tr><td><b>Complete Hand</b>${lvTag('hand')}</td><td class="num">${val('hand')}</td><td>4 melds + a pair, 14 tiles. Yaku below add Han (at least +1).</td></tr>`;
-  h += `<tr><td colspan="3" class="muted">Multi-meld rungs use the per-component Scroll levels above: each Chi, Pon, Kan or Pair inside the play adds its Scroll bonus.</td></tr>`;
+  const played = k => { const n = (S && S.stats.rungs[k]) || 0; return `<td class="num">${n || '—'}${k === most && n ? ' <span class="tag">most</span>' : ''}</td>`; };
+  for (const k of ['single', 'pair', 'twopair', 'chi', 'pon', 'kan']) h += `<tr><td><b>${MELD_LABEL[k]}</b>${lvTag(k)}</td><td class="num">${val(k)}</td>${played(k)}<td>${{ single: 'Any 1 tile.', pair: '2 identical tiles.', twopair: 'Two different pairs, no melds.', chi: '3 consecutive tiles of one suit. Add a pair for +10 chips.', pon: '3 identical tiles. Honor Pon adds Yakuhai (+1 Han).', kan: '4 identical tiles. Honor Kan adds Yakuhai.' }[k]}</td></tr>`;
+  for (const [k, r] of Object.entries(CFG.rungs)) h += `<tr><td><b>${r.name}</b></td><td class="num">${r.chips} chips, ${r.han} Han</td>${played('rung' + k.replace(',', ''))}<td>${k.split(',')[0]} melds${k.endsWith('1') ? ' + a pair' : ''} played together. Each Kan inside adds +${CFG.kanBonus.chips} chips, +${CFG.kanBonus.han} Han. Honor sets add Yakuhai.</td></tr>`;
+  h += `<tr><td><b>Complete Hand</b>${lvTag('hand')}</td><td class="num">${val('hand')}</td>${played('hand')}<td>4 melds + a pair, 14 tiles. Yaku below add Han (at least +1).</td></tr>`;
+  h += `<tr><td colspan="4" class="muted">Multi-meld rungs use the per-component Scroll levels above: each Chi, Pon, Kan or Pair inside the play adds its Scroll bonus.</td></tr>`;
   h += `</tbody></table></div>`;
   h += `<div style="overflow-x:auto;margin-top:10px"><table class="sheet"><thead><tr><th>Han</th><th>Mult</th><th>Tier</th></tr></thead><tbody>`;
   for (const [hh, m, t] of [[0, 1, '—'], [1, 2, 'Standard'], [2, 4, 'Advanced'], [3, 8, 'Master'], ['4–5', 15, 'Mangan'], ['6–7', 25, 'Haneman'], ['8–10', 40, 'Baiman'], ['11–12', 60, 'Sanbaiman'], ['13+', 100, 'Yakuman']]) h += `<tr><td class="num">${hh}</td><td class="num">×${m}</td><td>${t}</td></tr>`;
   h += `</tbody></table></div>`;
   h += `<p style="margin:12px 0 6px"><b>Extra Han on any play:</b> each Red Five +1 (Koi: +2). Each tile matching a flipped Dora indicator +1. Dragon Mark engraving +1. Han is converted through the table once; after that Talismans fire left to right, adding Chips, adding flat Mult or multiplying Mult, so put +Mult Talismans before ×Mult ones. Furiten (the newest-drawn tile of your complete hand has a copy in your River) halves the final Mult.</p>`;
-  h += `<div style="overflow-x:auto"><table class="sheet"><thead><tr><th>Yaku</th><th>Han</th><th>Pattern</th></tr></thead><tbody>`;
+  h += `<div style="overflow-x:auto"><table class="sheet"><thead><tr><th>Yaku</th><th>Han</th><th>Scored</th><th>Pattern</th></tr></thead><tbody>`;
   for (const y of YAKU_SHEET) h += row(y);
   h += `</tbody></table></div>`;
-  h += `<div style="overflow-x:auto;margin-top:10px"><table class="sheet"><thead><tr><th>Yakuman</th><th>Han</th><th>Pattern</th></tr></thead><tbody>`;
+  h += `<div style="overflow-x:auto;margin-top:10px"><table class="sheet"><thead><tr><th>Yakuman</th><th>Han</th><th>Scored</th><th>Pattern</th></tr></thead><tbody>`;
   for (const y of YAKUMAN_SHEET) h += row(y);
   h += `</tbody></table></div><div style="margin-top:12px"><button id="mClose" class="primary">Close</button></div>`;
   return h;
+}
+function setupHTML() {
+  const radio = (name, obj, cur) => Object.entries(obj).map(([k, v]) => `<label class="opt"><input type="radio" name="${name}" value="${k}" ${k === cur ? 'checked' : ''}><b>${v.name}</b><span class="muted">${v.desc}</span></label>`).join('');
+  return `<h2>New run</h2><div class="setup"><div><div class="label">Wall</div>${radio('deck', DECKS, 'standard')}</div><div><div class="label">Stake</div>${radio('stake', STAKES, 'white')}<div class="label" style="margin-top:12px">Seed</div><input id="seedInput" placeholder="random" maxlength="24" autocomplete="off"><div class="muted" style="font-size:11px;margin-top:4px">Share a seed and the same Wall, shops and bosses come up for everyone. Leave blank for a random run.</div></div></div>
+  <div style="display:flex;gap:8px;margin-top:14px"><button id="mStartRun" class="primary">Start run</button><button id="mClose">Cancel</button></div>`;
 }
 function menuHTML(hasSave) {
   return `<h2 style="font-size:40px" data-notr>Yakuman</h2><p class="muted">A Mahjong roguelite in the Balatro mould. Playtest build. Switch between Riichi and Hong Kong terminology with the button in the header.</p>
@@ -607,7 +686,7 @@ function renderDebug() {
     render();
   });
   $('#dbgBoss').onchange = e => { const k = e.target.value; if (!k) return; const i = S.ante - 1; S.bossOrder[i] = k; if (S.phase === 'blind' && blindKind() === 'boss') { S.boss = k; } setMsg(`Boss for Ante ${S.ante} set to ${BOSSES[k].name}.`); render(); };
-  $('#dbgTal').onchange = e => { const k = e.target.value; if (!k) return; if (S.talismans.length < CFG.talismanSlots && !S.talismans.includes(k)) S.talismans.push(k); e.target.value = ''; render(); };
+  $('#dbgTal').onchange = e => { const k = e.target.value; if (!k) return; if (S.talismans.length < talSlots() && !S.talismans.includes(k)) S.talismans.push(k); e.target.value = ''; render(); };
   $('#dbgCon').onchange = e => { const k = e.target.value; if (!k) return; if (S.consumables.length < conSlots()) S.consumables.push({ kind: CONS[k].kind, key: k }); e.target.value = ''; render(); };
   $('#dbgScr').onchange = e => { const k = e.target.value; if (!k) return; buyFree({ kind: 'scroll', key: k }); e.target.value = ''; render(); };
   $('#dbgEd').onchange = e => { const k = e.target.value; if (!k || !S.selTal) return; if (k === 'none') delete S.editions[S.selTal]; else S.editions[S.selTal] = k; e.target.value = ''; render(); };
@@ -630,13 +709,21 @@ function bindEvents() {
   $('#overlay').addEventListener('click', e => {
     const t = e.target.closest('button'); if (!t) return;
     if (t.id === 'mClose') { hideModal(); render(); }
-    else if (t.id === 'mNewRun' || t.id === 'mStart') { hideModal(); newRun(); }
+    else if (t.id === 'mNewRun' || t.id === 'mStart') { showModal(setupHTML(), true); }
+    else if (t.id === 'mStartRun') { const deck = ($('#modal input[name=deck]:checked') || {}).value, stake = ($('#modal input[name=stake]:checked') || {}).value, seed = ($('#seedInput') || {}).value; hideModal(); newRun({ deck, stake, seed }); }
     else if (t.id === 'mContinue') { hideModal(); render(); }
     else if (t.id === 'mRules') { showModal(rulesHTML() + '', true); $('#mClose').onclick = () => { showModal(menuHTML(!!load()), true); }; }
     else if (t.id === 'mNext') { S.shop = null; S.msg = ''; startBlind(); render(); }
     else if (t.id === 'mReroll') reroll();
+    else if (t.id === 'mSkip') skipBlind();
+    else if (t.dataset.freepack != null) { const pk = S.shop.freePacks.splice(+t.dataset.freepack, 1)[0]; openPack(pk, true); render(); }
+    else if (t.dataset.take != null) takeFromPack(+t.dataset.take);
+    else if (t.id === 'mPackDone') { S.pack = null; render(); }
     else if (t.id === 'mDeck') { showModal(deckHTML(), true); $('#mClose').onclick = () => { modalPinned = false; render(); }; }
     else if (t.dataset.buy != null) { const items = [...S.shop.cards, S.shop.scroll, S.shop.flower].filter(Boolean); buy(items[+t.dataset.buy]); }
+    else if (t.dataset.sell) sellTalisman(t.dataset.sell);
+    else if (t.dataset.sellcon != null) sellConsumable(+t.dataset.sellcon);
+    else if (t.dataset.usecon != null) useConsumable(+t.dataset.usecon);
   });
   document.addEventListener('keydown', e => {
     if (S.phase !== 'blind' || !$('#overlay').hidden) return;
@@ -646,7 +733,7 @@ function bindEvents() {
 }
 function boot(saved) {
   bindEvents();
-  if (saved && saved.phase && saved.deck) { S = saved; S.talState = S.talState || {}; S.editions = S.editions || {}; S.busy = false; S.newIds = []; S.drawSeq = S.drawSeq || 0; render(); showModal(menuHTML(true), true); }
+  if (saved && saved.phase && saved.deck) { S = saved; S.talState = S.talState || {}; S.editions = S.editions || {}; S.seed = S.seed || 'legacy'; S.deckKey = S.deckKey || 'standard'; S.stake = S.stake || 'white'; if (S.rngState === undefined) S.rngState = hashSeed(S.seed + Date.now()); S.stats.rungs = S.stats.rungs || {}; S.stats.yaku = S.stats.yaku || {}; S.stats.bosses = S.stats.bosses || []; S.tags = S.tags || []; S.stats.skipped = S.stats.skipped || 0; S.stats.calls = S.stats.calls || 0; S.stats.kans = S.stats.kans || 0; S.stats.discards = S.stats.discards || 0; S.busy = false; S.newIds = []; S.drawSeq = S.drawSeq || 0; render(); showModal(menuHTML(true), true); }
   else { S = newState(); startBlind(); render(); showModal(menuHTML(false), true); }
 }
 try { if (window.claude && window.claude.hot) window.claude.hot.snapshot(() => S); } catch (e) { }
