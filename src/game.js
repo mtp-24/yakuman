@@ -99,7 +99,7 @@ function talMod(f) { return S.talismans.reduce((a, k) => a + (TAL[k][f] || 0), 0
 function selTiles() { return S.selected.map(id => S.hand.find(t => t.id === id)).filter(Boolean); }
 function openTiles() { return S.open.flatMap(m => m.tiles); }
 
-function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) { } }
+function save() { if (S && S.placeholder) return; try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) { } }
 function load() { try { const s = localStorage.getItem(SAVE_KEY); return s ? JSON.parse(s) : null; } catch (e) { return null; } }
 function clearSave() { try { localStorage.removeItem(SAVE_KEY); } catch (e) { } }
 function hasRunSave() { try { return !!localStorage.getItem(SAVE_KEY) && !!S && !['gameover', 'win'].includes(S.phase); } catch (e) { return false; } }
@@ -157,7 +157,7 @@ function unlockLabel(id) { const [kind, key, wall] = id.split(':'); if (kind ===
 const DISCOVER = ['tal', 'omikuji', 'kami', 'scroll', 'flower', 'pack', 'tag', 'boss'];
 function isSeen(kind, key) { return UNLOCK_ALL || !!PROFILE.seen[`${kind}:${key}`] || (kind === 'boss' && !!PROFILE.bosses[key]); }
 function markSeen() {
-  if (!S || !S.talismans) return false; let dirty = false;
+  if (!S || !S.talismans || S.placeholder) return false; let dirty = false;
   const add = (kind, key) => { if (key && !PROFILE.seen[`${kind}:${key}`]) { PROFILE.seen[`${kind}:${key}`] = 1; dirty = true; } };
   const item = it => { if (it) add(it.kind === 'talisman' ? 'tal' : it.kind, it.key); };
   S.talismans.forEach(k => add('tal', k)); (S.consumables || []).forEach(c => CONS[c.key] && add(CONS[c.key].kind, c.key)); (S.flowers || []).forEach(k => add('flower', k));
@@ -302,6 +302,7 @@ async function doPlay() {
   await animateScore(ctx);
   S.busy = false;
   for (const k of S.talismans) if (TAL[k].afterScore) TAL[k].afterScore(ctx, S);
+  if (S.spent && S.spent.length) { S.spent.forEach(k => toast(`<div class="label">Used up</div><b>${TAL[k].name}</b><div class="muted" style="font-size:11px">left your board after its last play</div>`)); S.spent = []; }
   S.plays--; S.score += ctx.total; S.money += ctx.money; S.lastPlay = ctx; S.firstPlayDone = true;
   S.stats.rungs[ctx.meldType] = (S.stats.rungs[ctx.meldType] || 0) + 1; for (const yk of ctx.yaku) S.stats.yaku[yk.key] = (S.stats.yaku[yk.key] || 0) + 1;
   if (ctx.total > S.stats.best) { S.stats.best = ctx.total; S.stats.bestDesc = ctx.desc; }
@@ -657,6 +658,7 @@ function render() {
   $('#btnYaku').textContent = 'Run Info';
   document.querySelectorAll('.zhead > .muted').forEach(e => { e.title = e.textContent; });   // full text on hover when a header is truncated
   translateDOM($('#app')); fitNumbers();
+  if (S.placeholder && $('#overlay').hidden) showModal(menuHTML(false), true, 'menumodal');   // closing a screen opened from the title goes back to the title
   tileMotion(motionBefore, freshTiles); syncEditions(); refreshTileTip(); if (S.phase !== 'shop' && !S.quiet) walletShown = S.money;
   save();
 }
@@ -1810,7 +1812,9 @@ function boot(saved) {
     let maxId = 0; for (const t of [...S.deck, ...S.hand, ...S.wall, ...S.river, ...S.played, ...(S.indicators || []), ...S.open.flatMap(m => m.tiles)]) if (t.id > maxId) maxId = t.id; tileSeq = Math.max(tileSeq, maxId);
     // Repair any duplicates an older save may already contain
     const seen = new Set(); for (const zone of [S.hand, S.wall, S.river, S.played, S.deck, S.indicators || [], ...S.open.map(m => m.tiles)]) for (const t of zone) { if (seen.has(t.id)) t.id = ++tileSeq; seen.add(t.id); } S.editions = S.editions || {}; S.seed = S.seed || 'legacy'; S.deckKey = S.deckKey || 'standard'; S.stake = S.stake || 'white'; if (S.rngState === undefined) S.rngState = hashSeed(S.seed + Date.now()); S.stats.rungs = S.stats.rungs || {}; S.stats.yaku = S.stats.yaku || {}; S.stats.bosses = S.stats.bosses || []; S.tags = S.tags || []; if (!S.skipTags) S.skipTags = { small: pick(Object.keys(TAGS)), big: pick(Object.keys(TAGS)) }; S.stats.skipped = S.stats.skipped || 0; S.stats.calls = S.stats.calls || 0; S.stats.kans = S.stats.kans || 0; S.stats.discards = S.stats.discards || 0; S.busy = false; S.newIds = []; S.drawSeq = S.drawSeq || 0; render(); showModal(menuHTML(true), true, 'menumodal'); }
-  else { S = newState(); PROFILE.runs++; saveProfile(); startBlind(); render(); showModal(menuHTML(false), true, 'menumodal'); }
+  // No saved run: the title sits over an empty table. A stand-in state lets the page draw, but it is not a run:
+  // it is never saved or counted, and the first run starts when the player presses New Run and picks a Wall and Stake.
+  else { S = newState(); S.placeholder = true; S.phase = 'idle'; render(); }
 }
 try { if (window.claude && window.claude.hot) window.claude.hot.snapshot(() => S); } catch (e) { }
 const hotData = (window.claude && window.claude.hot && window.claude.hot.data) || null;

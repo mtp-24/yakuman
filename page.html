@@ -1086,6 +1086,12 @@ const TALISMANS = [
   { key: 'sazaeoni', name: 'Sazae-oni', cost: 6, desc: 'Each Call stores +3 Mult for your next Complete Hand.', onCall: S => { S.talState.sazaeoni = (S.talState.sazaeoni || 0) + 1; }, onScore: (c, S) => c.kind === 'hand' && S.talState.sazaeoni ? { mult: 3 * S.talState.sazaeoni } : null, afterScore: (c, S) => { if (c.kind === 'hand') S.talState.sazaeoni = 0; }, status: S => `stored +${3 * (S.talState.sazaeoni || 0)} Mult` },
   { key: 'amabie', name: 'Amabie', cost: 4, desc: 'Earn ¥1 whenever you discard 5 or more tiles at once.', onDiscard: (S, tiles) => { if (tiles.length >= 5) S.money += 1; } },
   { key: 'mizuchi', name: 'Mizuchi', cost: 6, desc: 'x1.5 Mult while your River holds fewer than 8 tiles.', onScore: (c, S) => S.river.length < 8 ? { xmult: 1.5 } : null },
+  // --- Broad retriggers (Balatro's Dusk, Seltzer and Hack)
+  { key: 'omagatoki', name: 'Ōmagatoki', cost: 7, desc: 'Every tile scores a second time on the last Play of each Blind.', retrigger: (t, c, S) => S.plays === 1 ? 1 : 0, status: S => S.phase === 'blind' ? (S.plays === 1 ? 'active now: last Play' : `active on the last Play, ${S.plays} Plays left`) : '' },
+  { key: 'shojo', name: 'Shōjō', cost: 6, desc: 'Every tile scores a second time for your next 8 plays, then it is used up and leaves your board.', retrigger: () => 1,
+    afterScore: (c, S) => { const n = (S.talState.shojo ?? 8) - 1; S.talState.shojo = n; if (n <= 0) { S.talismans = S.talismans.filter(x => x !== 'shojo'); delete S.editions.shojo; delete S.talState.shojo; S.spent = (S.spent || []).concat('shojo'); } },
+    status: S => { const n = S.talState.shojo ?? 8; return `${n} play${n === 1 ? '' : 's'} left`; } },
+  { key: 'azukiarai', name: 'Azukiarai', cost: 6, desc: 'Every 2, 3 and 4 tile scores a second time.', retrigger: t => !isHonor(t) && t.rank >= 2 && t.rank <= 4 ? 1 : 0 },
 ];
 const TAL = {}; TALISMANS.forEach(t => TAL[t.key] = t);
 
@@ -1231,7 +1237,7 @@ const YAKUMAN_SHEET = [
 
 // ===================== TERMINOLOGY: Riichi (default) vs Hong Kong =====================
 // Display strings are translated at render time by whole-word replacement. Logic and saves never change.
-const HK_TALISMAN = { hashi: '橋 Bridge', nopperabo: '無面鬼 Faceless Ghost', sekito: '石塔 Stone Pagoda', aobozu: '青僧 Blue Monk', shiro: '城 Castle', takibi: '篝火 Bonfire', hoshizora: '星空 Starry Sky', mabo: '魔寶 Phantom Treasure', chochin: '燈籠 Lantern', hoshi: '星 Star', hatsumode: '頭炷香 First Incense', oshi: '偶像 Idol', daimyo: '大名 Lord', utsushi: '影印 Mirror Copy', kagami: '鏡 Mirror', kasaobake: '傘妖 Umbrella Ghost', ittanmomen: '布妖 Cloth Ghost', kappa: '水鬼 Water Ghost', kitsune: '狐仙 Fox Spirit', tanuki: '貔貅 Pixiu', maneki: '招財貓 Lucky Cat', tengu: '雷震子 Leizhenzi', oni: '牛魔王 Bull Demon King', daruma: '達摩 Bodhidharma', tsuru: '仙鶴 Crane', koi: '錦鯉 Golden Carp', ryu: '龍王 Dragon King', jizo: '地藏 Dizang', komainu: '石獅 Stone Lion', yukionna: '雪妖 Snow Demon', baku: '貘 Mo', nue: '四不像 Sibuxiang', kodama: '樹精 Tree Spirit', hannya: '夜叉 Yaksha', tsukumogami: '器靈 Object Spirit', nurikabe: '門神 Door God', tengoku: '馬騮精 Monkey Spirit', hitotsume: '獨眼鬼 One-eyed Ghost', nekomata: '貓妖 Cat Demon', shikigami: '紙人 Paper Effigy', kirin: '麒麟 Qilin', hakutaku: '白澤 Bai Ze', yatagarasu: '金烏 Golden Crow', gashadokuro: '骷髏精 Skeleton Spirit', jorogumo: '蜘蛛精 Spider Spirit', rokurokubi: '長頸鬼 Long-neck Ghost', ushioni: '牛頭 Ox-Head', nurarihyon: '無常 Wuchang', zashiki: '福童 Fortune Child', nureonna: '白蛇 White Snake', ryujin: '龍母 Dragon Mother', namazu: '鯉魚精 Carp Spirit', funayurei: '鬼船 Ghost Ship', sazaeoni: '螺精 Conch Spirit', amabie: '人魚 Mermaid', mizuchi: '蛟 Flood Dragon', kawauso: '水獺精 Otter Spirit' };
+const HK_TALISMAN = { hashi: '橋 Bridge', nopperabo: '無面鬼 Faceless Ghost', sekito: '石塔 Stone Pagoda', aobozu: '青僧 Blue Monk', shiro: '城 Castle', takibi: '篝火 Bonfire', hoshizora: '星空 Starry Sky', mabo: '魔寶 Phantom Treasure', chochin: '燈籠 Lantern', hoshi: '星 Star', hatsumode: '頭炷香 First Incense', oshi: '偶像 Idol', daimyo: '大名 Lord', utsushi: '影印 Mirror Copy', kagami: '鏡 Mirror', kasaobake: '傘妖 Umbrella Ghost', ittanmomen: '布妖 Cloth Ghost', kappa: '水鬼 Water Ghost', kitsune: '狐仙 Fox Spirit', tanuki: '貔貅 Pixiu', maneki: '招財貓 Lucky Cat', tengu: '雷震子 Leizhenzi', oni: '牛魔王 Bull Demon King', daruma: '達摩 Bodhidharma', tsuru: '仙鶴 Crane', koi: '錦鯉 Golden Carp', ryu: '龍王 Dragon King', jizo: '地藏 Dizang', komainu: '石獅 Stone Lion', yukionna: '雪妖 Snow Demon', baku: '貘 Mo', nue: '四不像 Sibuxiang', kodama: '樹精 Tree Spirit', hannya: '夜叉 Yaksha', tsukumogami: '器靈 Object Spirit', nurikabe: '門神 Door God', tengoku: '馬騮精 Monkey Spirit', hitotsume: '獨眼鬼 One-eyed Ghost', nekomata: '貓妖 Cat Demon', shikigami: '紙人 Paper Effigy', kirin: '麒麟 Qilin', hakutaku: '白澤 Bai Ze', yatagarasu: '金烏 Golden Crow', gashadokuro: '骷髏精 Skeleton Spirit', jorogumo: '蜘蛛精 Spider Spirit', rokurokubi: '長頸鬼 Long-neck Ghost', ushioni: '牛頭 Ox-Head', nurarihyon: '無常 Wuchang', zashiki: '福童 Fortune Child', nureonna: '白蛇 White Snake', ryujin: '龍母 Dragon Mother', namazu: '鯉魚精 Carp Spirit', funayurei: '鬼船 Ghost Ship', sazaeoni: '螺精 Conch Spirit', amabie: '人魚 Mermaid', mizuchi: '蛟 Flood Dragon', kawauso: '水獺精 Otter Spirit', omagatoki: '黃昏 Twilight Hour', shojo: '猩猩 Wine Ape', azukiarai: '洗豆妖 Bean Washer' };
 const HK_CONS = { steel: '鋼籤 Steel', redseal: '紅印籤 Red Seal', glass: '玻璃籤 Glass', dup: '分身籤 Duplication', ascend: '升籤 Ascension', descend: '降籤 Descent', toman: '萬子籤 Characters', topin: '筒子籤 Dots', tosou: '索子籤 Bamboo', destroy: '化灰籤 Dust', dragon: '紅中籤 Red Dragon', redfive: '紅五籤 Red Five', indicator: '寶牌籤 Bonus Tile Slip', wealth: '橫財籤 Windfall', gold: '金箔籤 Gold Foil', obsidian: '黑曜籤 Obsidian', dragonmark: '龍紋籤 Dragon Mark', jade: '翡翠籤 Jade', susanoo: '哪吒 Nezha', inari: '財神 God of Wealth', raijin: '雷公 Lei Gong', tsukuyomi: '嫦娥 Chang’e', amaterasu: '媽祖 Mazu' };
 const HK_SCROLL = { 'm:pair': '對子秘笈 Pairs Manual', 'm:chi': '上牌秘笈 Chow Manual', 'm:pon': '碰牌秘笈 Pung Manual', 'm:kan': '槓牌秘笈 Kong Manual', 'm:hand': '食糊秘笈 Winning Manual', 'y:tanyao': '斷幺九秘笈 All Simples Manual', 'y:pinfu': '平糊秘笈 All Chows Manual', 'y:yakuhai': '番牌秘笈 Honor Set Manual', 'y:honitsu': '混一色秘笈 Mixed Suit Manual', 'y:chinitsu': '清一色秘笈 Pure Suit Manual', 'y:toitoi': '對對糊秘笈 All Pungs Manual', 'y:chiitoitsu': '七對子秘笈 Seven Pairs Manual', 'y:sanshoku': '三色同順秘笈 Triple Chow Manual', 'y:ittsu': '一條龍秘笈 Straight Manual', 'y:chanta': '混全帶幺秘笈 Outside Hand Manual' };
 const HK_FLOWER = { plum: '梅 Plum', orchid: '蘭 Orchid', chrysanthemum: '菊 Chrysanthemum', bamboo: '竹 Bamboo', spring: '春 Spring', summer: '夏 Summer', autumn: '秋 Autumn', winter: '冬 Winter' };
@@ -1692,7 +1698,7 @@ function talMod(f) { return S.talismans.reduce((a, k) => a + (TAL[k][f] || 0), 0
 function selTiles() { return S.selected.map(id => S.hand.find(t => t.id === id)).filter(Boolean); }
 function openTiles() { return S.open.flatMap(m => m.tiles); }
 
-function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) { } }
+function save() { if (S && S.placeholder) return; try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) { } }
 function load() { try { const s = localStorage.getItem(SAVE_KEY); return s ? JSON.parse(s) : null; } catch (e) { return null; } }
 function clearSave() { try { localStorage.removeItem(SAVE_KEY); } catch (e) { } }
 function hasRunSave() { try { return !!localStorage.getItem(SAVE_KEY) && !!S && !['gameover', 'win'].includes(S.phase); } catch (e) { return false; } }
@@ -1750,7 +1756,7 @@ function unlockLabel(id) { const [kind, key, wall] = id.split(':'); if (kind ===
 const DISCOVER = ['tal', 'omikuji', 'kami', 'scroll', 'flower', 'pack', 'tag', 'boss'];
 function isSeen(kind, key) { return UNLOCK_ALL || !!PROFILE.seen[`${kind}:${key}`] || (kind === 'boss' && !!PROFILE.bosses[key]); }
 function markSeen() {
-  if (!S || !S.talismans) return false; let dirty = false;
+  if (!S || !S.talismans || S.placeholder) return false; let dirty = false;
   const add = (kind, key) => { if (key && !PROFILE.seen[`${kind}:${key}`]) { PROFILE.seen[`${kind}:${key}`] = 1; dirty = true; } };
   const item = it => { if (it) add(it.kind === 'talisman' ? 'tal' : it.kind, it.key); };
   S.talismans.forEach(k => add('tal', k)); (S.consumables || []).forEach(c => CONS[c.key] && add(CONS[c.key].kind, c.key)); (S.flowers || []).forEach(k => add('flower', k));
@@ -1895,6 +1901,7 @@ async function doPlay() {
   await animateScore(ctx);
   S.busy = false;
   for (const k of S.talismans) if (TAL[k].afterScore) TAL[k].afterScore(ctx, S);
+  if (S.spent && S.spent.length) { S.spent.forEach(k => toast(`<div class="label">Used up</div><b>${TAL[k].name}</b><div class="muted" style="font-size:11px">left your board after its last play</div>`)); S.spent = []; }
   S.plays--; S.score += ctx.total; S.money += ctx.money; S.lastPlay = ctx; S.firstPlayDone = true;
   S.stats.rungs[ctx.meldType] = (S.stats.rungs[ctx.meldType] || 0) + 1; for (const yk of ctx.yaku) S.stats.yaku[yk.key] = (S.stats.yaku[yk.key] || 0) + 1;
   if (ctx.total > S.stats.best) { S.stats.best = ctx.total; S.stats.bestDesc = ctx.desc; }
@@ -2250,6 +2257,7 @@ function render() {
   $('#btnYaku').textContent = 'Run Info';
   document.querySelectorAll('.zhead > .muted').forEach(e => { e.title = e.textContent; });   // full text on hover when a header is truncated
   translateDOM($('#app')); fitNumbers();
+  if (S.placeholder && $('#overlay').hidden) showModal(menuHTML(false), true, 'menumodal');   // closing a screen opened from the title goes back to the title
   tileMotion(motionBefore, freshTiles); syncEditions(); refreshTileTip(); if (S.phase !== 'shop' && !S.quiet) walletShown = S.money;
   save();
 }
@@ -3403,7 +3411,9 @@ function boot(saved) {
     let maxId = 0; for (const t of [...S.deck, ...S.hand, ...S.wall, ...S.river, ...S.played, ...(S.indicators || []), ...S.open.flatMap(m => m.tiles)]) if (t.id > maxId) maxId = t.id; tileSeq = Math.max(tileSeq, maxId);
     // Repair any duplicates an older save may already contain
     const seen = new Set(); for (const zone of [S.hand, S.wall, S.river, S.played, S.deck, S.indicators || [], ...S.open.map(m => m.tiles)]) for (const t of zone) { if (seen.has(t.id)) t.id = ++tileSeq; seen.add(t.id); } S.editions = S.editions || {}; S.seed = S.seed || 'legacy'; S.deckKey = S.deckKey || 'standard'; S.stake = S.stake || 'white'; if (S.rngState === undefined) S.rngState = hashSeed(S.seed + Date.now()); S.stats.rungs = S.stats.rungs || {}; S.stats.yaku = S.stats.yaku || {}; S.stats.bosses = S.stats.bosses || []; S.tags = S.tags || []; if (!S.skipTags) S.skipTags = { small: pick(Object.keys(TAGS)), big: pick(Object.keys(TAGS)) }; S.stats.skipped = S.stats.skipped || 0; S.stats.calls = S.stats.calls || 0; S.stats.kans = S.stats.kans || 0; S.stats.discards = S.stats.discards || 0; S.busy = false; S.newIds = []; S.drawSeq = S.drawSeq || 0; render(); showModal(menuHTML(true), true, 'menumodal'); }
-  else { S = newState(); PROFILE.runs++; saveProfile(); startBlind(); render(); showModal(menuHTML(false), true, 'menumodal'); }
+  // No saved run: the title sits over an empty table. A stand-in state lets the page draw, but it is not a run:
+  // it is never saved or counted, and the first run starts when the player presses New Run and picks a Wall and Stake.
+  else { S = newState(); S.placeholder = true; S.phase = 'idle'; render(); }
 }
 try { if (window.claude && window.claude.hot) window.claude.hot.snapshot(() => S); } catch (e) { }
 const hotData = (window.claude && window.claude.hot && window.claude.hot.data) || null;
