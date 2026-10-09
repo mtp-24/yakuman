@@ -541,13 +541,13 @@ function selectHTML() {
     h += `<div class="blindcard ${state}${k === 'boss' ? ' bosscard' : ''}"><span class="blindchip" aria-hidden="true">${blindChipSVG(k)}</span><div class="kind">${state === 'done' ? 'Defeated' : state === 'current' ? 'Up next' : 'After that'}</div><div class="n">${k === 'boss' ? BOSSES[boss].name : names[k]}</div>${k === 'boss' ? `<div class="d bossfx">${BOSSES[boss].desc}</div>` : ''}`;
     h += `<div class="bc-plate"><div><div class="label">Score at least</div><div class="target num">${fmtN(blindTarget(k))}</div></div><div class="bp-reward" title="Plus ¥1 per unused Play and ¥1 interest per ¥5 held (max ¥5)"><div class="label">Reward</div><div class="num">¥${reward}<span class="muted" style="font-size:11px;font-family:var(--body)"> +extras</span></div></div></div>`;
     h += `<div class="bc-meta muted"><b class="num">${plays}</b> Plays · <b class="num">${discards}</b> Discards${S.nextBlindMods && S.nextBlindMods.handSize && state === 'current' ? ` · hand +${S.nextBlindMods.handSize}` : ''}</div>`;
-    const skipBox = tag && state !== 'done' ? `<div class="skipbox"><div class="skiphead"><span class="label">Skip reward</span><span class="tagchip">${tag.name}</span></div><div class="skipdesc">${tag.desc}</div></div>` : '';
+    const skipBox = tag && state !== 'done' ? `<div class="skipbox"><div class="skiphead"><span class="label">Skip reward</span><span class="tagchip" data-hc-kind="Tag" data-hc-title="${tag.name}" data-hc-body="${tag.desc.replace(/"/g, '&quot;')}">${tag.name}</span></div><div class="skipdesc">${tag.desc}</div></div>` : '';
     if (state === 'current') h += `<div class="buy"><button id="mPlayBlind" class="primary">Play</button>${tag ? `<button id="mSkip" class="ghost" title="${tag.desc} No cash for this blind.">Skip for Tag</button>` : ''}</div>${skipBox}`;
     else h += skipBox;
     h += `</div>`;
   });
   h += `</div>`;
-  if (S.tags.length) h += `<div class="label" style="margin:12px 0 6px">Tags held</div><div class="overtals">${S.tags.map(t => `<span class="tagchip" title="${TAGS[t].desc}">${TAGS[t].name}</span>`).join('')}</div>`;
+  if (S.tags.length) h += `<div class="label" style="margin:12px 0 6px">Tags held</div><div class="overtals">${S.tags.map(t => `<span class="tagchip" data-hc-kind="Tag" data-hc-title="${TAGS[t].name}" data-hc-body="${TAGS[t].desc.replace(/"/g, '&quot;')}">${TAGS[t].name}</span>`).join('')}</div>`;
   h += `<div class="msg${S.msgErr ? ' err' : ''}" style="margin-top:8px;min-height:18px">${S.msg || ''}</div><div class="shopfoot"><button id="mDeck" class="ghost">View Wall</button><button id="mRunInfo" class="ghost">Run Info</button></div>`;
   return h;
 }
@@ -565,7 +565,7 @@ function anteBase(ante) {
 }
 // Big numbers switch to scientific notation (1.23e15) so they still fit, as in Balatro.
 function fmtN(n) { return !isFinite(n) ? '∞' : Math.abs(n) < 1e11 ? Math.round(n).toLocaleString() : n.toExponential(2).replace('e+', 'e'); }
-const anteLabel = () => S.ante > CFG.antes ? `Ante ${S.ante} · Endless` : `Ante ${S.ante} of ${CFG.antes}`;
+const anteLabel = (a = S.ante) => a > CFG.antes ? `Ante ${a} · Endless` : `Ante ${a} of ${CFG.antes}`;
 // Endless Antes draw a fresh Boss each time, never one of the last three.
 function ensureBosses() { while (S.bossOrder.length < S.ante) { const recent = S.bossOrder.slice(-3); S.bossOrder.push(pick(Object.keys(BOSSES).filter(b => !recent.includes(b)))); } }
 function fmtMult(m) { return Number.isInteger(m) ? m : (+m.toFixed(2)); }
@@ -660,7 +660,7 @@ function render() {
   const motionBefore = tileSnapshot(), freshTiles = new Set(S.newIds || []);
   renderBlind(); renderTalismans(); renderConsumables(); renderOpen(); renderRiver(); renderHand(); renderActions(); renderLast();
   $('#msg').textContent = S.msg || ''; $('#msg').className = 'msg' + (S.msgErr ? ' err' : '');
-  if (S.phase === 'cashout') { showModal(cashoutHTML(), false, 'cashmodal'); animateCashout(); } else if (S.phase === 'shop' && S.pack) { showModal(packHTML(), false, 'packmodal'); fillPackHand(); } else if (S.phase === 'shop') { showModal(shopHTML(), false, 'shopmodal'); tweenWallet(); } else if (S.phase === 'select') showModal(selectHTML(), false, 'selectmodal'); else if (S.phase === 'gameover') showModal(overHTML(false), false, 'overmodal'); else if (S.phase === 'win') showModal(overHTML(true), false, 'overmodal winmodal'); else if (!modalPinned) hideModal();
+  if (S.phase === 'cashout') { showModal(cashoutHTML(), false, 'cashmodal'); placeOverlay(true); animateCashout(); } else if (S.phase === 'shop' && S.pack) { showModal(packHTML(), false, 'packmodal'); fillPackHand(); } else if (S.phase === 'shop') { showModal(shopHTML(), false, 'shopmodal'); tweenWallet(); } else if (S.phase === 'select') showModal(selectHTML(), false, 'selectmodal'); else if (S.phase === 'gameover') showModal(overHTML(false), false, 'overmodal'); else if (S.phase === 'win') showModal(overHTML(true), false, 'overmodal winmodal'); else if (!modalPinned) hideModal();
   $('#btnYaku').textContent = 'Run Info';
   document.querySelectorAll('.zhead > .muted').forEach(e => { e.title = e.textContent; });   // full text on hover when a header is truncated
   translateDOM($('#app')); fitNumbers();
@@ -794,16 +794,19 @@ function computePreview() {
   PREVIEW = { ctx, label: opt.type === 'hand' ? (ctx.yaku.length ? ctx.yaku.map(y => y.name).join(', ') : 'Complete Hand') : ctx.rungName, kind: opt.type, claim: !!opt.claim };
 }
 function renderBlind() {
-  const kind = blindKind(); const inBlind = S.phase === 'blind'; computePreview(); if (!inBlind && S.phase !== 'win' && S.phase !== 'gameover') { /* preview */ }
-  const name = inBlind && S.boss ? BOSSES[S.boss].name : ({ small: 'Small Blind', big: 'Big Blind', boss: 'Boss Blind' })[kind];
+  // During cash-out the card keeps showing the Blind just beaten (marked Defeated, with its final score) until Cash Out.
+  const cleared = S.phase === 'cashout' && !!S.reward, show = S.phase === 'blind' || cleared;
+  const kind = cleared ? S.reward.kind : blindKind(); const inBlind = S.phase === 'blind'; computePreview();
+  const bossShown = show && S.boss && kind === 'boss';
+  const name = bossShown ? BOSSES[S.boss].name : ({ small: 'Small Blind', big: 'Big Blind', boss: 'Boss Blind' })[kind];
   const pct = S.target ? Math.min(100, 100 * S.score / S.target) : 0;
-  const reward = (kind === 'small' && smallPaysNothing()) ? 0 : CFG.blindReward[kind];
-  const targetVal = inBlind ? S.target : blindTarget(kind);
-  let h = `<div class="blindplate${S.boss && inBlind ? ' bossplate' : ''}"><div class="bp-top"><span class="label">${anteLabel()}</span><span class="label">${inBlind ? (kind === 'boss' ? 'Boss Blind' : '') : 'Next up'}</span></div><div class="blind-name${S.boss && inBlind ? ' boss' : ''}">${name}</div>`;
-  if (inBlind && S.boss) h += `<div class="boss-desc">${BOSSES[S.boss].desc}${S.boss === 'collector' && S.bossSuit ? ` <b>This Blind: ${SUIT_EN[S.bossSuit]}.</b>` : ''}${S.boss === 'gatekeeper' ? (S.firstPlayDone ? ' <b>First Play done.</b>' : '') : ''}</div>`;
+  const reward = cleared ? S.reward.base : (kind === 'small' && smallPaysNothing()) ? 0 : CFG.blindReward[kind];
+  const targetVal = show ? S.target : blindTarget(kind);
+  let h = `<div class="blindplate${bossShown ? ' bossplate' : ''}${cleared ? ' cleared' : ''}"><div class="bp-top"><span class="label">${anteLabel(cleared && kind === 'boss' ? S.ante - 1 : S.ante)}</span><span class="label">${cleared ? 'Defeated' : inBlind ? (kind === 'boss' ? 'Boss Blind' : '') : 'Next up'}</span></div><div class="blind-name${bossShown ? ' boss' : ''}">${name}</div>`;
+  if (bossShown) h += `<div class="boss-desc">${BOSSES[S.boss].desc}${S.boss === 'collector' && S.bossSuit ? ` <b>This Blind: ${SUIT_EN[S.bossSuit]}.</b>` : ''}${S.boss === 'gatekeeper' ? (S.firstPlayDone ? ' <b>First Play done.</b>' : '') : ''}</div>`;
   h += `<div class="bp-row"><div><div class="label">Score at least</div><div class="target num">${fmtN(targetVal)}</div></div><div class="bp-reward" title="Plus ¥1 per unused Play and ¥1 interest per ¥5 held (max ¥5)"><div class="label">Reward</div><div class="num">¥${reward}<span class="muted" style="font-size:11px;font-family:var(--body)"> +extras</span></div></div></div></div>`;
-  if (S.tags && S.tags.length) h += `<div class="label" style="margin-top:8px">Tags</div><div class="flowers">${S.tags.map(t => `<span class="flowerchip" title="${TAGS[t].desc}">${TAGS[t].name}</span>`).join('')}</div>`;
-  if (inBlind) h += `<div class="roundscore"><div class="label">Round Score</div><div class="rs num${S.score >= S.target ? ' met' : ''}" id="roundScore">${fmtN(S.score)}</div><div class="rsbar"><i id="roundBar" style="width:${pct}%"></i></div></div>`;
+  if (S.tags && S.tags.length) h += `<div class="label" style="margin-top:8px">Tags</div><div class="flowers">${S.tags.map(t => `<span class="flowerchip" data-hc-kind="Tag" data-hc-title="${TAGS[t].name}" data-hc-body="${TAGS[t].desc.replace(/"/g, '&quot;')}">${TAGS[t].name}</span>`).join('')}</div>`;
+  if (show) h += `<div class="roundscore"><div class="label">Round Score</div><div class="rs num${S.score >= S.target ? ' met' : ''}" id="roundScore">${fmtN(S.score)}</div><div class="rsbar"><i id="roundBar" style="width:${pct}%"></i></div></div>`;
   if (inBlind) {
     const pv = PREVIEW;
     if (S.busy) h += `<div class="handbox scoring" id="scorebox"></div>`;
@@ -1257,8 +1260,18 @@ function decorateBanner(cls) {
   const tone = (cls || '').split(' ').map(c => BANNER_TONES[c]).filter(Boolean).pop() || 'teal';
   head.classList.add('banner', 'bn-' + tone); head.insertAdjacentHTML('beforeend', '<div class="bannerflaps" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>'); m.classList.add('hasbanner');
 }
-function showModal(html, pinned, cls) { modalPinned = !!pinned; $('#modal').className = 'modal' + (cls ? ' ' + cls : ''); $('#modal').innerHTML = html; if ($('#modal #mClose')) $('#modal').insertAdjacentHTML('afterbegin', CLOSE_X); decorateBanner(cls); syncEditions(); fillHero($('#modal')); fillColTiles($('#modal')); fillTileArt($('#modal')); $('#overlay').hidden = false; fillExamples($('#modal')); translateDOM($('#modal')); }
-function hideModal() { modalPinned = false; $('#overlay').hidden = true; }
+// Cash-out covers only the board area, like Balatro, so the left column (Blind, score and Last Play) stays in view.
+// On narrow layouts, where the left column stacks above the board, it stays full screen.
+function placeOverlay(boardOnly) {
+  const ov = $('#overlay'); ov.classList.remove('boardonly'); ['left', 'top', 'width', 'height'].forEach(k => ov.style[k] = '');
+  const board = document.querySelector('.board'); if (!boardOnly || !board || innerWidth <= 900) return;
+  const b = board.getBoundingClientRect(), top = Math.max(b.top - 8, 0), bottom = Math.min(b.bottom + 8, innerHeight);
+  ov.classList.add('boardonly'); Object.assign(ov.style, { left: (b.left - 8) + 'px', top: top + 'px', width: (b.width + 16) + 'px', height: (bottom - top) + 'px' });
+}
+['resize', 'scroll'].forEach(ev => window.addEventListener(ev, () => { if ($('#overlay').classList.contains('boardonly')) placeOverlay(true); }));
+function showModal(html, pinned, cls) {
+  placeOverlay(false); modalPinned = !!pinned; $('#modal').className = 'modal' + (cls ? ' ' + cls : ''); $('#modal').innerHTML = html; if ($('#modal #mClose')) $('#modal').insertAdjacentHTML('afterbegin', CLOSE_X); decorateBanner(cls); syncEditions(); fillHero($('#modal')); fillColTiles($('#modal')); fillTileArt($('#modal')); $('#overlay').hidden = false; fillExamples($('#modal')); translateDOM($('#modal')); }
+function hideModal() { modalPinned = false; $('#overlay').hidden = true; placeOverlay(false); }
 // A Talisman you gain starts fresh, like a Joker in Balatro: progress from an earlier copy you sold is gone.
 // Its state lives under its own key, or its key plus a capitalised suffix (kasaobake, shiroSuit).
 const ownsState = (k, x) => x === k || (x.startsWith(k) && /[A-Z]/.test(x[k.length] || ''));   // 'shiro' owns 'shiroSuit', but 'hoshi' does not own 'hoshizora'
