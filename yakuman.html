@@ -159,7 +159,9 @@ aside{display:flex;flex-direction:column;gap:10px;min-width:0}
 @media (max-width:700px){.menu-rules{columns:1}}
 .menu-rules p{margin:0 0 8px;break-inside:avoid}
 .packhandwrap{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 10px 10px;margin:0 0 10px}
-.packhand{display:flex;flex-wrap:wrap;gap:6px;padding-top:12px;min-height:40px} .packhand .tile{cursor:pointer}
+.packhand{display:flex;flex-wrap:wrap;gap:6px;padding-top:14px;min-height:40px;container-type:inline-size} .packhand .tile{cursor:pointer;--tw:min(110px,calc((100cqw - 42px) / 8));--th:calc(var(--tw) * 1.36)}
+@container (max-width: 480px){.packhand .tile{--tw:min(84px,calc((100cqw - 18px) / 4));--th:calc(var(--tw) * 1.36)}}
+.lvline{font-size:12px;margin:6px 0 2px;padding:4px 8px;border-radius:6px;background:rgba(122,183,232,.1);border:1px solid rgba(122,183,232,.3)} .lvline b{color:var(--accent)}
 .menu-rules h3{font-family:var(--display);font-size:16px;color:var(--accent);margin:4px 0 6px;break-after:avoid}
 .deckrow{display:grid;grid-template-columns:repeat(9,1fr);gap:6px;justify-items:center}
 @media (max-width:600px){.deckrow{display:flex;flex-wrap:wrap}}
@@ -1429,7 +1431,7 @@ function usePackCard(i) {
 function fillPackHand() {
   const box = $('#packHand'); if (!box) return;
   for (const t of packTiles()) {
-    const e = tileEl(t, { small: true, sel: S.pack.sel.includes(t.id) });
+    const e = tileEl(t, { sel: S.pack.sel.includes(t.id) });
     e.onclick = () => { const s = S.pack.sel, j = s.indexOf(t.id); if (j >= 0) s.splice(j, 1); else s.push(t.id); S.msg = ''; render(); };
     box.appendChild(e);
   }
@@ -1835,11 +1837,26 @@ function modalClosable() { return !$('#overlay').hidden && !!$('#modal #mClose')
 function closeModal() { const c = $('#modal #mClose'); if (c) c.click(); }
 function showModal(html, pinned) { modalPinned = !!pinned; $('#modal').innerHTML = html; if ($('#modal #mClose')) $('#modal').insertAdjacentHTML('afterbegin', CLOSE_X); $('#overlay').hidden = false; fillExamples($('#modal')); translateDOM($('#modal')); }
 function hideModal() { modalPinned = false; $('#overlay').hidden = true; }
+// Why an item cannot be taken right now because its slots are full (null when there is room).
+function slotsFullMsg(it) {
+  if (it.kind === 'talisman' && S.talismans.length >= talSlots()) return `All ${talSlots()} Talisman slots are full. Sell one first.`;
+  if ((it.kind === 'omikuji' || it.kind === 'kami') && S.consumables.length >= conSlots()) return `All ${conSlots()} consumable slots are full. Use or sell one first.`;
+  return null;
+}
+// Current and next level of a Scroll of Mastery, like a Planet card's level in Balatro.
+function scrollLevelHTML(key) {
+  const [t, k] = key.split(':');
+  if (t === 'y') { const n = S.scrolls.yaku[k] || 0; return `<div class="lvline">Now <b>+${n} Han</b> → <b>+${n + 1} Han</b> whenever it scores</div>`; }
+  const lv = S.scrolls.meld[k] || 0, c = CFG.scrollChips, hn = CFG.scrollHan;
+  if (k === 'hand') { const b = CFG.meldBase.hand; return `<div class="lvline">Now <b>Lv.${lv + 1}</b> → <b>Lv.${lv + 2}</b>: ${b.chips + (lv + 1) * c} Chips, ${b.han + (lv + 1) * hn} Han base</div>`; }
+  const name = MELD_LABEL[k] || k;
+  return `<div class="lvline">Now <b>Lv.${lv + 1}</b> → <b>Lv.${lv + 2}</b>: +${(lv + 1) * c} Chips per ${name}, +${(lv + 1) * hn} Han</div>`;
+}
 function cardHTML(it, idx) {
   const d = itemDef(it); const p = it.free ? 0 : itemPrice(it);
   const kindLabel = { talisman: 'Talisman', omikuji: 'Omikuji', kami: 'Kami Spirit', scroll: 'Scroll of Mastery', flower: 'Flower / Season', pack: 'Booster pack' }[it.kind];
   const ed = it.edition ? EDITIONS[it.edition] : null;
-  return `<div class="shopcard ${it.kind}${it.sold ? ' sold' : ''}${ed ? ' ed-' + it.edition : ''}"><div class="kind">${kindLabel}${ed ? ` · <span class="edtag ed-${it.edition}">${ed.name}</span>` : ''}</div><div class="n">${d.name}</div><div class="d">${d.desc}${ed ? ` <b>${ed.name}: ${ed.desc}.</b>` : ''}</div><div class="buy"><span class="num" style="color:${p > S.money ? 'var(--bad)' : 'var(--accent)'}">${p === 0 ? 'Free' : '¥' + p}</span>${it.sold ? '<span class="muted">Sold</span>' : `<button class="primary" data-buy="${idx}" ${p > S.money ? `disabled title="You have ¥${S.money}; this costs ¥${p}"` : ''}>${it.kind === 'pack' ? 'Open' : 'Buy'}</button>`}</div></div>`;
+  return `<div class="shopcard ${it.kind}${it.sold ? ' sold' : ''}${ed ? ' ed-' + it.edition : ''}"><div class="kind">${kindLabel}${ed ? ` · <span class="edtag ed-${it.edition}">${ed.name}</span>` : ''}</div><div class="n">${d.name}</div><div class="d">${d.desc}${ed ? ` <b>${ed.name}: ${ed.desc}.</b>` : ''}</div>${it.kind === 'scroll' ? scrollLevelHTML(it.key) : ''}<div class="buy"><span class="num" style="color:${p > S.money ? 'var(--bad)' : 'var(--accent)'}">${p === 0 ? 'Free' : '¥' + p}</span>${it.sold ? '<span class="muted">Sold</span>' : (() => { const full = slotsFullMsg(it); const no = p > S.money ? `You have ¥${S.money}; this costs ¥${p}` : full; return `<button class="primary" data-buy="${idx}" ${no ? `disabled title="${no}"` : ''}>${it.kind === 'pack' ? 'Open' : full ? 'Slots Full' : 'Buy'}</button>`; })()}</div></div>`;
 }
 function cashoutHTML() {
   const r = S.reward; const names = { small: 'Small Blind', big: 'Big Blind', boss: 'Boss Blind' };
@@ -1862,7 +1879,7 @@ function shopHTML() {
   h += `<div class="shop-grid">${items.map((it, i) => cardHTML(it, i)).join('')}</div>`;
   h += ownedHTML();
   h += `<div class="msg${S.msgErr ? ' err' : ''}" style="margin-bottom:8px">${S.msg || ''}</div>`;
-  h += `<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px"><button id="mReroll" ${!S.shop.freeReroll && rerollCost() > S.money ? 'disabled title="Not enough money to reroll"' : ''}>Reroll Cards (${S.shop.freeReroll ? 'free' : '¥' + rerollCost()})</button><button id="mDeck" class="ghost">View Wall</button><span style="flex:1"></span><span class="muted">Next: Ante ${S.ante} ${next}${nextBoss ? ' · ' + nextBoss.name : ''}</span><button id="mNext" class="primary">Continue →</button></div>`;
+  h += `<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px"><button id="mDeck" class="ghost">View Wall</button><button id="mReroll" ${!S.shop.freeReroll && rerollCost() > S.money ? 'disabled title="Not enough money to reroll"' : ''}>Reroll Cards (${S.shop.freeReroll ? 'free' : '¥' + rerollCost()})</button><button id="mDeck" class="ghost">View Wall</button><span style="flex:1"></span><span class="muted">Next: Ante ${S.ante} ${next}${nextBoss ? ' · ' + nextBoss.name : ''}</span><button id="mNext" class="primary">Continue →</button></div>`;
   if (S.consumables.length) h += `<div class="muted" style="font-size:12px;margin-top:8px">Consumables that need tiles are used during a Blind. Click one on the board to use it now if it needs none.</div>`;
   return h;
 }
@@ -1872,19 +1889,20 @@ function ownedHTML() {
   return `<div class="label" style="margin:10px 0 4px">Your Talismans · ${S.talismans.length}/${talSlots()} · fire left to right · sell to make room</div>` + (tal.length ? `<div class="shop-grid owned-grid">${tal.join('')}</div>` : `<div class="muted" style="font-size:12px">None yet.</div>`) + `<div class="label" style="margin:10px 0 4px">Your Consumables · ${S.consumables.length}/${conSlots()}</div>` + (con.length ? `<div class="shop-grid owned-grid">${con.join('')}</div>` : `<div class="muted" style="font-size:12px">None yet.</div>`);
 }
 function packButtons(it, i) {
-  if (!S.pack.hand || (it.kind !== 'omikuji' && it.kind !== 'kami')) return `<button class="primary" data-take="${i}">Take</button>`;
+  const full = slotsFullMsg(it); const dis = full ? ` disabled title="${full}"` : '';
+  if (!S.pack.hand || (it.kind !== 'omikuji' && it.kind !== 'kami')) return `<button class="primary" data-take="${i}"${dis}>${full ? 'Slots Full' : 'Take'}</button>`;
   const def = CONS[it.key];
   const use = def.blindOnly ? `<span class="muted" style="font-size:11px">Blind only</span>` : `<button class="primary" data-packuse="${i}">Use</button>`;
-  return `<span style="display:flex;gap:6px;align-items:center">${use}<button class="ghost" data-take="${i}">Keep</button></span>`;
+  return `<span style="display:flex;gap:6px;align-items:center">${use}<button class="ghost" data-take="${i}"${dis}>Keep</button></span>`;
 }
 function packHTML() {
   const pk = PACKS[S.pack.key];
   let h = `<h2>${pk.name}</h2><p class="muted" style="margin:0 0 8px">${pk.desc} Choose ${S.pack.left} more.${S.pack.free ? ' (Free, from a Tag.)' : ''}</p>`;
   if (S.pack.hand) h += `<div class="packhandwrap"><div class="label">Your Tiles · ${packTiles().length} random tiles from your Wall</div><div class="muted" style="font-size:12px;margin:2px 0 6px">Select tiles, then press Use on a card. The change stays in your Wall for the rest of the run. Keep puts the card in your consumable slots instead.</div><div class="packhand" id="packHand"></div></div>`;
-  h += `<div class="shop-grid">${S.pack.choices.map((it, i) => { const d = itemDef(it); const ed = it.edition ? EDITIONS[it.edition] : null; return `<div class="shopcard ${it.kind}${it.sold ? ' sold' : ''}${ed ? ' ed-' + it.edition : ''}"><div class="kind">${{ talisman: 'Talisman', omikuji: 'Omikuji', kami: 'Kami Spirit', scroll: 'Scroll of Mastery' }[it.kind]}${ed ? ` · <span class="edtag ed-${it.edition}">${ed.name}</span>` : ''}</div><div class="n">${d.name}</div><div class="d">${d.desc}${ed ? ` <b>${ed.name}: ${ed.desc}.</b>` : ''}</div><div class="buy"><span></span>${it.sold ? `<span class="muted">${it.used ? 'Used' : 'Taken'}</span>` : packButtons(it, i)}</div></div>`; }).join('')}</div>`;
+  h += `<div class="shop-grid">${S.pack.choices.map((it, i) => { const d = itemDef(it); const ed = it.edition ? EDITIONS[it.edition] : null; return `<div class="shopcard ${it.kind}${it.sold ? ' sold' : ''}${ed ? ' ed-' + it.edition : ''}"><div class="kind">${{ talisman: 'Talisman', omikuji: 'Omikuji', kami: 'Kami Spirit', scroll: 'Scroll of Mastery' }[it.kind]}${ed ? ` · <span class="edtag ed-${it.edition}">${ed.name}</span>` : ''}</div><div class="n">${d.name}</div><div class="d">${d.desc}${ed ? ` <b>${ed.name}: ${ed.desc}.</b>` : ''}</div>${it.kind === 'scroll' && !it.sold ? scrollLevelHTML(it.key) : ''}<div class="buy"><span></span>${it.sold ? `<span class="muted">${it.used ? 'Used' : 'Taken'}</span>` : packButtons(it, i)}</div></div>`; }).join('')}</div>`;
   h += `<div class="msg${S.msgErr ? ' err' : ''}" style="margin:6px 0">${S.msg || ''}</div>`;
   h += ownedHTML();
-  h += `<div style="margin-top:12px"><button id="mPackDone" class="ghost">Skip the Rest</button></div>`;
+  h += `<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"><button id="mPackDone" class="ghost">Skip the Rest</button><button id="mDeck" class="ghost">View Wall</button></div>`;
   return h;
 }
 function overHTML(won) {
