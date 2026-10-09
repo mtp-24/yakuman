@@ -70,6 +70,8 @@ const hasF = k => S.flowers.includes(k);
 const handSize = () => Math.max(8, CFG.handSize + (hasF('plum') ? 1 : 0) + (S.deckKey === 'abundant' ? 2 : 0) + (S.blindMods && S.blindMods.handSize || 0) - (S.boss === 'miser' && S.phase === 'blind' ? 3 : 0));
 const capacity = () => handSize() - 3 * S.open.length;
 const neededConcealed = () => 14 - 3 * S.open.length;
+// The Purist: is a face-down tile selected? Then the scoring box and the Play button must not reveal what the tiles make.
+const hiddenSelected = () => S.boss === 'purist' && !S.revealed && S.phase === 'blind' && selTiles().some(t => isHonor(t) || isTerminal(t));
 // Kawauso: one River tile may complete a hand as its winning tile. The Fisherman forbids taking tiles from the River.
 const canClaim = () => S.boss !== 'fisherman' && S.talismans.some(k => TAL[k].riverClaim);
 const claimTile = () => (S.selRiver && canClaim()) ? S.river.find(t => t.id === S.selRiver) || null : null;
@@ -389,19 +391,23 @@ function selectHTML() {
   const boss = S.bossOrder[S.ante - 1];
   const plays = Math.max(1, CFG.playsPerBlind + S.bonusPlays + talMod('plays') + (hasF('bamboo') ? 1 : 0) + (S.deckKey === 'gambler' ? 1 : 0) - (S.deckKey === 'abundant' ? 1 : 0));
   const discards = Math.max(0, CFG.discardsPerBlind + S.bonusDiscards + talMod('discards') + (hasF('orchid') ? 1 : 0) - (S.deckKey === 'gambler' ? 1 : 0));
-  let h = `<h2>Ante ${S.ante} <span class="muted" style="font-size:14px;font-family:var(--body);font-weight:400">of ${CFG.antes} · ${DECKS[S.deckKey].name} · ${STAKES[S.stake].name}</span></h2><div class="blindsel">`;
+  // Ante progress: one pip per Ante, filled for cleared Antes, ringed for this one.
+  const pips = Array.from({ length: CFG.antes }, (_, i) => `<i class="${i + 1 < S.ante ? 'done' : i + 1 === S.ante ? 'now' : ''}"></i>`).join('');
+  let h = `<div class="shophead"><h2>Ante ${S.ante} <span class="muted sub">of ${CFG.antes}</span></h2><span class="antepips" title="Ante ${S.ante} of ${CFG.antes}">${pips}</span></div><p class="muted" style="margin:2px 0 12px">${DECKS[S.deckKey].name} · ${STAKES[S.stake].name}</p><div class="blindsel">`;
   kinds.forEach((k, i) => {
     const state = i < S.blindIndex ? 'done' : i === S.blindIndex ? 'current' : 'next';
     const reward = (k === 'small' && (S.stake === 'red' || S.stake === 'black')) ? 0 : CFG.blindReward[k];
     const tag = k !== 'boss' && S.skipTags ? TAGS[S.skipTags[k]] : null;
-    h += `<div class="blindcard ${state}${k === 'boss' ? ' bosscard' : ''}"><div class="kind">${state === 'done' ? 'Defeated' : state === 'current' ? 'Up next' : 'After that'}</div><div class="n">${k === 'boss' ? BOSSES[boss].name : names[k]}</div>${k === 'boss' ? `<div class="d bossfx">${BOSSES[boss].desc}</div>` : ''}<div class="stats-mini"><span><b class="num">${blindTarget(k).toLocaleString()}</b> to win</span><span>Reward <b>¥${reward}</b> + ¥1 per unused Play + interest</span><span><b>${plays}</b> Plays · <b>${discards}</b> Discards${S.nextBlindMods && S.nextBlindMods.handSize && state === 'current' ? ` · hand +${S.nextBlindMods.handSize}` : ''}</span></div>`;
-    if (state === 'current') h += `<div class="buy"><button id="mPlayBlind" class="primary">Play</button>${tag ? `<button id="mSkip" class="ghost" title="${tag.desc}">Skip · ${tag.name}</button>` : ''}</div>${tag ? `<div class="tagnote muted">Skip reward: ${tag.desc} No cash for this blind.</div>` : ''}`;
-    else if (state === 'next' && tag) h += `<div class="tagnote muted">Skip reward if you get here: ${tag.name}</div>`;
+    h += `<div class="blindcard ${state}${k === 'boss' ? ' bosscard' : ''}"><div class="kind">${state === 'done' ? 'Defeated' : state === 'current' ? 'Up next' : 'After that'}</div><div class="n">${k === 'boss' ? BOSSES[boss].name : names[k]}</div>${k === 'boss' ? `<div class="d bossfx">${BOSSES[boss].desc}</div>` : ''}`;
+    h += `<div class="bc-plate"><div><div class="label">Score at least</div><div class="target num">${blindTarget(k).toLocaleString()}</div></div><div class="bp-reward" title="Plus ¥1 per unused Play and ¥1 interest per ¥5 held (max ¥5)"><div class="label">Reward</div><div class="num">¥${reward}<span class="muted" style="font-size:11px;font-family:var(--body)"> +extras</span></div></div></div>`;
+    h += `<div class="bc-meta muted"><b class="num">${plays}</b> Plays · <b class="num">${discards}</b> Discards${S.nextBlindMods && S.nextBlindMods.handSize && state === 'current' ? ` · hand +${S.nextBlindMods.handSize}` : ''}</div>`;
+    if (state === 'current') h += `<div class="buy"><button id="mPlayBlind" class="primary">Play</button>${tag ? `<button id="mSkip" class="ghost" title="${tag.desc}">Skip for Tag</button>` : ''}</div>${tag ? `<div class="tagnote"><span class="tagchip">${tag.name}</span> <span class="muted">${tag.desc} No cash for this blind.</span></div>` : ''}`;
+    else if (state === 'next' && tag) h += `<div class="tagnote"><span class="tagchip">${tag.name}</span> <span class="muted">if you skip it</span></div>`;
     h += `</div>`;
   });
   h += `</div>`;
-  if (S.tags.length) h += `<div class="label" style="margin:10px 0 4px">Tags held</div><div class="owned">${S.tags.map(t => `<span class="own"><b>${TAGS[t].name}</b> <span class="muted">${TAGS[t].desc}</span></span>`).join('')}</div>`;
-  h += `<div class="msg${S.msgErr ? ' err' : ''}" style="margin-top:8px">${S.msg || ''}</div><div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"><button id="mDeck" class="ghost">View Wall</button><button id="mRunInfo" class="ghost">Run Info</button></div>`;
+  if (S.tags.length) h += `<div class="label" style="margin:12px 0 6px">Tags held</div><div class="overtals">${S.tags.map(t => `<span class="tagchip" title="${TAGS[t].desc}">${TAGS[t].name}</span>`).join('')}</div>`;
+  h += `<div class="msg${S.msgErr ? ' err' : ''}" style="margin-top:8px;min-height:18px">${S.msg || ''}</div><div class="shopfoot"><button id="mDeck" class="ghost">View Wall</button><button id="mRunInfo" class="ghost">Run Info</button></div>`;
   return h;
 }
 
@@ -468,7 +474,7 @@ function render() {
   $('#btnDeck').innerHTML = `Wall <span class="num wallcount">${S.phase === 'blind' ? S.wall.length : (S.deck || []).length}</span>`; $('#btnDeck').title = S.phase === 'blind' ? 'Tiles still face down in the Wall. Click to see every tile.' : 'Tiles in your Wall. Click to see every tile.';
   renderBlind(); renderTalismans(); renderConsumables(); renderOpen(); renderRiver(); renderHand(); renderActions(); renderLast();
   $('#msg').textContent = S.msg || ''; $('#msg').className = 'msg' + (S.msgErr ? ' err' : '');
-  if (S.phase === 'cashout') showModal(cashoutHTML()); else if (S.phase === 'shop' && S.pack) { showModal(packHTML(), false, 'packmodal'); fillPackHand(); } else if (S.phase === 'shop') showModal(shopHTML()); else if (S.phase === 'select') showModal(selectHTML()); else if (S.phase === 'gameover') showModal(overHTML(false)); else if (S.phase === 'win') showModal(overHTML(true)); else if (!modalPinned) hideModal();
+  if (S.phase === 'cashout') showModal(cashoutHTML()); else if (S.phase === 'shop' && S.pack) { showModal(packHTML(), false, 'packmodal'); fillPackHand(); } else if (S.phase === 'shop') showModal(shopHTML()); else if (S.phase === 'select') showModal(selectHTML(), false, 'selectmodal'); else if (S.phase === 'gameover') showModal(overHTML(false), false, 'overmodal'); else if (S.phase === 'win') showModal(overHTML(true), false, 'overmodal'); else if (!modalPinned) hideModal();
   $('#btnYaku').textContent = 'Run Info';
   document.querySelectorAll('.zhead > .muted').forEach(e => { e.title = e.textContent; });   // full text on hover when a header is truncated
   translateDOM($('#app')); fitNumbers();
@@ -513,6 +519,7 @@ function renderBlind() {
     const pv = PREVIEW;
     if (S.busy) h += `<div class="handbox scoring" id="scorebox"></div>`;
     else if (S.pendingDiscard) h += `<div class="handbox pend"><div class="hb-name">Settle your Call</div><div class="muted" style="font-size:12px">Discard ${S.pendingDiscard} tile, then you can Play.</div></div>`;
+    else if (S.selected.length && hiddenSelected()) h += `<div class="handbox">${titleHTML('?', 0, false)}${mathBoxes('?', '?', '?')}</div>`;
     else if (pv && pv.ctx) {
       // Balatro-style: only the play's base values here; tiles, Yaku bonuses and Talismans are revealed when the play scores.
       const c = pv.ctx; const base = c.lines.find(l => l.base) || { chips: 0, han: 0 };
@@ -640,7 +647,8 @@ function renderHint(hidden) {
 function renderActions() {
   const inBlind = S.phase === 'blind';
   const opt = inBlind ? playOption() : { err: '' };
-  const bp = $('#btnPlay'); bp.disabled = !inBlind || !!opt.err || S.busy; bp.textContent = 'Play'; bp.title = opt.err || (opt.label ? opt.label.replace(/^Play /, '') : '');
+  const hid = inBlind && hiddenSelected() && S.plays > 0 && !S.pendingDiscard;   // face-down tiles: never say in advance whether the selection is a valid play
+  const bp = $('#btnPlay'); bp.disabled = !inBlind || (!!opt.err && !hid) || S.busy; bp.textContent = 'Play'; bp.title = hid ? 'Face-down tiles selected' : (opt.err || (opt.label ? opt.label.replace(/^Play /, '') : ''));
   const maxD = S.boss === 'monk' ? 3 : CFG.maxDiscardTiles, tooMany = !S.pendingDiscard && S.selected.length > maxD;
   const bd = $('#btnDiscard'); bd.disabled = !inBlind || S.busy || (!S.pendingDiscard && S.discards <= 0) || (S.pendingDiscard && S.selected.length !== S.pendingDiscard) || tooMany; bd.title = S.pendingDiscard && S.selected.length !== S.pendingDiscard ? `Select exactly ${S.pendingDiscard} tile to settle the Call` : tooMany ? `You can discard at most ${maxD} tiles at once` : ''; bd.textContent = S.pendingDiscard ? `Discard ${S.pendingDiscard} to settle the Call` : `Discard (${S.discards})`; bd.classList.toggle('pulse', !!S.pendingDiscard);
   const dk = $('#btnKan'); const dko = declareOption(); dk.disabled = !dko.ok; dk.title = dko.err || 'Set these 4 tiles aside as a closed Kan and draw a replacement tile';
@@ -855,11 +863,16 @@ function packHTML() {
   return h;
 }
 function overHTML(won) {
-  const st = S.stats;
-  return `<h2>${won ? 'You broke the bank!' : 'The syndicate collects.'}</h2><p>${won ? `All ${CFG.antes} Antes cleared.` : `Out of Plays on Ante ${S.ante}, ${S.boss ? BOSSES[S.boss].name : blindKind() + ' blind'}: scored ${S.score.toLocaleString()} of ${S.target.toLocaleString()}.`}</p>
-  <div class="reward-list num"><span>Blinds defeated</span><span>${st.blinds}</span><span>Complete hands</span><span>${st.hands}</span><span>Partial plays</span><span>${st.melds}</span><span>Best single play</span><span>${st.best.toLocaleString()}${st.bestDesc ? ' · ' + st.bestDesc : ''}</span><span>YEN</span><span>¥${S.money}</span><span>Talismans</span><span>${S.talismans.map(k => TAL[k].name).join(', ') || 'none'}</span></div>
-  <div class="seedline muted" style="margin:8px 0">Seed <code class="seed">${S.seed}</code> <button class="ghost tiny-btn" data-copyseed>Copy</button> · ${DECKS[S.deckKey].name} · ${STAKES[S.stake].name}</div>
-  <button id="mNewRun" class="primary">New Run</button>`;
+  const st = S.stats; const pct = S.target ? Math.min(100, 100 * S.score / S.target) : 100;
+  const where = S.boss ? BOSSES[S.boss].name : ({ small: 'the Small Blind', big: 'the Big Blind', boss: 'the Boss Blind' })[blindKind()];
+  const stat = (label, v) => `<div class="stat"><div class="label">${label}</div><div class="v num">${v}</div></div>`;
+  let h = `<div class="overhead"><div class="label">${won ? 'Run complete' : 'Run over'}</div><h2 class="${won ? '' : 'lost'}">${won ? 'You broke the bank!' : 'The syndicate collects.'}</h2>`;
+  h += won ? `<p class="muted">All ${CFG.antes} Antes cleared.</p>` : `<p class="muted">Out of Plays on Ante ${S.ante} against ${where}.</p><div class="overscore"><div class="row"><span class="label">Round Score</span><span class="num"><b>${S.score.toLocaleString()}</b> <span class="muted">of ${S.target.toLocaleString()}</span></span></div><div class="overbar"><i style="width:${pct}%"></i></div></div>`;
+  h += `</div><div class="overstats">${stat('Ante reached', `${Math.min(S.ante, CFG.antes)} / ${CFG.antes}`)}${stat('Blinds won', st.blinds)}${stat('Complete Hands', st.hands)}${stat('Partial Plays', st.melds)}${stat('YEN', '¥' + S.money)}</div>`;
+  h += `<div class="overbest"><div><div class="label">Best Play</div><div class="v num">${st.best.toLocaleString()}</div></div>${st.bestDesc ? `<div class="muted">${st.bestDesc}</div>` : ''}</div>`;
+  h += `<div class="label" style="margin:14px 0 6px">Talismans</div><div class="overtals">${S.talismans.length ? S.talismans.map((k, i) => `<span class="overtal"><span class="order">${i + 1}</span>${TAL[k].name}</span>`).join('') : '<span class="muted">None</span>'}</div>`;
+  h += `<div class="shopfoot"><span class="seedline muted" style="margin:0">Seed <code class="seed">${S.seed}</code> <button class="ghost tiny-btn" data-copyseed>Copy</button> · ${DECKS[S.deckKey].name} · ${STAKES[S.stake].name}</span><span style="flex:1"></span><button id="mNewRun" class="primary">New Run</button></div>`;
+  return h;
 }
 function deckHTML() {
   const all = S.phase === 'blind' ? [...S.hand, ...S.wall, ...S.river, ...openTiles(), ...S.played, ...S.indicators] : S.deck;
@@ -881,9 +894,9 @@ function hanTableText() {
   }
   return out.join(', ');
 }
-function rulesHTML() {
+function fullRulesHTML() {
   const R = CFG.blindReward, K = CFG.kanBonus;
-  return `<h2>How to Play</h2><div class="menu-rules">
+  return `<div class="menu-rules">
   <h3>Playing a Blind</h3>
   <p><b>Goal.</b> Score at least the Blind's target before you run out of Plays. Each Ante has a Small Blind, a Big Blind and a Boss Blind. Beat all ${CFG.antes} Antes to win.</p>
   <p><b>Hand.</b> You hold ${CFG.handSize} tiles drawn from the Wall (136 tiles in the Standard Wall: four of every tile, four of them Red Fives). You refill after every action. A complete hand uses 14 tiles, so you always have spares. If the Wall runs dry you simply stop drawing.</p>
@@ -898,24 +911,42 @@ function rulesHTML() {
   <p><b>Score = Chips × Mult.</b> The play's rung gives base Chips and Han. Every scored tile then adds Chips: 2–8 are worth their face value, and 1s, 9s and Honors are worth 10.</p>
   <p><b>Han becomes Mult.</b> All Han from the rung, Yaku, tiles, Scrolls and Talismans converts once through this table: ${hanTableText()}.</p>
   <p><b>Extra Han.</b> Each Red Five scored gives +1 Han. A Dora indicator is a tile flipped from the Wall; the next tile in sequence after it is the Dora (9 wraps to 1, Winds go East, South, West, North, Dragons go White, Green, Red), and each Dora scored gives +1 Han. Indicators last for the current Blind. In partial plays, a Pon or Kan of Winds or Dragons scores Yakuhai (+1 Han). Each Kan in a play with two or more melds adds +${K.chips} Chips and +${K.han} Han.</p>
-  <p><b>Talismans.</b> Han from Talismans and the Holographic edition is counted before the table converts. Everything else fires after it, left to right: some Talismans add Chips, some add flat Mult (+4 Mult), some multiply (×1.5 Mult). A +Mult Talisman placed before a ×Mult Talisman scores more than the reverse. Drag Talismans to reorder them; the number on each card is its firing order. Some Talismans grow as you play and show their current value on the card, and some copy another Talisman.</p>
+  <p><b>Talismans.</b> Han from Talismans and the Holographic edition is counted before the table converts. Everything else fires after it, left to right: some Talismans add Chips, some add flat Mult (+4 Mult), some multiply (×1.5 Mult). A +Mult Talisman placed before a ×Mult Talisman scores more than the reverse. Drag Talismans to reorder them; the number on each card is its firing order. Some Talismans grow as you play and show their current value on the card, and some copy another Talisman. A Talisman you sell and buy again starts fresh.</p>
   <p><b>Scrolls of Mastery.</b> Each level of a meld Scroll gives +${CFG.scrollChips} Chips for every matching meld or pair in a play and +${CFG.scrollHan} Han once per play. Levels apply inside complete hands too, so a complete hand always beats the Ready Hand inside it. Other Scrolls are named after a hand pattern, such as Tanyao, and add Han whenever it scores.</p>
   <p><b>Engravings.</b> Omikuji can engrave tiles, and you can see it on the tile: Gold Foil (gold face, ¥1 when scored), Obsidian (dark stone face, +20 Chips), Jade (green face, ×1.5 Mult), Steel (brushed metal face, ×1.5 Mult while held in hand), Glass (clear blue face, ×2 Mult, 1 in 4 chance to shatter and leave your Wall), Red Seal (a red wax seal, scores twice) and Dragon Mark (a red emblem in the corner, +1 Han). Hover a tile for its exact effect.</p>
   <p><b>Editions.</b> Shop Talismans sometimes come in an edition: ${Object.values(EDITIONS).map(e => `${e.name} (${e.desc})`).join(', ')}.</p>
   <h3>Between Blinds</h3>
   <p><b>Money.</b> Beating a Blind pays ¥${R.small} for a Small Blind, ¥${R.big} for a Big Blind and ¥${R.boss} for a Boss, plus ¥1 for each unused Play and ¥1 interest for every ¥${CFG.interestPer} you hold (at most ¥${CFG.interestCap}). Red and Black Stakes pay nothing for Small Blinds.</p>
-  <p><b>Shop.</b> Spend money on Talismans (passive, ${CFG.talismanSlots} slots), Omikuji and Kami (consumables, ${CFG.consumableSlots} slots, used on selected hand tiles), Scrolls of Mastery (permanent upgrades), Flowers (run-long perks) and one booster pack (open it and keep one or two of what's inside). Omikuji Packs and Kami Packs also deal ${PACK_HAND} random tiles from your Wall: select some and press Use on a card to change them for the rest of the run, or Keep the card for a Blind. ${CONS.indicator.name} and ${CONS.amaterasu.name} only work during a Blind. ${CONS.wealth.name} and ${CONS.raijin.name} can also be used from your slots in the shop; there ${CONS.raijin.name} destroys 2 random tiles from your Wall. Every shop has two random cards (Talismans ${Math.round(CFG.shopWeights.talisman * 100)}%, Omikuji ${Math.round(CFG.shopWeights.omikuji * 100)}%, Kami ${Math.round(CFG.shopWeights.kami * 100)}% each), plus one Scroll, one Flower and one booster pack in fixed spots. A reroll changes only the two random cards and costs ¥${CFG.rerollCost}. Selling returns half the item's value: click a Talisman on the board and press Sell, or sell from inside the shop.</p>
+  <p><b>Shop.</b> Spend money on Talismans (passive, ${CFG.talismanSlots} slots), Omikuji and Kami (consumables, ${CFG.consumableSlots} slots, used on selected hand tiles), Scrolls of Mastery (permanent upgrades), Flowers (run-long perks) and one booster pack (open it and keep one or two of what's inside). Omikuji Packs and Kami Packs also deal ${PACK_HAND} random tiles from your Wall: select some and press Use on a card to change them for the rest of the run, or Keep the card for a Blind. After your last pick the pack stays open with the changed tiles outlined; press Done to return to the shop. ${CONS.indicator.name} and ${CONS.amaterasu.name} only work during a Blind. ${CONS.wealth.name} and ${CONS.raijin.name} can also be used from your slots in the shop; there ${CONS.raijin.name} destroys 2 random tiles from your Wall. Every shop has two random cards (Talismans ${Math.round(CFG.shopWeights.talisman * 100)}%, Omikuji ${Math.round(CFG.shopWeights.omikuji * 100)}%, Kami ${Math.round(CFG.shopWeights.kami * 100)}% each), plus one Scroll, one Flower and one booster pack in fixed spots. A reroll changes only the two random cards and costs ¥${CFG.rerollCost}. Selling returns half the item's value: click a Talisman on the board and press Sell, or sell from inside the shop.</p>
   <p><b>Blind Select.</b> After the shop you see the Ante's three blinds with their targets, rewards and the Boss's rule. A Small or Big Blind can be skipped for the Tag on its card instead of its money: free packs, editions, coupons, money, a bigger hand or a different Boss. Tags you hold show in the side panel.</p>
   <p><b>Setup.</b> A new run lets you choose a Wall (deck), a Stake (difficulty) and a seed. Sharing a seed replays the same Wall, shops and bosses.</p>
   <h3>Help and Controls</h3>
   <p><b>Helper.</b> Under your hand the game shows how many tiles you are from a complete hand. Settings can turn that off, and can turn on two more hints: which tiles you are waiting on, and whether the tiles you select can go without setting you back. Against The Purist they only count your visible tiles. Another assist marks dead tiles with green dots.</p>
-  <p><b>Arranging.</b> Drag hand tiles to reorder them. Dragging turns off auto-sort; Sort Hand sorts again. Tiles score in the order they sit, which matters for Shikigami.</p>
-  <p><b>Keys.</b> Enter or P plays, D discards, C calls, K declares a Kan, Esc clears your selection. Click anywhere or press any key while a play scores to skip the animation.</p>
-  </div><button id="mClose" hidden>Close</button>`;
+  <p><b>Arranging.</b> Drag hand tiles to reorder them. Dragging turns off auto-sort; Sort Hand sorts again. Tiles score in the order they sit, which matters for Shikigami. Sorting also works against The Purist, so face-down tiles sit in their sorted place.</p>
+  <p><b>Tile numbers.</b> Characters show their number and Winds their letter in the corner. Dots and Bamboo have none by default, since you count their pips. Settings can show numbers on all tiles or on none.</p>
+  <p><b>Keys.</b> Enter or P plays, D discards, C calls, K declares a Kan, Esc clears your selection. Click anywhere or press any key while a play scores to skip the animation. Esc or a click outside closes Rules, Wall, Run Info and Settings.</p>
+  </div>`;
+}
+function quickRulesHTML() {
+  return `<ol class="quickrules">
+  <li><b>Goal.</b> Reach each Blind's target score before your ${CFG.playsPerBlind} Plays run out. Three Blinds make an Ante; clear all ${CFG.antes} Antes to win.</li>
+  <li><b>Your hand.</b> You hold ${CFG.handSize} tiles. Select tiles and press Play to score them, or Discard up to ${CFG.maxDiscardTiles} to draw new ones (${CFG.discardsPerBlind} Discards per Blind).</li>
+  <li><b>What scores.</b> Runs (Chi), triplets (Pon), quads (Kan) and pairs. More melds score more, and a complete hand of four melds and a pair (14 tiles) scores the most.</li>
+  <li><b>Score = Chips × Mult.</b> Tiles and melds give Chips. Han from hand patterns (Yaku) becomes Mult. The box in the side panel shows the play before you press Play.</li>
+  <li><b>The River.</b> Your discards stay there all Blind. Call a River tile to finish a meld; it costs a Play.</li>
+  <li><b>Talismans.</b> They fire left to right after each play. Put +Mult before ×Mult, and drag them to reorder.</li>
+  <li><b>Between Blinds.</b> Spend money on Talismans, tile-changing Omikuji and Kami, Scrolls that level up your plays, and Flowers for the rest of the run.</li>
+  <li><b>Bosses.</b> Each Ante ends with a Boss that bends one rule. Read its red box.</li>
+  </ol><p class="muted" style="font-size:12px;margin:10px 0 0">Run Info lists every Yaku with example hands and the full Play Ladder. Full Rules has everything else.</p>`;
+}
+function rulesHTML() {
+  const tabs = [['quick', 'Quick Start'], ['full', 'Full Rules']];
+  return `<h2>How to Play</h2><div class="tabs">${tabs.map(([k, n]) => `<button class="tab${rulesTab === k ? ' on' : ''}" data-rtab="${k}">${n}</button>`).join('')}</div>${rulesTab === 'full' ? fullRulesHTML() : quickRulesHTML()}<button id="mClose" hidden>Close</button>`;
 }
 function mostPlayedRung() { let best = null, n = 0; for (const [k, v] of Object.entries(S.stats.rungs || {})) if (v > n) { n = v; best = k; } return best; }
 function mostScoredYaku() { let best = null, n = 0; for (const [k, v] of Object.entries(S.stats.yaku || {})) if (v > n) { n = v; best = k; } return best; }
 let infoTab = 'run';
+let rulesTab = 'quick';
 function parseHand(str) { const out = []; for (const grp of str.split(' ')) { const m = grp.match(/^(\d+)([mpsz])$/); if (!m) continue; const tiles = [...m[1]].map(d => ({ id: 0, suit: m[2], rank: +d, red: false, eng: null })); out.push(tiles); } return out; }
 function exampleHTML(ex) { return `<div class="exrow" data-ex="${ex}"></div>`; }
 function fillExamples(root) { root.querySelectorAll('.exrow').forEach(row => { if (row.children.length) return; for (const grp of parseHand(row.dataset.ex)) { const g = document.createElement('div'); g.className = 'exgrp'; for (const t of grp) { const e = tileEl(t, { small: true }); e.classList.add('tiny'); e.style.cursor = 'default'; g.appendChild(e); } row.appendChild(g); } }); }
@@ -960,10 +991,10 @@ function yakuHTML() {
 }
 let setupSel = { deck: 0, stake: 0 };
 function setupHTML() {
-  const car = (name, obj) => { const keys = Object.keys(obj); const i = ((setupSel[name] % keys.length) + keys.length) % keys.length; const v = obj[keys[i]]; return `<div class="carousel" data-car="${name}"><button class="ghost arrow" data-nav="${name}:-1" title="Previous" aria-label="Previous"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M10.5 2.5 5 8l5.5 5.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="carcard"><input type="hidden" name="${name}" value="${keys[i]}"><b>${v.name}</b><span class="muted">${v.desc}</span><span class="dots">${keys.map((k, j) => `<i class="${j === i ? 'on' : ''}"></i>`).join('')}</span></div><button class="ghost arrow" data-nav="${name}:1" title="Next" aria-label="Next"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M5.5 2.5 11 8l-5.5 5.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>`; };
-  return `<h2>New Run</h2><div class="setup stacked"><div><div class="label">Wall</div>${car('deck', DECKS)}</div><div><div class="label" style="margin-top:10px">Stake</div>${car('stake', STAKES)}</div></div>
-  <div class="label" style="margin-top:12px">Seed</div><input id="seedInput" placeholder="random" maxlength="24" autocomplete="off"><div class="muted" style="font-size:11px;margin-top:4px">Share a seed and the same Wall, shops and bosses come up for everyone. Leave blank for a random run.</div>
-  <div style="display:flex;gap:8px;margin-top:14px"><button id="mStartRun" class="primary">Start Run</button><button id="mClose">Cancel</button></div>`;
+  const car = (name, obj, label) => { const keys = Object.keys(obj); const i = ((setupSel[name] % keys.length) + keys.length) % keys.length; const v = obj[keys[i]]; return `<div class="setlabel"><span class="label">${label}</span><span class="muted num">${i + 1} / ${keys.length}</span></div><div class="carousel" data-car="${name}"><button class="ghost arrow" data-nav="${name}:-1" title="Previous" aria-label="Previous"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M10.5 2.5 5 8l5.5 5.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="carcard"><input type="hidden" name="${name}" value="${keys[i]}"><b class="cn">${v.name}</b><span class="muted">${v.desc}</span><span class="dots">${keys.map((k, j) => `<i class="${j === i ? 'on' : ''}"></i>`).join('')}</span></div><button class="ghost arrow" data-nav="${name}:1" title="Next" aria-label="Next"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M5.5 2.5 11 8l-5.5 5.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>`; };
+  return `<div class="shophead"><h2>New Run</h2></div><p class="muted" style="margin:2px 0 12px">Pick a Wall and a Stake. Enter a seed to replay someone else's run.</p><div class="setup stacked">${car('deck', DECKS, 'Wall')}<div style="height:12px"></div>${car('stake', STAKES, 'Stake')}</div>
+  <div class="setlabel" style="margin-top:14px"><span class="label">Seed</span><span class="muted">optional</span></div><input id="seedInput" placeholder="Random" maxlength="24" autocomplete="off"><div class="muted" style="font-size:11px;margin-top:4px">The same seed gives the same Wall, shops and bosses. Leave blank for a random run.</div>
+  <div class="shopfoot"><button id="mClose" class="ghost">Cancel</button><span style="flex:1"></span><button id="mStartRun" class="primary">Start Run</button></div>`;
 }
 function menuHTML(hasSave) {
   return `<h2 style="font-size:40px" data-notr>Yakuman</h2><p class="muted">A Mahjong roguelite in the Balatro mould. Playtest build. Switch between Riichi and Hong Kong terminology with the button in the header.</p>
@@ -1033,7 +1064,7 @@ function bindEvents() {
   $('#btnYaku').onclick = () => showModal(yakuHTML(), true);
 
   $('#btnSettings').onclick = () => showModal(settingsHTML(), true);
-  $('#btnNewRun').onclick = () => showModal(`<h2>Start a New Run?</h2><p class="muted">Your current run will be lost.</p><div style="display:flex;gap:8px"><button id="mNewRun" class="danger">New Run</button><button id="mClose">Cancel</button></div>`, true);
+  $('#btnNewRun').onclick = () => showModal(`<div class="shophead"><h2>Start a New Run?</h2></div><p class="muted" style="margin:4px 0 0">Your current run will be lost.</p><div class="shopfoot"><button id="mClose" class="ghost">Cancel</button><span style="flex:1"></span><button id="mNewRun" class="danger">New Run</button></div>`, true, 'confirmmodal');
   document.addEventListener('click', e => { const b = e.target.closest('[data-copyseed]'); if (b) copySeed(b); if (S && S.busy && skipArmed) skipAnim = true; });
   $('#overlay').addEventListener('click', e => {
     if (e.target === $('#overlay')) { if (modalClosable()) closeModal(); return; }
@@ -1041,6 +1072,7 @@ function bindEvents() {
     if (t.id === 'mX') { closeModal(); return; }
     if (t.dataset.copyseed != null) return;
     if (t.dataset.tab) { infoTab = t.dataset.tab; showModal(yakuHTML(), true); return; }
+    if (t.dataset.rtab) { const prev = $('#mClose') && $('#mClose').onclick; rulesTab = t.dataset.rtab; showModal(rulesHTML(), true); if (prev) $('#mClose').onclick = prev; return; }
     if (t.dataset.setlang) { setLang(t.dataset.setlang); showModal(settingsHTML(), true); return; }
     if (t.dataset.settilenums) { TILE_NUMS = t.dataset.settilenums; try { localStorage.setItem('yakuman.tilenums', TILE_NUMS); } catch (e) { } render(); showModal(settingsHTML(), true); return; }
     if (t.dataset.sethint) { HINTS[t.dataset.sethint] = !HINTS[t.dataset.sethint]; try { localStorage.setItem('yakuman.hints', JSON.stringify(HINTS)); } catch (e) { } render(); showModal(settingsHTML(), true); return; }
@@ -1049,8 +1081,8 @@ function bindEvents() {
     if (t.dataset.setdbg) { const b = $('#debugBar'); b.hidden = t.dataset.setdbg !== 'on'; if (!b.hidden) renderDebug(); showModal(settingsHTML(), true); return; }
     if (t.dataset.wipe != null) { clearSave(); location.reload(); return; }
     if (t.id === 'mClose') { hideModal(); render(); }
-    else if (t.id === 'mNewRun' || t.id === 'mStart') { showModal(setupHTML(), true); }
-    else if (t.dataset.nav) { const [name, d] = t.dataset.nav.split(':'); const seed = ($('#seedInput') || {}).value || ''; setupSel[name] += +d; showModal(setupHTML(), true); $('#seedInput').value = seed; }
+    else if (t.id === 'mNewRun' || t.id === 'mStart') { showModal(setupHTML(), true, 'setupmodal'); }
+    else if (t.dataset.nav) { const [name, d] = t.dataset.nav.split(':'); const seed = ($('#seedInput') || {}).value || ''; setupSel[name] += +d; showModal(setupHTML(), true, 'setupmodal'); $('#seedInput').value = seed; }
     else if (t.id === 'mStartRun') { const deck = ($('#modal input[name=deck]') || {}).value, stake = ($('#modal input[name=stake]') || {}).value, seed = ($('#seedInput') || {}).value; hideModal(); newRun({ deck, stake, seed }); }
     else if (t.id === 'mContinue') { hideModal(); render(); }
     else if (t.id === 'mRules') { showModal(rulesHTML() + '', true); $('#mClose').onclick = () => { showModal(menuHTML(!!load()), true); }; }
