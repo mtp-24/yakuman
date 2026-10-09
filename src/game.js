@@ -889,47 +889,70 @@ function popScore(n) { const p = document.createElement('div'); p.className = 's
 
 // ===================== HAND DRAG & DROP =====================
 let drag = null;
-function dropIndex(x, y, skipEl) {
-  const els = [...$('#hand').children].filter(e => e !== skipEl);
-  for (let i = 0; i < els.length; i++) { const r = els[i].getBoundingClientRect(); if (y < r.top - 6) return i; if (y <= r.bottom + 6 && x < r.left + r.width / 2) return i; }
-  return els.length;
+// ===================== LIVE DRAG =====================
+// Like Balatro: the dragged tile or Talisman floats under the pointer (tilting with its motion) while a gap moves
+// through the row and the others slide aside to make room. Shared by the hand and the Talisman slots.
+const layoutRect = e => { const r = e.getBoundingClientRect(), m = new DOMMatrixReadOnly(getComputedStyle(e).transform); return { left: r.left - m.e, top: r.top - m.f, width: r.width, height: r.height }; };
+function liveDragStart(el, items) {
+  const r = el.getBoundingClientRect(), cs = getComputedStyle(el);
+  const ph = document.createElement('div'); ph.className = 'dragph'; Object.assign(ph.style, { width: r.width + 'px', height: r.height + 'px', flex: cs.flex, margin: cs.margin });
+  el.parentElement.insertBefore(ph, el);
+  Object.assign(el.style, { position: 'fixed', left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px', margin: '0', zIndex: '60' });
+  return { ph, items, lastX: null, tilt: 0 };
 }
-function markDrop(idx, skipEl) { const els = [...$('#hand').children].filter(e => e !== skipEl); els.forEach(e => e.classList.remove('drop-before', 'drop-after')); if (idx < els.length) els[idx].classList.add('drop-before'); else if (els.length) els[els.length - 1].classList.add('drop-after'); }
+function liveDragMove(st, el, x, y, dx, dy) {
+  if (st.lastX !== null) st.tilt = Math.max(-10, Math.min(10, st.tilt * .7 + (x - st.lastX) * .6)); st.lastX = x;
+  el.style.transform = `translate(${dx}px,${dy}px) scale(1.08) rotate(${st.tilt.toFixed(1)}deg)`;
+  const items = st.items; let idx = items.length;
+  for (let i = 0; i < items.length; i++) { const r = layoutRect(items[i]); if (y < r.top - 6) { idx = i; break; } if (y <= r.top + r.height + 6 && x < r.left + r.width / 2) { idx = i; break; } }
+  const cur = items.filter(e => st.ph.compareDocumentPosition(e) & Node.DOCUMENT_POSITION_PRECEDING).length;
+  if (idx === cur) return;
+  const before = new Map(items.map(e => [e, e.getBoundingClientRect()]));
+  if (idx < items.length) items[idx].before(st.ph); else items[items.length - 1].after(st.ph);
+  for (const e of items) {
+    const a = before.get(e); (e._slide && e._slide.cancel()); const b = e.getBoundingClientRect(), base = getComputedStyle(e).transform, bs = base === 'none' ? '' : base;
+    if (Math.abs(a.left - b.left) > .5 || Math.abs(a.top - b.top) > .5) e._slide = e.animate([{ transform: `translate(${a.left - b.left}px,${a.top - b.top}px) ${bs}` }, { transform: bs || 'none' }], { duration: 160, easing: 'cubic-bezier(.2,.8,.2,1)' });
+  }
+}
+// Where the gap ended up, counted among the other items.
+const liveDragIndex = st => st.items.filter(e => st.ph.compareDocumentPosition(e) & Node.DOCUMENT_POSITION_PRECEDING).length;
+function liveDragCancel(st, el) { st.ph.remove(); ['position', 'left', 'top', 'width', 'height', 'margin', 'zIndex', 'transform'].forEach(k => el.style[k] = ''); }
 function bindTileDrag(el, t) {
   el.addEventListener('pointerdown', e => { if (S.phase !== 'blind' || S.busy || e.button) return; drag = { t, el, x: e.clientX, y: e.clientY, moved: false }; if (motionOK) drag.press = el.animate([{ transform: getComputedStyle(el).transform === 'none' ? 'none' : getComputedStyle(el).transform }, { transform: `translateY(${liftOf(el) + 2}px) scale(.96)` }], { duration: 70, easing: 'ease-out', fill: 'forwards' }); try { el.setPointerCapture(e.pointerId); } catch (err) { } });
   el.addEventListener('pointermove', e => {
     if (!drag || drag.el !== el) return; const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
-    if (!drag.moved && Math.hypot(dx, dy) > 8) { drag.moved = true; if (drag.press) drag.press.cancel(); el.classList.add('dragging'); }
-    if (drag.moved) { el.style.transform = `translate(${dx}px,${dy}px) scale(1.08)`; markDrop(dropIndex(e.clientX, e.clientY, el), el); }
+    if (!drag.moved && Math.hypot(dx, dy) > 8) { drag.moved = true; if (drag.press) drag.press.cancel(); el.classList.add('dragging'); drag.live = liveDragStart(el, [...$('#hand').children].filter(x => x !== el && x.classList.contains('tile'))); }
+    if (drag.moved) liveDragMove(drag.live, el, e.clientX, e.clientY, dx, dy);
   });
   const finish = e => {
-    if (!drag || drag.el !== el) return; const d = drag; drag = null; if (d.press) d.press.cancel(); el.style.transform = ''; el.classList.remove('dragging'); [...$('#hand').children].forEach(x => x.classList.remove('drop-before', 'drop-after'));
-    if (d.moved && e.type === 'pointerup') { const idx = dropIndex(e.clientX, e.clientY, el); const rest = S.hand.filter(x => x !== d.t); rest.splice(idx, 0, d.t); S.hand = rest; S.sortHand = false; render(); }
-    else if (!d.moved && e.type === 'pointerup') { S.selected = S.selected.includes(t.id) ? S.selected.filter(x => x !== t.id) : [...S.selected, t.id]; render(); }
+    if (!drag || drag.el !== el) return; const d = drag; drag = null; if (d.press) d.press.cancel();
+    // On drop the hand is re-rendered in its new order; the tile glides from where it floats into the gap.
+    if (d.moved && e.type === 'pointerup') { const idx = liveDragIndex(d.live); d.live.ph.remove(); el.classList.remove('dragging'); const rest = S.hand.filter(x => x !== d.t); rest.splice(idx, 0, d.t); S.hand = rest; S.sortHand = false; render(); return; }
+    if (d.live) { liveDragCancel(d.live, el); render(); return; } el.style.transform = ''; el.classList.remove('dragging');
+    if (!d.moved && e.type === 'pointerup') { S.selected = S.selected.includes(t.id) ? S.selected.filter(x => x !== t.id) : [...S.selected, t.id]; render(); }
   };
   el.addEventListener('pointerup', finish); el.addEventListener('pointercancel', finish);
 }
 // Talisman slots: drag to reorder (they fire left to right), tap to select for selling.
 let slotDrag = null;
 function bindSlotDrag(el, k) {
+  el.dataset.key = k;
   el.addEventListener('pointerdown', e => { if (S.busy || e.button) return; slotDrag = { k, el, x: e.clientX, y: e.clientY, moved: false }; try { el.setPointerCapture(e.pointerId); } catch (err) { } });
   el.addEventListener('pointermove', e => {
     if (!slotDrag || slotDrag.el !== el) return; const dx = e.clientX - slotDrag.x, dy = e.clientY - slotDrag.y;
-    if (!slotDrag.moved && Math.hypot(dx, dy) > 8) { slotDrag.moved = true; el.classList.add('dragging'); }
-    if (slotDrag.moved) { el.style.transform = `translate(${dx}px,${dy}px)`; const others = [...$('#talismans').children].filter(x => x !== el && x.classList.contains('filled')); others.forEach(x => x.classList.remove('drop-before', 'drop-after')); const idx = slotDropIndex(e.clientX, e.clientY, el); if (idx < others.length) others[idx].classList.add('drop-before'); else if (others.length) others[others.length - 1].classList.add('drop-after'); }
+    if (!slotDrag.moved && Math.hypot(dx, dy) > 8) { slotDrag.moved = true; el.classList.add('dragging'); slotDrag.live = liveDragStart(el, [...$('#talismans').children].filter(x => x !== el && x.classList.contains('filled'))); }
+    if (slotDrag.moved) liveDragMove(slotDrag.live, el, e.clientX, e.clientY, dx, dy);
   });
   const finish = e => {
-    if (!slotDrag || slotDrag.el !== el) return; const d = slotDrag; slotDrag = null; el.style.transform = ''; el.classList.remove('dragging'); [...$('#talismans').children].forEach(x => x.classList.remove('drop-before', 'drop-after'));
-    if (d.moved && e.type === 'pointerup') { const idx = slotDropIndex(e.clientX, e.clientY, el); const rest = S.talismans.filter(x => x !== d.k); rest.splice(idx, 0, d.k); S.talismans = rest; render(); }
-    else if (!d.moved && e.type === 'pointerup') { S.selTal = S.selTal === k ? null : k; render(); }
+    if (!slotDrag || slotDrag.el !== el) return; const d = slotDrag; slotDrag = null;
+    if (d.moved && e.type === 'pointerup') { const idx = liveDragIndex(d.live); const from = el.getBoundingClientRect(); liveDragCancel(d.live, el); el.classList.remove('dragging'); const rest = S.talismans.filter(x => x !== d.k); rest.splice(idx, 0, d.k); S.talismans = rest; render(); glideSlot(d.k, from); return; }
+    if (d.live) { liveDragCancel(d.live, el); } el.style.transform = ''; el.classList.remove('dragging');
+    if (!d.moved && e.type === 'pointerup') { S.selTal = S.selTal === k ? null : k; render(); }
   };
   el.addEventListener('pointerup', finish); el.addEventListener('pointercancel', finish);
 }
-function slotDropIndex(x, y, skipEl) {
-  const els = [...$('#talismans').children].filter(e => e !== skipEl && e.classList.contains('filled'));
-  for (let i = 0; i < els.length; i++) { const r = els[i].getBoundingClientRect(); if (y < r.top - 6) return i; if (y <= r.bottom + 6 && x < r.left + r.width / 2) return i; }
-  return els.length;
-}
+// After a Talisman drop, the slot glides from where it was released into its new place.
+function glideSlot(k, from) { if (!motionOK) return; const el = [...$('#talismans').children].find(x => x.dataset.key === k); if (!el) return; const to = el.getBoundingClientRect(); el.animate([{ transform: `translate(${from.left - to.left}px,${from.top - to.top}px) scale(1.06)` }, { transform: 'none' }], { duration: 200, easing: 'cubic-bezier(.2,.8,.2,1)' }); }
 // ===================== SCORING ANIMATION =====================
 const motionOK = !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 let skipAnim = false, skipArmed = false;
