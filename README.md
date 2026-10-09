@@ -64,6 +64,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 53: hand box shows only the play name, level and Han (neutral "Select a play" otherwise); Debug bar gains a "Demo hand" button that stages a complete hand showcasing the scoring animation.
 - Build 54: dead-tile dots also mark spare tiles when the hand is already complete (including while settling a Call); the settle message says when a complete hand is ready.
 - Build 55: setup carousel arrows are SVG chevrons (the ◀ ▶ characters rendered as blue emoji on iOS Safari).
+- Build 56: the scoring breakdown streams into the Last Play panel during the animation; the hand box shows only the name, chips × Mult and total.
 - Build 7: multi-meld play ladder (Two Melds ... Four Melds), targets 300...45000, retrigger and scaling Talismans, Wall-Builder rewording, scoring animation.
 
 ## Simulators (in `sim/`)
