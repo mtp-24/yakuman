@@ -669,9 +669,15 @@ aside .card{background:linear-gradient(180deg,#2a1d10,#1d140a);border:1px solid 
 .actions .msg{align-self:center;margin-left:4px;color:#f0cf7f;flex:1 1 220px;min-width:0}
 .zone .zhead button{white-space:nowrap;flex:none}
 @media (max-width:900px){.act{flex:1 1 150px;max-width:none} .act-sep{display:none}}
-.purse{grid-column:1/-1;display:flex;align-items:center;gap:10px;background:linear-gradient(180deg,#3a2a14,#24190b);border:1px solid #8a6a3e;border-radius:8px;padding:8px 12px;box-shadow:inset 0 1px 0 rgba(255,220,160,.2);min-width:0}
+.purse{display:flex;align-items:center;justify-content:center;gap:10px;background:linear-gradient(180deg,#3a2a14,#24190b);border:1px solid #8a6a3e;border-radius:8px;padding:8px 12px;box-shadow:inset 0 1px 0 rgba(255,220,160,.2);min-width:0}
 .purse .coin{flex:0 0 auto;width:28px;height:28px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffe7a3,#d9a441 55%,#9a6f1f);box-shadow:inset 0 0 0 2px rgba(120,80,20,.6),0 2px 4px rgba(0,0,0,.4);display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#6b4a0e}
 .purse .pl{flex:1;min-width:0} .purse .label{color:#c9b48a} .purse .ph{font-size:11px;color:#b9a27a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .purse .pv{flex:0 0 auto;font-family:var(--display);font-size:30px;color:#f3c768;line-height:1;text-shadow:0 2px 6px rgba(0,0,0,.4);display:inline-block;transform-origin:50% 60%;will-change:transform}
 @media (max-width:1400px){.act-s{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;min-height:28px}}
+.stats.purserow{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+.wallbtn{display:flex;align-items:center;justify-content:center;gap:10px;padding:8px 12px;border-radius:8px;background:linear-gradient(180deg,#2c3a33,#1c2621);border:1px solid #4d6a5c;box-shadow:inset 0 1px 0 rgba(255,255,255,.12);color:var(--fg);min-width:0;transition:filter .12s,transform .08s}
+.wallbtn:hover{filter:brightness(1.15)} .wallbtn:active{transform:translateY(1px)}
+.wallico{position:relative;width:26px;height:28px;flex:0 0 auto} .wallico i{position:absolute;width:16px;height:21px;border-radius:3px;background:linear-gradient(180deg,#fffaf0,#e9dec3);border:1px solid #cdbb90;box-shadow:0 2px 0 #2b5c8f}
+.wallico i:nth-child(1){left:0;top:5px} .wallico i:nth-child(2){left:5px;top:2px} .wallico i:nth-child(3){left:10px;top:0}
+.wtx{display:flex;flex-direction:column;align-items:flex-start;line-height:1} .wallbtn .wv{font-family:var(--display);font-size:24px;color:var(--fg)} .wallbtn .wl{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-top:3px}
 </style>

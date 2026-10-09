@@ -619,7 +619,6 @@ function tileSVG(t) {
 }
 function render() {
   if (!S) return; if (S.bossOrder) ensureBosses(); setRules(S); checkUnlocks();
-  $('#btnDeck').innerHTML = `Wall <span class="num wallcount">${S.phase === 'blind' ? S.wall.length : (S.deck || []).length}</span>`; $('#btnDeck').title = S.phase === 'blind' ? 'Tiles still face down in the Wall. Click to see every tile.' : 'Tiles in your Wall. Click to see every tile.';
   renderBlind(); renderTalismans(); renderConsumables(); renderOpen(); renderRiver(); renderHand(); renderActions(); renderLast();
   $('#msg').textContent = S.msg || ''; $('#msg').className = 'msg' + (S.msgErr ? ' err' : '');
   if (S.phase === 'cashout') showModal(cashoutHTML(), false, 'cashmodal'); else if (S.phase === 'shop' && S.pack) { showModal(packHTML(), false, 'packmodal'); fillPackHand(); } else if (S.phase === 'shop') showModal(shopHTML(), false, 'shopmodal'); else if (S.phase === 'select') showModal(selectHTML(), false, 'selectmodal'); else if (S.phase === 'gameover') showModal(overHTML(false), false, 'overmodal'); else if (S.phase === 'win') showModal(overHTML(true), false, 'overmodal winmodal'); else if (!modalPinned) hideModal();
@@ -681,7 +680,8 @@ function renderBlind() {
   }
   // The purse: money is always in view here, with the interest the next cash-out will pay. Plays and Discards left are on the action buttons.
   const interest = Math.min(hasF('winter') ? 10 : CFG.interestCap, Math.floor(S.money / CFG.interestPer));
-  h += `<div class="stats"><div class="purse" title="Interest: ¥1 for every ¥${CFG.interestPer} you hold, up to ¥${hasF('winter') ? 10 : CFG.interestCap}, paid when you beat a Blind"><span class="coin" aria-hidden="true">¥</span><div class="pl"><div class="label">Money</div><div class="ph">${interest ? `+¥${interest} interest at cash-out` : `Hold ¥${CFG.interestPer} to earn interest`}</div></div><div class="pv num" id="purseVal">¥${S.money}</div></div></div>`;
+  const wallN = S.phase === 'blind' ? S.wall.length : (S.deck || []).length;
+  h += `<div class="stats purserow"><div class="purse" title="Interest: +¥${interest} at the next cash-out (¥1 for every ¥${CFG.interestPer} you hold, up to ¥${hasF('winter') ? 10 : CFG.interestCap})"><span class="coin" aria-hidden="true">¥</span><span class="pv num" id="purseVal">¥${S.money}</span></div><button class="wallbtn" id="wallBtn" title="${S.phase === 'blind' ? 'Tiles still face down in the Wall. Click to see every tile.' : 'Tiles in your Wall. Click to see every tile.'}"><span class="wallico" aria-hidden="true"><i></i><i></i><i></i></span><span class="wtx"><span class="wv num">${wallN}</span><span class="wl">Wall</span></span></button></div>`;
   if (S.indicators.length) { h += `<div class="label" style="margin-top:8px">Dora Indicators</div><div class="dora-ind" id="doraRow"></div>`; }
   if (S.flowers.length) h += `<div class="label" style="margin-top:8px">Flowers &amp; Seasons</div><div class="flowers">${S.flowers.map(f => `<span class="flowerchip" title="${FLW[f].desc}">${FLW[f].name}</span>`).join('')}</div>`;
   $('#blindCard').innerHTML = h;
@@ -1455,7 +1455,8 @@ function bindEvents() {
   $('#btnClear').onclick = () => { S.selected = []; S.selRiver = null; render(); };
   $('#btnSort').onclick = () => { S.sortHand = !S.sortHand; if (S.sortHand) S.hand = sortTiles(S.hand); render(); };
 
-  $('#btnDeck').onclick = () => showModal(deckHTML(), true);
+  // The Wall tile-stack in the side panel opens the Wall screen (the panel is redrawn on render, so the click is delegated).
+  document.addEventListener('click', e => { if (e.target.closest('#wallBtn')) showModal(deckHTML(), true); });
   $('#btnRules').onclick = () => showModal(rulesHTML(), true);
   $('#btnCollection').onclick = () => showModal(collectionHTML(), true, 'colmodal');
   // Collection search filters the current tab by the cards' visible text (works in both terminologies).
