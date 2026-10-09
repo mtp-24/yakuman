@@ -845,10 +845,22 @@ function coinSVG() {
   const teeth = Array.from({ length: 12 }, (_, k) => `<rect x="19.2" y="10.2" width="1.6" height="2.6" rx=".4" transform="rotate(${k * 30} 20 20)"/>`).join('');
   return `<svg viewBox="0 0 40 40" aria-hidden="true"><defs><radialGradient id="jpc" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#fff0b8"/><stop offset=".45" stop-color="#e2b04c"/><stop offset="1" stop-color="#94661c"/></radialGradient></defs><circle cx="20" cy="20" r="19" fill="url(#jpc)" stroke="#7a5414" stroke-width=".8"/><circle cx="20" cy="20" r="16.6" fill="none" stroke="rgba(122,84,20,.55)" stroke-width=".8"/><g fill="rgba(122,84,20,.7)">${teeth}</g><circle cx="20" cy="20" r="5" fill="#1d140a" stroke="#7a5414" stroke-width=".8"/><path d="M11 27.5h18M13 30.5h14M15.5 33.2h9" stroke="rgba(122,84,20,.65)" stroke-width="1.1" stroke-linecap="round"/><path d="M9.5 21c0-4 1.6-7.4 4.4-9.6M30.5 21c0-4-1.6-7.4-4.4-9.6" stroke="rgba(122,84,20,.55)" stroke-width="1" fill="none" stroke-dasharray="1.6 1.4"/></svg>`;
 }
+// The Wall count ticks down when tiles are drawn instead of jumping (0.35 s), then gives a small bounce.
+// The panel is redrawn on every render, so the count shown so far is kept here and the tween resumes from it.
+let wallShown = null, wallTween = 0, wallToken = 0;
+function tickWall() {
+  const el = $('#wallBtn .wv'); if (!el) return; const target = +el.textContent;
+  if (wallShown === null || target >= wallShown || !motionOK) { wallShown = target; return; }
+  const from = wallShown, t0 = performance.now(), dur = 350; el.textContent = from; cancelAnimationFrame(wallTween);
+  const step = now => { const k = Math.min(1, (now - t0) / dur), v = Math.round(from + (target - from) * (1 - Math.pow(1 - k, 2))); wallShown = v; const cur = $('#wallBtn .wv'); if (cur) cur.textContent = v;
+    if (k < 1) wallTween = requestAnimationFrame(step); else { wallShown = target; if (cur) juice(cur, .5); } };
+  wallTween = requestAnimationFrame(step);
+  const token = ++wallToken; setTimeout(() => { if (token !== wallToken) return; const cur = $('#wallBtn .wv'); if (cur) cur.textContent = target; wallShown = target; }, dur + 300);   // safety if frames are paused; only the latest countdown may finish it
+}
 let lastPurse = null;
 function bumpPurse() { const el = $('#purseVal'); if (!el) return; if (lastPurse !== null && lastPurse !== S.money) juice(el, .8); lastPurse = S.money; }
 function renderActions() {
-  bumpPurse();
+  bumpPurse(); tickWall();
   const inBlind = S.phase === 'blind';
   const opt = inBlind ? playOption() : { err: '' };
   const hid = inBlind && hiddenSelected() && S.plays > 0 && !S.pendingDiscard;   // face-down tiles: never say in advance whether the selection is a valid play
