@@ -154,6 +154,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 143: Shop banner: the decorative crest before the title is gone, and the money lines up with the title lettering.
 - Build 144: Sound effects synthesized with Web Audio, Balatro-style: tile clacks for select, draw, discard, Call (double) and Kong (four), a whoosh for Play, soft ticks for the Wall count and score count-up, rising plinks for Chips, zings for Mult and a sweep for xMult, a chord for the total, pops for fireworks; rate-limited so bursts never pile up. Settings, Gameplay: Sound On/Off (saved and exported). Collection sample tiles sit at the bottom of every card so rows line up. Lock icon redrawn as a conventional padlock. Fixed a crash on the run-over screen for runs saved before build 117 (old Stake unlock records).
 - Build 145: The Play button and its tooltip name the play without its score, so the scoring animation reveals it.
+- Build 146: The Plays and Discards counters are back in the left summary, under the scoring box and above the money and Wall row.
 - Build 7: multi-meld play ladder (Two Melds ... Four Melds), targets 300...45000, retrigger and scaling Talismans, Wall-Builder rewording, scoring animation.
 
 ## Simulators (in `sim/`)

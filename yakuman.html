@@ -2345,9 +2345,10 @@ function renderBlind() {
     }
     else h += `<div class="handbox empty">${titleHTML('', 0, false, true)}${mathBoxes(0, 0, 0, true)}</div>`;   // blank title until a play is selected; the row keeps its height
   }
-  // The purse: money is always in view here, with the interest the next cash-out will pay. Plays and Discards left are on the action buttons.
+  // Plays and Discards left, then the purse (money, with the interest in its tooltip) beside the Wall.
   const interest = Math.min(hasF('winter') ? 10 : CFG.interestCap, Math.floor(S.money / CFG.interestPer));
   const wallN = S.phase === 'blind' ? S.wall.length : (S.deck || []).length;
+  h += `<div class="stats"><div class="stat plays"><div class="label">Plays</div><div class="v num">${S.plays}</div></div><div class="stat discards"><div class="label">Discards</div><div class="v num">${S.discards}</div></div></div>`;
   h += `<div class="stats purserow"><div class="purse" title="Interest: +¥${interest} at the next cash-out (¥1 for every ¥${CFG.interestPer} you hold, up to ¥${hasF('winter') ? 10 : CFG.interestCap})"><span class="coin" aria-hidden="true">${coinSVG()}</span><span class="wtx"><span class="pv num" id="purseVal">¥${S.money}</span><span class="wl" data-notr>${LANG === 'hk' ? 'HKD' : 'JPY'}</span></span></div><button class="wallbtn" id="wallBtn" title="${S.phase === 'blind' ? 'Tiles still face down in the Wall. Click to see every tile.' : 'Tiles in your Wall. Click to see every tile.'}"><span class="wallico" aria-hidden="true"><i></i><i></i><i></i></span><span class="wtx"><span class="wv num">${wallN}</span><span class="wl">Wall</span></span></button></div>`;
   if (S.indicators.length) { h += `<div class="label" style="margin-top:8px">Dora Indicators</div><div class="dora-ind" id="doraRow"></div>`; }
   if (S.flowers.length) h += `<div class="label" style="margin-top:8px">Flowers &amp; Seasons</div><div class="flowers">${S.flowers.map(f => `<span class="flowerchip" title="${FLW[f].desc}">${FLW[f].name}</span>`).join('')}</div>`;
