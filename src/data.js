@@ -236,7 +236,7 @@ const KAMI = [
     use: (S, sel) => { S.hand = S.hand.filter(t => !sel.includes(t)); S.scrolls.meld.hand = (S.scrolls.meld.hand || 0) + 1; } },
   { key: 'inari', name: 'Inari', cost: 4, sel: [2, 3], desc: 'Up to 3 selected tiles all become copies of the first selected tile (rank, suit, red, engraving).',
     use: (S, sel) => { const f = sel[0]; for (const t of sel.slice(1)) { t.suit = f.suit; t.rank = f.rank; t.red = f.red; t.eng = f.eng; } } },
-  { key: 'raijin', name: 'Raijin', cost: 4, sel: [0, 0], desc: 'Destroy 2 random tiles in your hand. Gain +1 Play every Blind for the rest of the run.',
+  { key: 'raijin', name: 'Raijin', cost: 4, sel: [0, 0], anywhere: true, desc: 'Destroy 2 random tiles in your hand (in the shop, 2 random tiles from your Wall). Gain +1 Play every Blind for the rest of the run.',
     use: (S) => { for (let i = 0; i < 2 && S.hand.length; i++) S.hand.splice(Math.floor(Math.random() * S.hand.length), 1); S.bonusPlays++; S.plays++; } },
   { key: 'tsukuyomi', name: 'Tsukuyomi', cost: 4, sel: [1, 3], desc: 'Engrave up to 3 selected tiles with a Dragon Mark. Destroy 1 random unselected tile in your hand.',
     use: (S, sel) => { for (const t of sel) t.eng = 'dragonmark'; const others = S.hand.filter(t => !sel.includes(t)); if (others.length) { const v = pick(others); S.hand = S.hand.filter(t => t !== v); } } },

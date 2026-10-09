@@ -640,7 +640,7 @@ const KAMI = [
     use: (S, sel) => { S.hand = S.hand.filter(t => !sel.includes(t)); S.scrolls.meld.hand = (S.scrolls.meld.hand || 0) + 1; } },
   { key: 'inari', name: 'Inari', cost: 4, sel: [2, 3], desc: 'Up to 3 selected tiles all become copies of the first selected tile (rank, suit, red, engraving).',
     use: (S, sel) => { const f = sel[0]; for (const t of sel.slice(1)) { t.suit = f.suit; t.rank = f.rank; t.red = f.red; t.eng = f.eng; } } },
-  { key: 'raijin', name: 'Raijin', cost: 4, sel: [0, 0], desc: 'Destroy 2 random tiles in your hand. Gain +1 Play every Blind for the rest of the run.',
+  { key: 'raijin', name: 'Raijin', cost: 4, sel: [0, 0], anywhere: true, desc: 'Destroy 2 random tiles in your hand (in the shop, 2 random tiles from your Wall). Gain +1 Play every Blind for the rest of the run.',
     use: (S) => { for (let i = 0; i < 2 && S.hand.length; i++) S.hand.splice(Math.floor(Math.random() * S.hand.length), 1); S.bonusPlays++; S.plays++; } },
   { key: 'tsukuyomi', name: 'Tsukuyomi', cost: 4, sel: [1, 3], desc: 'Engrave up to 3 selected tiles with a Dragon Mark. Destroy 1 random unselected tile in your hand.',
     use: (S, sel) => { for (const t of sel) t.eng = 'dragonmark'; const others = S.hand.filter(t => !sel.includes(t)); if (others.length) { const v = pick(others); S.hand = S.hand.filter(t => t !== v); } } },
@@ -1323,7 +1323,15 @@ function useConsumable(i) {
   if (S.busy) return;
   const c = S.consumables[i]; const def = CONS[c.key];
   if (S.phase !== 'blind' && !def.anywhere) { setMsg('Use this during a Blind, with tiles in hand.', true); return render(); }
-  const sel = S.phase === 'blind' ? selTiles() : [];
+  if (S.phase !== 'blind') {
+    const before = S.deck ? S.deck.length : 0;
+    const after = useOnWallTiles(def, S.deck || [], []);
+    if (!after) { setMsg('That cannot be used right now.', true); return render(); }
+    S.consumables.splice(i, 1);
+    const lost = before - S.deck.length;
+    setMsg(`${def.name} used.${lost > 0 ? ` ${lost} tile${lost > 1 ? 's' : ''} left your Wall.` : ''}`); return render();
+  }
+  const sel = selTiles();
   if (sel.length < def.sel[0] || sel.length > def.sel[1]) { setMsg(def.sel[0] === def.sel[1] ? (def.sel[0] === 0 ? 'Clear your selection first.' : `Select exactly ${def.sel[0]} tile${def.sel[0] > 1 ? 's' : ''}.`) : `Select ${def.sel[0]}–${def.sel[1]} tiles.`, true); return render(); }
   const before = S.hand.length;
   const r = def.use(S, sel); if (r === false) { setMsg('That cannot be used right now.', true); return render(); }
@@ -1370,18 +1378,25 @@ const PACK_HAND = 8;
 function packTiles() { return S.pack && S.pack.hand ? S.pack.hand.map(id => S.deck.find(t => t.id === id)).filter(Boolean) : []; }
 // Uses a pack pick on the dealt tiles. The dealt tiles stand in as the hand, so every consumable keeps its normal effect;
 // tiles it destroys leave the Wall and tiles it creates join it.
+// Runs a consumable with Wall tiles standing in as the hand, then mirrors the result into the Wall:
+// tiles it destroys leave the Wall, tiles it creates join it.
+function useOnWallTiles(def, pool, sel) {
+  const realHand = S.hand; S.hand = pool.slice(); let r, after;
+  try { r = def.use(S, sel); } finally { after = S.hand; S.hand = realHand; }
+  if (r === false) return null;
+  const gone = pool.filter(t => !after.includes(t)), added = after.filter(t => !pool.includes(t));
+  if (gone.length) S.deck = S.deck.filter(t => !gone.includes(t));
+  if (added.length) { S.deck.push(...added); for (const k of S.talismans) if (TAL[k].onTileAdded) TAL[k].onTileAdded(S, added.length); }
+  return after;
+}
 function usePackCard(i) {
   const it = S.pack && S.pack.choices[i]; if (!it || it.sold || !S.pack.hand) return;
   const def = CONS[it.key];
   if (def.blindOnly) { setMsg(`${def.name} only works during a Blind. Keep it for later.`, true); return render(); }
   const dealt = packTiles(); const sel = S.pack.sel.map(id => dealt.find(t => t.id === id)).filter(Boolean);
   if (sel.length < def.sel[0] || sel.length > def.sel[1]) { setMsg(def.sel[0] === def.sel[1] ? (def.sel[0] === 0 ? 'Clear your tile selection first.' : `Select exactly ${def.sel[0]} tile${def.sel[0] > 1 ? 's' : ''} above.`) : `Select ${def.sel[0]}–${def.sel[1]} tiles above.`, true); return render(); }
-  const realHand = S.hand; S.hand = dealt.slice();
-  let r; try { r = def.use(S, sel); } finally { var after = S.hand; S.hand = realHand; }
-  if (r === false) { setMsg('That cannot be used right now.', true); return render(); }
-  const gone = dealt.filter(t => !after.includes(t)), added = after.filter(t => !dealt.includes(t));
-  if (gone.length) S.deck = S.deck.filter(t => !gone.includes(t));
-  if (added.length) { S.deck.push(...added); for (const k of S.talismans) if (TAL[k].onTileAdded) TAL[k].onTileAdded(S, added.length); }
+  const after = useOnWallTiles(def, dealt, sel);
+  if (!after) { setMsg('That cannot be used right now.', true); return render(); }
   S.pack.hand = after.map(t => t.id); S.pack.sel = [];
   it.sold = true; it.used = true; S.pack.left--;
   setMsg(`${def.name} used. The change stays in your Wall.`);
@@ -1882,7 +1897,7 @@ function rulesHTML() {
   <p><b>Editions.</b> Shop Talismans sometimes come in an edition: ${Object.values(EDITIONS).map(e => `${e.name} (${e.desc})`).join(', ')}.</p>
   <h3>Between Blinds</h3>
   <p><b>Money.</b> Beating a Blind pays ¥${R.small} for a Small Blind, ¥${R.big} for a Big Blind and ¥${R.boss} for a Boss, plus ¥1 for each unused Play and ¥1 interest for every ¥${CFG.interestPer} you hold (at most ¥${CFG.interestCap}). Red and Black Stakes pay nothing for Small Blinds.</p>
-  <p><b>Shop.</b> Spend money on Talismans (passive, ${CFG.talismanSlots} slots), Omikuji and Kami (consumables, ${CFG.consumableSlots} slots, used on selected hand tiles), Scrolls of Mastery (permanent upgrades), Flowers (run-long perks) and one booster pack (open it and keep one or two of what's inside). Omikuji Packs and Kami Packs also deal ${PACK_HAND} random tiles from your Wall: select some and press Use on a card to change them for the rest of the run, or Keep the card for a Blind. ${CONS.indicator.name} and ${CONS.amaterasu.name} only work during a Blind. A reroll costs ¥${CFG.rerollCost}. Selling returns half the item's value: click a Talisman on the board and press Sell, or sell from inside the shop.</p>
+  <p><b>Shop.</b> Spend money on Talismans (passive, ${CFG.talismanSlots} slots), Omikuji and Kami (consumables, ${CFG.consumableSlots} slots, used on selected hand tiles), Scrolls of Mastery (permanent upgrades), Flowers (run-long perks) and one booster pack (open it and keep one or two of what's inside). Omikuji Packs and Kami Packs also deal ${PACK_HAND} random tiles from your Wall: select some and press Use on a card to change them for the rest of the run, or Keep the card for a Blind. ${CONS.indicator.name} and ${CONS.amaterasu.name} only work during a Blind. ${CONS.wealth.name} and ${CONS.raijin.name} can also be used from your slots in the shop; there ${CONS.raijin.name} destroys 2 random tiles from your Wall. A reroll costs ¥${CFG.rerollCost}. Selling returns half the item's value: click a Talisman on the board and press Sell, or sell from inside the shop.</p>
   <p><b>Blind Select.</b> After the shop you see the Ante's three blinds with their targets, rewards and the Boss's rule. A Small or Big Blind can be skipped for the Tag on its card instead of its money: free packs, editions, coupons, money, a bigger hand or a different Boss. Tags you hold show in the side panel.</p>
   <p><b>Setup.</b> A new run lets you choose a Wall (deck), a Stake (difficulty) and a seed. Sharing a seed replays the same Wall, shops and bosses.</p>
   <h3>Help and Controls</h3>
