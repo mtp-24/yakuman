@@ -516,6 +516,8 @@ function skipBlind() {
   S.blindIndex++; S.shop = null; S.pack = null; S.phase = 'select';
   setMsg(`Skipped for the ${TAGS[tag].name}: ${TAGS[tag].desc}`); render();
 }
+// Poker-chip tokens for the Ante screen: blue Small, gold Big, red Boss with a dashed ring.
+function blindChipSVG(k) { const c = { small: '#2b5c8f', big: '#c58f2c', boss: '#a8362c' }[k]; return `<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="${c}" stroke="rgba(0,0,0,.35)"/>${[0, 60, 120, 180, 240, 300].map(a => `<rect x="18" y="2.5" width="4" height="6" rx="1" fill="rgba(255,255,255,.85)" transform="rotate(${a} 20 20)"/>`).join('')}<circle cx="20" cy="20" r="10" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="1.5" stroke-dasharray="${k === 'boss' ? '2 2' : '0'}"/>${k === 'boss' ? '<path d="M15 17l3 2M25 17l-3 2M16 24q4-3 8 0" stroke="#fff" stroke-width="1.6" fill="none" stroke-linecap="round"/>' : `<circle cx="20" cy="20" r="${k === 'big' ? 5 : 3.5}" fill="rgba(255,255,255,.75)"/>`}</svg>`; }
 function selectHTML() {
   const kinds = ['small', 'big', 'boss']; const names = { small: 'Small Blind', big: 'Big Blind', boss: 'Boss Blind' };
   const boss = S.bossOrder[S.ante - 1];
@@ -528,7 +530,7 @@ function selectHTML() {
     const state = i < S.blindIndex ? 'done' : i === S.blindIndex ? 'current' : 'next';
     const reward = (k === 'small' && smallPaysNothing()) ? 0 : CFG.blindReward[k];
     const tag = k !== 'boss' && S.skipTags ? TAGS[S.skipTags[k]] : null;
-    h += `<div class="blindcard ${state}${k === 'boss' ? ' bosscard' : ''}"><div class="kind">${state === 'done' ? 'Defeated' : state === 'current' ? 'Up next' : 'After that'}</div><div class="n">${k === 'boss' ? BOSSES[boss].name : names[k]}</div>${k === 'boss' ? `<div class="d bossfx">${BOSSES[boss].desc}</div>` : ''}`;
+    h += `<div class="blindcard ${state}${k === 'boss' ? ' bosscard' : ''}"><span class="blindchip" aria-hidden="true">${blindChipSVG(k)}</span><div class="kind">${state === 'done' ? 'Defeated' : state === 'current' ? 'Up next' : 'After that'}</div><div class="n">${k === 'boss' ? BOSSES[boss].name : names[k]}</div>${k === 'boss' ? `<div class="d bossfx">${BOSSES[boss].desc}</div>` : ''}`;
     h += `<div class="bc-plate"><div><div class="label">Score at least</div><div class="target num">${fmtN(blindTarget(k))}</div></div><div class="bp-reward" title="Plus ¥1 per unused Play and ¥1 interest per ¥5 held (max ¥5)"><div class="label">Reward</div><div class="num">¥${reward}<span class="muted" style="font-size:11px;font-family:var(--body)"> +extras</span></div></div></div>`;
     h += `<div class="bc-meta muted"><b class="num">${plays}</b> Plays · <b class="num">${discards}</b> Discards${S.nextBlindMods && S.nextBlindMods.handSize && state === 'current' ? ` · hand +${S.nextBlindMods.handSize}` : ''}</div>`;
     const skipBox = tag && state !== 'done' ? `<div class="skipbox"><div class="skiphead"><span class="label">Skip reward</span><span class="tagchip">${tag.name}</span></div><div class="skipdesc">${tag.desc}</div></div>` : '';
@@ -919,7 +921,15 @@ const CLOSE_X = '<button class="modal-x ghost" id="mX" title="Close" aria-label=
 // A modal with a Close or Cancel button can also be closed with the corner X, a click outside it, or Esc. Game-flow screens (cash-out, shop, packs, blind select) have none, so they stay put.
 function modalClosable() { return !$('#overlay').hidden && !!$('#modal #mClose'); }
 function closeModal() { const c = $('#modal #mClose'); if (c) c.click(); }
-function showModal(html, pinned, cls) { modalPinned = !!pinned; $('#modal').className = 'modal' + (cls ? ' ' + cls : ''); $('#modal').innerHTML = html; if ($('#modal #mClose')) $('#modal').insertAdjacentHTML('afterbegin', CLOSE_X); fillHero($('#modal')); fillColTiles($('#modal')); fillTileArt($('#modal')); $('#overlay').hidden = false; fillExamples($('#modal')); translateDOM($('#modal')); }
+// Every screen's header becomes a noren banner like the shop's, coloured by context.
+const BANNER_TONES = { selectmodal: 'indigo', setupmodal: 'teal', colmodal: 'teal', datamodal: 'ink', confirmmodal: 'ink', cashmodal: 'gold', overmodal: 'red', winmodal: 'gold' };
+function decorateBanner(cls) {
+  const m = $('#modal'); if (m.classList.contains('shopmodal') || m.classList.contains('menumodal')) return;
+  const head = [...m.children].find(el => el.matches('.shophead, .cashhead, .overhead')); if (!head) return;
+  const tone = (cls || '').split(' ').map(c => BANNER_TONES[c]).filter(Boolean).pop() || 'teal';
+  head.classList.add('banner', 'bn-' + tone); head.insertAdjacentHTML('beforeend', '<div class="bannerflaps" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>'); m.classList.add('hasbanner');
+}
+function showModal(html, pinned, cls) { modalPinned = !!pinned; $('#modal').className = 'modal' + (cls ? ' ' + cls : ''); $('#modal').innerHTML = html; if ($('#modal #mClose')) $('#modal').insertAdjacentHTML('afterbegin', CLOSE_X); decorateBanner(cls); fillHero($('#modal')); fillColTiles($('#modal')); fillTileArt($('#modal')); $('#overlay').hidden = false; fillExamples($('#modal')); translateDOM($('#modal')); }
 function hideModal() { modalPinned = false; $('#overlay').hidden = true; }
 // A Talisman you gain starts fresh, like a Joker in Balatro: progress from an earlier copy you sold is gone.
 // Its state lives under its own key, or its key plus a capitalised suffix (kasaobake, shiroSuit).
@@ -993,8 +1003,8 @@ function shopHTML() {
   const canReroll = S.shop.freeReroll || rerollCost() <= S.money;
   h += `<div class="shoplayout"><aside class="shoprail">
     <button id="mNext" class="primary nextbtn"><span>Next Blind</span><small>Ante ${S.ante} · ${nextBoss ? nextBoss.name : next}</small></button>
-    <button id="mReroll" class="ghost rerollbtn" ${canReroll ? '' : 'disabled title="Not enough money to reroll"'}><span>Reroll Cards</span><b class="num">${S.shop.freeReroll ? 'Free' : '¥' + rerollCost()}</b></button>
-    <button id="mDeck" class="ghost">View Wall</button></aside>
+    <button id="mReroll" class="ghost railbtn rerollbtn" ${canReroll ? '' : 'disabled title="Not enough money to reroll"'}><span>Reroll Cards</span><b class="num">${S.shop.freeReroll ? 'Free' : '¥' + rerollCost()}</b></button>
+    <button id="mDeck" class="ghost railbtn"><span>View Wall</span><b class="num">${(S.deck || []).length}</b></button></aside>
     <div class="shopmain"><div class="shelf"><div class="shelflabel">Cards</div><div class="shelfrow">${[...S.shop.cards, S.shop.scroll].map(it => cardHTML(it, at(it))).join('')}</div></div>
     <div class="shelf"><div class="shelflabel">${S.shop.flower ? 'Flower and Booster Pack' : 'Booster Pack'}</div><div class="shelfrow">${[S.shop.flower, S.shop.pack].filter(Boolean).map(it => cardHTML(it, at(it))).join('')}</div></div>
     ${S.shop.freePacks.length ? `<div class="freepacks">${S.shop.freePacks.map((pk, i) => `<button class="primary" data-freepack="${i}">Open Free ${PACKS[pk].name}</button>`).join('')}</div>` : ''}</div></div>`;
@@ -1030,9 +1040,9 @@ function overHTML(won) {
   const st = S.stats; const pct = S.target ? Math.min(100, 100 * S.score / S.target) : 100;
   const where = S.boss ? BOSSES[S.boss].name : ({ small: 'the Small Blind', big: 'the Big Blind', boss: 'the Boss Blind' })[blindKind()];
   const stat = (label, v) => `<div class="stat"><div class="label">${label}</div><div class="v num">${v}</div></div>`;
-  let h = `${won ? '<div class="herotiles small" id="heroTiles"></div>' : ''}<div class="overhead"><div class="label">${won ? 'Run complete' : S.endless ? 'Endless run over' : 'Run over'}</div><h2 class="${won ? '' : 'lost'}">${won ? 'You broke the bank!' : 'The syndicate collects.'}</h2>`;
+  let h = `<div class="overhead"><div class="label">${won ? 'Run complete' : S.endless ? 'Endless run over' : 'Run over'}</div><h2 class="${won ? '' : 'lost'}">${won ? 'You broke the bank!' : 'The syndicate collects.'}</h2></div>${won ? '<div class="herotiles small" id="heroTiles"></div>' : ''}`;
   h += won ? `<p class="muted">All ${CFG.antes} Antes cleared on ${STAKES[S.stake].name} with the ${DECKS[S.deckKey].name}.</p>` : `<p class="muted">${S.endless ? `You won the run, then reached Ante ${S.ante} in Endless Mode. Out of Plays against ${where}.` : `Out of Plays on Ante ${S.ante} against ${where}.`}</p><div class="overscore"><div class="row"><span class="label">Round Score</span><span class="num"><b>${fmtN(S.score)}</b> <span class="muted">of ${fmtN(S.target)}</span></span></div><div class="overbar"><i style="width:${pct}%"></i></div></div>`;
-  h += `</div><div class="overstats">${stat('Ante reached', S.endless ? `${S.ante}` : `${Math.min(S.ante, CFG.antes)} / ${CFG.antes}`)}${stat('Blinds won', st.blinds)}${stat('Complete Hands', st.hands)}${stat('Partial Plays', st.melds)}${stat('YEN', '¥' + S.money)}</div>`;
+  h += `<div class="overstats">${stat('Ante reached', S.endless ? `${S.ante}` : `${Math.min(S.ante, CFG.antes)} / ${CFG.antes}`)}${stat('Blinds won', st.blinds)}${stat('Complete Hands', st.hands)}${stat('Partial Plays', st.melds)}${stat('YEN', '¥' + S.money)}</div>`;
   h += `<div class="overbest"><div><div class="label">Best Play</div><div class="v num">${fmtN(st.best)}</div></div>${st.bestDesc ? `<div class="muted">${st.bestDesc}</div>` : ''}</div>`;
   if (S.newUnlocks && S.newUnlocks.length) h += `<div class="label" style="margin:14px 0 6px">Unlocked this run</div><div class="overtals">${S.newUnlocks.map(unlockLabel).filter(Boolean).map(l => `<span class="overtal newunlock"><span class="muted" style="font-size:11px">${l.kind}</span>${l.name}</span>`).join('')}</div>`;
   h += `<div class="label" style="margin:14px 0 6px">Talismans</div><div class="overtals">${S.talismans.length ? S.talismans.map((k, i) => `<span class="overtal"><span class="order">${i + 1}</span>${TAL[k].name}</span>`).join('') : '<span class="muted">None</span>'}</div>`;
@@ -1113,7 +1123,7 @@ function quickRulesHTML() {
 }
 function rulesHTML() {
   const tabs = [['quick', 'Quick Start'], ['full', 'Full Rules']];
-  return `<h2>How to Play</h2><div class="tabs">${tabs.map(([k, n]) => `<button class="tab${rulesTab === k ? ' on' : ''}" data-rtab="${k}">${n}</button>`).join('')}</div>${rulesTab === 'full' ? fullRulesHTML() : quickRulesHTML()}<button id="mClose" hidden>Close</button>`;
+  return `<div class="shophead"><h2>How to Play</h2></div><div class="tabs">${tabs.map(([k, n]) => `<button class="tab${rulesTab === k ? ' on' : ''}" data-rtab="${k}">${n}</button>`).join('')}</div>${rulesTab === 'full' ? fullRulesHTML() : quickRulesHTML()}<button id="mClose" hidden>Close</button>`;
 }
 function mostPlayedRung() { let best = null, n = 0; for (const [k, v] of Object.entries(S.stats.rungs || {})) if (v > n) { n = v; best = k; } return best; }
 function mostScoredYaku() { let best = null, n = 0; for (const [k, v] of Object.entries(S.stats.yaku || {})) if (v > n) { n = v; best = k; } return best; }
@@ -1230,7 +1240,7 @@ function backToSettings() { $('#mClose').onclick = () => { PENDING_IMPORT = null
 function yakuHTML() {
   const st = S.stats; const most = mostPlayedRung(); const yc = k => (S && S.stats.yaku[k]) || 0;
   const tabs = [['run', 'Run'], ['ladder', 'Play Ladder'], ['yaku', 'Yaku'], ['yakuman', 'Yakuman'], ['profile', 'Profile']];
-  let h = `<h2>Run Info</h2><div class="tabs">${tabs.map(([k, n]) => `<button class="tab${infoTab === k ? ' on' : ''}" data-tab="${k}">${n}</button>`).join('')}</div>`;
+  let h = `<div class="shophead"><h2>Run Info</h2></div><div class="tabs">${tabs.map(([k, n]) => `<button class="tab${infoTab === k ? ' on' : ''}" data-tab="${k}">${n}</button>`).join('')}</div>`;
   if (infoTab === 'run') {
     const kv = (k, v) => `<div class="kv"><span>${k}</span><b>${v}</b></div>`;
     h += `<div class="infogrid">`;

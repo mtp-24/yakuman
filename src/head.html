@@ -535,8 +535,8 @@ button.pulse{animation:btnpulse 1s ease-in-out infinite;box-shadow:0 0 0 0 rgba(
 .shoprail{display:flex;flex-direction:column;gap:8px;position:sticky;top:0}
 .shoprail button{width:100%}
 .nextbtn{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:14px;min-height:76px;font-size:17px;text-align:left;border-radius:10px;box-shadow:0 6px 14px rgba(0,0,0,.35)} .nextbtn small{font-size:11px;font-weight:500;opacity:.75;line-height:1.3}
-.rerollbtn{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px 14px;border-radius:10px;border-color:rgba(127,179,224,.5)} .rerollbtn b{color:var(--accent);font-family:var(--display);font-size:17px;font-weight:500}
-.shoprail #mDeck{border-radius:10px}
+
+
 .shelf{position:relative;background:radial-gradient(120% 90% at 50% 0%,rgba(255,255,255,.05),transparent 60%),var(--felt);border:1px solid var(--line);border-radius:12px;padding:26px 14px 16px;margin:0 0 22px;box-shadow:inset 0 3px 12px rgba(0,0,0,.35)}
 .shelf::after{content:'';position:absolute;left:10px;right:10px;bottom:-8px;height:8px;border-radius:0 0 8px 8px;background:linear-gradient(#7a5a34,#4a361f);box-shadow:0 4px 8px rgba(0,0,0,.35)}
 .shelflabel{position:absolute;top:-10px;left:14px;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);background:var(--panel);padding:2px 10px;border-radius:999px;border:1px solid var(--line)}
@@ -569,4 +569,29 @@ button.pulse{animation:btnpulse 1s ease-in-out infinite;box-shadow:0 0 0 0 rgba(
 @media (max-width:560px){.packhead{flex-wrap:wrap} .packart{width:52px;height:52px}}
 .packshelf{margin-top:18px} .packshelf .shop-grid{margin:0}
 .endlessbadge{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--bad);border:1px solid rgba(232,107,95,.5);background:rgba(232,107,95,.1);border-radius:999px;padding:3px 12px}
+
+/* ===== Shared noren banner for every screen (the shop has its own) ===== */
+.modal>.banner{--bn1:#74271f;--bn2:#561b16;--bnink:#f6ead2;position:relative;margin:-20px -20px 34px;padding:24px 22px 14px;border-radius:12px 12px 0 0;color:var(--bnink);
+  background:radial-gradient(90% 160% at 12% 0%,rgba(255,255,255,.09),transparent 60%),linear-gradient(180deg,var(--bn1),var(--bn2))}
+.modal>.banner::before{content:'';position:absolute;left:0;right:0;top:0;height:7px;border-radius:12px 12px 0 0;background:linear-gradient(#94713f,#5c4426);box-shadow:0 2px 3px rgba(0,0,0,.35)}
+.modal>.banner h2,.modal>.banner h2.lost{color:var(--bnink);margin:0;font-size:28px;letter-spacing:.02em;text-shadow:0 2px 6px rgba(0,0,0,.35)}
+.modal>.banner .label,.modal>.banner .muted,.modal>.banner .sub{color:rgba(246,234,210,.72)}
+.modal>.banner .bannerflaps{position:absolute;left:0;right:0;top:100%;display:grid;grid-template-columns:repeat(5,1fr);gap:7px;height:18px} .modal>.banner .bannerflaps i{background:var(--bn2);border-radius:0 0 7px 7px;box-shadow:inset 0 -2px 0 rgba(0,0,0,.25)}
+.modal>.banner.bn-indigo{--bn1:#2c3a72;--bn2:#1d264e} .modal>.banner.bn-teal{--bn1:#22564a;--bn2:#173b33} .modal>.banner.bn-ink{--bn1:#33393a;--bn2:#222727}
+.modal>.banner.bn-gold{--bn1:#946f22;--bn2:#6a4e15;--bnink:#fff4da} .modal>.banner.bn-gold h2{text-shadow:0 0 18px rgba(255,220,140,.45),0 2px 6px rgba(0,0,0,.35)}
+.modal>.banner input{background:rgba(0,0,0,.25);border-color:rgba(246,234,210,.3);color:var(--bnink)} .modal>.banner input::placeholder{color:rgba(246,234,210,.55)}
+.modal>.banner .antepips i{background:rgba(246,234,210,.25)} .modal>.banner .antepips i.done{background:#f3c768} .modal>.banner .antepips i.now{border-color:#f3c768}
+.modal>.banner .cashscore b{color:#bff3d1}
+.modal.hasbanner .modal-x{z-index:5;float:none;display:flex;margin:-6px -6px -46px auto;background:rgba(0,0,0,.28);border-color:rgba(246,234,210,.35);color:#f6ead2}
+.modal.hasbanner>.banner.shophead{padding-right:64px}
+.overmodal>.banner,.cashmodal>.banner{text-align:left}
+/* Ante screen chips */
+.blindcard{position:relative} .blindchip{position:absolute;top:10px;right:10px;width:30px;height:30px;filter:drop-shadow(0 3px 4px rgba(0,0,0,.45))} .blindchip svg{width:100%;height:100%;display:block}
+.blindcard.done .blindchip{filter:grayscale(1);opacity:.5}
+.selectmodal .blindcard{border-radius:12px;box-shadow:0 6px 16px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.05);background:radial-gradient(120% 90% at 0% 0%,rgba(255,255,255,.04),transparent 60%),var(--panel2)}
+.selectmodal .blindcard.current{background:radial-gradient(120% 90% at 0% 0%,rgba(217,164,65,.14),transparent 60%),var(--panel2)}
+.selectmodal .blindcard.bosscard{background:radial-gradient(120% 90% at 0% 0%,rgba(201,69,58,.14),transparent 60%),var(--panel2)}
+/* Shop rail buttons share one shape */
+.railbtn{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:50px;padding:10px 14px;border-radius:10px;border-color:var(--line)} .railbtn b{font-family:var(--display);font-size:17px;font-weight:500;color:var(--muted)}
+.rerollbtn.railbtn b{color:var(--accent)}
 </style>
