@@ -42,6 +42,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 26: owned Talismans and consumables shown as full cards (description, edition, copier target, current value) in the shop and pack screens, with Use and Sell; pack Open button fixed.
 - Build 28: run-setup screen restored (it was lost in build 25, breaking New Run); Honor Pon partial plays count toward Yakuhai in Run Info; Title Case for headings, tabs, buttons and tags; "Honor" spelling aligned in HK mode.
 - Build 30: run setup uses Balatro-style carousels (one Wall and one Stake visible, arrows to browse, defaults first); consistent empty states for Open Melds and River; optional pair ladder (Three to Six Pair) behind `CFG.pairLadder`, off by default; simulator prints plays by rung.
+- Build 32: seed shown in the side panel, Run Info and the end-of-run screen with a Copy button; setup carousels stacked and the setup modal sized to content.
 - Build 7: multi-meld play ladder (Two Melds ... Four Melds), targets 300...45000, retrigger and scaling Talismans, Wall-Builder rewording, scoring animation.
 
 ## Simulators (in `sim/`)

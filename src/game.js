@@ -356,6 +356,7 @@ function renderBlind() {
   if (inBlind) h += `<div class="bar"><i style="width:${pct}%"></i></div><div class="num" style="font-size:13px">Scored <b style="color:var(--accent)">${S.score.toLocaleString()}</b></div>`;
   h += `<div class="stats"><div class="stat plays"><div class="label">Plays</div><div class="v num">${S.plays}</div></div><div class="stat discards"><div class="label">Discards</div><div class="v num">${S.discards}</div></div><div class="stat money"><div class="label">YEN</div><div class="v num">¥${S.money}</div></div><div class="stat"><div class="label">Wall</div><div class="v num">${S.wall.length}</div></div></div>`;
   if (S.indicators.length) { h += `<div class="label" style="margin-top:8px">Dora Indicators</div><div class="dora-ind" id="doraRow"></div>`; }
+  h += `<div class="seedline muted">Seed <code class="seed">${S.seed}</code> <button class="ghost tiny-btn" data-copyseed title="Copy the seed to reuse this run">Copy</button></div>`;
   if (S.flowers.length) h += `<div class="label" style="margin-top:8px">Flowers &amp; Seasons</div><div class="flowers">${S.flowers.map(f => `<span class="flowerchip" title="${FLW[f].desc}">${FLW[f].name}</span>`).join('')}</div>`;
   const sc = Object.entries(S.scrolls.meld).filter(([, v]) => v).map(([k, v]) => `${MELD_LABEL[k]} Lv.${v + 1}`).concat(Object.entries(S.scrolls.yaku).filter(([, v]) => v).map(([k, v]) => `${k} +${v}`));
   if (sc.length) h += `<div class="label" style="margin-top:8px">Mastery</div><div style="font-size:12px">${sc.join(' · ')}</div>`;
@@ -598,6 +599,7 @@ function overHTML(won) {
   const st = S.stats;
   return `<h2>${won ? 'You broke the bank!' : 'The syndicate collects.'}</h2><p>${won ? `All ${CFG.antes} Antes cleared.` : `Out of Plays on Ante ${S.ante}, ${S.boss ? BOSSES[S.boss].name : blindKind() + ' blind'}: scored ${S.score.toLocaleString()} of ${S.target.toLocaleString()}.`}</p>
   <div class="reward-list num"><span>Blinds defeated</span><span>${st.blinds}</span><span>Complete hands</span><span>${st.hands}</span><span>Partial plays</span><span>${st.melds}</span><span>Best single play</span><span>${st.best.toLocaleString()}${st.bestDesc ? ' · ' + st.bestDesc : ''}</span><span>YEN</span><span>¥${S.money}</span><span>Talismans</span><span>${S.talismans.map(k => TAL[k].name).join(', ') || 'none'}</span></div>
+  <div class="seedline muted" style="margin:8px 0">Seed <code class="seed">${S.seed}</code> <button class="ghost tiny-btn" data-copyseed>Copy</button> · ${DECKS[S.deckKey].name} · ${STAKES[S.stake].name}</div>
   <button id="mNewRun" class="primary">New Run</button>`;
 }
 function deckHTML() {
@@ -644,7 +646,7 @@ function yakuHTML() {
   const tabs = [['run', 'Run'], ['ladder', 'Play Ladder'], ['yaku', 'Yaku'], ['yakuman', 'Yakuman']];
   let h = `<h2>Run Info</h2><div class="tabs">${tabs.map(([k, n]) => `<button class="tab${infoTab === k ? ' on' : ''}" data-tab="${k}">${n}</button>`).join('')}</div>`;
   if (infoTab === 'run') {
-    h += `<div class="runinfo"><span><b>Seed</b> ${S.seed}</span><span><b>${DECKS[S.deckKey].name}</b> · ${STAKES[S.stake].name}</span><span><b>Ante</b> ${Math.min(S.ante, CFG.antes)} / ${CFG.antes}</span><span><b>Blinds won</b> ${st.blinds}</span><span><b>Complete hands</b> ${st.hands}</span><span><b>Partial plays</b> ${st.melds}</span><span><b>Calls</b> ${st.calls} · <b>Kans</b> ${st.kans}</span><span><b>Discards</b> ${st.discards}</span><span><b>Skipped blinds</b> ${st.skipped}</span><span><b>Best play</b> ${st.best.toLocaleString()}${st.bestDesc ? ' (' + st.bestDesc + ')' : ''}</span></div>`;
+    h += `<div class="runinfo"><span><b>Seed</b> <code class="seed">${S.seed}</code> <button class="ghost tiny-btn" data-copyseed>Copy</button></span><span><b>${DECKS[S.deckKey].name}</b> · ${STAKES[S.stake].name}</span><span><b>Ante</b> ${Math.min(S.ante, CFG.antes)} / ${CFG.antes}</span><span><b>Blinds won</b> ${st.blinds}</span><span><b>Complete hands</b> ${st.hands}</span><span><b>Partial plays</b> ${st.melds}</span><span><b>Calls</b> ${st.calls} · <b>Kans</b> ${st.kans}</span><span><b>Discards</b> ${st.discards}</span><span><b>Skipped blinds</b> ${st.skipped}</span><span><b>Best play</b> ${st.best.toLocaleString()}${st.bestDesc ? ' (' + st.bestDesc + ')' : ''}</span></div>`;
     h += `<div class="label" style="margin:12px 0 4px">Talismans</div><div class="owned">${S.talismans.map((k, i) => `<span class="own"><span class="order">${i + 1}</span><b>${TAL[k].name}</b>${S.editions[k] ? ' <span class="edtag ed-' + S.editions[k] + '">' + EDITIONS[S.editions[k]].name + '</span>' : ''}</span>`).join('') || '<span class="muted">None</span>'}</div>`;
     h += `<div class="label" style="margin:12px 0 4px">Flowers &amp; Seasons</div><div class="owned">${S.flowers.map(f => `<span class="own"><b>${FLW[f].name}</b> <span class="muted">${FLW[f].desc}</span></span>`).join('') || '<span class="muted">None</span>'}</div>`;
     h += `<div class="label" style="margin:12px 0 4px">Tags Held</div><div class="owned">${(S.tags || []).map(t => `<span class="own"><b>${TAGS[t].name}</b> <span class="muted">${TAGS[t].desc}</span></span>`).join('') || '<span class="muted">None</span>'}</div>`;
@@ -677,7 +679,7 @@ let setupSel = { deck: 0, stake: 0 };
 function setupHTML() {
   const car = (name, obj) => { const keys = Object.keys(obj); const i = ((setupSel[name] % keys.length) + keys.length) % keys.length; const v = obj[keys[i]]; return `<div class="carousel" data-car="${name}"><button class="ghost arrow" data-nav="${name}:-1" title="Previous">&#9664;</button><div class="carcard"><input type="hidden" name="${name}" value="${keys[i]}"><b>${v.name}</b><span class="muted">${v.desc}</span><span class="dots">${keys.map((k, j) => `<i class="${j === i ? 'on' : ''}"></i>`).join('')}</span></div><button class="ghost arrow" data-nav="${name}:1" title="Next">&#9654;</button></div>`; };
   return `<h2>New Run</h2><div class="setup stacked"><div><div class="label">Wall</div>${car('deck', DECKS)}</div><div><div class="label" style="margin-top:10px">Stake</div>${car('stake', STAKES)}</div></div>
-  <div class="label" style="margin-top:12px">Seed</div><input id="seedInput" placeholder="random" maxlength="24" autocomplete="off" style="max-width:320px"><div class="muted" style="font-size:11px;margin-top:4px">Share a seed and the same Wall, shops and bosses come up for everyone. Leave blank for a random run.</div>
+  <div class="label" style="margin-top:12px">Seed</div><input id="seedInput" placeholder="random" maxlength="24" autocomplete="off"><div class="muted" style="font-size:11px;margin-top:4px">Share a seed and the same Wall, shops and bosses come up for everyone. Leave blank for a random run.</div>
   <div style="display:flex;gap:8px;margin-top:14px"><button id="mStartRun" class="primary">Start Run</button><button id="mClose">Cancel</button></div>`;
 }
 function menuHTML(hasSave) {
@@ -714,6 +716,11 @@ function renderDebug() {
 function buyFree(it) { const m = S.money; S.money = 999; buy(it); S.money = m; }
 
 // ===================== BOOT & EVENTS =====================
+function copySeed(btn) {
+  const txt = S.seed; const done = () => { btn.textContent = 'Copied'; setTimeout(() => { btn.textContent = 'Copy'; }, 1200); };
+  try { navigator.clipboard.writeText(txt).then(done, () => fallback()); } catch (e) { fallback(); }
+  function fallback() { const r = document.createRange(); const code = btn.previousElementSibling; if (code) { r.selectNodeContents(code); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r); btn.textContent = 'Selected'; setTimeout(() => { btn.textContent = 'Copy'; }, 1200); } }
+}
 function bindEvents() {
   $('#btnPlay').onclick = doPlay; $('#btnDiscard').onclick = doDiscard; $('#btnCall').onclick = doCall; $('#btnKan').onclick = doDeclareKan;
   $('#btnClear').onclick = () => { S.selected = []; S.selRiver = null; render(); };
@@ -725,8 +732,10 @@ function bindEvents() {
   $('#btnLang').onclick = () => setLang(LANG === 'hk' ? 'ja' : 'hk');
   $('#btnDebug').onclick = () => { const b = $('#debugBar'); b.hidden = !b.hidden; if (!b.hidden) renderDebug(); };
   $('#btnNewRun').onclick = () => showModal(`<h2>Start a New Run?</h2><p class="muted">Your current run will be lost.</p><div style="display:flex;gap:8px"><button id="mNewRun" class="danger">New Run</button><button id="mClose">Cancel</button></div>`, true);
+  document.addEventListener('click', e => { const b = e.target.closest('[data-copyseed]'); if (b) copySeed(b); });
   $('#overlay').addEventListener('click', e => {
     const t = e.target.closest('button'); if (!t) return;
+    if (t.dataset.copyseed != null) return;
     if (t.dataset.tab) { infoTab = t.dataset.tab; showModal(yakuHTML(), true); return; }
     if (t.id === 'mClose') { hideModal(); render(); }
     else if (t.id === 'mNewRun' || t.id === 'mStart') { showModal(setupHTML(), true); }

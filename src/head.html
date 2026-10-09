@@ -209,12 +209,16 @@ aside{display:flex;flex-direction:column;gap:10px;min-width:0}
 .sheet .exrow{gap:6px}
 .owned-grid{grid-template-columns:repeat(auto-fill,minmax(170px,1fr))} .owned-card{opacity:.92} .owned-card .d{font-size:11px}
 .row-tiles .empty{font-size:12px;align-self:center;padding:4px 2px}
-.setup.stacked{grid-template-columns:1fr;max-width:560px}
+.setup.stacked{grid-template-columns:1fr}
+.modal:has(.setup){max-width:600px}
 .carousel{display:flex;align-items:stretch;gap:6px}
 .carousel .arrow{padding:0 10px;font-size:14px;flex:0 0 auto}
 .carcard{flex:1;min-width:0;border:1px solid var(--accent);background:rgba(217,164,65,.08);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:4px;font-size:13px;min-height:84px}
 .carcard span.muted{font-size:12px}
 .carcard .dots{display:flex;gap:4px;margin-top:auto;padding-top:6px} .carcard .dots i{width:6px;height:6px;border-radius:50%;background:var(--line);display:inline-block} .carcard .dots i.on{background:var(--accent)}
+.seedline{font-size:11px;margin-top:8px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+code.seed{font-family:ui-monospace,Menlo,Consolas,monospace;letter-spacing:.08em;background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:1px 6px;color:var(--fg);user-select:all}
+.tiny-btn{padding:1px 7px;font-size:11px}
 .tag{display:inline-block;font-size:10px;padding:1px 6px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);color:var(--muted);margin-left:4px}
 .flowers{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}
 .flowerchip{font-size:11px;background:rgba(240,163,184,.12);border:1px solid rgba(240,163,184,.4);border-radius:10px;padding:1px 7px;color:#f0a3b8}
