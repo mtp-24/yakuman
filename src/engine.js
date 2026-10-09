@@ -1,6 +1,8 @@
 // ===================== MELDS & DECOMPOSITION =====================
 // Rule switches set from the run state (Hashi: a Chi may skip one rank).
 let GAP_CHI = false;
+// A signed amount for breakdown lines: +12, or −30 (a real minus sign, never "+-30").
+const sgn = n => n < 0 ? '−' + Math.abs(n) : '+' + n;
 function setRules(S) { GAP_CHI = !!(S && S.talismans && S.talismans.includes('hashi')); }
 const CHI_SHAPES = () => GAP_CHI ? [[0, 1, 2], [0, 1, 3], [0, 2, 3]] : [[0, 1, 2]];
 function meldType(tiles) {
@@ -176,7 +178,7 @@ function scoreCtx(S, kind, tiles, info) {
   const playedIds = new Set(tiles.map(t => t.id));
   const ctx = { kind, tiles: tiles.map(t => ({ ...t })), held: S.hand.filter(t => !playedIds.has(t.id)), chips: 0, han: 0, xmult: 1, lines: [], hits: [], yaku: [], furiten: false, total: 0, money: 0, redCount: 0, hasDragonSet: false, desc: '', nChi: 0, nPon: 0, nKan: 0, nMelds: 0, hasPair: false, meldType: null, shatter: [] };
   const L = (label, val, d = {}) => ctx.lines.push(Object.assign({ label, val }, d));
-  const apply = r => { if (!r) return []; const parts = []; if (r.chips) { ctx.chips += r.chips; parts.push(`+${r.chips} Chips`); } if (r.han) { ctx.han += r.han; parts.push(`+${r.han} Han`); } if (r.xmult) { ctx.xmult *= r.xmult; parts.push(`×${r.xmult} Mult`); } if (r.money) { ctx.money += r.money; parts.push(`+¥${r.money}`); } return parts; };
+  const apply = r => { if (!r) return []; const parts = []; if (r.chips) { ctx.chips += r.chips; parts.push(`${sgn(r.chips)} Chips`); } if (r.han) { ctx.han += r.han; parts.push(`${sgn(r.han)} Han`); } if (r.xmult) { ctx.xmult *= r.xmult; parts.push(`×${r.xmult} Mult`); } if (r.money) { ctx.money += r.money; parts.push(`+¥${r.money}`); } return parts; };
   // ---- components
   let melds = [], pairs = [];
   if (kind === 'hand') { melds = info.dec ? info.dec.melds : []; pairs = info.dec ? [info.dec.pair] : []; }
@@ -278,8 +280,8 @@ function scoreCtx(S, kind, tiles, info) {
   for (const { d, r, ed } of results) {
     const parts = []; const line = { chips: 0, mult: 0, xmult: 1, tal: d.name };
     if (r) {
-      if (r.chips) { ctx.chips += r.chips; line.chips += r.chips; parts.push(`+${r.chips} Chips`); }
-      if (r.mult) { ctx.mult += r.mult; line.mult += r.mult; parts.push(`+${r.mult} Mult`); }
+      if (r.chips) { ctx.chips += r.chips; line.chips += r.chips; parts.push(`${sgn(r.chips)} Chips`); }
+      if (r.mult) { ctx.mult += r.mult; line.mult += r.mult; parts.push(`${sgn(r.mult)} Mult`); }
       if (r.xmult) { ctx.mult *= r.xmult; line.xmult *= r.xmult; parts.push(`×${r.xmult} Mult`); }
       if (r.money) { ctx.money += r.money; parts.push(`+¥${r.money}`); }
     }

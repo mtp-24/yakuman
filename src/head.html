@@ -273,13 +273,14 @@ aside{display:flex;flex-direction:column;gap:10px;min-width:0}
 /* Run over / run complete */
 .modal.overmodal{max-width:640px}
 /* Cash-out receipt */
-.modal.cashmodal{max-width:440px;text-align:center;border-color:rgba(217,164,65,.45);background:radial-gradient(ellipse at top,rgba(217,164,65,.12),transparent 60%),var(--panel)}
-.cashhead h2{margin:2px 0 2px;font-size:30px} .cashscore{font-size:13px;margin-bottom:12px} .cashscore b{font-family:var(--display);font-size:18px;font-weight:500;color:var(--good)}
-.receipt{text-align:left;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:4px 14px}
-.rrow{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 0;border-bottom:1px dashed var(--line)} .rrow .rl{font-size:14px} .rrow .rd{font-size:11px;margin-top:1px} .rrow b{font-family:var(--display);font-size:20px;font-weight:500;color:var(--accent)}
-.rtotal{display:flex;justify-content:space-between;align-items:baseline;padding:10px 0 8px} .rtotal span{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)} .rtotal b{font-family:var(--display);font-size:32px;font-weight:500;color:var(--accent);line-height:1}
-.cashfoot{display:flex;justify-content:center;align-items:center;gap:10px;margin:14px 0 12px}
-.cashbtn{width:100%;font-size:17px;padding:12px 20px}
+.modal.cashmodal{max-width:520px;padding:16px 20px;border-color:rgba(217,164,65,.55);background:radial-gradient(ellipse at top,rgba(217,164,65,.16),transparent 65%),linear-gradient(180deg,#2c1f11,#1c130a);box-shadow:0 -10px 30px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,220,160,.2)}
+.drawhead{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:8px} .drawhead h2{margin:0;font-size:28px;font-weight:500;color:var(--accent)} .drawhead .label{color:var(--good)}
+.receipt .rrow{display:flex;align-items:baseline;gap:8px;padding:6px 0;font-size:15px} .rrow .rl{white-space:nowrap} .rrow .rd{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.rrow .rlead{flex:1;min-width:16px;border-bottom:2px dotted rgba(255,230,180,.25);transform:translateY(-4px)}
+.rrow b{font-family:var(--display);font-size:22px;font-weight:500;color:var(--accent);min-width:42px;text-align:right}
+.cashbtn{margin-top:12px;width:100%;display:flex;align-items:center;justify-content:center;gap:10px;font-family:var(--display);font-size:19px;font-weight:600;padding:12px 20px}
+.cashamt{display:inline-flex;align-items:center;gap:6px;background:rgba(0,0,0,.22);border-radius:999px;padding:2px 12px 2px 4px;font-size:20px;transform-origin:50% 60%} .cashamt .coin svg{width:22px;height:22px;display:block}
+.flycoin{position:fixed;z-index:40;width:26px;height:26px;pointer-events:none;filter:drop-shadow(0 3px 4px rgba(0,0,0,.5))} .flycoin svg{width:100%;height:100%;display:block}
 .modal.winmodal{border-color:rgba(217,164,65,.6);background:radial-gradient(ellipse at top,rgba(217,164,65,.16),transparent 60%),var(--panel);box-shadow:0 0 0 1px rgba(217,164,65,.25),0 0 40px rgba(217,164,65,.15)}
 .winmodal .overhead h2{color:var(--accent);text-shadow:0 0 18px rgba(217,164,65,.35)}
 /* Intro */
@@ -647,7 +648,7 @@ button.pulse{animation:btnpulse 1s ease-in-out infinite;box-shadow:0 0 0 0 rgba(
 body{background:radial-gradient(120% 80% at 50% 0%,#1c2b25,#0b1210) fixed}
 header{background:linear-gradient(180deg,#3a2716,#24170c);border-bottom:2px solid #8a6a3e;box-shadow:0 2px 10px rgba(0,0,0,.5)}
 /* the rail sits in the gap around the board (negative margin = padding), so every zone keeps its size */
-.board{margin:-8px;padding:8px;border-radius:16px;background:linear-gradient(180deg,#5a3d22,#3c2814);box-shadow:inset 0 2px 0 rgba(255,220,160,.22),inset 0 -3px 0 rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.5)}
+.board{margin:0;align-self:start;padding:8px;border-radius:16px;background:linear-gradient(180deg,#5a3d22,#3c2814);box-shadow:inset 0 2px 0 rgba(255,220,160,.22),inset 0 -3px 0 rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.5)}
 .zone{position:relative;background:radial-gradient(140% 120% at 50% 0%,#1f5a45 0%,#174635 55%,#113526 100%);border:1px solid #0c2a1e;box-shadow:inset 0 2px 8px rgba(0,0,0,.45)}
 .zone::after{content:'';position:absolute;inset:5px;border:1px dashed rgba(255,230,180,.12);border-radius:7px;pointer-events:none}
 .zone .zhead .label{background:linear-gradient(180deg,#e4c27a,#b48a3e);color:#2b1d0b;padding:2px 9px;border-radius:4px;box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 1px 2px rgba(0,0,0,.4);font-size:10px}
@@ -796,7 +797,6 @@ button.pulse{animation:btnpulse2 2.6s ease-out infinite}
 .actw > .act{flex:1 1 auto;min-width:0;max-width:none;width:100%}
 .act:disabled{pointer-events:none} .actw:has(.act:disabled){cursor:not-allowed}
 @media (max-width:900px){.actw{flex:1 1 150px;max-width:none}}
-.rtotal b,.cashfoot .pv{display:inline-block;transform-origin:50% 60%}
 .norenbar .wallet .pv{display:inline-block;transform-origin:50% 60%}
 /* ===== Scoring presentation like Balatro: the scoring tile lifts and wiggles, values pop as coloured badges ===== */
 #hand .tile.hit,#open .tile.hit{z-index:20;animation:hitpop .22s cubic-bezier(.25,.8,.35,1) forwards;box-shadow:var(--bev),var(--body),0 0 0 2px #f3c768,0 0 22px rgba(243,199,104,.75)}
@@ -829,6 +829,7 @@ button.pulse{animation:btnpulse2 2.6s ease-out infinite}
 .engcard > .kind{grid-column:2;grid-row:1} .engcard > .n{grid-column:2;grid-row:2;margin:0} .engcard > .d{grid-column:2;grid-row:3;margin-top:2px;line-height:1.45}
 .engcard > .coltile{grid-column:1;grid-row:1/4;align-self:center;margin:0;padding:8px 0;min-height:0;display:flex;align-items:center;justify-content:center;border-radius:10px;background:radial-gradient(circle at 50% 40%,#1f5a45,#123528);box-shadow:inset 0 2px 6px rgba(0,0,0,.45)}
 .tt-k{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#c9b48a;margin-bottom:2px} .tt-e.tt-body{border-top:0;padding-top:0;margin-top:2px}
-.overlay.boardonly{inset:auto;background:rgba(5,10,9,.55);border-radius:16px;padding:20px 14px}
+.overlay.boardonly{inset:auto;border-radius:16px;padding:12px 14px 8px;overflow-x:hidden;background:linear-gradient(180deg,rgba(5,10,9,.25) 0,rgba(5,10,9,.25) calc(var(--cut,0px) - 8px),rgba(5,10,9,.62) calc(var(--cut,0px) + 8px))}
+.overlay.boardonly .modal.cashmodal{margin-top:auto;border-radius:16px 16px 12px 12px}
 .blindplate.cleared .bp-top .label:last-child{color:var(--good)}
 </style>

@@ -227,7 +227,7 @@ function winBlind() {
   let invest = 0; if (kind === 'boss' && S.tags.includes('investment')) { invest = 25; S.tags = S.tags.filter(t => t !== 'investment'); }
   const total = base + left + interest + tal + summer + invest;
   S.money += total; S.stats.blinds++; S.msg = ''; S.msgErr = false;
-  S.reward = { kind, base, left, interest, tal, summer, invest, total };
+  S.reward = { kind, base, left, interest, tal, summer, invest, total, wallLeft: S.wall.length };
   collectDeck();
   const finished = S.ante === CFG.antes && S.blindIndex === 2 && !S.endless;
   S.blindIndex++; if (S.blindIndex > 2) { S.blindIndex = 0; S.ante++; rollAnteTags(); ensureBosses(); if (!finished) PROFILE.bestAnte = Math.max(PROFILE.bestAnte, S.ante); }
@@ -825,9 +825,11 @@ function renderBlind() {
   }
   // Plays and Discards left, then the purse (money, with the interest in its tooltip) beside the Wall.
   const interest = Math.min(hasF('winter') ? 10 : CFG.interestCap, Math.floor(S.money / CFG.interestPer));
-  const wallN = S.phase === 'blind' ? S.wall.length : (S.deck || []).length;
+  // Until you press Cash Out, the purse and Wall still show the Blind you just beat; the payout lands in the purse on Cash Out.
+  const unpaid = S.phase === 'cashout' && S.reward && !S.reward.paid;
+  const wallN = S.phase === 'blind' ? S.wall.length : unpaid && S.reward.wallLeft != null ? S.reward.wallLeft : (S.deck || []).length;
   h += `<div class="stats"><div class="stat plays"><div class="label">Plays</div><div class="v num">${S.plays}</div></div><div class="stat discards"><div class="label">Discards</div><div class="v num">${S.discards}</div></div></div>`;
-  h += `<div class="stats purserow"><div class="purse" title="Interest: +¥${interest} at the next cash-out (¥1 for every ¥${CFG.interestPer} you hold, up to ¥${hasF('winter') ? 10 : CFG.interestCap})"><span class="coin" aria-hidden="true">${coinSVG()}</span><span class="wtx"><span class="pv num" id="purseVal">¥${S.money}</span><span class="wl" data-notr>${LANG === 'hk' ? 'HKD' : 'JPY'}</span></span></div><button class="wallbtn" id="wallBtn" title="${S.phase === 'blind' ? 'Tiles still face down in the Wall. Click to see every tile.' : 'Tiles in your Wall. Click to see every tile.'}"><span class="wallico" aria-hidden="true"><i></i><i></i><i></i></span><span class="wtx"><span class="wv num">${wallN}</span><span class="wl">Wall</span></span></button></div>`;
+  h += `<div class="stats purserow"><div class="purse" title="Interest: +¥${interest} at the next cash-out (¥1 for every ¥${CFG.interestPer} you hold, up to ¥${hasF('winter') ? 10 : CFG.interestCap})"><span class="coin" aria-hidden="true">${coinSVG()}</span><span class="wtx"><span class="pv num" id="purseVal">¥${unpaid ? S.money - S.reward.total : S.money}</span><span class="wl" data-notr>${LANG === 'hk' ? 'HKD' : 'JPY'}</span></span></div><button class="wallbtn" id="wallBtn" title="${S.phase === 'blind' ? 'Tiles still face down in the Wall. Click to see every tile.' : 'Tiles in your Wall. Click to see every tile.'}"><span class="wallico" aria-hidden="true"><i></i><i></i><i></i></span><span class="wtx"><span class="wv num">${wallN}</span><span class="wl">Wall</span></span></button></div>`;
   if (S.indicators.length) { h += `<div class="label" style="margin-top:8px">Dora Indicators</div><div class="dora-ind" id="doraRow"></div>`; }
   if (S.flowers.length) h += `<div class="label" style="margin-top:8px">Flowers &amp; Seasons</div><div class="flowers">${S.flowers.map(f => `<span class="flowerchip" data-hc-kind="Flower" data-hc-title="${FLW[f].name}" data-hc-body="${FLW[f].desc.replace(/"/g, '&quot;')}">${FLW[f].name}</span>`).join('')}</div>`;
   $('#blindCard').innerHTML = h;
@@ -1261,12 +1263,14 @@ function decorateBanner(cls) {
   head.classList.add('banner', 'bn-' + tone); head.insertAdjacentHTML('beforeend', '<div class="bannerflaps" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>'); m.classList.add('hasbanner');
 }
 // Cash-out covers only the board area, like Balatro, so the left column (Blind, score and Last Play) stays in view.
+// The receipt rises from the bottom of the board like a drawer.
 // On narrow layouts, where the left column stacks above the board, it stays full screen.
 function placeOverlay(boardOnly) {
   const ov = $('#overlay'); ov.classList.remove('boardonly'); ['left', 'top', 'width', 'height'].forEach(k => ov.style[k] = '');
   const board = document.querySelector('.board'); if (!boardOnly || !board || innerWidth <= 900) return;
-  const b = board.getBoundingClientRect(), top = Math.max(b.top - 8, 0), bottom = Math.min(b.bottom + 8, innerHeight);
-  ov.classList.add('boardonly'); Object.assign(ov.style, { left: (b.left - 8) + 'px', top: top + 'px', width: (b.width + 16) + 'px', height: (bottom - top) + 'px' });
+  const b = board.getBoundingClientRect(), top = Math.max(b.top, 0), bottom = Math.min(b.bottom, innerHeight);
+  const tz = board.querySelector('.talzone'), cut = tz ? Math.max(0, tz.getBoundingClientRect().bottom + 4 - top) : 0;   // the Talismans stay lightly dimmed; the rest is darker
+  ov.classList.add('boardonly'); Object.assign(ov.style, { left: b.left + 'px', top: top + 'px', width: b.width + 'px', height: (bottom - top) + 'px' }); ov.style.setProperty('--cut', cut + 'px');
 }
 ['resize', 'scroll'].forEach(ev => window.addEventListener(ev, () => { if ($('#overlay').classList.contains('boardonly')) placeOverlay(true); }));
 function showModal(html, pinned, cls) {
@@ -1329,8 +1333,8 @@ function tweenWallet() {
   const cur = LANG === 'hk' ? '$' : '¥', from = walletShown, dur = Math.min(520, 160 + Math.abs(S.money - from) * 30); walletShown = S.money;
   el.textContent = cur + from; countUp(el, from, S.money, dur, cur, 'coin'); setTimeout(() => juice(el, .6), dur);
 }
-// Cash-out plays like Balatro's: each reward line slides in and counts up with coin clinks, the total counts up and
-// rings a register, then your money counts from the old amount to the new one. Once per cash-out; about 1.5 s.
+// Cash-out plays like Balatro's: the receipt rises, each reward line slides in and counts up with coin clinks, then the
+// amount on the Cash Out button counts up and rings a register. Once per cash-out; about 1.5 s.
 function countUp(el, from, to, dur, prefix, sound) {
   if (!el) return; const t0 = performance.now(); let last = from;
   const step = now => { const k = Math.min(1, (now - t0) / dur), v = Math.round(from + (to - from) * (1 - Math.pow(1 - k, 2))); if (v !== last && sound) sfx(sound); last = v; el.textContent = prefix + v; if (k < 1) requestAnimationFrame(step); };
@@ -1339,28 +1343,51 @@ function countUp(el, from, to, dur, prefix, sound) {
 function animateCashout() {
   const r = S.reward; if (!r || r.shown) return; r.shown = true;
   const m = $('#modal'), cur = LANG === 'hk' ? '$' : '¥';
-  const rows = [...m.querySelectorAll('.receipt .rrow')], tot = m.querySelector('.rtotal b'), wal = m.querySelector('.cashfoot .pv');
+  const rows = [...m.querySelectorAll('.receipt .rrow')], amt = m.querySelector('.cashamt .num');
   if (!motionOK) { sfx('kaching'); return; }
+  if ($('#overlay').classList.contains('boardonly')) m.animate([{ transform: 'translateY(105%)' }, { transform: 'none' }], { duration: 320, easing: 'cubic-bezier(.2,.8,.2,1)' });
   const vals = rows.map(x => +x.querySelector('b').textContent.replace(/[^\d]/g, ''));
-  rows.forEach(x => { x.style.opacity = '0'; x.querySelector('b').textContent = cur + 0; }); if (tot) tot.textContent = cur + 0; if (wal) wal.textContent = cur + (S.money - r.total);
+  rows.forEach(x => { x.style.opacity = '0'; x.querySelector('b').textContent = cur + 0; }); if (amt) amt.textContent = cur + 0;
   rows.forEach((x, i) => setTimeout(() => {
     x.style.opacity = ''; x.animate([{ opacity: 0, transform: 'translateX(-10px)' }, { opacity: 1, transform: 'none' }], { duration: 200, easing: 'ease-out' });
     countUp(x.querySelector('b'), 0, vals[i], 220, cur, 'coin');
-  }, 120 + i * 260));
-  const tStart = 120 + rows.length * 260 + 80;
-  setTimeout(() => { countUp(tot, 0, r.total, 380, cur, 'coin'); }, tStart);
-  setTimeout(() => { sfx('kaching'); if (tot) juice(tot, .9); countUp(wal, S.money - r.total, S.money, 420, cur, 'coin'); }, tStart + 400);
-  setTimeout(() => { if (wal) juice(wal, .7); }, tStart + 850);
+  }, 260 + i * 260));
+  const tStart = 260 + rows.length * 260 + 80;
+  setTimeout(() => countUp(amt, 0, r.total, 380, cur, 'coin'), tStart);
+  setTimeout(() => { sfx('kaching'); if (amt) juice(amt.parentElement, .9); }, tStart + 400);
+}
+// Cash Out: the receipt slides back down, coins arc from the button into the purse, which counts up and bounces,
+// then the Shop opens (about 1 s). Full-screen cash-out on narrow layouts, or reduced motion, goes straight to the Shop.
+function cashOut() {
+  const r = S.reward; if (!r || r.paid) return; r.paid = true;
+  const go = () => { S.phase = 'shop'; S.msg = ''; render(); };
+  const m = $('#modal'), from = m.querySelector('.cashamt .coin'), purse = $('#purseVal'), cur = LANG === 'hk' ? '$' : '¥';
+  if (!motionOK || !from || !purse || !$('#overlay').classList.contains('boardonly')) { sfx('kaching'); go(); return; }
+  const a = from.getBoundingClientRect(), p = purse.closest('.purse').querySelector('.coin').getBoundingClientRect();
+  const sx = a.left + a.width / 2, sy = a.top + a.height / 2, ex = p.left + p.width / 2, ey = p.top + p.height / 2, lift = Math.min(160, Math.abs(sx - ex) * .25 + 60);
+  m.animate([{ transform: 'none' }, { transform: 'translateY(110%)' }], { duration: 260, easing: 'ease-in', fill: 'forwards' });
+  const n = Math.max(3, Math.min(8, r.total)), dur = 520, gap = 60, path = [];
+  for (let k = 0; k <= 10; k++) { const t = k / 10; path.push({ transform: `translate(${(ex - sx) * t}px,${(ey - sy) * t - Math.sin(Math.PI * t) * lift}px) scale(${1 - .25 * t})` }); }
+  const startMoney = S.money - r.total;
+  for (let i = 0; i < n; i++) {
+    const c = document.createElement('div'); c.className = 'flycoin'; c.innerHTML = coinSVG(); Object.assign(c.style, { left: sx - 13 + 'px', top: sy - 13 + 'px' }); document.body.appendChild(c);
+    c.animate(path, { duration: dur, delay: i * gap, easing: 'cubic-bezier(.45,.05,.55,.95)', fill: 'both' }).onfinish = () => c.remove();
+    setTimeout(() => { sfx('coin'); const el = $('#purseVal'); if (el) el.textContent = cur + Math.round(startMoney + r.total * (i + 1) / n); }, dur + i * gap);
+    setTimeout(() => c.remove(), dur + i * gap + 400);   // in case frames are paused
+  }
+  const land = dur + (n - 1) * gap;
+  setTimeout(() => { const el = $('#purseVal'); if (el) { el.textContent = cur + S.money; juice(el, .8); } sfx('kaching'); }, land + 20);
+  setTimeout(go, land + 380);
 }
 function cashoutHTML() {
   const r = S.reward; const names = { small: 'Small Blind', big: 'Big Blind', boss: 'Boss Blind' };
   const bossName = r.kind === 'boss' && S.stats.bosses.length ? BOSSES[S.stats.bosses[S.stats.bosses.length - 1]].name : null;
   const cap = hasF('winter') ? 10 : CFG.interestCap;
   const rows = [['Blind reward', names[r.kind], r.base], ['Unused Plays', `${r.left} × ¥1`, r.left], ['Interest', `¥1 per ¥${CFG.interestPer} held, up to ¥${cap}`, r.interest], r.tal ? ['Talismans', 'end-of-Blind payouts', r.tal] : null, r.summer ? ['Summer', 'Flower', r.summer] : null, r.invest ? ['Investment Tag', 'Boss bonus', r.invest] : null].filter(Boolean);
-  let h = `<div class="cashhead"><div class="label">${names[r.kind]} defeated</div><h2>${bossName ? bossName + ' beaten' : 'Blind cleared'}</h2>`;
-  if (S.target) h += `<div class="cashscore num"><b>${fmtN(S.score)}</b> <span class="muted">of ${fmtN(S.target)}</span></div>`;
-  h += `</div><div class="receipt">${rows.map(([k, d, v]) => `<div class="rrow"><div><div class="rl">${k}</div><div class="rd muted">${d}</div></div><b class="num">¥${v}</b></div>`).join('')}<div class="rtotal"><span>Total</span><b class="num">¥${r.total}</b></div></div>`;
-  h += `<div class="cashfoot"><span class="muted" style="font-size:12px">You now have</span>${walletHTML()}</div><button id="mCashOut" class="primary cashbtn">Cash Out →</button>`;
+  const cur = LANG === 'hk' ? '$' : '¥';
+  let h = `<div class="drawhead"><h2>${bossName ? bossName + ' beaten' : 'Blind cleared'}</h2><span class="label">${names[r.kind]} defeated</span></div>`;
+  h += `<div class="receipt">${rows.map(([k, d, v]) => `<div class="rrow"><span class="rl">${k}</span><span class="rd muted">${d}</span><span class="rlead" aria-hidden="true"></span><b class="num">¥${v}</b></div>`).join('')}</div>`;
+  h += `<button id="mCashOut" class="primary cashbtn">Cash Out <span class="cashamt"><span class="coin" aria-hidden="true">${coinSVG()}</span><span class="num">${cur}${r.total}</span></span></button>`;
   return h;
 }
 // Same look as the play area's purse: the coin, the amount, and JPY or HKD underneath.
@@ -1804,7 +1831,7 @@ function bindEvents() {
     else if (t.id === 'mContinue') { hideModal(); render(); }
     else if (t.id === 'mCollection') { showModal(collectionHTML(), true, 'colmodal'); $('#mClose').onclick = () => { showModal(menuHTML(!!load()), true, 'menumodal'); }; }
     else if (t.id === 'mRules') { showModal(rulesHTML() + '', true); $('#mClose').onclick = () => { showModal(menuHTML(!!load()), true, 'menumodal'); }; }
-    else if (t.id === 'mCashOut') { S.phase = 'shop'; S.msg = ''; render(); }
+    else if (t.id === 'mCashOut') cashOut();
     else if (t.id === 'mNext') { S.shop = null; S.pack = null; S.msg = ''; S.phase = 'select'; render(); }
     else if (t.id === 'mPlayBlind') { S.msg = ''; startBlind(); render(); }
     else if (t.id === 'mRunInfo') { showModal(yakuHTML(), true); $('#mClose').onclick = () => { modalPinned = false; render(); }; }
