@@ -120,7 +120,7 @@ function rollEdition() { const r = rand(); let acc = 0; for (const [k, e] of Obj
 
 // ===================== BOSSES =====================
 const BOSSES = {
-  purist: { name: 'The Purist', desc: 'Terminals (1s and 9s) and Honor tiles are dealt face down. They are only revealed when played or discarded. Hand sorting and the helper are off.' },
+  purist: { name: 'The Purist', desc: 'Terminals (1s and 9s) and Honor tiles are dealt face down. They are only revealed when played or discarded. Sorting still puts them in their place, and the helper only counts visible tiles.' },
   typhoon: { name: 'The Typhoon', desc: 'Wind tiles score 0 Chips and all Wind-based Yaku are disabled.' },
   wallbuilder: { name: 'The Wall-Builder', desc: 'Only plays of two or more melds score. Smaller partial plays deal 0 damage.' },
   loanshark: { name: 'The Loan Shark', desc: 'Every Discard costs ¥1, however many tiles you throw. At ¥0, discards are locked.' },

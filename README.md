@@ -112,6 +112,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 101: Tile numbers setting (All Tiles, Characters and Winds by default, or None) controls the corner number or letter on tiles. Blind plate no longer repeats "Small Blind"/"Big Blind" above the name (bosses keep the "Boss Blind" label). The Gatekeeper shows no status until its first Play is done.
 - Build 102: pack results drop all captions (engraving names and "New"): changed and added tiles get only the gold outline, removed tiles only the strike, and the message names the tiles, grouping repeats ("2 Man ×2"). Simulator: argv[7] ryu1 tests a Ryūjin that makes only the first Call each Blind free.
 - Build 103: shop and pack cards keep their height when their buttons turn into "Sold", "Used" or "No picks left".
+- Build 104: The Purist allows sorting and manual order again; face-down tiles keep their true sorted position, a slight hint of what they are. Boss text updated.
 - Build 7: multi-meld play ladder (Two Melds ... Four Melds), targets 300...45000, retrigger and scaling Talismans, Wall-Builder rewording, scoring animation.
 
 ## Simulators (in `sim/`)

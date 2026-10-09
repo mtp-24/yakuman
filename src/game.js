@@ -568,7 +568,8 @@ function renderRiver() {
 function renderHand() {
   const box = $('#hand'); box.innerHTML = '';
   const hidden = S.boss === 'purist' && !S.revealed && S.phase === 'blind';
-  if (S.sortHand && !hidden) S.hand = sortTiles(S.hand);
+  // Sorting works against The Purist too: face-down tiles keep their true sorted spot, a slight hint of what they are.
+  if (S.sortHand) S.hand = sortTiles(S.hand);
   const tiles = S.hand;
   for (const t of tiles) { const e = tileEl(t, { sel: S.selected.includes(t.id), back: hidden && (isHonor(t) || isTerminal(t)) }); if (S.newIds.includes(t.id)) e.classList.add('arrive'); e.dataset.id = t.id; bindTileDrag(e, t); box.appendChild(e); }
   S.newIds = [];
@@ -577,7 +578,7 @@ function renderHand() {
   const over = S.hand.length - capacity();
   $('#handInfo').textContent = (over > 0 && !S.pendingDiscard ? `${S.hand.length} tiles (${over} over the limit of ${capacity()}: no draw until you are back under it)` : `${S.hand.length} / ${capacity()} tiles`) + ` · ${S.selected.length} selected · complete hand needs ${neededConcealed()} from hand`;
   renderHint(hidden);
-  $('#btnSort').textContent = hidden ? 'Manual Order' : (S.sortHand ? 'Auto-sort On' : 'Sort Hand'); $('#btnSort').disabled = hidden; $('#btnSort').title = S.sortHand ? 'New tiles are sorted in. Drag a tile to switch to manual order.' : 'Sort the hand now and keep it sorted. Drag tiles to reorder.';
+  $('#btnSort').textContent = S.sortHand ? 'Auto-sort On' : 'Sort Hand'; $('#btnSort').disabled = false; $('#btnSort').title = S.sortHand ? 'New tiles are sorted in. Drag a tile to switch to manual order.' : 'Sort the hand now and keep it sorted. Drag tiles to reorder.';
 
 }
 // Greedy set of tiles that can all be discarded together without raising shanten. Isolated tiles are tried first.
