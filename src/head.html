@@ -720,4 +720,22 @@ aside .card{background:linear-gradient(180deg,#2a1d10,#1d140a);border:1px solid 
 .slot.ed-poly::after,.shopcard.ed-poly::after{animation-duration:16s}
 .slot.ed-neg,.shopcard.ed-neg{box-shadow:0 0 0 1px rgba(154,122,230,.4),0 0 8px rgba(154,122,230,.28),inset 0 0 18px rgba(0,0,0,.6)}
 .slot.ed-neg::before,.shopcard.ed-neg::before{opacity:.6;animation:edsheen2 8s ease-in-out infinite}
+
+/* Calmer still: Holographic and Polychrome are static, Foil and Negative sheen once every 15 s, glows minimal */
+.slot.ed-foil::before,.shopcard.ed-foil::before{opacity:.6;animation:edsheen3 15s ease-in-out infinite}
+.slot.ed-neg::before,.shopcard.ed-neg::before{opacity:.45;animation:edsheen3 15s ease-in-out infinite}
+@keyframes edsheen3{0%,85%{background-position:160% 0,0 0}100%{background-position:-160% 0,0 0}}
+.slot.ed-holo::before,.shopcard.ed-holo::before{opacity:.35;animation:none}
+.slot.ed-poly::before,.shopcard.ed-poly::before{opacity:.35;animation:none} .slot.ed-poly::after,.shopcard.ed-poly::after{animation:none}
+.slot.ed-foil,.shopcard.ed-foil{box-shadow:0 0 0 1px rgba(214,224,236,.4),0 0 5px rgba(190,215,255,.15)}
+.slot.ed-holo,.shopcard.ed-holo{box-shadow:0 0 6px rgba(255,126,179,.14),0 0 4px rgba(122,252,255,.1)}
+.slot.ed-poly,.shopcard.ed-poly{box-shadow:0 0 6px rgba(255,170,60,.1),0 0 6px rgba(120,120,255,.1)}
+.slot.ed-neg,.shopcard.ed-neg{box-shadow:0 0 0 1px rgba(154,122,230,.35),0 0 6px rgba(154,122,230,.2),inset 0 0 18px rgba(0,0,0,.6)}
+/* Next Blind: no pulsing glow, a faint sweep every 9 s */
+.shoprail .nextbtn.primary{animation:none;box-shadow:0 0 0 1px rgba(0,0,0,.35),0 8px 20px rgba(201,69,58,.4),inset 0 1px 0 rgba(255,255,255,.35)}
+.shoprail .nextbtn.primary::after{background:linear-gradient(100deg,transparent,rgba(255,255,255,.16),transparent);animation:nbsweep2 9s ease-in-out infinite}
+@keyframes nbsweep2{0%,85%{left:-60%}100%{left:130%}}
+/* Discard after a Call: a slow, faint ring instead of a fast pulse */
+button.pulse{animation:btnpulse2 2.6s ease-out infinite}
+@keyframes btnpulse2{0%{box-shadow:0 0 0 0 rgba(232,107,95,.4)}60%{box-shadow:0 0 0 6px rgba(232,107,95,0)}100%{box-shadow:0 0 0 0 rgba(232,107,95,0)}}
 </style>

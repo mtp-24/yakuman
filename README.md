@@ -145,6 +145,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 134: Select and deselect are a straight lift and drop with no overshoot (the press dip is gone too). Drag tilt is subtler: at most 4 degrees.
 - Build 135: Editions stand out like Balatro's: Foil gets a silver tint with a sweeping sheen, Holographic drifting pink and cyan shimmer bands, Polychrome a rainbow wash and a flowing rainbow edge, Negative an inverted dark violet card; each with a matching glow, on the board, in the shop, packs and Collection. The Wall count ticks down when tiles are drawn (0.35 s) with a small bounce.
 - Build 136: Subtler edition effects: overlays at about half strength, smaller glows, Foil and Negative sheens pass once every 8 s, Holographic and Polychrome drift 2-3x slower.
+- Build 137: Calmer still. Holographic and Polychrome are static; Foil and Negative sheen once every 15 s; edition glows minimal. Next Blind no longer pulses, its sweep is faint and passes every 9 s. The Discard pulse after a Call is a slow, faint ring.
 - Build 7: multi-meld play ladder (Two Melds ... Four Melds), targets 300...45000, retrigger and scaling Talismans, Wall-Builder rewording, scoring animation.
 
 ## Simulators (in `sim/`)
