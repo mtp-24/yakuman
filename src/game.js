@@ -386,13 +386,14 @@ function renderConsumables() {
 function renderOpen() {
   const box = $('#open'); box.innerHTML = '';
   const allClosed = S.open.every(m => m.closed);
-  $('#openInfo').textContent = S.open.length ? (allClosed ? `${S.open.length} declared · hand is still closed for Yaku` : `${S.open.length} on the table · hand is Open for Yaku`) : 'None. Hand is closed.';
+  $('#openInfo').textContent = S.open.length ? (allClosed ? `${S.open.length} declared · hand is still closed for Yaku` : `${S.open.length} on the table · hand is Open for Yaku`) : 'Hand is closed.';
+  if (!S.open.length) box.innerHTML = '<span class="muted empty">No melds on the table</span>';
   for (const m of S.open) { const w = document.createElement('div'); w.className = 'meld' + (m.closed ? ' closedmeld' : ''); w.innerHTML = `<span class="mt">${m.closed ? 'CLOSED ' : ''}${MELD_LABEL[m.type].toUpperCase()}</span>`; for (const t of m.tiles) w.appendChild(tileEl(t, { small: true, called: t.id === m.calledId })); box.appendChild(w); }
 }
 function renderRiver() {
   const box = $('#river'); box.innerHTML = '';
   for (const t of S.river) { const e = tileEl(t, { small: true, sel: S.selRiver === t.id }); e.onclick = () => { if (S.phase !== 'blind') return; S.selRiver = S.selRiver === t.id ? null : t.id; render(); }; box.appendChild(e); }
-  if (!S.river.length) box.innerHTML = '<span class="muted" style="font-size:12px;align-self:center">Empty</span>';
+  if (!S.river.length) box.innerHTML = '<span class="muted empty">No discards yet</span>';
 }
 function renderHand() {
   const box = $('#hand'); box.innerHTML = '';
