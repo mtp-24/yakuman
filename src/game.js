@@ -465,10 +465,15 @@ function deadTiles(hand, openCount, sh, limit) {
 function renderHint(hidden) {
   const box = $('#hint');
   if (S.phase !== 'blind' || !S.hand.length) { box.innerHTML = ''; return; }
-  if (S.pendingDiscard) { const n = S.selected.length, need = S.pendingDiscard; box.innerHTML = `<span class="pendnote">Settle your Call: select ${need} tile and press Discard. It does not use a Discard.${n === need ? ' Ready, press Discard.' : n > need ? ` ${n} selected, you need exactly ${need}.` : ''}</span>`; return; }
   // Under The Purist only the visible (simple) tiles are counted; hidden tiles are treated as unknown, so this is a "no better than" estimate.
   const vis = hidden ? S.hand.filter(t => !(isHonor(t) || isTerminal(t))) : S.hand;
   const sh = handShanten(vis, S.open.length);
+  if (S.pendingDiscard) {
+    const n = S.selected.length, need = S.pendingDiscard;
+    box.innerHTML = `<span class="pendnote">Settle your Call: select ${need} tile and press Discard. It does not use a Discard.${n === need ? ' Ready, press Discard.' : n > need ? ` ${n} selected, you need exactly ${need}.` : ''}</span>${SHOW_DOTS && !hidden ? ' <span class="hint-sel muted">· dotted tiles are safe to throw</span>' : ''}`;
+    if (sh >= 0 && SHOW_DOTS && !hidden) { const dead = deadTiles(vis, S.open.length, sh, CFG.maxDiscardTiles); const els = $('#hand').children; for (let i = 0; i < S.hand.length; i++) if (dead.includes(S.hand[i])) els[i].classList.add('safe'); }
+    return;
+  }
   const away = n => n === -1 ? 'Complete hand ready' : n === 0 ? '1 tile away (tenpai)' : `${n + 1} tiles away`;
   let h = `<span class="hint-main ${sh <= 0 ? 'good' : ''}">${hidden ? 'Visible tiles: at least ' + away(sh).toLowerCase() : away(sh)}</span>`;
   if (hidden) h += ` <span class="hint-sel muted">· face-down tiles are 1s, 9s, Winds or Dragons and are not counted</span>`;
