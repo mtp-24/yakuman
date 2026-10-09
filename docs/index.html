@@ -1886,19 +1886,22 @@ function renderDebug() {
   $('#dbgEd').onchange = e => { const k = e.target.value; if (!k || !S.selTal) return; if (k === 'none') delete S.editions[S.selTal]; else S.editions[S.selTal] = k; e.target.value = ''; render(); };
   $('#dbgFlw').onchange = e => { const k = e.target.value; if (!k) return; if (!S.flowers.includes(k)) S.flowers.push(k); e.target.value = ''; render(); };
 }
-// A staged complete hand that exercises most of the scoring sequence: Tanyao + Pinfu + Iipeikou, a Red Five, Red Seal, Gold Foil,
-// Jade and Glass engravings, Scroll levels, a Foil +Mult Talisman, a scaling Talisman and a Polychrome xMult Talisman.
+// A staged complete hand that exercises every counter: chips (Obsidian tile, Daruma, Scroll chips), Han (four Yaku, Red Five, Dora,
+// Dragon Mark, Scroll Han), and Mult (+Mult from Tengu, Kitsune and Kasa-obake, then x3 from Hannya and x1.5 from its Polychrome edition).
 function stageDemoHand() {
   if (S.phase !== 'blind') { setMsg('Start a blind first, then stage the demo hand.', true); return render(); }
-  S.wall.push(...S.hand); S.hand = []; S.open = []; S.pendingDiscard = 0; S.selected = [];
+  S.wall.push(...S.hand); S.hand = []; S.open = []; S.pendingDiscard = 0; S.selected = []; S.river = [];
   const mk = (suit, rank, red, eng) => { const t = mkTile(suit, rank, !!red); t.eng = eng || null; t.d = ++S.drawSeq; return t; };
-  const tiles = [mk('m', 2), mk('m', 3), mk('m', 4), mk('m', 2, false, 'redseal'), mk('m', 3), mk('m', 4, false, 'gold'), mk('p', 5, true), mk('p', 6), mk('p', 7, false, 'jade'), mk('s', 3), mk('s', 4), mk('s', 5, false, 'glass'), mk('s', 8), mk('s', 8), mk('z', 1), mk('z', 5), mk('p', 1)];
+  // 234 Man, 234 Pin, 234 Sou (Sanshoku) + 678 Sou + pair of 5 Pin: Tanyao, Pinfu, Sanshoku Doujun
+  const tiles = [mk('m', 2, false, 'obsidian'), mk('m', 3, false, 'redseal'), mk('m', 4), mk('p', 2), mk('p', 3), mk('p', 4, false, 'jade'), mk('s', 2), mk('s', 3), mk('s', 4), mk('s', 6, false, 'dragonmark'), mk('s', 7, false, 'gold'), mk('s', 8, false, 'glass'), mk('p', 5, true), mk('p', 5), mk('z', 1), mk('z', 7), mk('m', 9)];
   S.hand = tiles; S.sortHand = false;
   S.selected = tiles.slice(0, 14).map(t => t.id);
-  S.talismans = ['tengu', 'kasaobake', 'hannya']; S.editions = { tengu: 'foil', hannya: 'poly' }; S.talState.kasaobake = 6;
-  S.scrolls.meld.chi = Math.max(S.scrolls.meld.chi || 0, 1);
-  if (S.target < 3000) S.target = 3000;
-  setMsg('Demo hand staged: 14 tiles selected. Press Play to watch it score.'); render();
+  for (let i = 0; i < 5; i++) S.river.push(mk('z', 2 + (i % 3)));                 // five River tiles feed Daruma
+  const ind = mk('s', 1); S.indicators = [ind]; S.dora = [nextDora(idx(ind))];       // indicator 1 Sou makes every 2 Sou a Dora
+  S.talismans = ['daruma', 'tengu', 'kitsune', 'kasaobake', 'hannya']; S.editions = { hannya: 'poly' }; S.talState.kasaobake = 6;
+  S.scrolls.meld.chi = Math.max(S.scrolls.meld.chi || 0, 2); S.scrolls.meld.hand = Math.max(S.scrolls.meld.hand || 0, 1);
+  if (S.target < 5000) S.target = 5000;
+  setMsg('Demo hand staged: 14 tiles selected. Press Play to watch chips, Han and Mult build up.'); render();
 }
 function buyFree(it) { const m = S.money; S.money = 999; buy(it); S.money = m; }
 
