@@ -578,10 +578,36 @@ function tileEl(t, o = {}) {
     else if (t.eng === 'dragonmark') el.innerHTML += '<span class="dmark"></span>';
     else if (t.eng === 'gold') el.innerHTML += '<span class="shine"></span>';
     else if (t.eng === 'steel') el.innerHTML += '<span class="brush"></span>';
-    el.title = tileName(t) + (t.eng ? ' · ' + ENG[t.eng].name + ': ' + ENG[t.eng].desc : '');
-  } else el.title = 'Face down: a 1, 9, Wind or Dragon (The Purist)';
+  }
+  el._t = t;   // the hover card reads the tile from here (it replaces the plain tooltip)
   return el;
 }
+// ===================== TILE HOVER CARD =====================
+// Like Balatro: hovering a tile shows a small card with its name, the Chips it adds when scored (boss rules and
+// Talisman bonuses included), Red Five and Dora Han, and its engraving. Hidden while dragging or scoring.
+let tipEl = null, tipAnchor = null;
+function tileTipHTML(t, back) {
+  if (back) return `<div class="tt-n">Face down</div><div class="tt-e">A 1, 9, Wind or Dragon (The Purist).</div>`;
+  const inRun = !!(S && S.talismans), chips = inRun ? tileChips(t, S) : ((isHonor(t) || isTerminal(t)) ? 10 : t.rank);
+  const rows = [`<span class="hp chips">+${chips}</span><span>Chips</span>`];
+  if (t.red) rows.push(`<span class="hp han">+${inRun && S.talismans.includes('koi') ? 2 : 1}</span><span>Han · Red Five</span>`);
+  if (inRun && S.phase === 'blind' && (S.dora || []).includes(idx(t))) rows.push(`<span class="hp han">+1</span><span>Han · Dora</span>`);
+  const eng = t.eng ? `<div class="tt-e"><b>${ENG[t.eng].name}</b> ${ENG[t.eng].desc}</div>` : '';
+  return `<div class="tt-n">${tileName(t)}</div>${rows.map(r => `<div class="tt-r">${r}</div>`).join('')}${eng}`;
+}
+function showTileTip(el) {
+  if (!tipEl) { tipEl = document.createElement('div'); tipEl.id = 'tiletip'; tipEl.setAttribute('role', 'tooltip'); document.body.appendChild(tipEl); }
+  tipEl.innerHTML = tileTipHTML(el._t, el.classList.contains('back')); translateDOM(tipEl);
+  const r = el.getBoundingClientRect(), h = tipEl.offsetHeight, below = r.top - h - 10 < 4;
+  tipEl.classList.toggle('below', below); tipEl.style.left = Math.max(80, Math.min(innerWidth - 80, r.left + r.width / 2)) + 'px'; tipEl.style.top = (below ? r.bottom + 10 : r.top - 10) + 'px';
+  tipEl.classList.add('on'); const z = el.closest('#hand, #river, #open'); tipAnchor = z ? { id: el.dataset.id, zone: '#' + z.id } : null;
+}
+function hideTileTip() { if (tipEl) tipEl.classList.remove('on'); tipAnchor = null; }
+document.addEventListener('pointerover', e => { const el = e.target.closest('.tile'); if (!el || !el._t || e.pointerType === 'touch' || (S && S.busy) || drag || slotDrag) return; showTileTip(el); });
+document.addEventListener('pointerout', e => { const el = e.target.closest('.tile'); if (el && !(e.relatedTarget && el.contains(e.relatedTarget))) hideTileTip(); });
+document.addEventListener('pointerdown', () => hideTileTip(), true);
+// After a redraw (for example selecting the hovered tile) the card follows the same tile, or closes if it is gone.
+function refreshTileTip() { if (!tipAnchor || !tipEl || !tipEl.classList.contains('on')) return; const el = document.querySelector(`${tipAnchor.zone} .tile[data-id="${tipAnchor.id}"]`); if (el && el.matches(':hover') && !(S && S.busy)) showTileTip(el); else hideTileTip(); }
 // ---- Tile faces: Man = Chinese numeral over 萬, Pin = circles, Sou = bamboo sticks (1-Sou is the bird), honors = kanji.
 const CJK_NUM = ['', '一', '二', '三', '四', '五', '六', '七', '八', '九'];
 const PIN_LAYOUT = {
@@ -631,7 +657,7 @@ function render() {
   $('#btnYaku').textContent = 'Run Info';
   document.querySelectorAll('.zhead > .muted').forEach(e => { e.title = e.textContent; });   // full text on hover when a header is truncated
   translateDOM($('#app')); fitNumbers();
-  tileMotion(motionBefore, freshTiles); syncEditions(); if (S.phase !== 'shop' && !S.quiet) walletShown = S.money;
+  tileMotion(motionBefore, freshTiles); syncEditions(); refreshTileTip(); if (S.phase !== 'shop' && !S.quiet) walletShown = S.money;
   save();
 }
 // Edition effects run on one shared 15 s clock: each newly drawn edition card gets a negative delay matching the
@@ -1073,6 +1099,7 @@ function juice(el, amt = 1) {
   juiceRAF = requestAnimationFrame(step);
 }
 async function animateScore(ctx) {
+  hideTileTip();
   skipAnim = false; skipArmed = false; setTimeout(() => { skipArmed = true; }, 250);
   const box = $('#scorebox'); if (!box) return;
   const label = ctx.kind === 'hand' ? (ctx.yaku.length ? ctx.yaku.map(y => y.name).join(', ') : 'Complete Hand') : ctx.rungName;

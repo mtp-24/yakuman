@@ -809,4 +809,10 @@ button.pulse{animation:btnpulse2 2.6s ease-out infinite}
 @keyframes hpop{0%{opacity:0;transform:scale(.4) translateY(6px)}18%{opacity:1;transform:scale(1.18)}32%{transform:scale(1)}72%{opacity:1;transform:translateY(-2px)}100%{opacity:0;transform:translateY(-12px)}}
 @media (prefers-reduced-motion:reduce){#hand .tile.hit,#open .tile.hit{animation:none;transform:translateY(-14px) scale(1.12)} .hp{animation:none}}
 .slot{position:relative}
+/* Tile hover card */
+#tiletip{position:fixed;z-index:300;pointer-events:none;min-width:140px;max-width:230px;padding:8px 11px 9px;border-radius:10px;background:linear-gradient(180deg,#2c1f11,#1b130a);border:1px solid #8a6a3e;box-shadow:0 10px 26px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,220,160,.15);opacity:0;transform:translate(-50%,calc(-100% + 5px));transition:opacity .1s,transform .1s}
+#tiletip.on{opacity:1;transform:translate(-50%,-100%)} #tiletip.below{transform:translate(-50%,-5px)} #tiletip.below.on{transform:translate(-50%,0)}
+.tt-n{font-family:var(--display);font-size:17px;color:#f0cf7f;margin-bottom:6px;line-height:1.1}
+.tt-r{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--fg);margin-top:4px} .tt-r .hp{animation:none;font-size:12.5px;padding:3px 7px 4px;min-width:30px;text-align:center}
+.tt-e{font-size:11.5px;line-height:1.4;color:var(--fg);opacity:.92;margin-top:7px;padding-top:6px;border-top:1px dashed rgba(255,230,180,.18)} .tt-e b{color:#f0cf7f;margin-right:3px}
 </style>
