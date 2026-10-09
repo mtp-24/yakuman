@@ -68,6 +68,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 57: the chips box and the Mult box shake and pop whenever their value changes during scoring, Balatro-style.
 - Build 58: Balatro-style finish: no running total during scoring; the total replaces the play name at the end, then counts down into a Round Score counter (which replaces the progress bar and "Scored" line).
 - Build 59: the final total sits above the chips × Mult boxes (both stay visible); the breakdown streams into a separate Scoring section under the hand box that exists only while scoring; Last Play follows after.
+- Build 60: a Han counter in the scoring box ticks and shakes on every Han line and shows the tier it maps to, so Yaku progress is visible even on Han-table plateaus.
 - Build 7: multi-meld play ladder (Two Melds ... Four Melds), targets 300...45000, retrigger and scaling Talismans, Wall-Builder rewording, scoring animation.
 
 ## Simulators (in `sim/`)

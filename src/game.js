@@ -588,19 +588,21 @@ function wait(ms) { return new Promise(r => setTimeout(r, (motionOK && !skipAnim
 async function animateScore(ctx) {
   skipAnim = false; skipArmed = false; setTimeout(() => { skipArmed = true; }, 250);
   const box = $('#scorebox'); if (!box) return;
-  box.innerHTML = `<div class="hb-name">${tr(ctx.rungName || '')}${ctx.kind === 'hand' ? ' <span class="muted">· ' + tr(ctx.desc) + '</span>' : ''}</div><div class="hb-total num" hidden><span class="tot">0</span></div><div class="hb-math num"><span class="chipbox">0</span><span class="px">×</span><span class="multbox">1</span></div><div class="muted" style="font-size:10px;margin-top:4px">click to skip</div>`;
+  box.innerHTML = `<div class="hb-name">${tr(ctx.rungName || '')}${ctx.kind === 'hand' ? ' <span class="muted">· ' + tr(ctx.desc) + '</span>' : ''}</div><div class="hb-total num" hidden><span class="tot">0</span></div><div class="hb-math num"><span class="chipbox">0</span><span class="px">×</span><span class="multbox">1</span></div><div class="hb-han num"><span class="hanpill"><b class="hanval">0</b> Han</span><span class="muted hantier"></span></div><div class="muted" style="font-size:10px;margin-top:4px">click to skip</div>`;
   // the breakdown streams into its own Scoring section under the hand box; Last Play fills in once scoring ends
-  const chipsEl = box.querySelector('.chipbox'), multEl = box.querySelector('.multbox'), totEl = box.querySelector('.tot'), totWrap = box.querySelector('.hb-total'), nameEl = box.querySelector('.hb-name'), linesBox = $('#scorelog .lp-lines'), mathEl = box.querySelector('.hb-math');
+  const chipsEl = box.querySelector('.chipbox'), multEl = box.querySelector('.multbox'), totEl = box.querySelector('.tot'), totWrap = box.querySelector('.hb-total'), nameEl = box.querySelector('.hb-name'), linesBox = $('#scorelog .lp-lines'), mathEl = box.querySelector('.hb-math'), hanEl = box.querySelector('.hanval'), hanPill = box.querySelector('.hanpill'), tierEl = box.querySelector('.hantier');
   const tileEls = new Map(); document.querySelectorAll('#hand .tile[data-id], #open .tile[data-id]').forEach(e => tileEls.set(+e.dataset.id, e));
   let chips = 0, han = 0, tileX = 1, mult = null;
   const curMult = () => mult === null ? hanMult(han) * tileX : mult;
-  let lastChips = null, lastMult = null;
+  let lastChips = null, lastMult = null, lastHan = null;
   const bump = (el, cls) => { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); };
   const setMath = () => {
     const c = Math.max(0, Math.round(chips)), m = fmtMult(curMult());
     chipsEl.textContent = c; multEl.textContent = m;
     if (lastChips !== null && c !== lastChips) bump(chipsEl, 'bump'); if (lastMult !== null && m !== lastMult) bump(multEl, 'bump');
-    lastChips = c; lastMult = m;
+    const hv = Math.round(han); hanEl.textContent = hv; tierEl.textContent = mult === null ? `→ ×${hanMult(hv)} ${tierName(hv)}` : 'converted';
+    if (lastHan !== null && hv !== lastHan) bump(hanPill, 'bump');
+    lastChips = c; lastMult = m; lastHan = hv;
   };
   const showLine = l => { const d = document.createElement('div'); d.className = 'row sline' + (l.zero ? ' bad' : '') + (l.yaku ? ' yaku' : '') + (l.tal ? ' tal' : '') + (l.convert ? ' convert' : ''); d.innerHTML = `<span>${tr(l.label)}</span><span class="num">${tr(l.val)}</span>`; linesBox.appendChild(d); if (l.tal) { const slot = document.querySelector(`.slot[data-tal="${l.tal}"]`); if (slot) { slot.classList.remove('bounce'); void slot.offsetWidth; slot.classList.add('bounce'); } } };
   const applyLine = l => { if (l.zero) chips = 0; else { chips += l.chips || 0; han += l.han || 0; if (l.convert) mult = hanMult(han) * tileX; if (l.mult) mult = (mult === null ? hanMult(han) * tileX : mult) + l.mult; if (l.xmult && mult !== null) mult *= l.xmult; } setMath(); };
