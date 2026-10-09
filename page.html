@@ -738,6 +738,19 @@ aside .card{background:linear-gradient(180deg,#2a1d10,#1d140a);border:1px solid 
 /* Discard after a Call: a slow, faint ring instead of a fast pulse */
 button.pulse{animation:btnpulse2 2.6s ease-out infinite}
 @keyframes btnpulse2{0%{box-shadow:0 0 0 0 rgba(232,107,95,.4)}60%{box-shadow:0 0 0 6px rgba(232,107,95,0)}100%{box-shadow:0 0 0 0 rgba(232,107,95,0)}}
+
+/* Holographic as a trading-card hologram: fine sparkle grid over a prismatic wash that slides slowly back and forth */
+.slot.ed-holo::before,.shopcard.ed-holo::before{opacity:.55;
+  background:radial-gradient(circle,rgba(255,255,255,.4) 0 .8px,transparent 1.4px) 0 0/8px 8px,radial-gradient(circle,rgba(255,255,255,.22) 0 .7px,transparent 1.2px) 4px 4px/8px 8px,
+    linear-gradient(125deg,rgba(255,90,170,.2),rgba(120,220,255,.2) 28%,rgba(190,140,255,.18) 52%,rgba(255,230,140,.16) 76%,rgba(255,90,170,.2)) 0 0/260% 260%;
+  animation:holoslide 12s ease-in-out infinite alternate}
+@keyframes holoslide{from{background-position:0 0,4px 4px,0% 0%}to{background-position:0 0,4px 4px,100% 100%}}
+.slot.ed-holo::after,.shopcard.ed-holo::after{background:linear-gradient(125deg,#ff7eb3,#7afcff,#c9a0ff,#feff9c,#ff7eb3) 0 0/260% 260%;animation:holoring 12s ease-in-out infinite alternate}
+@keyframes holoring{from{background-position:0% 0%}to{background-position:100% 100%}}
+/* Polychrome: the rainbow wash and edge flow again, slowly */
+.slot.ed-poly::before,.shopcard.ed-poly::before{opacity:.4;animation:edpoly 20s linear infinite}
+.slot.ed-poly::after,.shopcard.ed-poly::after{animation:edpoly 20s linear infinite}
+@media (prefers-reduced-motion:reduce){.slot.ed-holo::before,.shopcard.ed-holo::before,.slot.ed-holo::after,.shopcard.ed-holo::after,.slot.ed-poly::before,.shopcard.ed-poly::before,.slot.ed-poly::after,.shopcard.ed-poly::after{animation:none}}
 </style>
 <div id="app">
 <header>
