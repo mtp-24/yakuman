@@ -3,7 +3,7 @@
 let GAP_CHI = false;
 // A signed amount for breakdown lines: +12, or −30 (a real minus sign, never "+-30").
 const sgn = n => n < 0 ? '−' + Math.abs(n) : '+' + n;
-function setRules(S) { GAP_CHI = !!(S && S.talismans && S.talismans.includes('hashi')); }
+function setRules(S) { GAP_CHI = !!(S && S.talismans && liveTals(S).includes('hashi')); }
 const CHI_SHAPES = () => GAP_CHI ? [[0, 1, 2], [0, 1, 3], [0, 2, 3]] : [[0, 1, 2]];
 function meldType(tiles) {
   const n = tiles.length;
@@ -82,7 +82,7 @@ function finalize(list) {
 const sI = i => Math.floor(i / 9), rI = i => i % 9 + 1, honI = i => i >= 27, windI = i => i >= 27 && i <= 30, drgI = i => i >= 31,
   termI = i => i < 27 && (i % 9 === 0 || i % 9 === 8), orphI = i => honI(i) || termI(i);
 function evalStandard(dec, closed, S) {
-  const baku = S.talismans.includes('baku'), typhoon = S.boss === 'typhoon';
+  const baku = liveTals(S).includes('baku'), typhoon = S.boss === 'typhoon';
   const list = [];
   const add = (key, name, c, o) => { const h = (closed || baku) ? c : o; if (h > 0) list.push({ key, name, han: h }); };
   const ym = (key, name) => list.push({ key, name, han: 13, yakuman: true });
@@ -159,6 +159,7 @@ function bestHand(concealed, open, S) {
 // ===================== SCORING PIPELINE =====================
 function tileChips(t, S) {
   let c = (isHonor(t) || isTerminal(t)) ? 10 : t.rank;
+  if (S.boss === 'verdant' && !S.leafCut) return 0;
   if (S.boss === 'typhoon' && isWind(t)) c = 0;
   if (S.boss === 'censor' && t.red) c = 0;
   if (S.boss === 'collector' && t.suit === S.bossSuit) c = 0;
@@ -173,7 +174,13 @@ function talTarget(S, k) {
   if (d.copies === 'right') { for (let j = i + 1; j < S.talismans.length; j++) if (!TAL[S.talismans[j]].copies) return TAL[S.talismans[j]]; return null; }
   for (let j = 0; j < S.talismans.length; j++) if (!TAL[S.talismans[j]].copies) return TAL[S.talismans[j]]; return null;
 }
+// Disabled Talismans (Crimson Oni, spent Perishables) sit out the whole calculation.
 function scoreCtx(S, kind, tiles, info) {
+  const off = talOff(S); if (!off.length) return scoreCtxInner(S, kind, tiles, info);
+  const all = S.talismans; S.talismans = all.filter(k => !off.includes(k));
+  try { return scoreCtxInner(S, kind, tiles, info); } finally { S.talismans = all; }
+}
+function scoreCtxInner(S, kind, tiles, info) {
   // tiles: for 'meld' the selected tiles; for 'hand' the concealed selection followed by open-meld tiles.
   const playedIds = new Set(tiles.map(t => t.id));
   const ctx = { kind, tiles: tiles.map(t => ({ ...t })), held: S.hand.filter(t => !playedIds.has(t.id)), chips: 0, han: 0, xmult: 1, lines: [], hits: [], yaku: [], furiten: false, total: 0, money: 0, redCount: 0, hasDragonSet: false, desc: '', nChi: 0, nPon: 0, nKan: 0, nMelds: 0, hasPair: false, meldType: null, shatter: [] };
@@ -190,6 +197,7 @@ function scoreCtx(S, kind, tiles, info) {
   if (kind === 'hand') { const lvl = S.scrolls.meld.hand || 0; rung = { key: 'hand', name: MELD_LABEL.hand + (lvl ? ' Lv.' + (lvl + 1) : ''), chips: CFG.meldBase.hand.chips + lvl * CFG.scrollChips, han: CFG.meldBase.hand.han + lvl * CFG.scrollHan }; }
   else rung = rungInfo(info.part);
   ctx.meldType = rung.key; ctx.rungName = rung.name;
+  if (S.boss === 'flint') rung = Object.assign({}, rung, { chips: Math.floor(rung.chips / 2), han: Math.floor(rung.han / 2), name: rung.name + ' (halved)' });
   ctx.chips += rung.chips; ctx.han += rung.han;
   L(rung.name, `+${rung.chips} Chips` + (rung.han ? `, +${rung.han} Han` : ''), { chips: rung.chips, han: rung.han, base: true });
   // Scroll bonuses per component (Chi, Pon, Kan, Pair) apply to every play that contains them, complete hands included,
@@ -292,6 +300,7 @@ function scoreCtx(S, kind, tiles, info) {
   }
   // ---- Boss and Furiten
   if (S.boss === 'wallbuilder' && kind === 'meld' && ctx.nMelds < 2) { ctx.chips = 0; L('The Wall-Builder', 'fewer than 2 melds: 0 Chips', { zero: true }); }
+  if (S.boss === 'golden' && kind === 'meld') { ctx.chips = 0; L('The Golden Dragon', 'only Complete Hands score: 0 Chips', { zero: true }); }
   if (S.boss === 'gatekeeper' && !S.firstPlayDone) { ctx.chips = 0; L('The Gatekeeper', 'first Play of the Blind: 0 Chips', { zero: true }); }
   if (ctx.furiten) { ctx.mult *= 0.5; L(ctx.claimed ? `Furiten (${ctx.winningTile} claimed from your River)` : `Furiten (${ctx.winningTile} is in your River)`, '×0.5 Mult', { xmult: 0.5 }); }
   ctx.mult = Math.round(ctx.mult * 100) / 100; ctx.chips = Math.max(0, ctx.chips);

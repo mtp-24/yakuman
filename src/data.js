@@ -139,9 +139,32 @@ const BOSSES = {
   censor: { name: 'The Censor', desc: 'Red Fives score 0 Chips and give no Han.' },
   gatekeeper: { name: 'The Gatekeeper', desc: 'Your first Play of the Blind scores 0.' },
   collector: { name: 'The Collector', desc: 'One suit, chosen when the Blind starts, scores 0 Chips.' },
-  miser: { name: 'The Miser', desc: 'Hand size −3.' },
+  miser: { name: 'The Miser', desc: 'Hand size −3.', minAnte: 2 },
   monk: { name: 'The Monk', desc: 'Discards may throw at most 3 tiles.' },
+  // Balatro's later Bosses. minAnte keeps the harsh ones out of the early game.
+  needle: { name: 'The Needle', desc: 'You get only 1 Play this Blind.', minAnte: 2 },
+  drought: { name: 'The Drought', desc: 'You start this Blind with 0 Discards.', minAnte: 2 },
+  mountain: { name: 'The Mountain', desc: 'The target score is doubled.', minAnte: 2, target: 2 },
+  flint: { name: 'The Flint', desc: 'The base Chips and Han of every play are halved.', minAnte: 2 },
+  toll: { name: 'The Toll', desc: 'Lose ¥1 for every tile you play.' },
+  eye: { name: 'The Eye', desc: 'No play type can be repeated this Blind.', minAnte: 3 },
+  mouth: { name: 'The Mouth', desc: 'Only one play type is allowed this Blind: the first one you play.', minAnte: 2 },
+  pickpocket: { name: 'The Pickpocket', desc: 'After every Play, 2 random tiles from your hand go to the River.' },
+  ascetic: { name: 'The Ascetic', desc: 'Every Play must use at least 5 tiles.' },
+  ox: { name: 'The Ox', desc: 'Playing your most-played play type sets your money to ¥0.', minAnte: 6 },
+  // Showdown Bosses guard Ante 8 (and every 8th Ante in Endless), like Balatro's finishers.
+  violet: { name: 'The Violet Dragon', desc: 'A huge Blind: the target score is tripled.', showdown: true, target: 3 },
+  crimson: { name: 'The Crimson Oni', desc: 'One random Talisman is disabled, and a different one after every Play.', showdown: true },
+  verdant: { name: 'The Verdant Leaf', desc: 'Every tile scores 0 Chips until you sell a Talisman.', showdown: true },
+  golden: { name: 'The Golden Dragon', desc: 'Only Complete Hands score. Partial plays deal 0.', showdown: true },
 };
+// Bosses that can turn up at an Ante: Showdown Bosses on every 8th Ante, the rest once they reach their minimum Ante.
+function bossPool(ante) { const show = ante % CFG.antes === 0; return Object.keys(BOSSES).filter(k => show ? BOSSES[k].showdown : !BOSSES[k].showdown && (BOSSES[k].minAnte || 1) <= ante); }
+function rollBoss(ante, avoid = []) { const pool = bossPool(ante), fresh = pool.filter(k => !avoid.includes(k)); return pick(fresh.length ? fresh : pool); }
+const bossTarget = k => (k && BOSSES[k] && BOSSES[k].target) || 1;
+// Talismans switched off right now: one The Crimson Oni silences, or a Perishable one that has run out.
+function talOff(S) { const off = []; if (S.crimsonOff) off.push(S.crimsonOff); for (const [k, st] of Object.entries(S.stickers || {})) if (st && st.perish === 0) off.push(k); return off; }
+function liveTals(S) { const off = talOff(S); return off.length ? S.talismans.filter(k => !off.includes(k)) : S.talismans; }
 
 // ===================== TALISMANS (Jokers) =====================
 const TALISMANS = [

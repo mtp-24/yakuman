@@ -64,7 +64,7 @@ function newState(opts = {}) {
   const seed = (opts.seed || '').trim() || randomSeed();
   const st = { seed, rngState: hashSeed(seed), deckKey: DECKS[opts.deck] ? opts.deck : 'standard', stake: STAKES[opts.stake] ? opts.stake : 'white' };
   S = st; // rand() reads S.rngState from here on
-  const bosses = shuffle(Object.keys(BOSSES)).slice(0, CFG.antes);
+  const bosses = []; for (let a = 1; a <= CFG.antes; a++) bosses.push(rollBoss(a, bosses));
   return Object.assign(st, {
     phase: 'blind', deck: buildDeck(st.deckKey), wall: [], hand: [], river: [], open: [], played: [], selected: [], selRiver: null,
     ante: 1, blindIndex: 0, boss: null, bossOrder: bosses, target: 0, score: 0, plays: 0, discards: 0, money: CFG.startMoney + (st.deckKey === 'merchant' ? 16 : 0),
@@ -81,7 +81,7 @@ const neededConcealed = () => 14 - 3 * S.open.length;
 // The Purist: is a face-down tile selected? Then the scoring box and the Play button must not reveal what the tiles make.
 const hiddenSelected = () => S.boss === 'purist' && !S.revealed && S.phase === 'blind' && selTiles().some(t => isHonor(t) || isTerminal(t));
 // Kawauso: one River tile may complete a hand as its winning tile. The Fisherman forbids taking tiles from the River.
-const canClaim = () => S.boss !== 'fisherman' && S.talismans.some(k => TAL[k].riverClaim);
+const canClaim = () => S.boss !== 'fisherman' && liveTals(S).some(k => TAL[k].riverClaim);
 const claimTile = () => (S.selRiver && canClaim()) ? S.river.find(t => t.id === S.selRiver) || null : null;
 const conSlots = () => CFG.consumableSlots + (hasF('spring') ? 1 : 0) + (S.deckKey === 'merchant' ? 1 : 0);
 const price = c => { let p = c; if (S.deckKey === 'merchant') p = Math.ceil(p * 1.25); if (hasF('chrysanthemum')) p = Math.ceil(p * 0.8); return Math.max(1, p); };
@@ -95,7 +95,7 @@ const stakeTargets = () => stakeLevel(S.stake) >= 2 ? 1.3 : 1;
 const wallTargets = () => S.deckKey === 'monk' ? 2 : 1;
 const stakeTalCost = () => stakeLevel(S.stake) >= 3 ? 2 : 0;
 const rerollCost = () => hasF('autumn') ? 2 : CFG.rerollCost;
-function talMod(f) { return S.talismans.reduce((a, k) => a + (TAL[k][f] || 0), 0); }
+function talMod(f) { return liveTals(S).reduce((a, k) => a + (TAL[k][f] || 0), 0); }
 function selTiles() { return S.selected.map(id => S.hand.find(t => t.id === id)).filter(Boolean); }
 function openTiles() { return S.open.flatMap(m => m.tiles); }
 
@@ -198,25 +198,30 @@ const talPool = () => TALISMANS.filter(t => !S.talismans.includes(t.key) && isUn
 // Rarity label for a Talisman card, coloured like Balatro's (blue Common, green Uncommon, red Rare, purple Legendary).
 const rarityTag = k => { const r = talRarity(k); return `<span class="rar rar-${r}">${RARITIES[r]}</span>`; };
 // Hō-ō grows each time tiles are destroyed (Slip of Dust, Raijin, Susanoo, Tsukuyomi, shattered Glass).
-function tilesDestroyed(n) { if (n > 0 && S.talismans.includes('hoo')) S.talState.hoo = (S.talState.hoo || 0) + n; }
+function tilesDestroyed(n) { if (n > 0 && liveTals(S).includes('hoo')) S.talState.hoo = (S.talState.hoo || 0) + n; }
 
 // ===================== BLIND FLOW =====================
+// The Crimson Oni silences one random Talisman, never the same one twice in a row.
+function rollCrimson() { const pool = S.talismans.filter(k => k !== S.crimsonOff); S.crimsonOff = pool.length ? pick(pool) : S.talismans.length ? S.talismans[0] : null; }
 function startBlind() {
   S.phase = 'blind';
   const kind = blindKind();
   S.boss = kind === 'boss' ? S.bossOrder[S.ante - 1] : null; if (S.boss && !S.stats.bosses.includes(S.boss)) S.stats.bosses.push(S.boss);
-  ensureBosses(); S.target = Math.floor(anteBase(S.ante) * CFG.blindMult[kind] * stakeTargets() * wallTargets());
+  ensureBosses(); S.target = blindTarget(kind);
   S.plays = Math.max(1, CFG.playsPerBlind + S.bonusPlays + talMod('plays') + (hasF('bamboo') ? 1 : 0) + (S.deckKey === 'gambler' ? 1 : 0) - (S.deckKey === 'abundant' || S.deckKey === 'lean' ? 1 : 0));
   S.discards = Math.max(0, CFG.discardsPerBlind + S.bonusDiscards + talMod('discards') + (hasF('orchid') ? 1 : 0) - (S.deckKey === 'gambler' ? 1 : 0));
   S.wall = shuffle(S.deck.slice()); S.deck = []; S.hand = []; S.river = []; S.open = []; S.played = [];
   S.selected = []; S.selRiver = null; S.dora = []; S.indicators = []; S.pendingDiscard = 0; S.revealed = false; S.score = 0; S.lastPlay = null; S.reward = null; S.selTal = null;
-  S.discardsUsed = 0; S.playsMade = 0;
+  S.discardsUsed = 0; S.playsMade = 0; S.usedTypes = []; S.mouthType = null; S.leafCut = false; S.crimsonOff = null;
   // Tamamo-no-Mae disables the Boss: it is still the Boss Blind (same target and reward), with no effect.
   S.bossOff = null; if (S.boss && S.talismans.includes('tamamo')) { S.bossOff = S.boss; S.boss = null; }
   S.firstPlayDone = false; S.freeCallsUsed = 0; S.bossSuit = S.boss === 'collector' ? pick(['m', 'p', 's']) : null;
   S.blindMods = S.nextBlindMods || {}; S.nextBlindMods = null;
+  if (S.boss === 'needle') S.plays = 1;
+  if (S.boss === 'drought') S.discards = 0;
+  if (S.boss === 'crimson') rollCrimson();
   draw();
-  for (const k of S.talismans) if (TAL[k].onBlindStart) TAL[k].onBlindStart(S);
+  for (const k of liveTals(S)) if (TAL[k].onBlindStart) TAL[k].onBlindStart(S);
   setMsg(S.bossOff ? `Tamamo-no-Mae disables ${BOSSES[S.bossOff].name}.` : S.boss ? `${BOSSES[S.boss].name}: ${BOSSES[S.boss].desc}` : `${kind === 'small' ? 'Small' : 'Big'} Blind. Score ${S.target} to win.`);
 }
 function draw() { S.newIds = []; while (S.hand.length < capacity() && S.wall.length) { const t = S.wall.pop(); t.d = ++S.drawSeq; S.hand.push(t); S.newIds.push(t.id); } }
@@ -230,7 +235,7 @@ function winBlind() {
   const kind = blindKind();
   const base = (kind === 'small' && smallPaysNothing()) ? 0 : CFG.blindReward[kind], left = S.plays, interest = Math.min(hasF('winter') ? 10 : CFG.interestCap, Math.floor(S.money / CFG.interestPer));
   // Each paying Talisman gets its own cash-out row, like Jokers in Balatro.
-  const talPay = []; for (const k of S.talismans) if (TAL[k].onBlindEnd) { const v = TAL[k].onBlindEnd(S) || 0; if (v) talPay.push([k, v]); }
+  const talPay = []; for (const k of liveTals(S)) if (TAL[k].onBlindEnd) { const v = TAL[k].onBlindEnd(S) || 0; if (v) talPay.push([k, v]); }
   const tal = talPay.reduce((a, [, v]) => a + v, 0);
   const summer = hasF('summer') ? 2 : 0;
   let invest = 0; if (kind === 'boss' && S.tags.includes('investment')) { invest = 25; S.tags = S.tags.filter(t => t !== 'investment'); }
@@ -252,12 +257,21 @@ function winBlind() {
 }
 function loseRun() { S.phase = 'gameover'; PROFILE.bestAnte = Math.max(PROFILE.bestAnte, S.ante); saveProfile(); }
 function rollAnteTags() { S.skipTags = { small: pick(Object.keys(TAGS)), big: pick(Object.keys(TAGS)) }; }
-function blindTarget(kind) { return Math.floor(anteBase(S.ante) * CFG.blindMult[kind] * stakeTargets() * wallTargets()); }
+function blindTarget(kind) { return Math.floor(anteBase(S.ante) * CFG.blindMult[kind] * stakeTargets() * wallTargets() * (kind === 'boss' ? bossTarget(S.bossOrder[S.ante - 1]) : 1)); }
 function newRun(opts) { S = newState(opts || {}); PROFILE.runs++; saveProfile(); rollAnteTags(); S.phase = 'select'; render(); }
 
 // ===================== ACTIONS =====================
 function setMsg(m, err) { S.msg = m; S.msgErr = !!err; }
-function playOption() {
+// Boss rules about what you may play: The Ascetic (5+ tiles), The Eye (no repeats) and The Mouth (one type only).
+function bossPlayCheck(o) {
+  const type = o.type === 'hand' ? 'hand' : o.meldType || rungInfo(o.part).key, name = rungLabel(type);
+  if (S.boss === 'ascetic' && o.type !== 'hand' && selTiles().length < 5) return { err: 'The Ascetic: every Play must use at least 5 tiles.' };
+  if (S.boss === 'eye' && (S.usedTypes || []).includes(type)) return { err: `The Eye: you already played ${name} this Blind.` };
+  if (S.boss === 'mouth' && S.mouthType && S.mouthType !== type) return { err: `The Mouth: only ${rungLabel(S.mouthType)} can be played this Blind.` };
+  return o;
+}
+function playOption() { const o = playOptionBase(); return o.err ? o : bossPlayCheck(o); }
+function playOptionBase() {
   if (S.pendingDiscard) return { err: `Settle your Call first: discard ${S.pendingDiscard} tile.` };
   if (S.plays <= 0) return { err: 'No Plays left.' };
   const sel = selTiles(); if (!sel.length) return { err: 'Select tiles to play.' };
@@ -298,7 +312,7 @@ async function doPlay() {
   let opt = playOption(), leftovers = [];
   if (opt.err && hiddenSelected() && S.plays > 0 && !S.pendingDiscard) {
     const all = selTiles(), fb = bestSubPlay(all);
-    if (fb) { leftovers = all.filter(t => !fb.tiles.includes(t)); S.selected = fb.tiles.map(t => t.id); opt = { type: 'meld', part: fb.part, fallback: true }; }
+    if (fb) { leftovers = all.filter(t => !fb.tiles.includes(t)); S.selected = fb.tiles.map(t => t.id); opt = bossPlayCheck({ type: 'meld', part: fb.part, fallback: true }); }
   }
   if (opt.err) { setMsg(opt.err, true); return render(); }
   sfx('play');
@@ -311,9 +325,12 @@ async function doPlay() {
   S.busy = true; setMsg(''); render();
   await animateScore(ctx);
   S.busy = false;
-  for (const k of S.talismans) if (TAL[k].afterScore) TAL[k].afterScore(ctx, S);
+  for (const k of liveTals(S)) if (TAL[k].afterScore) TAL[k].afterScore(ctx, S);
   if (S.spent && S.spent.length) { S.spent.forEach(k => toast(`<div class="label">Used up</div><b>${TAL[k].name}</b><div class="muted" style="font-size:11px">left your board after its last play</div>`)); S.spent = []; }
-  S.plays--; S.playsMade = (S.playsMade || 0) + 1; tilesDestroyed(ctx.shatter.length); S.score += ctx.total; S.money += ctx.money; S.lastPlay = ctx; S.firstPlayDone = true;
+  S.plays--; S.playsMade = (S.playsMade || 0) + 1; tilesDestroyed(ctx.shatter.length); S.score += ctx.total; S.money += ctx.money; S.lastPlay = ctx;
+  if (S.boss === 'toll') S.money = Math.max(0, S.money - sel.length);
+  if (S.boss === 'ox' && ctx.meldType === mostPlayedRung()) { S.money = 0; toast('<div class="label">The Ox</div><b>Your money is now ¥0</b><div class="muted" style="font-size:11px">you played your most-played play type</div>'); }
+  S.usedTypes = (S.usedTypes || []).concat(ctx.meldType); if (!S.mouthType) S.mouthType = ctx.meldType; S.firstPlayDone = true;
   S.stats.rungs[ctx.meldType] = (S.stats.rungs[ctx.meldType] || 0) + 1; for (const yk of ctx.yaku) S.stats.yaku[yk.key] = (S.stats.yaku[yk.key] || 0) + 1;
   if (ctx.total > S.stats.best) { S.stats.best = ctx.total; S.stats.bestDesc = ctx.desc; }
   if (ctx.kind === 'hand') { PROFILE.hands++; if (ctx.furiten) PROFILE.furitenHands++; if (S.open.length >= 3) PROFILE.openHands3++; } for (const yk of ctx.yaku) bump(PROFILE.yaku, yk.key); if (ctx.total > PROFILE.bestPlay) { PROFILE.bestPlay = ctx.total; PROFILE.bestPlayDesc = ctx.desc; } saveProfile();
@@ -325,6 +342,8 @@ async function doPlay() {
 
   setMsg(`${leftovers.length ? `Not a valid play, so the best part scored and ${leftovers.map(tileName).join(', ')} went to the River. ` : ''}${ctx.desc}: ${ctx.chips} × ${fmtMult(ctx.mult)} = ${ctx.total}${ctx.furiten ? ' (Furiten!)' : ''}${ctx.shatter.length ? ` · ${ctx.shatter.length} Glass tile${ctx.shatter.length > 1 ? 's' : ''} shattered` : ''}`);
   if (S.score >= S.target) { winBlind(); return render(); }
+  if (S.boss === 'pickpocket' && S.hand.length) { const lost = shuffle(S.hand.slice()).slice(0, 2); S.hand = S.hand.filter(t => !lost.includes(t)); S.river.push(...lost); setMsg(`${S.msg} The Pickpocket took ${lost.map(tileName).join(' and ')} to the River.`); }
+  if (S.boss === 'crimson') rollCrimson();
   draw();
   if (S.plays <= 0) { loseRun(); return render(); }
   render();
@@ -347,7 +366,7 @@ function doDiscard() {
     S.money -= 1;
   }
   S.discards--; S.discardsUsed = (S.discardsUsed || 0) + 1; S.stats.discards++; S.river.push(...sel); S.hand = S.hand.filter(t => !sel.includes(t)); S.selected = []; draw(); sfxDiscard(sel.length);
-  for (const k of S.talismans) if (TAL[k].onDiscard) TAL[k].onDiscard(S, sel);
+  for (const k of liveTals(S)) if (TAL[k].onDiscard) TAL[k].onDiscard(S, sel);
   const got = purpleSeals(sel);
   setMsg(`Discarded ${sel.length} tile${sel.length > 1 ? 's' : ''} to the River.${got.length ? ` Purple Seal: gained ${got.join(', ')}.` : ''}`); render();
 }
@@ -361,7 +380,7 @@ function purpleSeals(tiles) {
 function blueSeals() {
   const n = S.hand.filter(t => t.seal === 'blue').length, lp = S.lastPlay; if (!n || !lp) return null;
   const k = lp.kind === 'hand' ? 'hand' : lp.nKan && lp.nKan >= lp.nPon && lp.nKan >= lp.nChi ? 'kan' : lp.nPon && lp.nPon >= lp.nChi ? 'pon' : lp.nChi ? 'chi' : 'pair';
-  S.scrolls.meld[k] = (S.scrolls.meld[k] || 0) + n; for (const tk of S.talismans) if (TAL[tk].onScroll) TAL[tk].onScroll(S);
+  S.scrolls.meld[k] = (S.scrolls.meld[k] || 0) + n; for (const tk of liveTals(S)) if (TAL[tk].onScroll) TAL[tk].onScroll(S);
   return { key: 'm:' + k, n };
 }
 function doCall() {
@@ -369,7 +388,7 @@ function doCall() {
   if (S.pendingDiscard) { setMsg('Settle your previous Call first.', true); return render(); }
   if (S.boss === 'fisherman') { setMsg('The Fisherman: River tiles cannot be Called this Blind.', true); return render(); }
   // Ryūjin: a limited number of free Calls per Blind (the most any owned Talisman grants).
-  const freeMax = S.talismans.reduce((m, k) => Math.max(m, +TAL[k].freeCall || 0), 0), freeCall = (S.freeCallsUsed || 0) < freeMax;
+  const freeMax = liveTals(S).reduce((m, k) => Math.max(m, +TAL[k].freeCall || 0), 0), freeCall = (S.freeCallsUsed || 0) < freeMax;
   if (!freeCall && S.plays <= 1) { setMsg(S.plays <= 0 ? 'No Plays left.' : 'Calling would use your last Play and leave nothing to score with.', true); return render(); }
   const rt = S.river.find(t => t.id === S.selRiver); if (!rt) { setMsg('Select a tile in the River to call.', true); return render(); }
   const sel = selTiles(); if (sel.length < 2 || sel.length > 3) { setMsg('Select 2 or 3 hand tiles to meld with the River tile.', true); return render(); }
@@ -377,7 +396,7 @@ function doCall() {
   const type = meldType([rt, ...sel]); if (!type) { setMsg('That River tile and your selection do not form a Chi, Pon or Kan.', true); return render(); }
   if (freeCall) S.freeCallsUsed = (S.freeCallsUsed || 0) + 1; else S.plays--; S.river = S.river.filter(t => t !== rt); S.hand = S.hand.filter(t => !sel.includes(t));
   S.open.push({ type, tiles: sortTiles([rt, ...sel]), calledId: rt.id }); S.selected = []; S.selRiver = null;
-  for (const k of S.talismans) if (TAL[k].onCall) TAL[k].onCall(S); S.stats.calls++; PROFILE.calls++; saveProfile(); sfx('call'); if (type === 'kan') S.stats.kans++;
+  for (const k of liveTals(S)) if (TAL[k].onCall) TAL[k].onCall(S); S.stats.calls++; PROFILE.calls++; saveProfile(); sfx('call'); if (type === 'kan') S.stats.kans++;
   const rep = type === 'kan' ? drawReplacement() : null;
   S.pendingDiscard = Math.max(0, S.hand.length - capacity());
   const note = `Called ${MELD_LABEL[type]} (open)${freeCall ? `, no Play spent (${freeMax - S.freeCallsUsed} free Call${freeMax - S.freeCallsUsed === 1 ? '' : 's'} left)` : ''}${rep ? `. Replacement tile drawn: ${tileName(rep)}` : ''}`;
@@ -417,13 +436,13 @@ function useConsumable(i) {
   const r = def.use(S, sel); if (r === false) { setMsg(def.soul ? 'Hitodama needs a free Talisman slot.' : 'That cannot be used right now.', true); return render(); }
   tilesDestroyed([...ids0].filter(id => !S.hand.some(t => t.id === id)).length);
   for (const t of S.hand) if (t.d === undefined) t.d = ++S.drawSeq;
-  if (S.hand.length > before) for (const k of S.talismans) if (TAL[k].onTileAdded) TAL[k].onTileAdded(S, S.hand.length - before);
+  if (S.hand.length > before) for (const k of liveTals(S)) if (TAL[k].onTileAdded) TAL[k].onTileAdded(S, S.hand.length - before);
   if (S.pendingDiscard) { S.pendingDiscard = Math.max(0, S.hand.length - capacity()); if (!S.pendingDiscard) { draw(); setMsg(`${def.name} used. Your Call is settled.`); render(); return; } }
   S.consumables.splice(i, 1); S.selected = []; if (S.phase === 'blind') draw();
   setMsg(`${def.name} used.${S.gotLegend ? ` ${TAL[S.gotLegend].name} joins your Talismans.` : ''}`); S.gotLegend = null; render();
 }
 function talValue(k) { return TAL[k].cost + (S.editions[k] ? EDITIONS[S.editions[k]].price : 0); }
-function sellTalisman(k) { const i = S.talismans.indexOf(k); if (i < 0) return; const v = Math.max(1, Math.floor(talValue(k) / 2)); S.talismans.splice(i, 1); S.money += v; sfx('sell'); delete S.editions[k]; S.selTal = null; for (const t of S.talismans) if (TAL[t].onSell) TAL[t].onSell(S); PROFILE.sold++; saveProfile(); setMsg(`Sold ${TAL[k].name} for ¥${v}.`); render(); }
+function sellTalisman(k) { const i = S.talismans.indexOf(k); if (i < 0) return; if (S.phase === 'blind') S.leafCut = true; if (S.crimsonOff === k) S.crimsonOff = null; const v = Math.max(1, Math.floor(talValue(k) / 2)); S.talismans.splice(i, 1); S.money += v; sfx('sell'); delete S.editions[k]; S.selTal = null; for (const t of S.talismans) if (TAL[t].onSell) TAL[t].onSell(S); PROFILE.sold++; saveProfile(); setMsg(`Sold ${TAL[k].name} for ¥${v}.`); render(); }
 function sellConsumable(i) { const c = S.consumables[i]; if (!c) return; const v = Math.max(1, Math.floor(CONS[c.key].cost / 2)); S.consumables.splice(i, 1); S.money += v; sfx('sell'); setMsg(`Sold ${CONS[c.key].name} for ¥${v}.`); render(); }
 
 // ===================== SHOP =====================
@@ -471,7 +490,7 @@ function useOnWallTiles(def, pool, sel) {
   if (r === false) return null;
   const gone = pool.filter(t => !after.includes(t)), added = after.filter(t => !pool.includes(t));
   if (gone.length) { S.deck = S.deck.filter(t => !gone.includes(t)); tilesDestroyed(gone.length); }
-  if (added.length) { S.deck.push(...added); for (const k of S.talismans) if (TAL[k].onTileAdded) TAL[k].onTileAdded(S, added.length); }
+  if (added.length) { S.deck.push(...added); for (const k of liveTals(S)) if (TAL[k].onTileAdded) TAL[k].onTileAdded(S, added.length); }
   return after;
 }
 function usePackCard(i) {
@@ -524,8 +543,8 @@ function fillPackHand() {
 function takeFromPack(i) {
   const it = S.pack.choices[i]; if (!it || it.sold) return;
   if (it.kind === 'talisman') { if (S.talismans.length >= talSlots()) { setMsg('Talisman slots are full. Sell one from the list below first.', true); return render(); } gainTalisman(it.key); if (it.edition) S.editions[it.key] = it.edition; }
-  else if (it.kind === 'scroll') { const [t, k] = it.key.split(':'); S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] = (S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] || 0) + 1; for (const tk of S.talismans) if (TAL[tk].onScroll) TAL[tk].onScroll(S); PROFILE.scrollsUsed++; saveProfile(); }
-  else if (it.kind === 'tile') { S.deck.push(it.tile); for (const k of S.talismans) if (TAL[k].onTileAdded) TAL[k].onTileAdded(S, 1); }
+  else if (it.kind === 'scroll') { const [t, k] = it.key.split(':'); S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] = (S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] || 0) + 1; for (const tk of liveTals(S)) if (TAL[tk].onScroll) TAL[tk].onScroll(S); PROFILE.scrollsUsed++; saveProfile(); }
+  else if (it.kind === 'tile') { S.deck.push(it.tile); for (const k of liveTals(S)) if (TAL[k].onTileAdded) TAL[k].onTileAdded(S, 1); }
   else { if (S.consumables.length >= conSlots()) { setMsg('Consumable slots are full. Use or sell one first.', true); return render(); } S.consumables.push({ kind: it.kind, key: it.key }); }
   it.sold = true; S.pack.left--; setMsg(it.kind === 'tile' ? `Added ${itemDef(it).name} to your Wall.` : `Took ${itemDef(it).name}.`);
   if (S.pack.left <= 0) S.pack = null;
@@ -540,7 +559,7 @@ function buy(it) {
   if (it.kind === 'pack') { S.money -= p; it.sold = true; if (!S.quiet) sfx('buy'); openPack(it.key, false); return render(); }
   if (it.kind === 'talisman') { if (S.talismans.length >= talSlots()) { setMsg(`All ${talSlots()} Talisman slots are full. Sell one first.`, true); return render(); } gainTalisman(it.key); if (it.edition) S.editions[it.key] = it.edition; }
   else if (it.kind === 'omikuji' || it.kind === 'kami') { if (S.consumables.length >= conSlots()) { setMsg('Consumable slots are full. Use one first.', true); return render(); } S.consumables.push({ kind: it.kind, key: it.key }); }
-  else if (it.kind === 'scroll') { const [t, k] = it.key.split(':'); S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] = (S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] || 0) + 1; for (const tk of S.talismans) if (TAL[tk].onScroll) TAL[tk].onScroll(S); PROFILE.scrollsUsed++; saveProfile(); }
+  else if (it.kind === 'scroll') { const [t, k] = it.key.split(':'); S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] = (S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] || 0) + 1; for (const tk of liveTals(S)) if (TAL[tk].onScroll) TAL[tk].onScroll(S); PROFILE.scrollsUsed++; saveProfile(); }
   else if (it.kind === 'flower') { S.flowers.push(it.key); }
   S.money -= p; it.sold = true; if (!S.quiet) sfx('buy'); setMsg(`Bought ${def.name}.`); render();
 }
@@ -552,7 +571,7 @@ function skipBlind() {
   if (tag === 'economy') S.money += Math.min(40, S.money);
   else if (tag === 'speed') S.money += 5 * S.stats.skipped;
   else if (tag === 'juggle') S.nextBlindMods = { handSize: 3 };
-  else if (tag === 'boss') { const used = new Set(S.bossOrder); const pool = Object.keys(BOSSES).filter(b => !used.has(b)); S.bossOrder[S.ante - 1] = pool.length ? pick(pool) : pick(Object.keys(BOSSES).filter(b => b !== S.bossOrder[S.ante - 1])); }
+  else if (tag === 'boss') S.bossOrder[S.ante - 1] = rollBoss(S.ante, S.bossOrder);
   else S.tags.push(tag);
   S.blindIndex++; S.shop = null; S.pack = null; S.phase = 'select';
   setMsg(`Skipped for the ${TAGS[tag].name}: ${TAGS[tag].desc}`); render();
@@ -571,7 +590,7 @@ function selectHTML() {
     const state = i < S.blindIndex ? 'done' : i === S.blindIndex ? 'current' : 'next';
     const reward = (k === 'small' && smallPaysNothing()) ? 0 : CFG.blindReward[k];
     const tag = k !== 'boss' && S.skipTags ? TAGS[S.skipTags[k]] : null;
-    h += `<div class="blindcard ${state}${k === 'boss' ? ' bosscard' : ''}"><span class="blindchip" aria-hidden="true">${blindChipSVG(k)}</span><div class="kind">${state === 'done' ? 'Defeated' : state === 'current' ? 'Up next' : 'After that'}</div><div class="n">${k === 'boss' ? BOSSES[boss].name : names[k]}</div>${k === 'boss' ? `<div class="d bossfx">${BOSSES[boss].desc}</div>` : ''}`;
+    h += `<div class="blindcard ${state}${k === 'boss' ? ' bosscard' : ''}${k === 'boss' && BOSSES[boss].showdown ? ' showdown' : ''}"><span class="blindchip" aria-hidden="true">${blindChipSVG(k)}</span><div class="kind">${state === 'done' ? 'Defeated' : state === 'current' ? 'Up next' : 'After that'}</div><div class="n">${k === 'boss' ? BOSSES[boss].name : names[k]}</div>${k === 'boss' && BOSSES[boss].showdown ? '<div class="showdowntag">Showdown Boss</div>' : ''}${k === 'boss' ? `<div class="d bossfx">${BOSSES[boss].desc}</div>` : ''}`;
     h += `<div class="bc-plate"><div><div class="label">Score at least</div><div class="target num">${fmtN(blindTarget(k))}</div></div><div class="bp-reward" title="Plus ¥1 per unused Play and ¥1 interest per ¥5 held (max ¥5)"><div class="label">Reward</div><div class="num">¥${reward}<span class="muted" style="font-size:11px;font-family:var(--body)"> +extras</span></div></div></div>`;
     h += `<div class="bc-meta muted"><b class="num">${plays}</b> Plays · <b class="num">${discards}</b> Discards${S.nextBlindMods && S.nextBlindMods.handSize && state === 'current' ? ` · hand +${S.nextBlindMods.handSize}` : ''}</div>`;
     const skipBox = tag && state !== 'done' ? `<div class="skipbox"><div class="skiphead"><span class="label">Skip reward</span><span class="tagchip" data-hc-kind="Tag" data-hc-title="${tag.name}" data-hc-body="${tag.desc.replace(/"/g, '&quot;')}">${tag.name}</span></div><div class="skipdesc">${tag.desc}</div></div>` : '';
@@ -600,7 +619,7 @@ function anteBase(ante) {
 function fmtN(n) { return !isFinite(n) ? '∞' : Math.abs(n) < 1e11 ? Math.round(n).toLocaleString() : n.toExponential(2).replace('e+', 'e'); }
 const anteLabel = (a = S.ante) => a > CFG.antes ? `Ante ${a} · Endless` : `Ante ${a} of ${CFG.antes}`;
 // Endless Antes draw a fresh Boss each time, never one of the last three.
-function ensureBosses() { while (S.bossOrder.length < S.ante) { const recent = S.bossOrder.slice(-3); S.bossOrder.push(pick(Object.keys(BOSSES).filter(b => !recent.includes(b)))); } }
+function ensureBosses() { while (S.bossOrder.length < S.ante) S.bossOrder.push(rollBoss(S.bossOrder.length + 1, S.bossOrder.slice(-3))); }
 function fmtMult(m) { return Number.isInteger(m) ? m : (+m.toFixed(2)); }
 function tileEl(t, o = {}) {
   const el = document.createElement('div');
@@ -624,7 +643,7 @@ function tileTipHTML(t, back) {
   if (back) return `<div class="tt-n">Face down</div><div class="tt-e">A 1, 9, Wind or Dragon (The Purist).</div>`;
   const inRun = !!(S && S.talismans), chips = inRun ? tileChips(t, S) : ((isHonor(t) || isTerminal(t)) ? 10 : t.rank);
   const rows = [`<span class="hp chips">+${chips}</span><span>Chips</span>`];
-  if (t.red) rows.push(`<span class="hp han">+${inRun && S.talismans.includes('koi') ? 2 : 1}</span><span>Han · Red Five</span>`);
+  if (t.red) rows.push(`<span class="hp han">+${inRun && liveTals(S).includes('koi') ? 2 : 1}</span><span>Han · Red Five</span>`);
   if (inRun && S.phase === 'blind' && (S.dora || []).includes(idx(t))) rows.push(`<span class="hp han">+1</span><span>Han · Dora</span>`);
   const eng = t.eng && ENG[t.eng] ? `<div class="tt-e"><b>${ENG[t.eng].name}</b> ${ENG[t.eng].desc}</div>` : '';
   const seal = t.seal && SEALS[t.seal] ? `<div class="tt-e"><b>${SEALS[t.seal].name}</b> ${SEALS[t.seal].desc}</div>` : '';
@@ -837,7 +856,7 @@ function renderBlind() {
   const pct = S.target ? Math.min(100, 100 * S.score / S.target) : 0;
   const reward = cleared ? S.reward.base : (kind === 'small' && smallPaysNothing()) ? 0 : CFG.blindReward[kind];
   const targetVal = show ? S.target : blindTarget(kind);
-  let h = `<div class="blindplate${bossShown ? ' bossplate' : ''}${cleared ? ' cleared' : ''}"><div class="bp-top"><span class="label">${anteLabel(cleared && kind === 'boss' ? S.ante - 1 : S.ante)}</span><span class="label">${cleared ? 'Defeated' : inBlind ? (kind === 'boss' ? 'Boss Blind' : '') : 'Next up'}</span></div><div class="blind-name${bossShown ? ' boss' : ''}">${name}</div>`;
+  let h = `<div class="blindplate${bossShown ? ' bossplate' : ''}${cleared ? ' cleared' : ''}"><div class="bp-top"><span class="label">${anteLabel(cleared && kind === 'boss' ? S.ante - 1 : S.ante)}</span><span class="label">${cleared ? 'Defeated' : inBlind ? (kind === 'boss' ? (BOSSES[S.boss || S.bossOff] && BOSSES[S.boss || S.bossOff].showdown ? 'Showdown Boss' : 'Boss Blind') : '') : 'Next up'}</span></div><div class="blind-name${bossShown ? ' boss' : ''}">${name}</div>`;
   if (offBoss) h += `<div class="boss-desc"><b>Disabled by Tamamo-no-Mae.</b></div>`;
   if (bossShown) h += `<div class="boss-desc">${BOSSES[S.boss].desc}${S.boss === 'collector' && S.bossSuit ? ` <b>This Blind: ${SUIT_EN[S.bossSuit]}.</b>` : ''}${S.boss === 'gatekeeper' ? (S.firstPlayDone ? ' <b>First Play done.</b>' : '') : ''}</div>`;
   h += `<div class="bp-row"><div><div class="label">Score at least</div><div class="target num">${fmtN(targetVal)}</div></div><div class="bp-reward" title="Plus ¥1 per unused Play and ¥1 interest per ¥5 held (max ¥5)"><div class="label">Reward</div><div class="num">¥${reward}<span class="muted" style="font-size:11px;font-family:var(--body)"> +extras</span></div></div></div></div>`;
@@ -878,7 +897,7 @@ function renderTalismans() {
   $('#talCount').textContent = `${S.talismans.length} / ${talSlots()} · fire left to right, drag to reorder`;
   for (let i = 0; i < talSlots(); i++) {
     const k = S.talismans[i]; const el = document.createElement('div');
-    if (k) { const ed = S.editions[k]; el.className = 'slot filled' + (S.selTal === k ? ' sel' : '') + (ed ? ' ed-' + ed : ''); el.dataset.tal = TAL[k].name; const tgt = TAL[k].copies ? talTarget(S, k) : null; el.innerHTML = `<div class="kind"><span class="order">${i + 1}</span>${ed ? '' : 'Talisman'}${ed ? `<span class="edtag ed-${ed}">${EDITIONS[ed].name}</span>` : ''}</div><div class="n">${TAL[k].name}</div><div class="d">${TAL[k].desc}${tgt ? ` <b>Now: ${tgt.name}.</b>` : TAL[k].copies ? ' <b>Nothing to copy.</b>' : ''}${ed ? ` <b>${EDITIONS[ed].desc}.</b>` : ''}${TAL[k].status ? ' <b>(' + TAL[k].status(S) + ')</b>' : ''}</div>`; bindSlotDrag(el, k); }
+    if (k) { const ed = S.editions[k]; el.className = 'slot filled' + (S.selTal === k ? ' sel' : '') + (ed ? ' ed-' + ed : '') + (talOff(S).includes(k) ? ' off' : ''); el.dataset.tal = TAL[k].name; const tgt = TAL[k].copies ? talTarget(S, k) : null; el.innerHTML = `<div class="kind"><span class="order">${i + 1}</span>${ed ? '' : 'Talisman'}${ed ? `<span class="edtag ed-${ed}">${EDITIONS[ed].name}</span>` : ''}</div><div class="n">${TAL[k].name}</div><div class="d">${TAL[k].desc}${tgt ? ` <b>Now: ${tgt.name}.</b>` : TAL[k].copies ? ' <b>Nothing to copy.</b>' : ''}${ed ? ` <b>${EDITIONS[ed].desc}.</b>` : ''}${TAL[k].status ? ' <b>(' + TAL[k].status(S) + ')</b>' : ''}</div>`; bindSlotDrag(el, k); }
     else { el.className = 'slot'; el.innerHTML = `<div class="d">Empty slot</div>`; }
     box.appendChild(el);
   }
@@ -1034,7 +1053,7 @@ function renderActions() {
   tipOn('#btnKan', dko.err || 'Set these 4 tiles aside as a closed Kan and draw a replacement tile');
   $('#preview').innerHTML = '';
   const bc = $('#btnCall'); bc.disabled = !inBlind || S.busy || !S.selRiver || S.selected.length < 2;
-  const freeMax = S.talismans.reduce((m, k) => Math.max(m, +TAL[k].freeCall || 0), 0), freeLeft = Math.max(0, freeMax - (S.freeCallsUsed || 0));
+  const freeMax = liveTals(S).reduce((m, k) => Math.max(m, +TAL[k].freeCall || 0), 0), freeLeft = Math.max(0, freeMax - (S.freeCallsUsed || 0));
   const callNote = !inBlind ? '' : S.boss === 'fisherman' ? 'The Fisherman forbids it' : !S.selRiver ? 'pick a River tile first' : S.selected.length < 2 ? 'plus 2–3 hand tiles' : freeLeft ? `free (${freeLeft} left)` : 'costs 1 Play';
   sub('#callSub', callNote); tipOn('#btnCall', tr(callNote).charAt(0).toUpperCase() + tr(callNote).slice(1));
   $('#btnClear').disabled = !inBlind || S.busy;
@@ -1602,7 +1621,7 @@ function collectionHTML() {
   else if (colTab === 'seal') body = Object.entries(SEALS).map(([k, e]) => card(`omikuji engcard seal-${k}`, 'Seal', e.name, e.desc, `<div class="coltile" data-seal="${k}"></div>`)).join('');
   else if (colTab === 'ed') body = Object.entries(EDITIONS).map(([k, e]) => card(`talisman ed-${k}`, `Edition · +¥${e.price}`, `<span class="edtag ed-${k}">${e.name}</span>`, `${e.desc}${k === 'neg' ? '' : ' on every play'}.`, `<div class="muted" style="font-size:11px;margin-top:4px">${Math.round(e.odds * 100)}% of shop Talismans</div>`)).join('');
   else if (colTab === 'tag') body = Object.entries(TAGS).map(([k, t]) => !isSeen('tag', k) ? hidden('pack', 'Tag') : card('pack', 'Tag', t.name, t.desc, '', run && S.tags.includes(k) ? 'Held' : '')).join('');
-  else if (colTab === 'boss') body = Object.entries(BOSSES).map(([k, b]) => !isSeen('boss', k) ? hidden('bosscol', 'Boss Blind') : card('bosscol', 'Boss Blind', b.name, b.desc, '', run && S.stats && S.stats.bosses.includes(k) ? 'Met this run' : '')).join('');
+  else if (colTab === 'boss') body = Object.entries(BOSSES).map(([k, b]) => !isSeen('boss', k) ? hidden('bosscol', 'Boss Blind') : card('bosscol' + (b.showdown ? ' showdown' : ''), b.showdown ? 'Showdown Boss · Ante 8' : `Boss Blind${(b.minAnte || 1) > 1 ? ` · from Ante ${b.minAnte}` : ''}`, b.name, b.desc, '', run && S.stats && S.stats.bosses.includes(k) ? 'Met this run' : '')).join('');
   else if (colTab === 'wall') body = Object.entries(DECKS).map(([k, d]) => card('flower', 'Wall', d.name, d.desc, '', run && S.deckKey === k ? 'This run' : '', lockOf('wall', k))).join('');
   else if (colTab === 'stake') body = Object.entries(STAKES).map(([k, st]) => card('flower', `<i class="sw sw-${k}" aria-hidden="true"></i> Stake`, st.name, st.desc, '', run && S.stake === k ? 'This run' : '', stakeLockAny(k))).join('');
   return `<div class="shophead"><h2>Collection</h2><input id="colSearch" placeholder="Search" autocomplete="off"></div><p class="muted" style="margin:2px 0 10px">Everything that can turn up in a run. Cards you haven't come across yet show as ?, and locked cards show their goal. Yaku and the Play Ladder are in Run Info.</p>
