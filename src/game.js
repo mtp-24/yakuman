@@ -380,9 +380,12 @@ function render() {
   $('#msg').textContent = S.msg || ''; $('#msg').className = 'msg' + (S.msgErr ? ' err' : '');
   if (S.phase === 'cashout') showModal(cashoutHTML()); else if (S.phase === 'shop' && S.pack) showModal(packHTML()); else if (S.phase === 'shop') showModal(shopHTML()); else if (S.phase === 'select') showModal(selectHTML()); else if (S.phase === 'gameover') showModal(overHTML(false)); else if (S.phase === 'win') showModal(overHTML(true)); else if (!modalPinned) hideModal();
   $('#btnYaku').textContent = 'Run Info';
-  translateDOM($('#app'));
+  translateDOM($('#app')); fitNumbers();
   save();
 }
+// Big numbers shrink to fit their box instead of wrapping onto a second line (targets, chips, Mult, totals, Round Score).
+function fitText(el, min) { if (!el) return; el.style.fontSize = ''; let fs = parseFloat(getComputedStyle(el).fontSize); while (el.scrollWidth > el.clientWidth + 1 && fs > (min || 11)) { fs -= 1; el.style.fontSize = fs + 'px'; } }
+function fitNumbers(root) { (root || document).querySelectorAll('.handbox .chipbox, .handbox .multbox, .bp-row .target, .roundscore .rs, .hb-total .tot').forEach(e => fitText(e)); }
 let PREVIEW = null;
 function computePreview() {
   PREVIEW = null; if (S.phase !== 'blind' || S.busy) return;
@@ -602,14 +605,18 @@ async function animateScore(ctx) {
     if (lastChips !== null && c !== lastChips) bump(chipsEl, 'bump'); if (lastMult !== null && m !== lastMult) bump(multEl, 'bump');
     const hv = Math.round(han); hanEl.textContent = hv; tierEl.textContent = `${tierName(hv)} ×${hanMult(hv)}`; hanPill.classList.toggle('done', mult !== null); tierEl.classList.toggle('done', mult !== null);
     if (lastHan !== null && hv !== lastHan) bump(hanPill, 'bump');
-    lastChips = c; lastMult = m; lastHan = hv;
+    lastChips = c; lastMult = m; lastHan = hv; fitText(chipsEl); fitText(multEl);
   };
   const showLine = l => { const d = document.createElement('div'); d.className = 'row sline' + (l.zero ? ' bad' : '') + (l.yaku ? ' yaku' : '') + (l.tal ? ' tal' : '') + (l.convert ? ' convert' : ''); d.innerHTML = `<span>${tr(l.label)}</span><span class="num">${tr(l.val)}</span>`; linesBox.appendChild(d); if (l.tal) { const slot = document.querySelector(`.slot[data-tal="${l.tal}"]`); if (slot) { slot.classList.remove('bounce'); void slot.offsetWidth; slot.classList.add('bounce'); } } };
   const applyLine = l => { if (l.zero) chips = 0; else { chips += l.chips || 0; han += l.han || 0; if (l.convert) mult = hanMult(han) * tileX; if (l.mult) mult = (mult === null ? hanMult(han) * tileX : mult) + l.mult; if (l.xmult && mult !== null) mult *= l.xmult; } setMath(); };
   let fire = 0;
   const heat = () => { const tot = Math.max(0, chips) * curMult(); const lvl = S.target && tot >= 3 * S.target ? 2 : S.target && tot >= S.target ? 1 : 0; if (lvl !== fire) { fire = lvl; box.classList.toggle('hot', lvl >= 1); box.classList.toggle('blazing', lvl >= 2); if (lvl >= 1 && !box.querySelector('.ember')) for (let i = 0; i < 8; i++) { const em = document.createElement('i'); em.className = 'ember'; em.style.left = (8 + Math.random() * 84) + '%'; em.style.animationDelay = (Math.random() * 1.2) + 's'; em.style.animationDuration = (1 + Math.random()) + 's'; box.appendChild(em); } } };
   setMath();
-  const base = ctx.lines.find(l => l.base); if (base) { showLine(base); applyLine(base); await wait(260); }
+  // Start from exactly what the hand box previewed: the play's base, its Scroll levels and the Yaku that name the hand.
+  // Tiles, Dora, engravings and Talismans are then revealed on top of that, so the Han count only ever climbs.
+  const isStart = l => l.base || l.yaku || /^Scroll:/.test(l.label) || (ctx.kind === 'hand' && /^Yakuhai/.test(l.label));
+  for (const l of ctx.lines) if (isStart(l)) { showLine(l); applyLine(l); }
+  lastChips = null; lastMult = null; lastHan = null; setMath(); heat(); await wait(320);
   for (const h of ctx.hits) {
     const e = tileEls.get(h.id); const per = { chips: h.chips / h.times, han: h.han / h.times, x: Math.pow(h.xmult, 1 / h.times) };
     for (let r = 0; r < h.times; r++) {
@@ -619,15 +626,16 @@ async function animateScore(ctx) {
     }
     if (e) e.classList.remove('hit');
   }
-  for (const l of ctx.lines) { if (l.base || l.tiles) continue; showLine(l); if (!l.info) applyLine(l); heat(); await wait(l.yaku ? 260 : 180); }
+  for (const l of ctx.lines) { if (isStart(l) || l.tiles) continue; showLine(l); if (!l.info) applyLine(l); heat(); await wait(180); }
   chips = ctx.chips; han = ctx.han; mult = ctx.mult; setMath(); heat();
   await wait(350);
   // the total replaces the play name, then counts down into the round score
-  nameEl.hidden = true; totWrap.hidden = false; totEl.textContent = ctx.total.toLocaleString(); totEl.classList.add('final');
+  nameEl.hidden = true; totWrap.hidden = false; totEl.textContent = ctx.total.toLocaleString(); totEl.classList.add('final'); fitText(totEl);
   await wait(ctx.kind === 'hand' ? 700 : 450);
   const rsEl = $('#roundScore'); const from = S.score, to = S.score + ctx.total; const dur = (motionOK && !skipAnim) ? Math.round(650 * SPEEDS[ANIM_SPEED]) : 0;
+  if (rsEl) { rsEl.textContent = to.toLocaleString(); fitText(rsEl); rsEl.textContent = from.toLocaleString(); }
   if (dur > 0) { const t0 = performance.now(); await new Promise(res => { const step = now => { const k = Math.min(1, (now - t0) / dur); const e = 1 - Math.pow(1 - k, 3); totEl.textContent = Math.round(ctx.total * (1 - e)).toLocaleString(); if (rsEl) { const v = from + (to - from) * e; rsEl.textContent = Math.round(v).toLocaleString(); rsEl.classList.toggle('met', v >= S.target); const bar = $('#roundBar'); if (bar) bar.style.width = Math.min(100, 100 * v / S.target) + '%'; } if (k < 1) requestAnimationFrame(step); else res(); }; requestAnimationFrame(step); }); }
-  if (rsEl) { rsEl.textContent = to.toLocaleString(); rsEl.classList.remove('bump'); void rsEl.offsetWidth; rsEl.classList.add('bump'); }
+  if (rsEl) { rsEl.textContent = to.toLocaleString(); fitText(rsEl); rsEl.classList.remove('bump'); void rsEl.offsetWidth; rsEl.classList.add('bump'); }
   await wait(250);
   skipAnim = false;
 }
@@ -656,7 +664,7 @@ function shopHTML() {
   const nextBoss = blindKind() === 'boss' ? BOSSES[S.bossOrder[S.ante - 1]] : null;
   let h = `<h2>Shop</h2>`;
   if (false) h += `<div class="label">Blind Defeated · Reward</div><div class="reward-list num"><span>${({ small: 'Small Blind', big: 'Big Blind', boss: 'Boss Blind' })[r.kind]} defeated</span><span>¥${r.base}</span><span>Unused Plays</span><span>¥${r.left}</span><span>Interest (¥1 per ¥5)</span><span>¥${r.interest}</span>${r.tal ? `<span>Talismans</span><span>¥${r.tal}</span>` : ''}${r.summer ? `<span>Summer</span><span>¥${r.summer}</span>` : ''}${r.invest ? `<span>Investment Tag</span><span>¥${r.invest}</span>` : ''}<span><b>Total</b></span><span><b>¥${r.total}</b></span></div>`;
-  h += `<div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center"><span>YEN: <b class="num" style="color:var(--accent)">¥${S.money}</b></span><span class="muted">Talismans ${S.talismans.length}/${talSlots()} · Consumables ${S.consumables.length}/${conSlots()}</span></div>`;
+  h += `<div class="shopcash"><span class="label">YEN</span><b class="num">¥${S.money}</b></div>`;
   if (S.shop.coupon) h += `<div class="msg">Coupon Tag: Talismans and consumables are free in this shop.</div>`;
   if (S.shop.freePacks.length) h += `<div style="display:flex;gap:8px;flex-wrap:wrap;margin:6px 0">${S.shop.freePacks.map((pk, i) => `<button class="primary" data-freepack="${i}">Open Free ${PACKS[pk].name}</button>`).join('')}</div>`;
   h += `<div class="shop-grid">${items.map((it, i) => cardHTML(it, i)).join('')}</div>`;
