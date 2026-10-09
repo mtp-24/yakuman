@@ -682,4 +682,7 @@ aside .card{background:linear-gradient(180deg,#2a1d10,#1d140a);border:1px solid 
 .wtx{display:flex;flex-direction:column;align-items:flex-start;line-height:1} .wallbtn .wv{font-family:var(--display);font-size:24px;color:var(--fg)} .wallbtn .wl{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-top:3px}
 .packhandwrap > .muted{min-height:34px}   /* the helper text keeps two lines so the pack never jumps when picks run out */
 .purse .wl{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#b9a27a;margin-top:3px} .purse .pv{font-size:24px}
+.tile.fresh{animation:freshglow .9s ease-out both}
+@keyframes freshglow{0%,25%{box-shadow:var(--bev),var(--body),0 0 0 2px rgba(243,199,104,.95),0 0 18px rgba(243,199,104,.75)}100%{box-shadow:var(--bev),var(--body),0 0 0 2px rgba(243,199,104,0),0 0 18px rgba(243,199,104,0)}}
+@media (prefers-reduced-motion:reduce){.tile.fresh{animation:none}}
 </style>
