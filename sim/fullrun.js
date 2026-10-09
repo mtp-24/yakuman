@@ -73,8 +73,8 @@ function estimatePartial(S,st){ const save=S.hand.slice(); let tiles;
   if(st.key<=0){ let k=0; for(let j=1;j<S.hand.length;j++) if(tileChips(S.hand[j],S)>tileChips(S.hand[k],S)) k=j; tiles=[S.hand[k]]; } else tiles=takeTiles(S,st.sets);
   S.hand=save; const part=partitionPlay(tiles); if(!part) return 0; return scoreCtx(S,'meld',tiles,{part,preview:true}).total; }
 function playBlind(S,stats){
-  const kind=['small','big','boss'][S.blindIndex]; S.boss=kind==='boss'?S.bossOrder[S.ante-1]:null; S.target=Math.floor(CFG.anteBase[S.ante-1]*CFG.blindMult[kind]*((STAKE==='green'||STAKE==='black')?1.3:1)*WTGT /* Stakes stack */);
-  S.plays=Math.max(1,CFG.playsPerBlind+WPLAY+(WALL==='gambler'?1:0)-(WALL==='abundant'?1:0)+S.bonusPlays+talMod(S,'plays')+(hasF(S,'bamboo')?1:0)); S.discards=CFG.discardsPerBlind+WDISC-(WALL==='gambler'?1:0)+talMod(S,'discards')+(hasF(S,'orchid')?1:0);
+  const kind=['small','big','boss'][S.blindIndex]; S.boss=kind==='boss'?S.bossOrder[S.ante-1]:null; S.target=Math.floor(CFG.anteBase[S.ante-1]*CFG.blindMult[kind]*((STAKE==='green'||STAKE==='black')?1.3:1)*WTGT*(WALL==='monk'?2:1) /* Stakes stack */);
+  S.plays=Math.max(1,CFG.playsPerBlind+WPLAY+(WALL==='gambler'?1:0)-(WALL==='abundant'||WALL==='lean'?1:0)+S.bonusPlays+talMod(S,'plays')+(hasF(S,'bamboo')?1:0)); S.discards=CFG.discardsPerBlind+WDISC-(WALL==='gambler'?1:0)+talMod(S,'discards')+(hasF(S,'orchid')?1:0);
   S.wall=shuffle(S.deck.slice()); S.deck=[]; S.hand=[]; S.river=[]; S.lastDiscard=[]; S.open=[]; S.played=[]; S.dora=[]; S.indicators=[]; S.score=0; S.firstPlayDone=false; S.bossSuit=S.boss==='collector'?pick(['m','p','s']):null; setRules(S); draw(S);
   for(const k of S.talismans) if(TAL[k].onBlindStart) TAL[k].onBlindStart(S);
   USE.p0=S.plays; USE.d0=S.discards;

@@ -63,8 +63,8 @@ function tileName(t) { return isHonor(t) ? HONOR_EN[t.rank] + (t.rank <= 4 ? ' W
 const DECKS = {
   standard: { name: 'Standard Wall', desc: '136 tiles: four of every tile, four Red Fives.' },
   red: { name: 'Vermilion Wall', desc: 'Every 5 is a Red Five: twelve of them.' },
-  lean: { name: 'Lean Wall', desc: 'No Souzu. 100 tiles across two suits and honors, so hands come faster. Sanshoku is impossible.' },
-  monk: { name: "Monk's Wall", desc: 'No Honor tiles. 108 tiles, flushes come easily, honor Yaku are impossible.' },
+  lean: { name: 'Lean Wall', desc: 'No Souzu. 100 tiles across two suits and honors, so hands come faster, but −1 Play every Blind. Sanshoku is impossible.' },
+  monk: { name: "Monk's Wall", desc: 'No Honor tiles. 108 tiles and flushes come easily, but every blind target is ×2. Honor Yaku are impossible.' },
   gambler: { name: "Gambler's Wall", desc: '+1 Play and −1 Discard every Blind.' },
   merchant: { name: "Merchant's Wall", desc: `Start with ¥${CFG.startMoney + 16} and +1 consumable slot, but shop prices are +25%.` },
   abundant: { name: 'Abundant Wall', desc: '+2 hand size, −1 Play every Blind.' },

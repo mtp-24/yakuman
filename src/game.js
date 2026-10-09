@@ -90,6 +90,8 @@ const STAKE_KEYS = Object.keys(STAKES);
 const stakeLevel = k => STAKE_KEYS.indexOf(k);
 const smallPaysNothing = () => stakeLevel(S.stake) >= 1;
 const stakeTargets = () => stakeLevel(S.stake) >= 2 ? 1.3 : 1;
+// Monk's Wall pays for its easy flushes with doubled targets, like Balatro's Plasma Deck.
+const wallTargets = () => S.deckKey === 'monk' ? 2 : 1;
 const stakeTalCost = () => stakeLevel(S.stake) >= 3 ? 2 : 0;
 const rerollCost = () => hasF('autumn') ? 2 : CFG.rerollCost;
 function talMod(f) { return S.talismans.reduce((a, k) => a + (TAL[k][f] || 0), 0); }
@@ -197,8 +199,8 @@ function startBlind() {
   S.phase = 'blind';
   const kind = blindKind();
   S.boss = kind === 'boss' ? S.bossOrder[S.ante - 1] : null; if (S.boss && !S.stats.bosses.includes(S.boss)) S.stats.bosses.push(S.boss);
-  ensureBosses(); S.target = Math.floor(anteBase(S.ante) * CFG.blindMult[kind] * stakeTargets());
-  S.plays = Math.max(1, CFG.playsPerBlind + S.bonusPlays + talMod('plays') + (hasF('bamboo') ? 1 : 0) + (S.deckKey === 'gambler' ? 1 : 0) - (S.deckKey === 'abundant' ? 1 : 0));
+  ensureBosses(); S.target = Math.floor(anteBase(S.ante) * CFG.blindMult[kind] * stakeTargets() * wallTargets());
+  S.plays = Math.max(1, CFG.playsPerBlind + S.bonusPlays + talMod('plays') + (hasF('bamboo') ? 1 : 0) + (S.deckKey === 'gambler' ? 1 : 0) - (S.deckKey === 'abundant' || S.deckKey === 'lean' ? 1 : 0));
   S.discards = Math.max(0, CFG.discardsPerBlind + S.bonusDiscards + talMod('discards') + (hasF('orchid') ? 1 : 0) - (S.deckKey === 'gambler' ? 1 : 0));
   S.wall = shuffle(S.deck.slice()); S.deck = []; S.hand = []; S.river = []; S.open = []; S.played = [];
   S.selected = []; S.selRiver = null; S.dora = []; S.indicators = []; S.pendingDiscard = 0; S.revealed = false; S.score = 0; S.lastPlay = null; S.reward = null; S.selTal = null;
@@ -238,7 +240,7 @@ function winBlind() {
 }
 function loseRun() { S.phase = 'gameover'; PROFILE.bestAnte = Math.max(PROFILE.bestAnte, S.ante); saveProfile(); }
 function rollAnteTags() { S.skipTags = { small: pick(Object.keys(TAGS)), big: pick(Object.keys(TAGS)) }; }
-function blindTarget(kind) { return Math.floor(anteBase(S.ante) * CFG.blindMult[kind] * stakeTargets()); }
+function blindTarget(kind) { return Math.floor(anteBase(S.ante) * CFG.blindMult[kind] * stakeTargets() * wallTargets()); }
 function newRun(opts) { S = newState(opts || {}); PROFILE.runs++; saveProfile(); rollAnteTags(); S.phase = 'select'; render(); }
 
 // ===================== ACTIONS =====================
@@ -521,7 +523,7 @@ function blindChipSVG(k) { const c = { small: '#2b5c8f', big: '#c58f2c', boss: '
 function selectHTML() {
   const kinds = ['small', 'big', 'boss']; const names = { small: 'Small Blind', big: 'Big Blind', boss: 'Boss Blind' };
   const boss = S.bossOrder[S.ante - 1];
-  const plays = Math.max(1, CFG.playsPerBlind + S.bonusPlays + talMod('plays') + (hasF('bamboo') ? 1 : 0) + (S.deckKey === 'gambler' ? 1 : 0) - (S.deckKey === 'abundant' ? 1 : 0));
+  const plays = Math.max(1, CFG.playsPerBlind + S.bonusPlays + talMod('plays') + (hasF('bamboo') ? 1 : 0) + (S.deckKey === 'gambler' ? 1 : 0) - (S.deckKey === 'abundant' || S.deckKey === 'lean' ? 1 : 0));
   const discards = Math.max(0, CFG.discardsPerBlind + S.bonusDiscards + talMod('discards') + (hasF('orchid') ? 1 : 0) - (S.deckKey === 'gambler' ? 1 : 0));
   // Ante progress: one pip per Ante, filled for cleared Antes, ringed for this one.
   const pips = S.ante > CFG.antes ? '<span class="endlessbadge">Endless</span>' : Array.from({ length: CFG.antes }, (_, i) => `<i class="${i + 1 < S.ante ? 'done' : i + 1 === S.ante ? 'now' : ''}"></i>`).join('');
@@ -1009,7 +1011,7 @@ function shopHTML() {
   const at = it => items.indexOf(it);
   const canReroll = S.shop.freeReroll || rerollCost() <= S.money;
   h += `<div class="shoplayout"><aside class="shoprail">
-    <button id="mNext" class="primary nextbtn"><span>Next Blind</span><small>Ante ${S.ante} · ${nextBoss ? nextBoss.name : next}</small></button>
+    <button id="mNext" class="primary nextbtn"><span class="nb-main">Next Blind <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M3 8h9M8.5 3.5 13 8l-4.5 4.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><small>Ante ${S.ante} · ${nextBoss ? nextBoss.name : next}</small></button>
     <button id="mReroll" class="ghost railbtn rerollbtn" ${canReroll ? '' : 'disabled title="Not enough money to reroll"'}><span>Reroll Cards</span><b class="num">${S.shop.freeReroll ? 'Free' : '¥' + rerollCost()}</b></button>
     <button id="mDeck" class="ghost railbtn"><span>View Wall</span><b class="num">${(S.deck || []).length}</b></button></aside>
     <div class="shopmain"><div class="shelf"><div class="shelflabel">Cards</div><div class="shelfrow">${[...S.shop.cards, S.shop.scroll].map(it => cardHTML(it, at(it))).join('')}</div></div>
@@ -1290,7 +1292,7 @@ function setupKeys(name) { return Object.keys(name === 'deck' ? DECKS : STAKES);
 function setupKey(name) { const keys = setupKeys(name), n = keys.length; return keys[((setupSel[name] % n) + n) % n]; }
 // Card art and rule chips for the carousels. Tiles are written like hands: digits then suit, 'r' marks a Red Five.
 const WALL_ART = { standard: '1m 5pr 9s 1z', red: '5mr 5pr 5sr', lean: '3m 7p 7z', monk: '2m 5p 8s', gambler: '7m 7p 7s', merchant: '8m 6z 8p', abundant: '2s 3s 4s 5s 6s' };
-const WALL_FACTS = () => ({ standard: [['136 tiles'], ['4 Red Fives']], red: [['136 tiles'], ['12 Red Fives', 'good']], lean: [['100 tiles'], ['No Souzu', 'bad']], monk: [['108 tiles'], ['No Honors', 'bad']], gambler: [['+1 Play', 'good'], ['−1 Discard', 'bad']], merchant: [[`Start ¥${CFG.startMoney + 16}`, 'good'], ['+1 consumable slot', 'good'], ['Prices +25%', 'bad']], abundant: [['+2 hand size', 'good'], ['−1 Play', 'bad']] });
+const WALL_FACTS = () => ({ standard: [['136 tiles'], ['4 Red Fives']], red: [['136 tiles'], ['12 Red Fives', 'good']], lean: [['100 tiles'], ['No Souzu'], ['−1 Play', 'bad']], monk: [['108 tiles'], ['No Honors'], ['Targets ×2', 'bad']], gambler: [['+1 Play', 'good'], ['−1 Discard', 'bad']], merchant: [[`Start ¥${CFG.startMoney + 16}`, 'good'], ['+1 consumable slot', 'good'], ['Prices +25%', 'bad']], abundant: [['+2 hand size', 'good'], ['−1 Play', 'bad']] });
 // Stakes stack: earlier penalties show dimmed, the new one in red.
 const STAKE_FACTS = { red: [['Small Blinds pay nothing', 'bad']], green: [['Small Blinds pay nothing', 'old'], ['Targets ×1.3', 'bad']], black: [['Small Blinds pay nothing', 'old'], ['Targets ×1.3', 'old'], ['Talismans cost ¥2 more', 'bad']] };
 function stakeChipSVG(k) { const c = { white: '#ece4cf', red: '#c9453a', green: '#4f9d69', black: '#1a1a1a' }[k], ink = k === 'white' ? '#bfae82' : 'rgba(255,255,255,.85)'; return `<svg class="stakechipart" viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="40" r="36" fill="${c}" stroke="rgba(0,0,0,.35)" stroke-width="2"/>${[0, 45, 90, 135, 180, 225, 270, 315].map(a => `<rect x="36" y="4" width="8" height="12" rx="2" fill="${ink}" transform="rotate(${a} 40 40)"/>`).join('')}<circle cx="40" cy="40" r="22" fill="none" stroke="${ink}" stroke-width="2" stroke-dasharray="4 3"/><circle cx="40" cy="40" r="15" fill="rgba(0,0,0,.18)"/></svg>`; }
