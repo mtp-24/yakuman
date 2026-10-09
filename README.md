@@ -51,6 +51,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 38: shop cards tinted by kind (Talisman gold, Omikuji blue, Kami purple, Scroll green, Flower pink, Pack orange); firing-order badge styled on owned Talisman cards (number only).
 - Build 40: engraved tiles drawn Balatro-style instead of letter badges: Gold Foil, Obsidian, Jade and Steel tint the tile face, Glass is translucent blue, Red Seal is a wax seal on the top edge, Dragon Mark is a red corner emblem.
 - Build 41: a pending Call is unmissable: gold banner on the hand, highlighted hand zone, pulsing Discard button, helper line and side-panel notice all say "settle your Call"; over-limit wording hidden while settling.
+- Build 42: Buy, Open and Reroll buttons are disabled when you cannot afford them, with the price shown in red and the reason in a tooltip.
 - Build 7: multi-meld play ladder (Two Melds ... Four Melds), targets 300...45000, retrigger and scaling Talismans, Wall-Builder rewording, scoring animation.
 
 ## Simulators (in `sim/`)

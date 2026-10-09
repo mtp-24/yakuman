@@ -1646,7 +1646,7 @@ function cardHTML(it, idx) {
   const d = itemDef(it); const p = it.free ? 0 : itemPrice(it);
   const kindLabel = { talisman: 'Talisman', omikuji: 'Omikuji', kami: 'Kami Spirit', scroll: 'Scroll of Mastery', flower: 'Flower / Season', pack: 'Booster pack' }[it.kind];
   const ed = it.edition ? EDITIONS[it.edition] : null;
-  return `<div class="shopcard ${it.kind}${it.sold ? ' sold' : ''}${ed ? ' ed-' + it.edition : ''}"><div class="kind">${kindLabel}${ed ? ` · <span class="edtag ed-${it.edition}">${ed.name}</span>` : ''}</div><div class="n">${d.name}</div><div class="d">${d.desc}${ed ? ` <b>${ed.name}: ${ed.desc}.</b>` : ''}</div><div class="buy"><span class="num" style="color:var(--accent)">${p === 0 ? 'Free' : '¥' + p}</span>${it.sold ? '<span class="muted">Sold</span>' : `<button class="primary" data-buy="${idx}">${it.kind === 'pack' ? 'Open' : 'Buy'}</button>`}</div></div>`;
+  return `<div class="shopcard ${it.kind}${it.sold ? ' sold' : ''}${ed ? ' ed-' + it.edition : ''}"><div class="kind">${kindLabel}${ed ? ` · <span class="edtag ed-${it.edition}">${ed.name}</span>` : ''}</div><div class="n">${d.name}</div><div class="d">${d.desc}${ed ? ` <b>${ed.name}: ${ed.desc}.</b>` : ''}</div><div class="buy"><span class="num" style="color:${p > S.money ? 'var(--bad)' : 'var(--accent)'}">${p === 0 ? 'Free' : '¥' + p}</span>${it.sold ? '<span class="muted">Sold</span>' : `<button class="primary" data-buy="${idx}" ${p > S.money ? `disabled title="You have ¥${S.money}; this costs ¥${p}"` : ''}>${it.kind === 'pack' ? 'Open' : 'Buy'}</button>`}</div></div>`;
 }
 function shopHTML() {
   const r = S.reward; const items = [...S.shop.cards, S.shop.scroll, S.shop.flower, S.shop.pack].filter(Boolean);
@@ -1660,7 +1660,7 @@ function shopHTML() {
   h += `<div class="shop-grid">${items.map((it, i) => cardHTML(it, i)).join('')}</div>`;
   h += ownedHTML();
   h += `<div class="msg${S.msgErr ? ' err' : ''}" style="margin-bottom:8px">${S.msg || ''}</div>`;
-  h += `<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px"><button id="mReroll">Reroll Cards (${S.shop.freeReroll ? 'free' : '¥' + rerollCost()})</button><button id="mDeck" class="ghost">View Wall</button><span style="flex:1"></span><span class="muted">Next: Ante ${S.ante} ${next}${nextBoss ? ' · ' + nextBoss.name : ''}</span><button id="mNext" class="primary">Continue →</button></div>`;
+  h += `<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px"><button id="mReroll" ${!S.shop.freeReroll && rerollCost() > S.money ? 'disabled title="Not enough money to reroll"' : ''}>Reroll Cards (${S.shop.freeReroll ? 'free' : '¥' + rerollCost()})</button><button id="mDeck" class="ghost">View Wall</button><span style="flex:1"></span><span class="muted">Next: Ante ${S.ante} ${next}${nextBoss ? ' · ' + nextBoss.name : ''}</span><button id="mNext" class="primary">Continue →</button></div>`;
   if (S.consumables.length) h += `<div class="muted" style="font-size:12px;margin-top:8px">Consumables that need tiles are used during a Blind. Click one on the board to use it now if it needs none.</div>`;
   return h;
 }
