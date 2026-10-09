@@ -71,7 +71,7 @@ function estimatePartial(S,st){ const save=S.hand.slice(); let tiles;
   if(st.key<=0){ let k=0; for(let j=1;j<S.hand.length;j++) if(tileChips(S.hand[j],S)>tileChips(S.hand[k],S)) k=j; tiles=[S.hand[k]]; } else tiles=takeTiles(S,st.sets);
   S.hand=save; const part=partitionPlay(tiles); if(!part) return 0; return scoreCtx(S,'meld',tiles,{part,preview:true}).total; }
 function playBlind(S,stats){
-  const kind=['small','big','boss'][S.blindIndex]; S.boss=kind==='boss'?S.bossOrder[S.ante-1]:null; S.target=Math.floor(CFG.anteBase[S.ante-1]*CFG.blindMult[kind]*((STAKE==='green'||STAKE==='black')?1.3:1));
+  const kind=['small','big','boss'][S.blindIndex]; S.boss=kind==='boss'?S.bossOrder[S.ante-1]:null; S.target=Math.floor(CFG.anteBase[S.ante-1]*CFG.blindMult[kind]*((STAKE==='green'||STAKE==='black')?1.3:1) /* Stakes stack */);
   S.plays=Math.max(1,CFG.playsPerBlind+(WALL==='gambler'?1:0)-(WALL==='abundant'?1:0)+S.bonusPlays+talMod(S,'plays')+(hasF(S,'bamboo')?1:0)); S.discards=CFG.discardsPerBlind-(WALL==='gambler'?1:0)+talMod(S,'discards')+(hasF(S,'orchid')?1:0);
   S.wall=shuffle(S.deck.slice()); S.deck=[]; S.hand=[]; S.river=[]; S.lastDiscard=[]; S.open=[]; S.played=[]; S.dora=[]; S.indicators=[]; S.score=0; S.firstPlayDone=false; S.bossSuit=S.boss==='collector'?pick(['m','p','s']):null; setRules(S); draw(S);
   for(const k of S.talismans) if(TAL[k].onBlindStart) TAL[k].onBlindStart(S);
@@ -92,7 +92,7 @@ function playBlind(S,stats){
     stats.partials++; draw(S);
   }
   const won=S.score>=S.target; USE.blinds++; USE.playsUsed+=USE.p0-S.plays; USE.discUsed+=USE.d0-S.discards; if(won){ USE.won++; USE.playsLeft+=S.plays; USE.discLeft+=S.discards; if(USE.p0-S.plays===1) USE.onePlay++; } if(S.talismans.includes('kawauso')&&stats.claims>claims0) stats.blindsWithClaim++;
-  if(won){ const base=(kind==='small'&&(STAKE==='red'||STAKE==='black'))?0:CFG.blindReward[kind], left=S.plays, interest=Math.min(hasF(S,'winter')?10:CFG.interestCap,Math.floor(S.money/CFG.interestPer)); let tal=0; for(const k of S.talismans) if(TAL[k].onBlindEnd) tal+=TAL[k].onBlindEnd(S); S.money+=base+left+interest+tal+(hasF(S,'summer')?2:0); }
+  if(won){ const base=(kind==='small'&&STAKE!=='white')?0:CFG.blindReward[kind], left=S.plays, interest=Math.min(hasF(S,'winter')?10:CFG.interestCap,Math.floor(S.money/CFG.interestPer)); let tal=0; for(const k of S.talismans) if(TAL[k].onBlindEnd) tal+=TAL[k].onBlindEnd(S); S.money+=base+left+interest+tal+(hasF(S,'summer')?2:0); }
   S.deck=[...S.hand,...S.wall,...S.river,...S.open.flatMap(m=>m.tiles),...S.played,...S.indicators]; for(const t of S.deck) delete t.rinshan; S.hand=[];S.wall=[];S.river=[];S.open=[];S.played=[];
   return won;
 }

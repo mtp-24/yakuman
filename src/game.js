@@ -53,7 +53,7 @@ function settingsHTML() {
   <div class="setrow"><div><b>Reset profile</b><div class="muted">Clears lifetime stats and locks everything you have unlocked again. Your current run and settings stay.</div></div><div class="setbtns solo"><button class="danger" id="mResetProfile">Reset Profile</button></div></div>
   <div class="setsec">Advanced</div>
   <div class="setrow"><div><b>Debug tools</b><div class="muted">A bar under the board with money, plays, items, bosses and editions for playtesting.</div></div><div class="setbtns"><button class="${dbgOn ? 'primary' : ''}" data-setdbg="on">Show</button><button class="${!dbgOn ? 'primary' : ''}" data-setdbg="off">Hide</button></div></div>
-  <div class="setrow"><div><b>Unlock everything</b><div class="muted">For playtesting. Every Talisman, Wall and Stake is available whatever your profile says. Progress toward unlocks keeps counting.</div></div><div class="setbtns"><button class="${UNLOCK_ALL ? 'primary' : ''}" data-setunlock="on">On</button><button class="${!UNLOCK_ALL ? 'primary' : ''}" data-setunlock="off">Off</button></div></div>
+  <div class="setrow"><div><b>Unlock everything</b><div class="muted">For playtesting. Every Talisman, Wall and Stake is available and the whole Collection is revealed, whatever your profile says. Progress keeps counting.</div></div><div class="setbtns"><button class="${UNLOCK_ALL ? 'primary' : ''}" data-setunlock="on">On</button><button class="${!UNLOCK_ALL ? 'primary' : ''}" data-setunlock="off">Off</button></div></div>
   <button id="mClose" hidden>Close</button>`;
 }
 // ===================== STATE =====================
@@ -85,7 +85,12 @@ const claimTile = () => (S.selRiver && canClaim()) ? S.river.find(t => t.id === 
 const conSlots = () => CFG.consumableSlots + (hasF('spring') ? 1 : 0) + (S.deckKey === 'merchant' ? 1 : 0);
 const price = c => { let p = c; if (S.deckKey === 'merchant') p = Math.ceil(p * 1.25); if (hasF('chrysanthemum')) p = Math.ceil(p * 0.8); return Math.max(1, p); };
 const talSlots = () => CFG.talismanSlots + S.talismans.filter(k => S.editions[k] === 'neg').length;
-const stakeTargets = () => (S.stake === 'green' || S.stake === 'black') ? 1.3 : 1;
+// Stakes stack like Balatro's: each one keeps every penalty of the Stakes below it.
+const STAKE_KEYS = Object.keys(STAKES);
+const stakeLevel = k => STAKE_KEYS.indexOf(k);
+const smallPaysNothing = () => stakeLevel(S.stake) >= 1;
+const stakeTargets = () => stakeLevel(S.stake) >= 2 ? 1.3 : 1;
+const stakeTalCost = () => stakeLevel(S.stake) >= 3 ? 2 : 0;
 const rerollCost = () => hasF('autumn') ? 2 : CFG.rerollCost;
 function talMod(f) { return S.talismans.reduce((a, k) => a + (TAL[k][f] || 0), 0); }
 function selTiles() { return S.selected.map(id => S.hand.find(t => t.id === id)).filter(Boolean); }
@@ -98,7 +103,7 @@ function hasRunSave() { try { return !!localStorage.getItem(SAVE_KEY) && !!S && 
 // ===================== PLAYER PROFILE =====================
 // Lifetime progress that outlives runs (New Run and Wipe save leave it alone). Unlocks will build on this.
 const PROFILE_KEY = 'yakuman.profile.v1';
-function blankProfile() { return { v: 1, created: Date.now(), runs: 0, wins: 0, bestAnte: 0, bestPlay: 0, bestPlayDesc: '', hands: 0, blinds: 0, stakesWon: {}, wallsWon: {}, bosses: {}, yaku: {}, unlocked: [], calls: 0, sold: 0, scrollsUsed: 0, furitenHands: 0, openHands3: 0, mostMoney: 0 }; }
+function blankProfile() { return { v: 1, created: Date.now(), runs: 0, wins: 0, bestAnte: 0, bestPlay: 0, bestPlayDesc: '', hands: 0, blinds: 0, stakesWon: {}, wallsWon: {}, bosses: {}, yaku: {}, unlocked: [], calls: 0, sold: 0, scrollsUsed: 0, furitenHands: 0, openHands3: 0, mostMoney: 0, wallStakes: {}, seen: {} }; }
 let PROFILE = (() => { try { return Object.assign(blankProfile(), JSON.parse(localStorage.getItem(PROFILE_KEY) || '{}')); } catch (e) { return blankProfile(); } })();
 function saveProfile() { try { localStorage.setItem(PROFILE_KEY, JSON.stringify(PROFILE)); } catch (e) { } }
 const bump = (obj, k, n = 1) => { obj[k] = (obj[k] || 0) + n; };
@@ -112,9 +117,6 @@ const UNLOCKS = [
   { kind: 'wall', key: 'monk', goal: () => `Beat ${BOSSES.monk.name}`, prog: P => [P.bosses.monk || 0, 1] },
   { kind: 'wall', key: 'merchant', goal: 'Hold ¥40 at once', prog: P => [P.mostMoney, 40] },
   { kind: 'wall', key: 'abundant', goal: 'Win a run', prog: P => [P.wins, 1] },
-  { kind: 'stake', key: 'red', goal: 'Win a run on White Stake', prog: P => [P.stakesWon.white || 0, 1] },
-  { kind: 'stake', key: 'green', goal: 'Win a run on Red Stake', prog: P => [P.stakesWon.red || 0, 1] },
-  { kind: 'stake', key: 'black', goal: 'Win a run on Green Stake', prog: P => [P.stakesWon.green || 0, 1] },
   { kind: 'tal', key: 'nue', goal: 'Score Honitsu or Chinitsu', prog: P => [yakuN(P, 'honitsu', 'chinitsu'), 1] },
   { kind: 'tal', key: 'hashi', goal: 'Score Ittsu', prog: P => [yakuN(P, 'ittsu'), 1] },
   { kind: 'tal', key: 'ryu', goal: 'Score Yakuhai 10 times', prog: P => [yakuN(P, 'yakuhai'), 10] },
@@ -134,6 +136,35 @@ const UNLOCK_ALL_KEY = 'yakuman.unlockall';
 let UNLOCK_ALL = (() => { try { return localStorage.getItem(UNLOCK_ALL_KEY) === 'on'; } catch (e) { return false; } })();
 function lockOf(kind, key) { const u = LOCKS[`${kind}:${key}`]; return u && !UNLOCK_ALL && !PROFILE.unlocked.includes(`${kind}:${key}`) ? u : null; }
 const isUnlocked = (kind, key) => !lockOf(kind, key);
+// Each Wall climbs the Stakes on its own, like Balatro's decks: winning on a Stake with a Wall opens the next Stake for that Wall.
+const wallBest = w => { const v = PROFILE.wallStakes[w]; return typeof v === 'number' ? v : -1; };
+function stakeLock(wall, stake) {
+  const lv = stakeLevel(stake); if (lv <= 0 || UNLOCK_ALL || wallBest(wall) >= lv - 1) return null;
+  return { kind: 'stake', key: stake, goal: `Win on ${STAKES[STAKE_KEYS[lv - 1]].name} with the ${DECKS[wall].name}`, prog: () => [0, 1] };
+}
+function stakeLockAny(stake) {
+  if (Object.keys(DECKS).some(w => !stakeLock(w, stake))) return null;
+  return { kind: 'stake', key: stake, goal: `Win on ${STAKES[STAKE_KEYS[stakeLevel(stake) - 1]].name} with any Wall. Each Wall climbs the Stakes on its own.`, prog: () => [0, 1] };
+}
+// Names an entry in S.newUnlocks: 'tal:hannya' style, or 'stake:green:lean' for a Stake opened on one Wall.
+function unlockLabel(id) { const [kind, key, wall] = id.split(':'); if (kind === 'stake') return { kind: 'Stake', name: `${STAKES[key].name} · ${DECKS[wall].name}` }; const u = LOCKS[id]; return u ? { kind: UNLOCK_KIND[u.kind], name: unlockName(u) } : null; }
+// ===================== DISCOVERY =====================
+// Like Balatro's Collection: Talismans, consumables, Scrolls, Flowers, packs, Tags and Bosses show as "?" until you come across one.
+const DISCOVER = ['tal', 'omikuji', 'kami', 'scroll', 'flower', 'pack', 'tag', 'boss'];
+function isSeen(kind, key) { return UNLOCK_ALL || !!PROFILE.seen[`${kind}:${key}`] || (kind === 'boss' && !!PROFILE.bosses[key]); }
+function markSeen() {
+  if (!S || !S.talismans) return false; let dirty = false;
+  const add = (kind, key) => { if (key && !PROFILE.seen[`${kind}:${key}`]) { PROFILE.seen[`${kind}:${key}`] = 1; dirty = true; } };
+  const item = it => { if (it) add(it.kind === 'talisman' ? 'tal' : it.kind, it.key); };
+  S.talismans.forEach(k => add('tal', k)); (S.consumables || []).forEach(c => CONS[c.key] && add(CONS[c.key].kind, c.key)); (S.flowers || []).forEach(k => add('flower', k));
+  for (const [t, lv] of Object.entries(S.scrolls || {})) for (const k of Object.keys(lv || {})) add('scroll', `${t === 'meld' ? 'm' : 'y'}:${k}`);
+  if (S.phase === 'shop' && S.shop) { S.shop.cards.forEach(item); item(S.shop.scroll); item(S.shop.flower); item(S.shop.pack); (S.shop.freePacks || []).forEach(k => add('pack', k)); }
+  if (S.pack) { add('pack', S.pack.key); (S.pack.choices || []).forEach(item); }
+  (S.tags || []).forEach(k => add('tag', k));
+  if (S.phase === 'select' && S.skipTags) { add('tag', S.skipTags.small); add('tag', S.skipTags.big); }
+  if (S.phase === 'select') add('boss', S.bossOrder[S.ante - 1]); if (S.phase === 'blind') add('boss', S.boss);
+  return dirty;
+}
 function goalText(u) { return typeof u.goal === 'function' ? u.goal() : u.goal; }
 function unlockProg(u) { const [have, need] = u.prog(PROFILE); return { have: Math.min(have || 0, need), need }; }
 function unlockName(u) { return u.kind === 'wall' ? DECKS[u.key].name : u.kind === 'stake' ? STAKES[u.key].name : TAL[u.key].name; }
@@ -144,6 +175,7 @@ function lockHTML(u) { const p = unlockProg(u); return `<div class="lockgoal"><s
 function checkUnlocks() {
   let dirty = false;
   if (S && S.money > (PROFILE.mostMoney || 0)) { PROFILE.mostMoney = S.money; dirty = true; }
+  if (markSeen()) dirty = true;
   const fresh = [];
   for (const u of UNLOCKS) { const id = `${u.kind}:${u.key}`; if (PROFILE.unlocked.includes(id)) continue; const p = unlockProg(u); if (p.have >= p.need) { PROFILE.unlocked.push(id); fresh.push(u); } }
   if (fresh.length || dirty) saveProfile();
@@ -185,7 +217,7 @@ function collectDeck() {
 }
 function winBlind() {
   const kind = blindKind();
-  const base = (kind === 'small' && (S.stake === 'red' || S.stake === 'black')) ? 0 : CFG.blindReward[kind], left = S.plays, interest = Math.min(hasF('winter') ? 10 : CFG.interestCap, Math.floor(S.money / CFG.interestPer));
+  const base = (kind === 'small' && smallPaysNothing()) ? 0 : CFG.blindReward[kind], left = S.plays, interest = Math.min(hasF('winter') ? 10 : CFG.interestCap, Math.floor(S.money / CFG.interestPer));
   let tal = 0; for (const k of S.talismans) if (TAL[k].onBlindEnd) tal += TAL[k].onBlindEnd(S);
   const summer = hasF('summer') ? 2 : 0;
   let invest = 0; if (kind === 'boss' && S.tags.includes('investment')) { invest = 25; S.tags = S.tags.filter(t => t !== 'investment'); }
@@ -196,7 +228,10 @@ function winBlind() {
   const finished = S.ante === CFG.antes && S.blindIndex === 2;
   S.blindIndex++; if (S.blindIndex > 2) { S.blindIndex = 0; S.ante++; rollAnteTags(); }
   PROFILE.blinds++; if (kind === 'boss' && S.boss) bump(PROFILE.bosses, S.boss);
-  if (finished) { PROFILE.wins++; bump(PROFILE.stakesWon, S.stake); bump(PROFILE.wallsWon, S.deckKey); PROFILE.bestAnte = CFG.antes; }
+  if (finished) { PROFILE.wins++; bump(PROFILE.stakesWon, S.stake); bump(PROFILE.wallsWon, S.deckKey); PROFILE.bestAnte = CFG.antes;
+    const lv = stakeLevel(S.stake), next = STAKE_KEYS[lv + 1];
+    if (lv > wallBest(S.deckKey)) { PROFILE.wallStakes[S.deckKey] = lv;
+      if (next) { S.newUnlocks = (S.newUnlocks || []).concat([`stake:${next}:${S.deckKey}`]); setTimeout(() => toast(`<div class="label">Unlocked · Stake</div><b>${STAKES[next].name}</b><div class="muted" style="font-size:11px">for the ${DECKS[S.deckKey].name}</div>`), 200); } } }
   saveProfile();
   if (finished) { S.phase = 'win'; return; }
   genShop(); S.phase = 'cashout';
@@ -468,7 +503,7 @@ function buy(it) {
   else if (it.kind === 'flower') { S.flowers.push(it.key); }
   S.money -= p; it.sold = true; setMsg(`Bought ${def.name}.`); render();
 }
-function itemPrice(it) { const def = itemDef(it); let base = def.cost + (it.edition ? EDITIONS[it.edition].price : 0); if (it.kind === 'talisman' && S.stake === 'black') base += 2; if (S.shop && S.shop.coupon && (it.kind === 'talisman' || it.kind === 'omikuji' || it.kind === 'kami')) return 0; return price(base); }
+function itemPrice(it) { const def = itemDef(it); let base = def.cost + (it.edition ? EDITIONS[it.edition].price : 0); if (it.kind === 'talisman') base += stakeTalCost(); if (S.shop && S.shop.coupon && (it.kind === 'talisman' || it.kind === 'omikuji' || it.kind === 'kami')) return 0; return price(base); }
 function reroll() { const c = S.shop.freeReroll ? 0 : rerollCost(); if (S.money < c) { setMsg(`Reroll costs ¥${c}.`, true); return render(); } S.money -= c; S.shop.cards = [rollCard(), rollCard()]; render(); }
 function skipBlind() {
   if (S.phase !== 'select' || blindKind() === 'boss') return;
@@ -491,13 +526,14 @@ function selectHTML() {
   let h = `<div class="shophead"><h2>Ante ${S.ante} <span class="muted sub">of ${CFG.antes}</span></h2><span class="antepips" title="Ante ${S.ante} of ${CFG.antes}">${pips}</span></div><p class="muted" style="margin:2px 0 12px">${DECKS[S.deckKey].name} · ${STAKES[S.stake].name}</p><div class="blindsel">`;
   kinds.forEach((k, i) => {
     const state = i < S.blindIndex ? 'done' : i === S.blindIndex ? 'current' : 'next';
-    const reward = (k === 'small' && (S.stake === 'red' || S.stake === 'black')) ? 0 : CFG.blindReward[k];
+    const reward = (k === 'small' && smallPaysNothing()) ? 0 : CFG.blindReward[k];
     const tag = k !== 'boss' && S.skipTags ? TAGS[S.skipTags[k]] : null;
     h += `<div class="blindcard ${state}${k === 'boss' ? ' bosscard' : ''}"><div class="kind">${state === 'done' ? 'Defeated' : state === 'current' ? 'Up next' : 'After that'}</div><div class="n">${k === 'boss' ? BOSSES[boss].name : names[k]}</div>${k === 'boss' ? `<div class="d bossfx">${BOSSES[boss].desc}</div>` : ''}`;
     h += `<div class="bc-plate"><div><div class="label">Score at least</div><div class="target num">${blindTarget(k).toLocaleString()}</div></div><div class="bp-reward" title="Plus ¥1 per unused Play and ¥1 interest per ¥5 held (max ¥5)"><div class="label">Reward</div><div class="num">¥${reward}<span class="muted" style="font-size:11px;font-family:var(--body)"> +extras</span></div></div></div>`;
     h += `<div class="bc-meta muted"><b class="num">${plays}</b> Plays · <b class="num">${discards}</b> Discards${S.nextBlindMods && S.nextBlindMods.handSize && state === 'current' ? ` · hand +${S.nextBlindMods.handSize}` : ''}</div>`;
-    if (state === 'current') h += `<div class="buy"><button id="mPlayBlind" class="primary">Play</button>${tag ? `<button id="mSkip" class="ghost" title="${tag.desc}">Skip for Tag</button>` : ''}</div>${tag ? `<div class="tagnote"><span class="tagchip">${tag.name}</span> <span class="muted">${tag.desc} No cash for this blind.</span></div>` : ''}`;
-    else if (state === 'next' && tag) h += `<div class="tagnote"><span class="tagchip">${tag.name}</span> <span class="muted">if you skip it</span></div>`;
+    const skipBox = tag && state !== 'done' ? `<div class="skipbox"><div class="skiphead"><span class="label">Skip reward</span><span class="tagchip">${tag.name}</span></div><div class="skipdesc">${tag.desc}</div></div>` : '';
+    if (state === 'current') h += `<div class="buy"><button id="mPlayBlind" class="primary">Play</button>${tag ? `<button id="mSkip" class="ghost" title="${tag.desc} No cash for this blind.">Skip for Tag</button>` : ''}</div>${skipBox}`;
+    else h += skipBox;
     h += `</div>`;
   });
   h += `</div>`;
@@ -569,7 +605,7 @@ function render() {
   $('#btnDeck').innerHTML = `Wall <span class="num wallcount">${S.phase === 'blind' ? S.wall.length : (S.deck || []).length}</span>`; $('#btnDeck').title = S.phase === 'blind' ? 'Tiles still face down in the Wall. Click to see every tile.' : 'Tiles in your Wall. Click to see every tile.';
   renderBlind(); renderTalismans(); renderConsumables(); renderOpen(); renderRiver(); renderHand(); renderActions(); renderLast();
   $('#msg').textContent = S.msg || ''; $('#msg').className = 'msg' + (S.msgErr ? ' err' : '');
-  if (S.phase === 'cashout') showModal(cashoutHTML(), false, 'cashmodal'); else if (S.phase === 'shop' && S.pack) { showModal(packHTML(), false, 'packmodal'); fillPackHand(); } else if (S.phase === 'shop') showModal(shopHTML()); else if (S.phase === 'select') showModal(selectHTML(), false, 'selectmodal'); else if (S.phase === 'gameover') showModal(overHTML(false), false, 'overmodal'); else if (S.phase === 'win') showModal(overHTML(true), false, 'overmodal winmodal'); else if (!modalPinned) hideModal();
+  if (S.phase === 'cashout') showModal(cashoutHTML(), false, 'cashmodal'); else if (S.phase === 'shop' && S.pack) { showModal(packHTML(), false, 'packmodal'); fillPackHand(); } else if (S.phase === 'shop') showModal(shopHTML(), false, 'shopmodal'); else if (S.phase === 'select') showModal(selectHTML(), false, 'selectmodal'); else if (S.phase === 'gameover') showModal(overHTML(false), false, 'overmodal'); else if (S.phase === 'win') showModal(overHTML(true), false, 'overmodal winmodal'); else if (!modalPinned) hideModal();
   $('#btnYaku').textContent = 'Run Info';
   document.querySelectorAll('.zhead > .muted').forEach(e => { e.title = e.textContent; });   // full text on hover when a header is truncated
   translateDOM($('#app')); fitNumbers();
@@ -603,7 +639,7 @@ function renderBlind() {
   const kind = blindKind(); const inBlind = S.phase === 'blind'; computePreview(); if (!inBlind && S.phase !== 'win' && S.phase !== 'gameover') { /* preview */ }
   const name = inBlind && S.boss ? BOSSES[S.boss].name : ({ small: 'Small Blind', big: 'Big Blind', boss: 'Boss Blind' })[kind];
   const pct = S.target ? Math.min(100, 100 * S.score / S.target) : 0;
-  const reward = (kind === 'small' && (S.stake === 'red' || S.stake === 'black')) ? 0 : CFG.blindReward[kind];
+  const reward = (kind === 'small' && smallPaysNothing()) ? 0 : CFG.blindReward[kind];
   const targetVal = inBlind ? S.target : Math.floor(CFG.anteBase[Math.min(S.ante, CFG.antes) - 1] * CFG.blindMult[kind] * stakeTargets());
   let h = `<div class="blindplate${S.boss && inBlind ? ' bossplate' : ''}"><div class="bp-top"><span class="label">Ante ${Math.min(S.ante, CFG.antes)} of ${CFG.antes}</span><span class="label">${inBlind ? (kind === 'boss' ? 'Boss Blind' : '') : 'Next up'}</span></div><div class="blind-name${S.boss && inBlind ? ' boss' : ''}">${name}</div>`;
   if (inBlind && S.boss) h += `<div class="boss-desc">${BOSSES[S.boss].desc}${S.boss === 'collector' && S.bossSuit ? ` <b>This Blind: ${SUIT_EN[S.bossSuit]}.</b>` : ''}${S.boss === 'gatekeeper' ? (S.firstPlayDone ? ' <b>First Play done.</b>' : '') : ''}</div>`;
@@ -900,11 +936,25 @@ function scrollLevelHTML(key) {
   const name = MELD_LABEL[k] || k;
   return `<div class="lvline">Now <b>Lv.${lv + 1}</b> → <b>Lv.${lv + 2}</b>: +${(lv + 1) * c} Chips per ${name}, +${(lv + 1) * hn} Han</div>`;
 }
+// A small drawing per card type: an ofuda for Talismans, a fortune slip, a torii for Kami, a scroll, a flower, a wrapped pack.
+function emblem(kind) {
+  const E = {
+    talisman: '<rect x="15" y="4" width="18" height="40" rx="2" fill="#f1e6c8" stroke="#b9ab86"/><circle cx="24" cy="15" r="5.5" fill="none" stroke="#c9453a" stroke-width="2"/><circle cx="24" cy="15" r="2" fill="#c9453a"/><path d="M19 25h10M19 30h10M19 35h7" stroke="#3a3326" stroke-width="1.6" stroke-linecap="round"/>',
+    omikuji: '<rect x="12" y="10" width="24" height="30" rx="3" fill="#2b5c8f" stroke="#7fb3e0"/><rect x="21" y="3" width="6" height="12" rx="1.5" fill="#efe6d2"/><path d="M16 22h16M16 27h16M16 32h10" stroke="#cfe2f5" stroke-width="1.6" stroke-linecap="round"/>',
+    kami: '<path d="M6 13c6 2 30 2 36 0l-1.5 5c-6 1.5-27 1.5-33 0z" fill="#c9453a"/><rect x="10" y="22" width="28" height="3.5" rx="1" fill="#c9453a"/><rect x="13" y="16" width="4" height="27" rx="1" fill="#a8362c"/><rect x="31" y="16" width="4" height="27" rx="1" fill="#a8362c"/><rect x="22.5" y="18" width="3" height="5" fill="#a8362c"/>',
+    scroll: '<rect x="9" y="13" width="30" height="22" fill="#e9f3e9" stroke="#6fcf97"/><rect x="5" y="10" width="6" height="28" rx="3" fill="#4f9d69"/><rect x="37" y="10" width="6" height="28" rx="3" fill="#4f9d69"/><path d="M15 20h18M15 25h18M15 30h12" stroke="#2e7d4f" stroke-width="1.6" stroke-linecap="round"/>',
+    flower: '<g transform="translate(24 24)">' + [0, 72, 144, 216, 288].map(a => `<ellipse cx="0" cy="-10" rx="6.5" ry="10" fill="#f0a3b8" stroke="#d97f99" transform="rotate(${a})"/>`).join('') + '<circle r="5" fill="#d9a441"/></g>',
+    pack: '<path d="M10 7l3 3 3-3 3 3 3-3 3 3 3-3 3 3 3-3 3 3 1-1v34l-1-1-3 3-3-3-3 3-3-3-3 3-3-3-3 3-3-3-3 3-1-1z" fill="currentColor" stroke="rgba(0,0,0,.35)"/><rect x="10" y="19" width="28" height="10" fill="#1a2420" opacity=".35"/><circle cx="24" cy="24" r="4" fill="#efe6d2"/>',
+  };
+  return `<svg viewBox="0 0 48 48" aria-hidden="true">${E[kind] || E.pack}</svg>`;
+}
 function cardHTML(it, idx) {
   const d = itemDef(it); const p = it.free ? 0 : itemPrice(it);
   const kindLabel = { talisman: 'Talisman', omikuji: 'Omikuji', kami: 'Kami Spirit', scroll: 'Scroll of Mastery', flower: 'Flower / Season', pack: 'Booster pack' }[it.kind];
   const ed = it.edition ? EDITIONS[it.edition] : null;
-  return `<div class="shopcard ${it.kind}${it.sold ? ' sold' : ''}${ed ? ' ed-' + it.edition : ''}"><div class="kind">${kindLabel}${ed ? ` · <span class="edtag ed-${it.edition}">${ed.name}</span>` : ''}</div><div class="n">${d.name}</div><div class="d">${d.desc}${ed ? ` <b>${ed.name}: ${ed.desc}.</b>` : ''}</div>${it.kind === 'scroll' ? scrollLevelHTML(it.key) : it.kind === 'talisman' && !it.sold ? talPreview(it.key) : ''}<div class="buy"><span class="num" style="color:${p > S.money ? 'var(--bad)' : 'var(--accent)'}">${p === 0 ? 'Free' : '¥' + p}</span>${it.sold ? '<span class="muted">Sold</span>' : (() => { const full = slotsFullMsg(it); const no = p > S.money ? `You have ¥${S.money}; this costs ¥${p}` : full; return `<button class="primary" data-buy="${idx}" ${no ? `disabled title="${no}"` : ''}>${it.kind === 'pack' ? 'Open' : full ? 'Slots Full' : 'Buy'}</button>`; })()}</div></div>`;
+  const full = slotsFullMsg(it), no = p > S.money ? `You have ¥${S.money}; this costs ¥${p}` : full;
+  const action = it.sold ? '<span class="muted soldnote">Sold</span>' : `<button class="primary" data-buy="${idx}" ${no ? `disabled title="${no}"` : ''}>${it.kind === 'pack' ? 'Open' : full ? 'Slots Full' : 'Buy'}</button>`;
+  return `<div class="shopcard ${it.kind}${it.sold ? ' sold' : ''}${ed ? ' ed-' + it.edition : ''}"><span class="pricetag num${p > S.money && !it.sold ? ' short' : ''}">${p === 0 ? 'Free' : '¥' + p}</span><div class="emblem">${emblem(it.kind)}</div><div class="kind">${kindLabel}${ed ? ` · <span class="edtag ed-${it.edition}">${ed.name}</span>` : ''}</div><div class="n">${d.name}</div><div class="d">${d.desc}${ed ? ` <b>${ed.name}: ${ed.desc}.</b>` : ''}</div>${it.kind === 'scroll' ? scrollLevelHTML(it.key) : it.kind === 'talisman' && !it.sold ? talPreview(it.key) : ''}<div class="buy">${action}</div></div>`;
 }
 function cashoutHTML() {
   const r = S.reward; const names = { small: 'Small Blind', big: 'Big Blind', boss: 'Boss Blind' };
@@ -922,17 +972,20 @@ function shopHTML() {
   const r = S.reward; const items = [...S.shop.cards, S.shop.scroll, S.shop.flower, S.shop.pack].filter(Boolean);
   const next = ({ small: 'Small Blind', big: 'Big Blind', boss: 'Boss Blind' })[blindKind()];
   const nextBoss = blindKind() === 'boss' ? BOSSES[S.bossOrder[S.ante - 1]] : null;
-  let h = `<div class="shophead"><h2>Shop</h2>${walletHTML()}</div>`;
-  if (false) h += `<div class="label">Blind Defeated · Reward</div><div class="reward-list num"><span>${({ small: 'Small Blind', big: 'Big Blind', boss: 'Boss Blind' })[r.kind]} defeated</span><span>¥${r.base}</span><span>Unused Plays</span><span>¥${r.left}</span><span>Interest (¥1 per ¥5)</span><span>¥${r.interest}</span>${r.tal ? `<span>Talismans</span><span>¥${r.tal}</span>` : ''}${r.summer ? `<span>Summer</span><span>¥${r.summer}</span>` : ''}${r.invest ? `<span>Investment Tag</span><span>¥${r.invest}</span>` : ''}<span><b>Total</b></span><span><b>¥${r.total}</b></span></div>`;
+  let h = `<div class="noren"><div class="norenbar"><h2>Shop</h2>${walletHTML()}</div><div class="norenflaps" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div></div>`;
   if (S.shop.coupon) h += `<div class="msg">Coupon Tag: Talismans and consumables are free in this shop.</div>`;
-  // Like Balatro: the rerollable cards sit together, the run perk (Flower, like a Voucher) and the Booster Pack have fixed spots below.
+  // Like Balatro: the action rail on the left, the rerollable cards on the top shelf, the Flower (a Voucher) and Booster Pack below.
   const at = it => items.indexOf(it);
-  h += `<div class="shopsec secrow"><span class="label">Cards</span><button id="mReroll" class="ghost small-btn" ${!S.shop.freeReroll && rerollCost() > S.money ? 'disabled title="Not enough money to reroll"' : ''}>Reroll Cards (${S.shop.freeReroll ? 'free' : '¥' + rerollCost()})</button></div><div class="shop-grid">${[...S.shop.cards, S.shop.scroll].map(it => cardHTML(it, at(it))).join('')}</div>`;
-  h += `<div class="label shopsec">${S.shop.flower ? 'Flower and Booster Pack' : 'Booster Pack'}</div><div class="shop-grid">${[S.shop.flower, S.shop.pack].filter(Boolean).map(it => cardHTML(it, at(it))).join('')}</div>`;
-  if (S.shop.freePacks.length) h += `<div style="display:flex;gap:8px;flex-wrap:wrap;margin:6px 0">${S.shop.freePacks.map((pk, i) => `<button class="primary" data-freepack="${i}">Open Free ${PACKS[pk].name}</button>`).join('')}</div>`;
-  h += `<div class="msg${S.msgErr ? ' err' : ''}" style="min-height:18px;margin:2px 0 6px">${S.msg || ''}</div>`;
+  const canReroll = S.shop.freeReroll || rerollCost() <= S.money;
+  h += `<div class="shoplayout"><aside class="shoprail">
+    <button id="mNext" class="primary nextbtn"><span>Next Blind</span><small>Ante ${S.ante} · ${nextBoss ? nextBoss.name : next}</small></button>
+    <button id="mReroll" class="ghost rerollbtn" ${canReroll ? '' : 'disabled title="Not enough money to reroll"'}><span>Reroll Cards</span><b class="num">${S.shop.freeReroll ? 'Free' : '¥' + rerollCost()}</b></button>
+    <button id="mDeck" class="ghost">View Wall</button></aside>
+    <div class="shopmain"><div class="shelf"><div class="shelflabel">Cards</div><div class="shelfrow">${[...S.shop.cards, S.shop.scroll].map(it => cardHTML(it, at(it))).join('')}</div></div>
+    <div class="shelf"><div class="shelflabel">${S.shop.flower ? 'Flower and Booster Pack' : 'Booster Pack'}</div><div class="shelfrow">${[S.shop.flower, S.shop.pack].filter(Boolean).map(it => cardHTML(it, at(it))).join('')}</div></div>
+    ${S.shop.freePacks.length ? `<div class="freepacks">${S.shop.freePacks.map((pk, i) => `<button class="primary" data-freepack="${i}">Open Free ${PACKS[pk].name}</button>`).join('')}</div>` : ''}</div></div>`;
+  h += `<div class="msg${S.msgErr ? ' err' : ''}" style="min-height:18px;margin:6px 0">${S.msg || ''}</div>`;
   h += ownedHTML();
-  h += `<div class="shopfoot"><button id="mDeck" class="ghost">View Wall</button><span style="flex:1"></span><span class="muted" style="margin-right:8px">Next: Ante ${S.ante} ${next}${nextBoss ? ' · ' + nextBoss.name : ''}</span><button id="mNext" class="primary">Continue →</button></div>`;
   return h;
 }
 function ownedHTML() {
@@ -950,10 +1003,10 @@ function packButtons(it, i) {
 }
 function packHTML() {
   const pk = PACKS[S.pack.key];
-  let h = `<div class="shophead"><h2>${pk.name}</h2></div><p class="muted" style="margin:2px 0 8px">${pk.desc}${S.pack.free ? ' Free, from a Tag.' : ''}</p>`;
+  const tone = { omikuji: 'omikuji', mega: 'omikuji', kami: 'kami', scroll: 'scroll', talisman: 'talisman' }[S.pack.key] || 'pack';
+  let h = `<div class="packhead ${tone}"><div class="packart">${emblem('pack')}</div><div class="packtitle"><div class="label">Booster pack${S.pack.free ? ' · free from a Tag' : ''}</div><h2>${pk.name}</h2><p>${pk.desc}</p></div><div class="packpicks"><b class="num">${S.pack.done ? 0 : S.pack.left}</b><span>${S.pack.done || S.pack.left !== 1 ? 'picks' : 'pick'} left</span></div></div>`;
   if (S.pack.hand) h += `<div class="packhandwrap"><div class="label">Your Tiles · ${(S.pack.view || S.pack.hand).length} random tiles from your Wall</div><div class="muted" style="font-size:12px;margin:2px 0 6px">${S.pack.done ? 'All picks used. Outlined tiles changed and stay that way in your Wall. Press Done to return to the shop.' : 'Select tiles, then press Use on a card. The change stays in your Wall for the rest of the run. Keep puts the card in your consumable slots instead.'}</div><div class="packhand" id="packHand"></div></div>`;
-  h += `<div class="shopsec secrow"><span class="label">${S.pack.done ? 'Cards · all picks used' : `Cards · choose ${S.pack.left} more`}</span></div>`;
-  h += `<div class="shop-grid">${S.pack.choices.map((it, i) => { const d = itemDef(it); const ed = it.edition ? EDITIONS[it.edition] : null; return `<div class="shopcard ${it.kind}${it.sold ? ' sold' : ''}${ed ? ' ed-' + it.edition : ''}"><div class="kind">${{ talisman: 'Talisman', omikuji: 'Omikuji', kami: 'Kami Spirit', scroll: 'Scroll of Mastery' }[it.kind]}${ed ? ` · <span class="edtag ed-${it.edition}">${ed.name}</span>` : ''}</div><div class="n">${d.name}</div><div class="d">${d.desc}${ed ? ` <b>${ed.name}: ${ed.desc}.</b>` : ''}</div>${it.kind === 'scroll' && !it.sold ? scrollLevelHTML(it.key) : it.kind === 'talisman' && !it.sold ? talPreview(it.key) : ''}<div class="buy"><span></span>${it.sold ? `<span class="muted">${it.used ? 'Used' : 'Taken'}</span>` : packButtons(it, i)}</div></div>`; }).join('')}</div>`;
+  h += `<div class="shelf packshelf"><div class="shelflabel">${S.pack.done ? 'Cards · all picks used' : `Cards · choose ${S.pack.left} more`}</div><div class="shop-grid">${S.pack.choices.map((it, i) => { const d = itemDef(it); const ed = it.edition ? EDITIONS[it.edition] : null; return `<div class="shopcard ${it.kind}${it.sold ? ' sold' : ''}${ed ? ' ed-' + it.edition : ''}"><div class="emblem">${emblem(it.kind)}</div><div class="kind">${{ talisman: 'Talisman', omikuji: 'Omikuji', kami: 'Kami Spirit', scroll: 'Scroll of Mastery' }[it.kind]}${ed ? ` · <span class="edtag ed-${it.edition}">${ed.name}</span>` : ''}</div><div class="n">${d.name}</div><div class="d">${d.desc}${ed ? ` <b>${ed.name}: ${ed.desc}.</b>` : ''}</div>${it.kind === 'scroll' && !it.sold ? scrollLevelHTML(it.key) : it.kind === 'talisman' && !it.sold ? talPreview(it.key) : ''}<div class="buy"><span></span>${it.sold ? `<span class="muted">${it.used ? 'Used' : 'Taken'}</span>` : packButtons(it, i)}</div></div>`; }).join('')}</div></div>`;
   h += `<div class="msg${S.msgErr ? ' err' : ''}" style="min-height:18px;margin:2px 0 6px">${S.msg || ''}</div>`;
   h += ownedHTML();
   h += `<div class="shopfoot"><button id="mDeck" class="ghost">View Wall</button><span style="flex:1"></span>${S.pack.done ? '<button id="mPackDone" class="primary">Done</button>' : '<button id="mPackDone" class="ghost">Skip the Rest</button>'}</div>`;
@@ -967,7 +1020,7 @@ function overHTML(won) {
   h += won ? `<p class="muted">All ${CFG.antes} Antes cleared on ${STAKES[S.stake].name} with the ${DECKS[S.deckKey].name}.</p>` : `<p class="muted">Out of Plays on Ante ${S.ante} against ${where}.</p><div class="overscore"><div class="row"><span class="label">Round Score</span><span class="num"><b>${S.score.toLocaleString()}</b> <span class="muted">of ${S.target.toLocaleString()}</span></span></div><div class="overbar"><i style="width:${pct}%"></i></div></div>`;
   h += `</div><div class="overstats">${stat('Ante reached', `${Math.min(S.ante, CFG.antes)} / ${CFG.antes}`)}${stat('Blinds won', st.blinds)}${stat('Complete Hands', st.hands)}${stat('Partial Plays', st.melds)}${stat('YEN', '¥' + S.money)}</div>`;
   h += `<div class="overbest"><div><div class="label">Best Play</div><div class="v num">${st.best.toLocaleString()}</div></div>${st.bestDesc ? `<div class="muted">${st.bestDesc}</div>` : ''}</div>`;
-  if (S.newUnlocks && S.newUnlocks.length) h += `<div class="label" style="margin:14px 0 6px">Unlocked this run</div><div class="overtals">${S.newUnlocks.map(id => LOCKS[id]).filter(Boolean).map(u => `<span class="overtal newunlock"><span class="muted" style="font-size:11px">${UNLOCK_KIND[u.kind]}</span>${unlockName(u)}</span>`).join('')}</div>`;
+  if (S.newUnlocks && S.newUnlocks.length) h += `<div class="label" style="margin:14px 0 6px">Unlocked this run</div><div class="overtals">${S.newUnlocks.map(unlockLabel).filter(Boolean).map(l => `<span class="overtal newunlock"><span class="muted" style="font-size:11px">${l.kind}</span>${l.name}</span>`).join('')}</div>`;
   h += `<div class="label" style="margin:14px 0 6px">Talismans</div><div class="overtals">${S.talismans.length ? S.talismans.map((k, i) => `<span class="overtal"><span class="order">${i + 1}</span>${TAL[k].name}</span>`).join('') : '<span class="muted">None</span>'}</div>`;
   h += `<div class="shopfoot"><span class="seedline muted" style="margin:0">Seed <code class="seed">${S.seed}</code> <button class="ghost tiny-btn" data-copyseed>Copy</button> · ${DECKS[S.deckKey].name} · ${STAKES[S.stake].name}</span><span style="flex:1"></span><button id="mNewRun" class="primary">New Run</button></div>`;
   return h;
@@ -1018,15 +1071,15 @@ function fullRulesHTML() {
   <p><b>Engravings.</b> Omikuji can engrave tiles, and you can see it on the tile: Gold Foil (gold face, ¥1 when scored), Obsidian (dark stone face, +20 Chips), Jade (green face, ×1.5 Mult), Steel (brushed metal face, ×1.5 Mult while held in hand), Glass (clear blue face, ×2 Mult, 1 in 4 chance to shatter and leave your Wall), Red Seal (a red wax seal, scores twice) and Dragon Mark (a red emblem in the corner, +1 Han). Hover a tile for its exact effect.</p>
   <p><b>Editions.</b> Shop Talismans sometimes come in an edition: ${Object.values(EDITIONS).map(e => `${e.name} (${e.desc})`).join(', ')}.</p>
   <h3>Between Blinds</h3>
-  <p><b>Money.</b> Beating a Blind pays ¥${R.small} for a Small Blind, ¥${R.big} for a Big Blind and ¥${R.boss} for a Boss, plus ¥1 for each unused Play and ¥1 interest for every ¥${CFG.interestPer} you hold (at most ¥${CFG.interestCap}). Red and Black Stakes pay nothing for Small Blinds.</p>
+  <p><b>Money.</b> Beating a Blind pays ¥${R.small} for a Small Blind, ¥${R.big} for a Big Blind and ¥${R.boss} for a Boss, plus ¥1 for each unused Play and ¥1 interest for every ¥${CFG.interestPer} you hold (at most ¥${CFG.interestCap}). From Red Stake up, Small Blinds pay nothing.</p>
   <p><b>Shop.</b> Spend money on Talismans (passive, ${CFG.talismanSlots} slots), Omikuji and Kami (consumables, ${CFG.consumableSlots} slots, used on selected hand tiles), Scrolls of Mastery (permanent upgrades), Flowers (run-long perks) and one booster pack (open it and keep one or two of what's inside). Omikuji Packs and Kami Packs also deal ${PACK_HAND} random tiles from your Wall: select some and press Use on a card to change them for the rest of the run, or Keep the card for a Blind. After your last pick the pack stays open with the changed tiles outlined; press Done to return to the shop. ${CONS.indicator.name} and ${CONS.amaterasu.name} only work during a Blind. ${CONS.wealth.name} and ${CONS.raijin.name} can also be used from your slots in the shop; there ${CONS.raijin.name} destroys 2 random tiles from your Wall. Every shop has two random cards (Talismans ${Math.round(CFG.shopWeights.talisman * 100)}%, Omikuji ${Math.round(CFG.shopWeights.omikuji * 100)}%, Kami ${Math.round(CFG.shopWeights.kami * 100)}% each), plus one Scroll, one Flower and one booster pack in fixed spots. A reroll changes only the two random cards and costs ¥${CFG.rerollCost}. Selling returns half the item's value: click a Talisman on the board and press Sell, or sell from inside the shop.</p>
   <p><b>Blind Select.</b> After the shop you see the Ante's three blinds with their targets, rewards and the Boss's rule. A Small or Big Blind can be skipped for the Tag on its card instead of its money: free packs, editions, coupons, money, a bigger hand or a different Boss. Tags you hold show in the side panel.</p>
-  <p><b>Setup.</b> A new run lets you choose a Wall (deck), a Stake (difficulty) and a seed. Sharing a seed replays the same Wall, shops and bosses for players with the same unlocks. Winning on a Stake unlocks the next one.</p>
+  <p><b>Setup.</b> A new run lets you choose a Wall (deck), a Stake (difficulty) and a seed. Sharing a seed replays the same Wall, shops and bosses for players with the same unlocks. Each Stake keeps every penalty of the ones below it. Winning on a Stake with a Wall unlocks the next Stake for that Wall.</p>
   <h3>Help and Controls</h3>
   <p><b>Helper.</b> Under your hand the game shows how many tiles you are from a complete hand. Settings can turn that off, and can turn on two more hints: which tiles you are waiting on, and whether the tiles you select can go without setting you back. Against The Purist they only count your visible tiles. Another assist marks dead tiles with green dots.</p>
   <p><b>Arranging.</b> Drag hand tiles to reorder them. Dragging turns off auto-sort; Sort Hand sorts again. Tiles score in the order they sit, which matters for Shikigami. Sorting also works against The Purist, so face-down tiles sit in their sorted place. A selection with face-down tiles always plays: if it isn't a valid play, its best part scores and the other selected tiles go to the River.</p>
   <p><b>Saving.</b> Your run saves automatically after every action. Run Info, Profile tab, keeps lifetime stats across runs. Settings, Your data, exports your profile, settings and current run as a code or file, so you can import them on another device or browser.</p>
-  <p><b>Unlocks.</b> Most of the game is open from your first run. ${UNLOCKS.filter(u => u.kind === 'tal').length} Talismans, ${UNLOCKS.filter(u => u.kind === 'wall').length} Walls and the higher Stakes unlock as you reach goals across runs, such as reaching Ante 6 or winning on a Stake. The Collection and Run Info, Profile tab, show each goal and your progress. Locked items never appear in shops or packs. Settings, Advanced, can unlock everything for playtesting.</p>
+  <p><b>Unlocks.</b> Most of the game is open from your first run. ${UNLOCKS.filter(u => u.kind === 'tal').length} Talismans, ${UNLOCKS.filter(u => u.kind === 'wall').length} Walls unlock as you reach goals across runs, such as reaching Ante 6 or winning a run, and each Wall climbs the Stakes on its own. The Collection and Run Info, Profile tab, show each goal and your progress. Locked items never appear in shops or packs. Talismans, consumables, Scrolls, Flowers, packs, Tags and Bosses also stay hidden in the Collection until you first come across them. Settings, Advanced, can unlock and reveal everything for playtesting.</p>
   <p><b>Tile numbers.</b> Characters show their number and Winds their letter in the corner. Dots and Bamboo have none by default, since you count their pips. Settings can show numbers on all tiles or on none.</p>
   <p><b>Keys.</b> Enter or P plays, D discards, C calls, K declares a Kan, Esc clears your selection. Click anywhere or press any key while a play scores to skip the animation. Esc or a click outside closes Rules, Wall, Run Info and Settings.</p>
   </div>`;
@@ -1057,25 +1110,27 @@ function collectionHTML() {
   const card = (cls, kind, name, desc, extra = '', badge = '', lock = null) => lock
     ? `<div class="shopcard ${cls} colcard locked"><div class="kind">${kind}</div><div class="n">${name}</div>${lockHTML(lock)}<div class="colfoot"><span class="tag lockmark">Locked</span></div></div>`
     : `<div class="shopcard ${cls} colcard"><div class="kind">${kind}</div><div class="n">${name}</div><div class="d">${desc}</div>${extra}${badge ? `<div class="colfoot"><span class="tag colmark">${badge}</span></div>` : ''}</div>`;   // badges sit at the bottom so names line up
-  const count = (kind, keys) => { const open = keys.filter(k => isUnlocked(kind, k)).length; return open === keys.length ? keys.length : `${open}/${keys.length}`; };
+  const count = (kind, keys) => { const open = keys.filter(k => kind === 'stake' ? !stakeLockAny(k) : DISCOVER.includes(kind) ? isSeen(kind, k) : isUnlocked(kind, k)).length; return open === keys.length ? keys.length : `${open}/${keys.length}`; };
+  // Undiscovered: a face-down card that keeps its type but hides the name and text.
+  const hidden = (cls, kind) => `<div class="shopcard ${cls} colcard undisc"><div class="kind">${kind}</div><div class="n">?</div><div class="d muted">Not discovered yet.</div></div>`;
   const tabs = [
-    ['tal', 'Talismans', count('tal', TALISMANS.map(t => t.key))], ['omi', LANG === 'hk' ? 'Fortune Sticks' : 'Omikuji', OMIKUJI.length], ['kami', 'Kami Spirits', KAMI.length], ['scroll', 'Scrolls', SCROLLS.length], ['flower', 'Flowers', FLOWERS.length], ['pack', 'Packs', Object.keys(PACKS).length],
-    ['eng', 'Engravings', Object.keys(ENG).length], ['ed', 'Editions', Object.keys(EDITIONS).length], ['tag', 'Tags', Object.keys(TAGS).length], ['boss', 'Bosses', Object.keys(BOSSES).length], ['wall', 'Walls', count('wall', Object.keys(DECKS))], ['stake', 'Stakes', count('stake', Object.keys(STAKES))]];
-  const cons = (list, kind) => list.map(c => card(kind, `${kind === 'kami' ? 'Kami Spirit' : 'Omikuji'} · ¥${c.cost}`, c.name, c.desc, '', c.blindOnly ? 'Blind only' : c.anywhere ? 'Usable anytime' : '')).join('');
+    ['tal', 'Talismans', count('tal', TALISMANS.map(t => t.key))], ['omi', LANG === 'hk' ? 'Fortune Sticks' : 'Omikuji', count('omikuji', OMIKUJI.map(o => o.key))], ['kami', 'Kami Spirits', count('kami', KAMI.map(o => o.key))], ['scroll', 'Scrolls', count('scroll', SCROLLS.map(o => o.key))], ['flower', 'Flowers', count('flower', FLOWERS.map(o => o.key))], ['pack', 'Packs', count('pack', Object.keys(PACKS))],
+    ['eng', 'Engravings', Object.keys(ENG).length], ['ed', 'Editions', Object.keys(EDITIONS).length], ['tag', 'Tags', count('tag', Object.keys(TAGS))], ['boss', 'Bosses', count('boss', Object.keys(BOSSES))], ['wall', 'Walls', count('wall', Object.keys(DECKS))], ['stake', 'Stakes', count('stake', Object.keys(STAKES))]];
+  const cons = (list, kind) => list.map(c => !isSeen(kind, c.key) ? hidden(kind, kind === 'kami' ? 'Kami Spirit' : 'Omikuji') : card(kind, `${kind === 'kami' ? 'Kami Spirit' : 'Omikuji'} · ¥${c.cost}`, c.name, c.desc, '', c.blindOnly ? 'Blind only' : c.anywhere ? 'Usable anytime' : '')).join('');
   let body = '';
-  if (colTab === 'tal') body = TALISMANS.map(t => card('talisman', `Talisman · ¥${t.cost}`, t.name, t.desc, '', run && S.talismans.includes(t.key) ? 'Owned' : '', lockOf('tal', t.key))).join('');
+  if (colTab === 'tal') body = TALISMANS.map(t => !lockOf('tal', t.key) && !isSeen('tal', t.key) ? hidden('talisman', 'Talisman') : card('talisman', `Talisman · ¥${t.cost}`, t.name, t.desc, '', run && S.talismans.includes(t.key) ? 'Owned' : '', lockOf('tal', t.key))).join('');
   else if (colTab === 'omi') body = cons(OMIKUJI, 'omikuji');
   else if (colTab === 'kami') body = cons(KAMI, 'kami');
-  else if (colTab === 'scroll') body = SCROLLS.map(sc => card('scroll', `Scroll of Mastery · ¥${sc.cost}`, sc.name, sc.desc, run ? scrollLevelHTML(sc.key) : '')).join('');
-  else if (colTab === 'flower') body = FLOWERS.map(f => card('flower', `Flower · ¥${f.cost}`, f.name, f.desc, '', run && S.flowers.includes(f.key) ? 'Owned' : '')).join('');
-  else if (colTab === 'pack') body = Object.values(PACKS).map(p => card('pack', `Booster pack · ¥${p.cost}`, p.name, p.desc)).join('');
+  else if (colTab === 'scroll') body = SCROLLS.map(sc => !isSeen('scroll', sc.key) ? hidden('scroll', 'Scroll of Mastery') : card('scroll', `Scroll of Mastery · ¥${sc.cost}`, sc.name, sc.desc, run ? scrollLevelHTML(sc.key) : '')).join('');
+  else if (colTab === 'flower') body = FLOWERS.map(f => !isSeen('flower', f.key) ? hidden('flower', 'Flower') : card('flower', `Flower · ¥${f.cost}`, f.name, f.desc, '', run && S.flowers.includes(f.key) ? 'Owned' : '')).join('');
+  else if (colTab === 'pack') body = Object.entries(PACKS).map(([pk, p]) => !isSeen('pack', pk) ? hidden('pack', 'Booster pack') : card('pack', `Booster pack · ¥${p.cost}`, p.name, p.desc)).join('');
   else if (colTab === 'eng') body = Object.entries(ENG).map(([k, e]) => card('omikuji', 'Engraving', e.name, e.desc, `<div class="coltile" data-eng="${k}"></div>`)).join('');
   else if (colTab === 'ed') body = Object.entries(EDITIONS).map(([k, e]) => card(`talisman ed-${k}`, `Edition · +¥${e.price}`, `<span class="edtag ed-${k}">${e.name}</span>`, `${e.desc}${k === 'neg' ? '' : ' on every play'}.`, `<div class="muted" style="font-size:11px;margin-top:4px">${Math.round(e.odds * 100)}% of shop Talismans</div>`)).join('');
-  else if (colTab === 'tag') body = Object.entries(TAGS).map(([k, t]) => card('pack', 'Tag', t.name, t.desc, '', run && S.tags.includes(k) ? 'Held' : '')).join('');
-  else if (colTab === 'boss') body = Object.entries(BOSSES).map(([k, b]) => card('bosscol', 'Boss Blind', b.name, b.desc, '', run && S.stats && S.stats.bosses.includes(k) ? 'Met this run' : '')).join('');
+  else if (colTab === 'tag') body = Object.entries(TAGS).map(([k, t]) => !isSeen('tag', k) ? hidden('pack', 'Tag') : card('pack', 'Tag', t.name, t.desc, '', run && S.tags.includes(k) ? 'Held' : '')).join('');
+  else if (colTab === 'boss') body = Object.entries(BOSSES).map(([k, b]) => !isSeen('boss', k) ? hidden('bosscol', 'Boss Blind') : card('bosscol', 'Boss Blind', b.name, b.desc, '', run && S.stats && S.stats.bosses.includes(k) ? 'Met this run' : '')).join('');
   else if (colTab === 'wall') body = Object.entries(DECKS).map(([k, d]) => card('flower', 'Wall', d.name, d.desc, '', run && S.deckKey === k ? 'This run' : '', lockOf('wall', k))).join('');
-  else if (colTab === 'stake') body = Object.entries(STAKES).map(([k, st]) => card('flower', `<i class="sw sw-${k}" aria-hidden="true"></i> Stake`, st.name, st.desc, '', run && S.stake === k ? 'This run' : '', lockOf('stake', k))).join('');
-  return `<div class="shophead"><h2>Collection</h2><input id="colSearch" placeholder="Search" autocomplete="off"></div><p class="muted" style="margin:2px 0 10px">Everything that can turn up in a run. Locked cards show their goal. Yaku and the Play Ladder are in Run Info.</p>
+  else if (colTab === 'stake') body = Object.entries(STAKES).map(([k, st]) => card('flower', `<i class="sw sw-${k}" aria-hidden="true"></i> Stake`, st.name, st.desc, '', run && S.stake === k ? 'This run' : '', stakeLockAny(k))).join('');
+  return `<div class="shophead"><h2>Collection</h2><input id="colSearch" placeholder="Search" autocomplete="off"></div><p class="muted" style="margin:2px 0 10px">Everything that can turn up in a run. Cards you haven't come across yet show as ?, and locked cards show their goal. Yaku and the Play Ladder are in Run Info.</p>
   <div class="tabs coltabs">${tabs.map(([k, n, c]) => `<button class="tab${colTab === k ? ' on' : ''}" data-ctab="${k}">${n} <span class="muted">${c}</span></button>`).join('')}</div>
   <div class="shop-grid colgrid">${body}</div><div class="muted colnone" hidden>Nothing matches.</div><button id="mClose" hidden>Close</button>`;
 }
@@ -1096,6 +1151,9 @@ function profileHTML() {
   h += `<div class="label" style="margin:12px 0 6px">Unlocks · ${earned.length} of ${UNLOCKS.length}${UNLOCK_ALL ? ' · Unlock everything is on in Settings' : ''}</div>`;
   if (earned.length) h += `<div class="overtals" style="margin-bottom:8px">${earned.map(u => `<span class="tagchip">${unlockName(u)}</span>`).join('')}</div>`;
   if (locked.length) h += `<div class="locklist">${locked.map(u => `<div class="lockrow"><div><span class="muted" style="font-size:11px">${UNLOCK_KIND[u.kind]}</span> <b>${unlockName(u)}</b></div>${lockHTML(u)}</div>`).join('')}</div>`;
+  const disc = [...TALISMANS.map(t => ['tal', t.key]), ...OMIKUJI.map(o => ['omikuji', o.key]), ...KAMI.map(o => ['kami', o.key]), ...SCROLLS.map(o => ['scroll', o.key]), ...FLOWERS.map(o => ['flower', o.key]), ...Object.keys(PACKS).map(k => ['pack', k]), ...Object.keys(TAGS).map(k => ['tag', k]), ...Object.keys(BOSSES).map(k => ['boss', k])];
+  h += `<div class="label" style="margin:12px 0 6px">Collection · ${disc.filter(([k, key]) => isSeen(k, key)).length} of ${disc.length} discovered</div>`;
+  h += `<div class="label" style="margin:12px 0 6px">Stakes won by Wall</div><div class="wallstakes">${Object.entries(DECKS).map(([w, d]) => `<div class="wsrow${lockOf('wall', w) ? ' lk' : ''}"><span>${d.name}</span><span class="wspips">${STAKE_KEYS.map((k, i) => `<i class="sw sw-${k}${wallBest(w) >= i ? '' : ' off'}" title="${STAKES[k].name}${wallBest(w) >= i ? ' won' : ''}"></i>`).join('')}</span></div>`).join('')}</div>`;
   h += `<div class="label" style="margin:12px 0 6px">Bosses beaten · ${Object.keys(P.bosses).length} of ${Object.keys(BOSSES).length}</div><div class="overtals">${named(P.bosses, BOSSES, nm)}</div>`;
   h += `<div class="label" style="margin:12px 0 6px">Wins by Stake</div><div class="overtals">${named(P.stakesWon, STAKES, nm)}</div>`;
   h += `<div class="label" style="margin:12px 0 6px">Wins by Wall</div><div class="overtals">${named(P.wallsWon, DECKS, nm)}</div>`;
@@ -1201,24 +1259,26 @@ function setupKey(name) { const keys = setupKeys(name), n = keys.length; return 
 // Card art and rule chips for the carousels. Tiles are written like hands: digits then suit, 'r' marks a Red Five.
 const WALL_ART = { standard: '1m 5pr 9s 1z', red: '5mr 5pr 5sr', lean: '3m 7p 7z', monk: '2m 5p 8s', gambler: '7m 7p 7s', merchant: '8m 6z 8p', abundant: '2s 3s 4s 5s 6s' };
 const WALL_FACTS = () => ({ standard: [['136 tiles'], ['4 Red Fives']], red: [['136 tiles'], ['12 Red Fives', 'good']], lean: [['100 tiles'], ['No Souzu', 'bad']], monk: [['108 tiles'], ['No Honors', 'bad']], gambler: [['+1 Play', 'good'], ['−1 Discard', 'bad']], merchant: [[`Start ¥${CFG.startMoney + 16}`, 'good'], ['+1 consumable slot', 'good'], ['Prices +25%', 'bad']], abundant: [['+2 hand size', 'good'], ['−1 Play', 'bad']] });
-const STAKE_FACTS = { red: [['Small Blinds pay nothing', 'bad']], green: [['Targets ×1.3', 'bad']], black: [['Targets ×1.3', 'bad'], ['Small Blinds pay nothing', 'bad'], ['Talismans cost ¥2 more', 'bad']] };
+// Stakes stack: earlier penalties show dimmed, the new one in red.
+const STAKE_FACTS = { red: [['Small Blinds pay nothing', 'bad']], green: [['Small Blinds pay nothing', 'old'], ['Targets ×1.3', 'bad']], black: [['Small Blinds pay nothing', 'old'], ['Targets ×1.3', 'old'], ['Talismans cost ¥2 more', 'bad']] };
 function stakeChipSVG(k) { const c = { white: '#ece4cf', red: '#c9453a', green: '#4f9d69', black: '#1a1a1a' }[k], ink = k === 'white' ? '#bfae82' : 'rgba(255,255,255,.85)'; return `<svg class="stakechipart" viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="40" r="36" fill="${c}" stroke="rgba(0,0,0,.35)" stroke-width="2"/>${[0, 45, 90, 135, 180, 225, 270, 315].map(a => `<rect x="36" y="4" width="8" height="12" rx="2" fill="${ink}" transform="rotate(${a} 40 40)"/>`).join('')}<circle cx="40" cy="40" r="22" fill="none" stroke="${ink}" stroke-width="2" stroke-dasharray="4 3"/><circle cx="40" cy="40" r="15" fill="rgba(0,0,0,.18)"/></svg>`; }
 function setupHTML() {
   const chev = d => `<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="${d < 0 ? 'M10.5 2.5 5 8l5.5 5.5' : 'M5.5 2.5 11 8l-5.5 5.5'}" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
   const facts = list => `<div class="carfacts">${list.map(([t, tone]) => `<span class="fact${tone ? ' ' + tone : ''}">${t}</span>`).join('')}</div>`;
   const car = (name, kind) => {
-    const keys = setupKeys(name), cur = setupKey(name), isWall = name === 'deck', table = isWall ? DECKS : STAKES, v = table[cur], lock = lockOf(kind, cur), pos = keys.indexOf(cur);
+    const isWall = name === 'deck', lockFor = k => isWall ? lockOf('wall', k) : stakeLock(setupKey('deck'), k);
+    const keys = setupKeys(name), cur = setupKey(name), table = isWall ? DECKS : STAKES, v = table[cur], lock = lockFor(cur), pos = keys.indexOf(cur);
     const art = isWall ? `<div class="carart tilesart" data-tiles="${WALL_ART[cur]}"></div>` : `<div class="carart chipart">${stakeChipSVG(cur)}<div class="diffpips" title="Difficulty">${keys.map((k, j) => `<i class="${j <= pos ? 'on' : ''}"></i>`).join('')}</div></div>`;
     const body = lock ? lockHTML(lock) : isWall ? `<p class="cardesc">${v.desc}</p>${facts(WALL_FACTS()[cur])}` : cur === 'white' ? `<p class="cardesc">${v.desc} No extra rules.</p>` : facts(STAKE_FACTS[cur]);
-    const pager = keys.map((k, j) => `<button class="pg${k === cur ? ' on' : ''}${lockOf(kind, k) ? ' lk' : ''}" data-goto="${name}:${j}" aria-label="${table[k].name}" title="${table[k].name}"></button>`).join('');
+    const pager = keys.map((k, j) => `<button class="pg${k === cur ? ' on' : ''}${lockFor(k) ? ' lk' : ''}" data-goto="${name}:${j}" aria-label="${table[k].name}" title="${table[k].name}"></button>`).join('');
     const slide = setupDir[name] > 0 ? ' fromright' : setupDir[name] < 0 ? ' fromleft' : '';
     return `<div class="car2 ${isWall ? 'wallcar' : 'stakecar'}${lock ? ' locked' : ''}" data-car="${name}"><input type="hidden" name="${name}" value="${cur}">
       <button class="carnav prev" data-nav="${name}:-1" aria-label="Previous">${chev(-1)}</button>
-      <div class="carcard2${slide}">${art}<div class="carbody"><div class="carkicker"><span>${isWall ? 'Wall' : 'Stake'}</span><span class="num">${pos + 1} / ${keys.length}</span></div><div class="cartitle"><span>${v.name}</span>${lock ? '<span class="lockpill"><span class="lockico" aria-hidden="true"></span>Locked</span>' : ''}</div>${body}</div></div>
+      <div class="carcard2${slide}">${art}<div class="carbody"><div class="carkicker"><span>${isWall ? 'Wall' : 'Stake'}</span><span class="num">${pos + 1} / ${keys.length}</span></div><div class="cartitle"><span>${v.name}</span>${lock ? '<span class="lockpill"><span class="lockico" aria-hidden="true"></span>Locked</span>' : isWall && wallBest(cur) >= 0 ? `<span class="sticker" title="Best win with this Wall"><i class="sw sw-${STAKE_KEYS[wallBest(cur)]}" aria-hidden="true"></i>Won</span>` : ''}</div>${body}</div></div>
       <button class="carnav next" data-nav="${name}:1" aria-label="Next">${chev(1)}</button>
       <div class="carpager">${pager}</div></div>`;
   };
-  const blocked = lockOf('wall', setupKey('deck')) || lockOf('stake', setupKey('stake'));
+  const blocked = lockOf('wall', setupKey('deck')) || stakeLock(setupKey('deck'), setupKey('stake'));
   const html = `<div class="shophead"><h2>New Run</h2></div><p class="muted" style="margin:2px 0 14px">Choose your Wall and Stake. Enter a seed to replay someone else's run.</p>
   ${car('deck', 'wall')}${car('stake', 'stake')}
   <div class="seedrow"><label class="label" for="seedInput">Seed</label><input id="seedInput" placeholder="Random" maxlength="24" autocomplete="off"></div><div class="muted seedhelp">Optional. The same seed gives the same Wall, shops and bosses, as long as both players have the same unlocks.</div>
@@ -1335,7 +1395,7 @@ function bindEvents() {
     if (t.id === 'mClose') { if (!t.onclick) { hideModal(); render(); } }   // a custom back action (to the menu or Settings) has already run
     else if (t.id === 'mNewRun' || t.id === 'mStart') { showModal(setupHTML(), true, 'setupmodal'); }
     else if (t.dataset.nav || t.dataset.goto) { const [name, d] = (t.dataset.nav || t.dataset.goto).split(':'); const seed = ($('#seedInput') || {}).value || ''; const before = setupKeys(name).indexOf(setupKey(name)); if (t.dataset.nav) setupSel[name] += +d; else setupSel[name] = +d; setupDir[name] = t.dataset.nav ? +d : Math.sign(+d - before); showModal(setupHTML(), true, 'setupmodal'); $('#seedInput').value = seed; }
-    else if (t.id === 'mStartRun') { if (lockOf('wall', setupKey('deck')) || lockOf('stake', setupKey('stake'))) return; const deck = ($('#modal input[name=deck]') || {}).value, stake = ($('#modal input[name=stake]') || {}).value, seed = ($('#seedInput') || {}).value; hideModal(); newRun({ deck, stake, seed }); }
+    else if (t.id === 'mStartRun') { if (lockOf('wall', setupKey('deck')) || stakeLock(setupKey('deck'), setupKey('stake'))) return; const deck = ($('#modal input[name=deck]') || {}).value, stake = ($('#modal input[name=stake]') || {}).value, seed = ($('#seedInput') || {}).value; hideModal(); newRun({ deck, stake, seed }); }
     else if (t.id === 'mContinue') { hideModal(); render(); }
     else if (t.id === 'mCollection') { showModal(collectionHTML(), true, 'colmodal'); $('#mClose').onclick = () => { showModal(menuHTML(!!load()), true, 'menumodal'); }; }
     else if (t.id === 'mRules') { showModal(rulesHTML() + '', true); $('#mClose').onclick = () => { showModal(menuHTML(!!load()), true, 'menumodal'); }; }

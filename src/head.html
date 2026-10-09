@@ -504,4 +504,63 @@ button.pulse{animation:btnpulse 1s ease-in-out infinite;box-shadow:0 0 0 0 rgba(
 .lockpill .lockico{transform:scale(.8);margin-top:3px}
 .seedrow{display:flex;align-items:center;gap:12px;margin-top:4px} .seedrow input{flex:1} .seedhelp{font-size:11px;margin-top:5px}
 @media (max-width:560px){.car2{grid-template-columns:34px minmax(0,1fr) 34px;column-gap:6px} .car2 .carnav{width:34px;height:34px} .carcard2{flex-direction:column;text-align:center;gap:10px;padding:14px 12px} .carart{width:auto} .carfacts,.cartitle{justify-content:center} .carkicker{justify-content:center;gap:10px} .lockgoal{justify-content:center}}
+
+.fact.old{color:var(--muted);border-color:var(--line);background:transparent}
+.sticker{display:inline-flex;align-items:center;gap:5px;font-family:var(--body);font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--fg);border:1px solid rgba(217,164,65,.45);background:rgba(217,164,65,.1);border-radius:999px;padding:2px 9px 2px 5px;flex:0 0 auto} .sticker .sw{width:12px;height:12px}
+/* Ante screen: one skip-reward box per blind, pinned to the bottom so the cards line up */
+.blindcard .skipbox{margin-top:auto;border:1px dashed rgba(127,179,224,.35);background:rgba(127,179,224,.05);border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;gap:5px}
+.blindcard .buy+.skipbox{margin-top:8px} .blindcard .buy{margin-top:auto}
+.skiphead{display:flex;align-items:center;justify-content:space-between;gap:8px} .skiphead .label{font-size:10px} .skiphead .tagchip{margin:0}
+.skipdesc{font-size:12px;line-height:1.45;color:var(--fg);opacity:.8}
+/* Undiscovered Collection cards */
+.colcard.undisc{background:repeating-linear-gradient(135deg,rgba(255,255,255,.025) 0 8px,transparent 8px 16px),var(--panel);border-style:dashed} .colcard.undisc .n{font-size:26px;color:var(--muted);opacity:.6} .colcard.undisc .kind{opacity:.6}
+.wallstakes{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:6px} .wsrow{display:flex;justify-content:space-between;align-items:center;gap:8px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:13px} .wsrow.lk{opacity:.5}
+.wspips{display:flex;gap:4px} .wspips .sw{width:12px;height:12px} .wspips .sw.off{opacity:.18}
+
+/* ===== Shop: noren banner, action rail, felt shelves, portrait cards with price tags ===== */
+.modal.shopmodal{max-width:1000px;padding-top:0}
+.noren{margin:0 -20px 18px;border-radius:12px 12px 0 0;overflow:hidden}
+.norenbar{position:relative;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:20px 22px 12px;background:radial-gradient(90% 140% at 15% 0%,rgba(255,255,255,.08),transparent 60%),linear-gradient(180deg,#74271f,#561b16)}
+.norenbar::before{content:'';position:absolute;left:0;right:0;top:0;height:7px;background:linear-gradient(#94713f,#5c4426);box-shadow:0 2px 3px rgba(0,0,0,.35)}
+.norenbar h2{margin:0;color:#f6ead2;font-size:30px;letter-spacing:.04em;display:flex;align-items:center;gap:12px}
+.norenbar h2::before{content:'';width:22px;height:22px;border-radius:50%;border:2px solid rgba(246,234,210,.75);box-shadow:inset 0 0 0 4px #5f1e18,inset 0 0 0 7px rgba(246,234,210,.75)}
+.norenbar .wallet{border-color:rgba(246,234,210,.45);background:rgba(0,0,0,.22)} .norenbar .wallet .v{color:#f3c768} .norenbar .wallet .cur{color:rgba(246,234,210,.7)}
+.norenflaps{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;height:20px;background:var(--panel)} .norenflaps i{background:#561b16;border-radius:0 0 7px 7px;box-shadow:inset 0 -2px 0 rgba(0,0,0,.25)}
+.shoplayout{display:grid;grid-template-columns:172px minmax(0,1fr);gap:18px;align-items:start}
+.shoprail{display:flex;flex-direction:column;gap:8px;position:sticky;top:0}
+.shoprail button{width:100%}
+.nextbtn{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:14px;min-height:76px;font-size:17px;text-align:left;border-radius:10px;box-shadow:0 6px 14px rgba(0,0,0,.35)} .nextbtn small{font-size:11px;font-weight:500;opacity:.75;line-height:1.3}
+.rerollbtn{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px 14px;border-radius:10px;border-color:rgba(127,179,224,.5)} .rerollbtn b{color:var(--accent);font-family:var(--display);font-size:17px;font-weight:500}
+.shoprail #mDeck{border-radius:10px}
+.shelf{position:relative;background:radial-gradient(120% 90% at 50% 0%,rgba(255,255,255,.05),transparent 60%),var(--felt);border:1px solid var(--line);border-radius:12px;padding:26px 14px 16px;margin:0 0 22px;box-shadow:inset 0 3px 12px rgba(0,0,0,.35)}
+.shelf::after{content:'';position:absolute;left:10px;right:10px;bottom:-8px;height:8px;border-radius:0 0 8px 8px;background:linear-gradient(#7a5a34,#4a361f);box-shadow:0 4px 8px rgba(0,0,0,.35)}
+.shelflabel{position:absolute;top:-10px;left:14px;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);background:var(--panel);padding:2px 10px;border-radius:999px;border:1px solid var(--line)}
+.shelfrow{display:grid;grid-template-columns:repeat(auto-fill,minmax(178px,1fr));gap:16px}
+.freepacks{display:flex;gap:8px;flex-wrap:wrap;margin:-6px 0 10px}
+.shelf .shopcard,.packmodal .shop-grid:not(.owned-grid) .shopcard{position:relative;padding:18px 12px 12px;border-radius:12px;min-height:248px;text-align:center;box-shadow:0 6px 16px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.06);transition:transform .15s,box-shadow .15s}
+.shelf .shopcard:not(.sold):hover,.packmodal .shop-grid:not(.owned-grid) .shopcard:not(.sold):hover{transform:translateY(-3px);box-shadow:0 12px 24px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.06)}
+.shelf .shopcard .d,.packmodal .shop-grid:not(.owned-grid) .shopcard .d{font-size:12px;line-height:1.45}
+.shelf .shopcard .n,.packmodal .shop-grid:not(.owned-grid) .shopcard .n{font-size:18px;line-height:1.2}
+.shelf .shopcard .buy,.packmodal .shop-grid:not(.owned-grid) .shopcard .buy{justify-content:center} .shelf .shopcard .buy button{width:100%}
+.emblem{width:50px;height:50px;margin:0 auto 2px;color:#ff9f43;filter:drop-shadow(0 3px 4px rgba(0,0,0,.45))} .emblem svg{width:100%;height:100%;display:block}
+.pricetag{position:absolute;top:-11px;left:50%;transform:translateX(-50%);z-index:2;background:linear-gradient(#ecc165,#c58f2c);color:#1b1b1b;font-weight:700;font-size:13px;padding:2px 12px 3px 18px;border-radius:5px;box-shadow:0 3px 6px rgba(0,0,0,.45);white-space:nowrap}
+.pricetag::before{content:'';position:absolute;left:6px;top:50%;width:5px;height:5px;margin-top:-2.5px;border-radius:50%;background:var(--felt);box-shadow:inset 0 1px 1px rgba(0,0,0,.5)}
+.pricetag.short{background:linear-gradient(#ef8075,#b8453a);color:#fff}
+.shelf .shopcard.sold .pricetag{opacity:.6}
+.soldnote{font-size:12px;letter-spacing:.1em;text-transform:uppercase}
+.shelf .shopcard.pack{overflow:visible}
+.shelf .shopcard.pack::before,.shelf .shopcard.pack::after{content:'';position:absolute;left:0;right:0;height:7px;background:linear-gradient(135deg,var(--felt) 33%,transparent 33%) 0 0/10px 10px,linear-gradient(225deg,var(--felt) 33%,transparent 33%) 0 0/10px 10px;pointer-events:none}
+.shelf .shopcard.pack::before{top:-1px} .shelf .shopcard.pack::after{bottom:-1px;transform:scaleY(-1)}
+.shelf .shopcard.flower::after{content:'';position:absolute;inset:5px;border:1px dashed rgba(240,163,184,.4);border-radius:9px;pointer-events:none}
+.shelf .shopcard .scrolllv,.shelf .shopcard .talprev{text-align:left}
+@media (max-width:720px){.shoplayout{grid-template-columns:1fr} .shoprail{position:static;display:grid;grid-template-columns:1fr 1fr} .nextbtn{grid-column:1/-1;min-height:58px} .shelf .shopcard{min-height:0} .norenbar h2{font-size:24px} .shelfrow{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}}
+/* ===== Pack header ===== */
+.packhead{--pc:255,159,67;display:flex;align-items:center;gap:16px;margin:-20px -20px 16px;padding:18px 20px;border-radius:12px 12px 0 0;background:radial-gradient(80% 160% at 0% 0%,rgba(var(--pc),.3),transparent 65%),linear-gradient(180deg,rgba(var(--pc),.1),transparent);border-bottom:1px solid rgba(var(--pc),.35)}
+.packhead.omikuji{--pc:127,179,224} .packhead.kami{--pc:201,167,232} .packhead.scroll{--pc:111,207,151} .packhead.talisman{--pc:217,164,65}
+.packart{width:66px;height:66px;flex:0 0 auto;color:rgb(var(--pc));transform:rotate(-9deg);filter:drop-shadow(0 6px 8px rgba(0,0,0,.5))} .packart svg{width:100%;height:100%}
+.packtitle{min-width:0;flex:1} .packtitle h2{margin:2px 0 3px;color:rgb(var(--pc))} .packtitle p{margin:0;font-size:13px;line-height:1.45;opacity:.85}
+.packpicks{flex:0 0 auto;text-align:center;border:1px solid rgba(var(--pc),.5);background:rgba(0,0,0,.18);border-radius:10px;padding:6px 14px 7px} .packpicks b{display:block;font-family:var(--display);font-size:30px;line-height:1;color:rgb(var(--pc))} .packpicks span{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.packmodal .shop-grid:not(.owned-grid){grid-template-columns:repeat(auto-fill,minmax(178px,1fr));gap:16px}
+@media (max-width:560px){.packhead{flex-wrap:wrap} .packart{width:52px;height:52px}}
+.packshelf{margin-top:18px} .packshelf .shop-grid{margin:0}
 </style>

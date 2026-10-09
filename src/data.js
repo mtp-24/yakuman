@@ -72,8 +72,8 @@ const DECKS = {
 const STAKES = {
   white: { name: 'White Stake', desc: 'The standard game.' },
   red: { name: 'Red Stake', desc: 'Small Blinds give no reward money.' },
-  green: { name: 'Green Stake', desc: 'Every blind target is ×1.3.' },
-  black: { name: 'Black Stake', desc: 'Targets ×1.3, Small Blinds give no reward, Talismans cost ¥2 more.' },
+  green: { name: 'Green Stake', desc: 'Everything in Red Stake, and every blind target is ×1.3.' },
+  black: { name: 'Black Stake', desc: 'Everything in Green Stake, and Talismans cost ¥2 more.' },
 };
 function buildDeck(deckKey = 'standard') {
   const d = []; const suits = deckKey === 'lean' ? ['m', 'p'] : ['m', 'p', 's'];
