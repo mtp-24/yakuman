@@ -45,6 +45,9 @@ const HONOR_EN = ['', 'East', 'South', 'West', 'North', 'White', 'Green', 'Red']
 const SUIT_GLYPH = { m: '萬', p: '筒', s: '索' };
 const SUIT_EN = { m: 'Man', p: 'Pin', s: 'Sou' };
 const MELD_LABEL = { single: 'Lone Tile', pair: 'Pair', twopair: 'Two Pair', chi: 'Chi', pon: 'Pon', kan: 'Kan', hand: 'Complete Hand' };
+// Display name for a play type as stored in the run stats ('hand', 'chi', 'rung31', ...).
+function rungLabel(k) { return MELD_LABEL[k] || (CFG.rungs[String(k).replace('rung', '').split('').join(',')] || {}).name || k; }
+function topEntry(obj) { let best = null, n = 0; for (const [k, v] of Object.entries(obj || {})) if (v > n) { n = v; best = k; } return best ? [best, n] : null; }
 const ORPHANS = [0, 8, 9, 17, 18, 26, 27, 28, 29, 30, 31, 32, 33];
 let tileSeq = 0;
 function mkTile(suit, rank, red = false) { return { id: ++tileSeq, suit, rank, red, eng: null }; }
@@ -159,7 +162,7 @@ const TALISMANS = [
   { key: 'hakutaku', name: 'Hakutaku', cost: 6, desc: 'Engraved tiles score a second time.', retrigger: t => t.eng ? 1 : 0 },
   { key: 'yatagarasu', name: 'Yatagarasu', cost: 7, desc: 'Tiles you Called from the River score three times.', retrigger: (t, c, S) => S.open.some(m => m.calledId === t.id) ? 2 : 0 },
   // --- Scaling and xMult
-  { key: 'gashadokuro', name: 'Gashadokuro', cost: 8, desc: 'Gains x0.25 Mult for every Complete Hand you play this run.', onScore: (c, S) => { const n = S.talState.gashadokuro || 0; return n ? { xmult: 1 + 0.25 * n } : null; }, afterScore: (c, S) => { if (c.kind === 'hand') S.talState.gashadokuro = (S.talState.gashadokuro || 0) + 1; }, status: S => `now x${1 + 0.25 * (S.talState.gashadokuro || 0)}` },
+  { key: 'gashadokuro', name: 'Gashadokuro', cost: 8, desc: 'Gains x0.25 Mult for every Complete Hand you play while you own it.', onScore: (c, S) => { const n = S.talState.gashadokuro || 0; return n ? { xmult: 1 + 0.25 * n } : null; }, afterScore: (c, S) => { if (c.kind === 'hand') S.talState.gashadokuro = (S.talState.gashadokuro || 0) + 1; }, status: S => `now x${1 + 0.25 * (S.talState.gashadokuro || 0)}` },
   { key: 'jorogumo', name: 'Jorōgumo', cost: 5, desc: 'Gains +20 Chips every time you Call from the River.', onScore: (c, S) => { const n = S.talState.jorogumo || 0; return n ? { chips: n } : null; }, onCall: S => { S.talState.jorogumo = (S.talState.jorogumo || 0) + 20; }, status: S => `now +${S.talState.jorogumo || 0} Chips` },
   { key: 'rokurokubi', name: 'Rokurokubi', cost: 7, desc: 'x1.5 Mult for each open meld when you play a Complete Hand.', onScore: (c, S) => c.kind === 'hand' && S.open.length ? { xmult: Math.pow(1.5, S.open.length) } : null },
   { key: 'ushioni', name: 'Ushi-oni', cost: 7, desc: 'x2 Mult on the last Play of each Blind.', onScore: (c, S) => S.plays === 1 ? { xmult: 2 } : null },
@@ -178,9 +181,9 @@ const TALISMANS = [
   { key: 'mabo', name: 'Mabo', cost: 6, desc: 'Gains x0.25 Mult every time a tile is added to your Wall.', onTileAdded: (S, n) => { S.talState.mabo = (S.talState.mabo || 0) + n; }, onScore: (c, S) => S.talState.mabo ? { xmult: 1 + 0.25 * S.talState.mabo } : null, status: S => `now x${(1 + 0.25 * (S.talState.mabo || 0)).toFixed(2)}` },
   { key: 'chochin', name: 'Chōchin', cost: 6, desc: 'x4 Mult on every sixth play.', onScore: (c, S) => (((S.talState.chochin || 0) + 1) % 6 === 0) ? { xmult: 4 } : null, afterScore: (c, S) => { S.talState.chochin = (S.talState.chochin || 0) + 1; }, status: S => { const left = 6 - (((S.talState.chochin || 0)) % 6); return left === 6 ? 'fires in 6 plays' : left === 1 ? 'fires next play' : `fires in ${left} plays`; } },
   // --- Run-info powers
-  { key: 'hoshi', name: 'Hoshi', cost: 6, desc: '+1 Mult for every time this play type has been played this run.', onScore: (c, S) => { const n = (S.stats.rungs || {})[c.meldType] || 0; return n ? { mult: n } : null; } },
-  { key: 'hatsumode', name: 'Hatsumōde', cost: 5, desc: '+15 Mult for each Yaku scoring for the first time this run.', onScore: (c, S) => { const n = c.yaku.filter(y => !(S.stats.yaku || {})[y.key]).length; return n ? { mult: 15 * n } : null; } },
-  { key: 'oshi', name: 'Oshi', cost: 6, desc: 'x1.5 Mult if the play contains your most-scored Yaku.', onScore: (c, S) => { let best = null, n = 0; for (const [k, v] of Object.entries(S.stats.yaku || {})) if (v > n) { n = v; best = k; } return best && c.yaku.some(y => y.key === best) ? { xmult: 1.5 } : null; } },
+  { key: 'hoshi', name: 'Hoshi', cost: 6, desc: '+1 Mult for every time this play type has been played this run.', onScore: (c, S) => { const n = (S.stats.rungs || {})[c.meldType] || 0; return n ? { mult: n } : null; }, status: S => { const top = Object.entries(S.stats.rungs || {}).sort((a, b) => b[1] - a[1]).slice(0, 2); return top.length ? 'now ' + top.map(([k, v]) => `+${v} on ${rungLabel(k)}`).join(', ') : 'now +0, nothing played yet'; } },
+  { key: 'hatsumode', name: 'Hatsumōde', cost: 5, desc: '+15 Mult for each Yaku scoring for the first time this run.', onScore: (c, S) => { const n = c.yaku.filter(y => !(S.stats.yaku || {})[y.key]).length; return n ? { mult: 15 * n } : null; }, status: S => { const left = YAKU_SHEET.filter(y => !(S.stats.yaku || {})[y.k]).length; return `${left} of ${YAKU_SHEET.length} Yaku not scored yet`; } },
+  { key: 'oshi', name: 'Oshi', cost: 6, desc: 'x1.5 Mult if the play contains your most-scored Yaku.', onScore: (c, S) => { let best = null, n = 0; for (const [k, v] of Object.entries(S.stats.yaku || {})) if (v > n) { n = v; best = k; } return best && c.yaku.some(y => y.key === best) ? { xmult: 1.5 } : null; }, status: S => { const t = topEntry(S.stats.yaku); if (!t) return 'no Yaku scored yet'; const y = YAKU_SHEET.find(x => x.k === t[0]); return `fires on ${y ? y.n : t[0]} (scored ×${t[1]})`; } },
   // --- Held in hand
   { key: 'daimyo', name: 'Daimyō', cost: 7, desc: 'x1.5 Mult for each Red Five left in your hand after the play.', onScore: c => { const n = c.held.filter(t => t.red).length; return n ? { xmult: Math.pow(1.5, n) } : null; } },
   // --- Rule breakers

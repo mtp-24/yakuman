@@ -326,7 +326,7 @@ function fillPackHand() {
 }
 function takeFromPack(i) {
   const it = S.pack.choices[i]; if (!it || it.sold) return;
-  if (it.kind === 'talisman') { if (S.talismans.length >= talSlots()) { setMsg('Talisman slots are full. Sell one from the list below first.', true); return render(); } S.talismans.push(it.key); if (it.edition) S.editions[it.key] = it.edition; }
+  if (it.kind === 'talisman') { if (S.talismans.length >= talSlots()) { setMsg('Talisman slots are full. Sell one from the list below first.', true); return render(); } gainTalisman(it.key); if (it.edition) S.editions[it.key] = it.edition; }
   else if (it.kind === 'scroll') { const [t, k] = it.key.split(':'); S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] = (S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] || 0) + 1; for (const tk of S.talismans) if (TAL[tk].onScroll) TAL[tk].onScroll(S); }
   else { if (S.consumables.length >= conSlots()) { setMsg('Consumable slots are full. Use or sell one first.', true); return render(); } S.consumables.push({ kind: it.kind, key: it.key }); }
   it.sold = true; S.pack.left--; setMsg(`Took ${itemDef(it).name}.`);
@@ -338,7 +338,7 @@ function buy(it) {
   const def = itemDef(it), p = itemPrice(it);
   if (S.money < p) { setMsg(`Not enough YEN: ${def.name} costs ¥${p}.`, true); return render(); }
   if (it.kind === 'pack') { S.money -= p; it.sold = true; openPack(it.key, false); return render(); }
-  if (it.kind === 'talisman') { if (S.talismans.length >= talSlots()) { setMsg(`All ${talSlots()} Talisman slots are full. Sell one first.`, true); return render(); } S.talismans.push(it.key); if (it.edition) S.editions[it.key] = it.edition; }
+  if (it.kind === 'talisman') { if (S.talismans.length >= talSlots()) { setMsg(`All ${talSlots()} Talisman slots are full. Sell one first.`, true); return render(); } gainTalisman(it.key); if (it.edition) S.editions[it.key] = it.edition; }
   else if (it.kind === 'omikuji' || it.kind === 'kami') { if (S.consumables.length >= conSlots()) { setMsg('Consumable slots are full. Use one first.', true); return render(); } S.consumables.push({ kind: it.kind, key: it.key }); }
   else if (it.kind === 'scroll') { const [t, k] = it.key.split(':'); S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] = (S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] || 0) + 1; for (const tk of S.talismans) if (TAL[tk].onScroll) TAL[tk].onScroll(S); }
   else if (it.kind === 'flower') { S.flowers.push(it.key); }
@@ -724,6 +724,20 @@ function modalClosable() { return !$('#overlay').hidden && !!$('#modal #mClose')
 function closeModal() { const c = $('#modal #mClose'); if (c) c.click(); }
 function showModal(html, pinned) { modalPinned = !!pinned; $('#modal').innerHTML = html; if ($('#modal #mClose')) $('#modal').insertAdjacentHTML('afterbegin', CLOSE_X); $('#overlay').hidden = false; fillExamples($('#modal')); translateDOM($('#modal')); }
 function hideModal() { modalPinned = false; $('#overlay').hidden = true; }
+// A Talisman you gain starts fresh, like a Joker in Balatro: progress from an earlier copy you sold is gone.
+// Its state lives under its own key, or its key plus a capitalised suffix (kasaobake, shiroSuit).
+const ownsState = (k, x) => x === k || (x.startsWith(k) && /[A-Z]/.test(x[k.length] || ''));   // 'shiro' owns 'shiroSuit', but 'hoshi' does not own 'hoshizora'
+const freshTalState = k => Object.fromEntries(Object.entries(S.talState || {}).filter(([x]) => !ownsState(k, x)));
+function gainTalisman(k) { S.talState = freshTalState(k); S.talismans.push(k); }
+// What a Talisman's live value would be the moment you buy it (same text its card shows once owned).
+function talPreview(k) {
+  const d = TAL[k]; if (!d) return '';
+  let v = '';
+  if (d.copies === 'left') { const t = S.talismans.find(x => !TAL[x].copies); v = t ? `would copy ${TAL[t].name}, your leftmost Talisman` : 'nothing to copy yet: buy another Talisman'; }
+  else if (d.copies === 'right') v = 'joins your rightmost slot, so drag a Talisman to its right to copy it';
+  else if (d.status) { const saved = S.talState; S.talState = freshTalState(k); try { v = d.status(S); } finally { S.talState = saved; } }
+  return v ? `<div class="lvline">If bought: <b>${v}</b></div>` : '';
+}
 // Why an item cannot be taken right now because its slots are full (null when there is room).
 function slotsFullMsg(it) {
   if (it.kind === 'talisman' && S.talismans.length >= talSlots()) return `All ${talSlots()} Talisman slots are full. Sell one first.`;
@@ -743,7 +757,7 @@ function cardHTML(it, idx) {
   const d = itemDef(it); const p = it.free ? 0 : itemPrice(it);
   const kindLabel = { talisman: 'Talisman', omikuji: 'Omikuji', kami: 'Kami Spirit', scroll: 'Scroll of Mastery', flower: 'Flower / Season', pack: 'Booster pack' }[it.kind];
   const ed = it.edition ? EDITIONS[it.edition] : null;
-  return `<div class="shopcard ${it.kind}${it.sold ? ' sold' : ''}${ed ? ' ed-' + it.edition : ''}"><div class="kind">${kindLabel}${ed ? ` · <span class="edtag ed-${it.edition}">${ed.name}</span>` : ''}</div><div class="n">${d.name}</div><div class="d">${d.desc}${ed ? ` <b>${ed.name}: ${ed.desc}.</b>` : ''}</div>${it.kind === 'scroll' ? scrollLevelHTML(it.key) : ''}<div class="buy"><span class="num" style="color:${p > S.money ? 'var(--bad)' : 'var(--accent)'}">${p === 0 ? 'Free' : '¥' + p}</span>${it.sold ? '<span class="muted">Sold</span>' : (() => { const full = slotsFullMsg(it); const no = p > S.money ? `You have ¥${S.money}; this costs ¥${p}` : full; return `<button class="primary" data-buy="${idx}" ${no ? `disabled title="${no}"` : ''}>${it.kind === 'pack' ? 'Open' : full ? 'Slots Full' : 'Buy'}</button>`; })()}</div></div>`;
+  return `<div class="shopcard ${it.kind}${it.sold ? ' sold' : ''}${ed ? ' ed-' + it.edition : ''}"><div class="kind">${kindLabel}${ed ? ` · <span class="edtag ed-${it.edition}">${ed.name}</span>` : ''}</div><div class="n">${d.name}</div><div class="d">${d.desc}${ed ? ` <b>${ed.name}: ${ed.desc}.</b>` : ''}</div>${it.kind === 'scroll' ? scrollLevelHTML(it.key) : it.kind === 'talisman' && !it.sold ? talPreview(it.key) : ''}<div class="buy"><span class="num" style="color:${p > S.money ? 'var(--bad)' : 'var(--accent)'}">${p === 0 ? 'Free' : '¥' + p}</span>${it.sold ? '<span class="muted">Sold</span>' : (() => { const full = slotsFullMsg(it); const no = p > S.money ? `You have ¥${S.money}; this costs ¥${p}` : full; return `<button class="primary" data-buy="${idx}" ${no ? `disabled title="${no}"` : ''}>${it.kind === 'pack' ? 'Open' : full ? 'Slots Full' : 'Buy'}</button>`; })()}</div></div>`;
 }
 function cashoutHTML() {
   const r = S.reward; const names = { small: 'Small Blind', big: 'Big Blind', boss: 'Boss Blind' };
@@ -766,7 +780,7 @@ function shopHTML() {
   h += `<div class="shop-grid">${items.map((it, i) => cardHTML(it, i)).join('')}</div>`;
   h += ownedHTML();
   h += `<div class="msg${S.msgErr ? ' err' : ''}" style="margin-bottom:8px">${S.msg || ''}</div>`;
-  h += `<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px"><button id="mDeck" class="ghost">View Wall</button><button id="mReroll" ${!S.shop.freeReroll && rerollCost() > S.money ? 'disabled title="Not enough money to reroll"' : ''}>Reroll Cards (${S.shop.freeReroll ? 'free' : '¥' + rerollCost()})</button><button id="mDeck" class="ghost">View Wall</button><span style="flex:1"></span><span class="muted">Next: Ante ${S.ante} ${next}${nextBoss ? ' · ' + nextBoss.name : ''}</span><button id="mNext" class="primary">Continue →</button></div>`;
+  h += `<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px"><button id="mReroll" ${!S.shop.freeReroll && rerollCost() > S.money ? 'disabled title="Not enough money to reroll"' : ''}>Reroll Cards (${S.shop.freeReroll ? 'free' : '¥' + rerollCost()})</button><button id="mDeck" class="ghost">View Wall</button><span style="flex:1"></span><span class="muted">Next: Ante ${S.ante} ${next}${nextBoss ? ' · ' + nextBoss.name : ''}</span><button id="mNext" class="primary">Continue →</button></div>`;
   if (S.consumables.length) h += `<div class="muted" style="font-size:12px;margin-top:8px">Consumables that need tiles are used during a Blind. Click one on the board to use it now if it needs none.</div>`;
   return h;
 }
@@ -786,7 +800,7 @@ function packHTML() {
   const pk = PACKS[S.pack.key];
   let h = `<h2>${pk.name}</h2><p class="muted" style="margin:0 0 8px">${pk.desc} Choose ${S.pack.left} more.${S.pack.free ? ' (Free, from a Tag.)' : ''}</p>`;
   if (S.pack.hand) h += `<div class="packhandwrap"><div class="label">Your Tiles · ${packTiles().length} random tiles from your Wall</div><div class="muted" style="font-size:12px;margin:2px 0 6px">Select tiles, then press Use on a card. The change stays in your Wall for the rest of the run. Keep puts the card in your consumable slots instead.</div><div class="packhand" id="packHand"></div></div>`;
-  h += `<div class="shop-grid">${S.pack.choices.map((it, i) => { const d = itemDef(it); const ed = it.edition ? EDITIONS[it.edition] : null; return `<div class="shopcard ${it.kind}${it.sold ? ' sold' : ''}${ed ? ' ed-' + it.edition : ''}"><div class="kind">${{ talisman: 'Talisman', omikuji: 'Omikuji', kami: 'Kami Spirit', scroll: 'Scroll of Mastery' }[it.kind]}${ed ? ` · <span class="edtag ed-${it.edition}">${ed.name}</span>` : ''}</div><div class="n">${d.name}</div><div class="d">${d.desc}${ed ? ` <b>${ed.name}: ${ed.desc}.</b>` : ''}</div>${it.kind === 'scroll' && !it.sold ? scrollLevelHTML(it.key) : ''}<div class="buy"><span></span>${it.sold ? `<span class="muted">${it.used ? 'Used' : 'Taken'}</span>` : packButtons(it, i)}</div></div>`; }).join('')}</div>`;
+  h += `<div class="shop-grid">${S.pack.choices.map((it, i) => { const d = itemDef(it); const ed = it.edition ? EDITIONS[it.edition] : null; return `<div class="shopcard ${it.kind}${it.sold ? ' sold' : ''}${ed ? ' ed-' + it.edition : ''}"><div class="kind">${{ talisman: 'Talisman', omikuji: 'Omikuji', kami: 'Kami Spirit', scroll: 'Scroll of Mastery' }[it.kind]}${ed ? ` · <span class="edtag ed-${it.edition}">${ed.name}</span>` : ''}</div><div class="n">${d.name}</div><div class="d">${d.desc}${ed ? ` <b>${ed.name}: ${ed.desc}.</b>` : ''}</div>${it.kind === 'scroll' && !it.sold ? scrollLevelHTML(it.key) : it.kind === 'talisman' && !it.sold ? talPreview(it.key) : ''}<div class="buy"><span></span>${it.sold ? `<span class="muted">${it.used ? 'Used' : 'Taken'}</span>` : packButtons(it, i)}</div></div>`; }).join('')}</div>`;
   h += `<div class="msg${S.msgErr ? ' err' : ''}" style="margin:6px 0">${S.msg || ''}</div>`;
   h += ownedHTML();
   h += `<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"><button id="mPackDone" class="ghost">Skip the Rest</button><button id="mDeck" class="ghost">View Wall</button></div>`;
@@ -930,7 +944,7 @@ function renderDebug() {
     render();
   });
   $('#dbgBoss').onchange = e => { const k = e.target.value; if (!k) return; const i = S.ante - 1; S.bossOrder[i] = k; if (S.phase === 'blind' && blindKind() === 'boss') { S.boss = k; } setMsg(`Boss for Ante ${S.ante} set to ${BOSSES[k].name}.`); render(); };
-  $('#dbgTal').onchange = e => { const k = e.target.value; if (!k) return; if (S.talismans.length < talSlots() && !S.talismans.includes(k)) S.talismans.push(k); e.target.value = ''; render(); };
+  $('#dbgTal').onchange = e => { const k = e.target.value; if (!k) return; if (S.talismans.length < talSlots() && !S.talismans.includes(k)) gainTalisman(k); e.target.value = ''; render(); };
   $('#dbgCon').onchange = e => { const k = e.target.value; if (!k) return; if (S.consumables.length < conSlots()) S.consumables.push({ kind: CONS[k].kind, key: k }); e.target.value = ''; render(); };
   $('#dbgScr').onchange = e => { const k = e.target.value; if (!k) return; buyFree({ kind: 'scroll', key: k }); e.target.value = ''; render(); };
   $('#dbgEd').onchange = e => { const k = e.target.value; if (!k || !S.selTal) return; if (k === 'none') delete S.editions[S.selTal]; else S.editions[S.selTal] = k; e.target.value = ''; render(); };
