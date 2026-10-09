@@ -1585,10 +1585,10 @@ function tileSVG(t) {
   } else if (t.suit === 'm') {
     body = small(t.rank) + `<text x="27" y="34" text-anchor="middle" font-size="24" font-weight="700" font-family="Hiragino Mincho ProN, Noto Serif JP, serif" fill="${t.red ? red : ink}">${CJK_NUM[t.rank]}</text><text x="27" y="62" text-anchor="middle" font-size="24" font-weight="700" font-family="Hiragino Mincho ProN, Noto Serif JP, serif" fill="${red}">萬</text>`;
   } else if (t.suit === 'p') {
-    body = small(t.rank);
+    body = '';   // Dots and Bamboo carry no corner number: the pips are counted, as on Japanese sets, and the number collided with the art
     PIN_LAYOUT[t.rank].forEach(([x, y, r], i) => { const ring = t.red ? red : (i % 2 ? green : blue); body += `<circle cx="${x}" cy="${y}" r="${r}" fill="#fff" stroke="${ring}" stroke-width="${Math.max(2, r * 0.3)}"/><circle cx="${x}" cy="${y}" r="${r * 0.4}" fill="${t.red ? red : (i % 2 ? blue : green)}"/>`; });
   } else {
-    body = small(t.rank);
+    body = '';
     if (t.rank === 1) {
       const c = t.red ? red : green;
       body += `<path d="M27 56 C18 56 14 48 16 40 C18 32 24 30 27 30 C30 30 36 32 38 40 C40 48 36 56 27 56 Z" fill="${c}"/><circle cx="27" cy="25" r="6" fill="${c}"/><path d="M31 23 L38 25 L31 27 Z" fill="${red}"/><path d="M24 17 L27 11 L30 17" stroke="${red}" stroke-width="2" fill="none"/><path d="M20 56 L12 66 M27 57 L27 67 M34 56 L42 66" stroke="${c}" stroke-width="2.5" stroke-linecap="round"/>`;
