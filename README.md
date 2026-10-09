@@ -91,6 +91,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 80: zone headers (Open Melds, River, Hand, Talismans) stay on one line, with long info truncated and shown in full on hover, so the Open Melds and River rows line up; River instruction shortened. On wide screens every Talisman and Consumable slot, filled or empty, is the same height.
 - Build 81: Hong Kong fix, open meld labels read CHOW, PUNG and KONG (they were uppercased before translation, so CHI, PON and KAN slipped through).
 - Build 82: bigger scoring summary. Side panel widened from 230px to 290px and the Chips and Mult numbers raised from 22px to 32px (26px on phones), so the Han caption fits on one line in Riichi mode.
+- Build 83: pack tiles toned down from about 99px to 80px wide on desktop (68px cap on phones) so the pack screen feels balanced.
 - Build 7: multi-meld play ladder (Two Melds ... Four Melds), targets 300...45000, retrigger and scaling Talismans, Wall-Builder rewording, scoring animation.
 
 ## Simulators (in `sim/`)
