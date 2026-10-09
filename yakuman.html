@@ -597,17 +597,14 @@ button.pulse{animation:btnpulse 1s ease-in-out infinite;box-shadow:0 0 0 0 rgba(
 .rerollbtn.railbtn b{color:var(--accent)}
 
 /* ===== Balatro-style scoring: numbers pop and wobble; fireworks burst over the boxes ===== */
-.hb-math .nv,.hanline{display:inline-block;transform-origin:50% 60%}
-.nv.pop,.hanline.pop{animation:numpop .38s cubic-bezier(.3,1.5,.5,1)}
+.hb-math .nv,.hanline{display:inline-block;transform-origin:50% 55%;will-change:transform}
 @keyframes numpop{0%{transform:scale(1) rotate(0)}25%{transform:scale(1.34) rotate(-7deg)}55%{transform:scale(.94) rotate(4deg)}80%{transform:scale(1.05) rotate(-1deg)}100%{transform:scale(1) rotate(0)}}
 .boxwrap>.boxfoot{border-radius:0 0 8px 8px;position:relative;z-index:2} .capfoot .hantier{font-size:10px;opacity:.85;min-height:12px}
 .chipfoot .hanline{color:#cfe3f6}
 .handbox .hb-head{position:relative;z-index:3}
 .handbox[data-fire="1"] .chipwrap,.handbox[data-fire="2"] .chipwrap,.handbox[data-fire="3"] .chipwrap{box-shadow:0 0 16px rgba(108,196,255,.5),inset 0 -3px 0 rgba(0,0,0,.25)}
 .handbox[data-fire="1"] .multwrap,.handbox[data-fire="2"] .multwrap,.handbox[data-fire="3"] .multwrap{box-shadow:0 0 16px rgba(255,107,26,.55),inset 0 -3px 0 rgba(0,0,0,.25)}
-.handbox[data-fire="3"] .nv{animation:numsimmer .3s ease-in-out infinite alternate}
 @keyframes numsimmer{from{transform:rotate(-1.5deg) scale(1.02)}to{transform:rotate(1.5deg) scale(1)}}
-@media (prefers-reduced-motion:reduce){.nv.pop,.hanline.pop,.handbox[data-fire="3"] .nv{animation:none}}
 /* ===== Next Blind: vermilion, glowing, with a light sweep so it never blends in with the gold Buy buttons ===== */
 .shoprail .nextbtn.primary{position:relative;overflow:hidden;background:linear-gradient(180deg,#e0533f,#a8322a);border:1px solid #ff9a85;color:#fff6ea;min-height:86px;padding:16px;box-shadow:0 0 0 1px rgba(0,0,0,.35),0 10px 24px rgba(201,69,58,.45),inset 0 1px 0 rgba(255,255,255,.35);animation:nbglow 2.4s ease-in-out infinite}
 .shoprail .nextbtn.primary:hover{filter:brightness(1.08);transform:translateY(-1px)}
@@ -647,6 +644,32 @@ button.pulse{animation:btnpulse 1s ease-in-out infinite;box-shadow:0 0 0 0 rgba(
 .wcount{margin-top:7px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:12px;font-weight:600;color:var(--fg);line-height:1} .wcount.hasred span:last-child{color:#ff9d93}
 .wpips{display:flex;gap:3px} .wpips i{width:6px;height:6px;border-radius:50%;background:var(--accent)} .wpips i.off{background:transparent;box-shadow:inset 0 0 0 1.2px rgba(157,176,166,.7)}
 .wallcell.out .wcount{color:var(--muted)}
+
+/* ===== Play field theme A, "Mahjong Parlour": felt table in a wooden rail, brass name plates ===== */
+body{background:radial-gradient(120% 80% at 50% 0%,#1c2b25,#0b1210) fixed}
+header{background:linear-gradient(180deg,#3a2716,#24170c);border-bottom:2px solid #8a6a3e;box-shadow:0 2px 10px rgba(0,0,0,.5)}
+/* the rail sits in the gap around the board (negative margin = padding), so every zone keeps its size */
+.board{margin:-8px;padding:8px;border-radius:16px;background:linear-gradient(180deg,#5a3d22,#3c2814);box-shadow:inset 0 2px 0 rgba(255,220,160,.22),inset 0 -3px 0 rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.5)}
+.zone{position:relative;background:radial-gradient(140% 120% at 50% 0%,#1f5a45 0%,#174635 55%,#113526 100%);border:1px solid #0c2a1e;box-shadow:inset 0 2px 8px rgba(0,0,0,.45)}
+.zone::after{content:'';position:absolute;inset:5px;border:1px dashed rgba(255,230,180,.12);border-radius:7px;pointer-events:none}
+.zone .zhead .label{background:linear-gradient(180deg,#e4c27a,#b48a3e);color:#2b1d0b;padding:2px 9px;border-radius:4px;box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 1px 2px rgba(0,0,0,.4);font-size:10px}
+.zone .zhead .muted{color:#b9cbbf}
+.slot{background:rgba(0,0,0,.18);border-color:rgba(255,230,180,.15)}
+aside .card{background:linear-gradient(180deg,#2a1d10,#1d140a);border:1px solid #6d5130;box-shadow:inset 0 1px 0 rgba(255,220,160,.15),0 6px 16px rgba(0,0,0,.35)}
+/* ===== Action bar: what each button will do, its key, and what is left ===== */
+.actions{gap:10px;flex-wrap:nowrap;align-items:stretch}
+.act{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto auto;column-gap:10px;row-gap:1px;align-items:center;text-align:left;padding:7px 14px 7px 10px;min-width:150px;max-width:240px;border-radius:10px;font-family:var(--body);border:1px solid rgba(0,0,0,.4);box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 3px 0 rgba(0,0,0,.35),0 6px 12px rgba(0,0,0,.3);transition:transform .08s,filter .12s}
+.act:not(:disabled):hover{filter:brightness(1.07);transform:translateY(-1px)} .act:not(:disabled):active{transform:translateY(2px);box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 1px 0 rgba(0,0,0,.35)}
+.act-k{grid-row:1/4;width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+.act-t{font-size:16px;font-weight:700;line-height:1.15;white-space:nowrap} .act-s{font-size:11px;opacity:.85;font-weight:500;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:14px}
+.act-pips{display:flex;gap:3px;margin-top:2px;min-height:7px} .act-pips i{width:7px;height:7px;border-radius:50%} .act-pips b{font-size:11px}
+.act-play{background:linear-gradient(180deg,#f0cf7f,#c79a3e);color:#2b1d0b} .act-play .act-k{background:rgba(43,29,11,.15)} .act-play .act-pips i{background:#2b1d0b}
+.act-discard{background:linear-gradient(180deg,#d8574a,#9e2f26);color:#fff3e6} .act-discard .act-k{background:rgba(0,0,0,.2)} .act-discard .act-pips i{background:#fff3e6}
+.act-call,.act-kan{background:linear-gradient(180deg,#3b2a18,#291c0f);color:#e8d6b0;border-color:#6d5130;min-width:140px} .act-call .act-k,.act-kan .act-k{background:rgba(255,230,180,.12)}
+.act:disabled{opacity:.5;filter:saturate(.6)}
+.act-sep{width:1px;align-self:stretch;margin:4px 2px;background:rgba(255,230,180,.25)}
+.actions .msg{align-self:center;margin-left:4px;color:#f0cf7f;min-width:0}
+@media (max-width:900px){.actions{flex-wrap:wrap} .act{flex:1 1 150px;max-width:none} .act-sep{display:none}}
 </style>
 </head><body>
 <div id="app">
@@ -693,16 +716,16 @@ button.pulse{animation:btnpulse 1s ease-in-out infinite;box-shadow:0 0 0 0 rgba(
     </div>
     <div class="zone handzone" id="handZone">
       <div class="callbanner" id="callBanner" hidden></div>
-      <div class="zhead"><span class="label">Hand</span><span class="muted" id="handInfo"></span><span style="flex:1"></span><button id="btnSort" class="ghost" style="padding:3px 8px;font-size:12px">Sort</button></div>
+      <div class="zhead"><span class="label">Hand</span><span class="muted" id="handInfo"></span><span style="flex:1"></span><button id="btnClear" class="ghost" style="padding:3px 8px;font-size:12px" title="Clear your selection (Esc)">Clear selection ✕</button><button id="btnSort" class="ghost" style="padding:3px 8px;font-size:12px">Sort</button></div>
       <div class="row-tiles" id="hand"></div>
       <div class="hint" id="hint"></div>
     </div>
     <div class="actions">
-      <button id="btnPlay" class="primary">Play</button>
-      <button id="btnDiscard" class="danger">Discard</button>
-      <button id="btnCall">Call</button>
-      <button id="btnKan">Declare Kan</button>
-      <button id="btnClear" class="ghost">Clear</button>
+      <button id="btnPlay" class="act act-play"><span class="act-k" aria-hidden="true">⏎</span><span class="act-t">Play</span><span class="act-s" id="playSub"></span><span class="act-pips" id="playPips"></span></button>
+      <button id="btnDiscard" class="act act-discard"><span class="act-k" aria-hidden="true">D</span><span class="act-t" id="discTitle">Discard</span><span class="act-s" id="discSub"></span><span class="act-pips" id="discPips"></span></button>
+      <span class="act-sep" aria-hidden="true"></span>
+      <button id="btnCall" class="act act-call"><span class="act-k" aria-hidden="true">C</span><span class="act-t">Call</span><span class="act-s" id="callSub"></span></button>
+      <button id="btnKan" class="act act-kan"><span class="act-k" aria-hidden="true">K</span><span class="act-t">Declare Kan</span><span class="act-s" id="kanSub"></span></button>
       <span class="msg" id="msg"></span>
     </div>
     <div class="preview" id="preview"></div>
@@ -2220,12 +2243,26 @@ function renderActions() {
   const inBlind = S.phase === 'blind';
   const opt = inBlind ? playOption() : { err: '' };
   const hid = inBlind && hiddenSelected() && S.plays > 0 && !S.pendingDiscard;   // face-down tiles: never say in advance whether the selection is a valid play
-  const bp = $('#btnPlay'); bp.disabled = !inBlind || (!!opt.err && !hid) || S.busy; bp.textContent = 'Play'; bp.title = hid ? 'Face-down tiles selected' : (opt.err || (opt.label ? opt.label.replace(/^Play /, '') : ''));
+  // Each action button says what it will do, or why it can't, and the Play and Discard buttons show what is left as dots.
+  const pips = n => n > 8 ? `<b class="num">${n}</b>` : Array.from({ length: Math.max(0, n) }, () => '<i></i>').join('');
+  const sub = (id, text) => { const el = $(id); const t = tr(text || ''); if (el.textContent !== t) el.textContent = t; el.title = t; };
+  const bp = $('#btnPlay'); bp.disabled = !inBlind || (!!opt.err && !hid) || S.busy;
+  const pv = PREVIEW && PREVIEW.ctx ? `${PREVIEW.label} · ${fmtN(PREVIEW.ctx.total)}` : '';
+  sub('#playSub', !inBlind ? '' : hid ? 'face-down tiles: plays its best part' : opt.err ? (S.selected.length ? opt.err.replace(/\.$/, '') : 'select tiles to play') : pv || (opt.label || '').replace(/^Play /, ''));
+  bp.title = hid ? 'Face-down tiles selected' : (opt.err || pv); $('#playPips').innerHTML = inBlind ? pips(S.plays) : ''; $('#playPips').title = `${S.plays} Play${S.plays === 1 ? '' : 's'} left`;
   const maxD = S.boss === 'monk' ? 3 : CFG.maxDiscardTiles, tooMany = !S.pendingDiscard && S.selected.length > maxD;
-  const bd = $('#btnDiscard'); bd.disabled = !inBlind || S.busy || (!S.pendingDiscard && S.discards <= 0) || (S.pendingDiscard && S.selected.length !== S.pendingDiscard) || tooMany; bd.title = S.pendingDiscard && S.selected.length !== S.pendingDiscard ? `Select exactly ${S.pendingDiscard} tile to settle the Call` : tooMany ? `You can discard at most ${maxD} tiles at once` : ''; bd.textContent = S.pendingDiscard ? `Discard ${S.pendingDiscard} to settle the Call` : `Discard (${S.discards})`; bd.classList.toggle('pulse', !!S.pendingDiscard);
+  const bd = $('#btnDiscard'); bd.disabled = !inBlind || S.busy || (!S.pendingDiscard && S.discards <= 0) || (S.pendingDiscard && S.selected.length !== S.pendingDiscard) || tooMany;
+  const nSel = S.selected.length;
+  $('#discTitle').textContent = S.pendingDiscard ? `Discard ${S.pendingDiscard}` : nSel ? `Discard ${nSel}` : 'Discard';
+  sub('#discSub', !inBlind ? '' : S.pendingDiscard ? (nSel === S.pendingDiscard ? 'settles your Call' : `select ${S.pendingDiscard} to settle your Call`) : S.discards <= 0 ? 'no Discards left' : tooMany ? `at most ${maxD} at once` : nSel ? `draws ${nSel} new tile${nSel === 1 ? '' : 's'}` : `select up to ${maxD} tiles`);
+  bd.title = $('#discSub').textContent; $('#discPips').innerHTML = inBlind && !S.pendingDiscard ? pips(S.discards) : ''; $('#discPips').title = `${S.discards} Discard${S.discards === 1 ? '' : 's'} left`; bd.classList.toggle('pulse', !!S.pendingDiscard);
   const dk = $('#btnKan'); const dko = declareOption(); dk.disabled = !dko.ok; dk.title = dko.err || 'Set these 4 tiles aside as a closed Kan and draw a replacement tile';
+  sub('#kanSub', !inBlind ? '' : dko.ok ? 'draws a replacement tile' : 'needs 4 alike in your hand');
   $('#preview').innerHTML = '';
-  $('#btnCall').disabled = !inBlind || S.busy || !S.selRiver || S.selected.length < 2;
+  const bc = $('#btnCall'); bc.disabled = !inBlind || S.busy || !S.selRiver || S.selected.length < 2;
+  const freeMax = S.talismans.reduce((m, k) => Math.max(m, +TAL[k].freeCall || 0), 0), freeLeft = Math.max(0, freeMax - (S.freeCallsUsed || 0));
+  sub('#callSub', !inBlind ? '' : S.boss === 'fisherman' ? 'The Fisherman forbids it' : !S.selRiver ? 'pick a River tile first' : S.selected.length < 2 ? 'plus 2–3 hand tiles' : freeLeft ? `free (${freeLeft} left)` : 'costs 1 Play');
+  bc.title = $('#callSub').textContent;
   $('#btnClear').disabled = !inBlind || S.busy;
 }
 function renderLast() {
@@ -2287,6 +2324,27 @@ function slotDropIndex(x, y, skipEl) {
 const motionOK = !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 let skipAnim = false, skipArmed = false;
 function wait(ms) { return new Promise(r => setTimeout(r, (motionOK && !skipAnim) ? Math.round(ms * SPEEDS[ANIM_SPEED]) : 0)); }
+// Balatro's "juice": each change kicks a damped spring for scale and a little rotation. Kicks stack rather than restart,
+// so a run of fast tile hits keeps the number bouncing smoothly. One rAF loop drives every juiced element.
+const JUICE = new Map(); let juiceRAF = 0;
+function juice(el, amt = 1) {
+  if (!el || !motionOK || skipAnim) return;
+  let q = JUICE.get(el); if (!q) { q = { s: 0, vs: 0, r: 0, vr: 0 }; JUICE.set(el, q); }
+  q.vs += 5.6 * amt; q.vr += (q.vr > 0 ? -1 : 1) * 110 * amt;
+  if (juiceRAF) return;
+  let last = performance.now();
+  const step = now => {
+    const dt = Math.min(.033, (now - last) / 1000); last = now; let alive = false;
+    for (const [e, k] of JUICE) {
+      k.vs += (-190 * k.s - 15 * k.vs) * dt; k.s += k.vs * dt;
+      k.vr += (-230 * k.r - 17 * k.vr) * dt; k.r += k.vr * dt;
+      if (!e.isConnected || (Math.abs(k.s) < .002 && Math.abs(k.vs) < .02 && Math.abs(k.r) < .05 && Math.abs(k.vr) < .5)) { e.style.transform = ''; JUICE.delete(e); continue; }
+      alive = true; e.style.transform = `scale(${(1 + Math.max(-.18, Math.min(.55, k.s))).toFixed(3)}) rotate(${Math.max(-10, Math.min(10, k.r)).toFixed(2)}deg)`;
+    }
+    juiceRAF = alive ? requestAnimationFrame(step) : 0;
+  };
+  juiceRAF = requestAnimationFrame(step);
+}
 async function animateScore(ctx) {
   skipAnim = false; skipArmed = false; setTimeout(() => { skipArmed = true; }, 250);
   const box = $('#scorebox'); if (!box) return;
@@ -2298,16 +2356,18 @@ async function animateScore(ctx) {
   const tileEls = new Map(); document.querySelectorAll('#hand .tile[data-id], #open .tile[data-id]').forEach(e => tileEls.set(+e.dataset.id, e));
   let chips = 0, han = 0, tileX = 1, mult = null;
   const curMult = () => mult === null ? hanMult(han) * tileX : mult;
-  let lastChips = null, lastMult = null, lastHan = null;
+  let lastChips = null, lastMult = null, lastHan = null; const fitLen = { c: 0, m: 0 };
   const bump = (el, cls) => { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); };
   const setMath = () => {
     const c = Math.max(0, Math.round(chips)), m = fmtMult(curMult());
     chipsEl.textContent = c; multEl.textContent = m;
     // Like Balatro: the numbers pop and wobble, the boxes stay put.
-    if (lastChips !== null && c !== lastChips) bump(chipsEl, 'pop'); if (lastMult !== null && m !== lastMult) bump(multEl, 'pop');
+    if (lastChips !== null && c !== lastChips) juice(chipsEl); if (lastMult !== null && m !== lastMult) juice(multEl, 1.15);
     const hv = Math.round(han); hanEl.textContent = hv; tierEl.textContent = tr(tierText(hv)); hanPill.classList.toggle('done', mult !== null);
-    if (lastHan !== null && hv !== lastHan) bump(hanPill.querySelector('.hanline'), 'pop');
-    lastChips = c; lastMult = m; lastHan = hv; fitText(chipsBox); fitText(multBox); fitFoot(hanPill);
+    if (lastHan !== null && hv !== lastHan) juice(hanPill.querySelector('.hanline'), .6);
+    // Re-fit only when the number of characters changes, so layout isn't recalculated on every tick.
+    const cl = String(c).length, ml = String(m).length; if (cl !== fitLen.c) { fitLen.c = cl; fitText(chipsBox); } if (ml !== fitLen.m) { fitLen.m = ml; fitText(multBox); }
+    lastChips = c; lastMult = m; lastHan = hv; fitFoot(hanPill);
   };
   const showLine = l => { const d = document.createElement('div'); d.className = 'row sline' + (l.zero ? ' bad' : '') + (l.yaku ? ' yaku' : '') + (l.tal ? ' tal' : '') + (l.convert ? ' convert' : ''); d.innerHTML = `<span>${tr(l.label)}</span><span class="num">${tr(l.val)}</span>`; linesBox.appendChild(d); if (l.tal) { const slot = document.querySelector(`.slot[data-tal="${l.tal}"]`); if (slot) { slot.classList.remove('bounce'); void slot.offsetWidth; slot.classList.add('bounce'); } } };
   const applyLine = l => { if (l.zero) chips = 0; else { chips += l.chips || 0; han += l.han || 0; if (l.convert) mult = hanMult(han) * tileX; if (l.mult) mult = (mult === null ? hanMult(han) * tileX : mult) + l.mult; if (l.xmult && mult !== null) mult *= l.xmult; } setMath(); };

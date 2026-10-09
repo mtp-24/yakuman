@@ -797,12 +797,26 @@ function renderActions() {
   const inBlind = S.phase === 'blind';
   const opt = inBlind ? playOption() : { err: '' };
   const hid = inBlind && hiddenSelected() && S.plays > 0 && !S.pendingDiscard;   // face-down tiles: never say in advance whether the selection is a valid play
-  const bp = $('#btnPlay'); bp.disabled = !inBlind || (!!opt.err && !hid) || S.busy; bp.textContent = 'Play'; bp.title = hid ? 'Face-down tiles selected' : (opt.err || (opt.label ? opt.label.replace(/^Play /, '') : ''));
+  // Each action button says what it will do, or why it can't, and the Play and Discard buttons show what is left as dots.
+  const pips = n => n > 8 ? `<b class="num">${n}</b>` : Array.from({ length: Math.max(0, n) }, () => '<i></i>').join('');
+  const sub = (id, text) => { const el = $(id); const t = tr(text || ''); if (el.textContent !== t) el.textContent = t; el.title = t; };
+  const bp = $('#btnPlay'); bp.disabled = !inBlind || (!!opt.err && !hid) || S.busy;
+  const pv = PREVIEW && PREVIEW.ctx ? `${PREVIEW.label} · ${fmtN(PREVIEW.ctx.total)}` : '';
+  sub('#playSub', !inBlind ? '' : hid ? 'face-down tiles: plays its best part' : opt.err ? (S.selected.length ? opt.err.replace(/\.$/, '') : 'select tiles to play') : pv || (opt.label || '').replace(/^Play /, ''));
+  bp.title = hid ? 'Face-down tiles selected' : (opt.err || pv); $('#playPips').innerHTML = inBlind ? pips(S.plays) : ''; $('#playPips').title = `${S.plays} Play${S.plays === 1 ? '' : 's'} left`;
   const maxD = S.boss === 'monk' ? 3 : CFG.maxDiscardTiles, tooMany = !S.pendingDiscard && S.selected.length > maxD;
-  const bd = $('#btnDiscard'); bd.disabled = !inBlind || S.busy || (!S.pendingDiscard && S.discards <= 0) || (S.pendingDiscard && S.selected.length !== S.pendingDiscard) || tooMany; bd.title = S.pendingDiscard && S.selected.length !== S.pendingDiscard ? `Select exactly ${S.pendingDiscard} tile to settle the Call` : tooMany ? `You can discard at most ${maxD} tiles at once` : ''; bd.textContent = S.pendingDiscard ? `Discard ${S.pendingDiscard} to settle the Call` : `Discard (${S.discards})`; bd.classList.toggle('pulse', !!S.pendingDiscard);
+  const bd = $('#btnDiscard'); bd.disabled = !inBlind || S.busy || (!S.pendingDiscard && S.discards <= 0) || (S.pendingDiscard && S.selected.length !== S.pendingDiscard) || tooMany;
+  const nSel = S.selected.length;
+  $('#discTitle').textContent = S.pendingDiscard ? `Discard ${S.pendingDiscard}` : nSel ? `Discard ${nSel}` : 'Discard';
+  sub('#discSub', !inBlind ? '' : S.pendingDiscard ? (nSel === S.pendingDiscard ? 'settles your Call' : `select ${S.pendingDiscard} to settle your Call`) : S.discards <= 0 ? 'no Discards left' : tooMany ? `at most ${maxD} at once` : nSel ? `draws ${nSel} new tile${nSel === 1 ? '' : 's'}` : `select up to ${maxD} tiles`);
+  bd.title = $('#discSub').textContent; $('#discPips').innerHTML = inBlind && !S.pendingDiscard ? pips(S.discards) : ''; $('#discPips').title = `${S.discards} Discard${S.discards === 1 ? '' : 's'} left`; bd.classList.toggle('pulse', !!S.pendingDiscard);
   const dk = $('#btnKan'); const dko = declareOption(); dk.disabled = !dko.ok; dk.title = dko.err || 'Set these 4 tiles aside as a closed Kan and draw a replacement tile';
+  sub('#kanSub', !inBlind ? '' : dko.ok ? 'draws a replacement tile' : 'needs 4 alike in your hand');
   $('#preview').innerHTML = '';
-  $('#btnCall').disabled = !inBlind || S.busy || !S.selRiver || S.selected.length < 2;
+  const bc = $('#btnCall'); bc.disabled = !inBlind || S.busy || !S.selRiver || S.selected.length < 2;
+  const freeMax = S.talismans.reduce((m, k) => Math.max(m, +TAL[k].freeCall || 0), 0), freeLeft = Math.max(0, freeMax - (S.freeCallsUsed || 0));
+  sub('#callSub', !inBlind ? '' : S.boss === 'fisherman' ? 'The Fisherman forbids it' : !S.selRiver ? 'pick a River tile first' : S.selected.length < 2 ? 'plus 2–3 hand tiles' : freeLeft ? `free (${freeLeft} left)` : 'costs 1 Play');
+  bc.title = $('#callSub').textContent;
   $('#btnClear').disabled = !inBlind || S.busy;
 }
 function renderLast() {
@@ -864,6 +878,27 @@ function slotDropIndex(x, y, skipEl) {
 const motionOK = !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 let skipAnim = false, skipArmed = false;
 function wait(ms) { return new Promise(r => setTimeout(r, (motionOK && !skipAnim) ? Math.round(ms * SPEEDS[ANIM_SPEED]) : 0)); }
+// Balatro's "juice": each change kicks a damped spring for scale and a little rotation. Kicks stack rather than restart,
+// so a run of fast tile hits keeps the number bouncing smoothly. One rAF loop drives every juiced element.
+const JUICE = new Map(); let juiceRAF = 0;
+function juice(el, amt = 1) {
+  if (!el || !motionOK || skipAnim) return;
+  let q = JUICE.get(el); if (!q) { q = { s: 0, vs: 0, r: 0, vr: 0 }; JUICE.set(el, q); }
+  q.vs += 5.6 * amt; q.vr += (q.vr > 0 ? -1 : 1) * 110 * amt;
+  if (juiceRAF) return;
+  let last = performance.now();
+  const step = now => {
+    const dt = Math.min(.033, (now - last) / 1000); last = now; let alive = false;
+    for (const [e, k] of JUICE) {
+      k.vs += (-190 * k.s - 15 * k.vs) * dt; k.s += k.vs * dt;
+      k.vr += (-230 * k.r - 17 * k.vr) * dt; k.r += k.vr * dt;
+      if (!e.isConnected || (Math.abs(k.s) < .002 && Math.abs(k.vs) < .02 && Math.abs(k.r) < .05 && Math.abs(k.vr) < .5)) { e.style.transform = ''; JUICE.delete(e); continue; }
+      alive = true; e.style.transform = `scale(${(1 + Math.max(-.18, Math.min(.55, k.s))).toFixed(3)}) rotate(${Math.max(-10, Math.min(10, k.r)).toFixed(2)}deg)`;
+    }
+    juiceRAF = alive ? requestAnimationFrame(step) : 0;
+  };
+  juiceRAF = requestAnimationFrame(step);
+}
 async function animateScore(ctx) {
   skipAnim = false; skipArmed = false; setTimeout(() => { skipArmed = true; }, 250);
   const box = $('#scorebox'); if (!box) return;
@@ -875,16 +910,18 @@ async function animateScore(ctx) {
   const tileEls = new Map(); document.querySelectorAll('#hand .tile[data-id], #open .tile[data-id]').forEach(e => tileEls.set(+e.dataset.id, e));
   let chips = 0, han = 0, tileX = 1, mult = null;
   const curMult = () => mult === null ? hanMult(han) * tileX : mult;
-  let lastChips = null, lastMult = null, lastHan = null;
+  let lastChips = null, lastMult = null, lastHan = null; const fitLen = { c: 0, m: 0 };
   const bump = (el, cls) => { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); };
   const setMath = () => {
     const c = Math.max(0, Math.round(chips)), m = fmtMult(curMult());
     chipsEl.textContent = c; multEl.textContent = m;
     // Like Balatro: the numbers pop and wobble, the boxes stay put.
-    if (lastChips !== null && c !== lastChips) bump(chipsEl, 'pop'); if (lastMult !== null && m !== lastMult) bump(multEl, 'pop');
+    if (lastChips !== null && c !== lastChips) juice(chipsEl); if (lastMult !== null && m !== lastMult) juice(multEl, 1.15);
     const hv = Math.round(han); hanEl.textContent = hv; tierEl.textContent = tr(tierText(hv)); hanPill.classList.toggle('done', mult !== null);
-    if (lastHan !== null && hv !== lastHan) bump(hanPill.querySelector('.hanline'), 'pop');
-    lastChips = c; lastMult = m; lastHan = hv; fitText(chipsBox); fitText(multBox); fitFoot(hanPill);
+    if (lastHan !== null && hv !== lastHan) juice(hanPill.querySelector('.hanline'), .6);
+    // Re-fit only when the number of characters changes, so layout isn't recalculated on every tick.
+    const cl = String(c).length, ml = String(m).length; if (cl !== fitLen.c) { fitLen.c = cl; fitText(chipsBox); } if (ml !== fitLen.m) { fitLen.m = ml; fitText(multBox); }
+    lastChips = c; lastMult = m; lastHan = hv; fitFoot(hanPill);
   };
   const showLine = l => { const d = document.createElement('div'); d.className = 'row sline' + (l.zero ? ' bad' : '') + (l.yaku ? ' yaku' : '') + (l.tal ? ' tal' : '') + (l.convert ? ' convert' : ''); d.innerHTML = `<span>${tr(l.label)}</span><span class="num">${tr(l.val)}</span>`; linesBox.appendChild(d); if (l.tal) { const slot = document.querySelector(`.slot[data-tal="${l.tal}"]`); if (slot) { slot.classList.remove('bounce'); void slot.offsetWidth; slot.classList.add('bounce'); } } };
   const applyLine = l => { if (l.zero) chips = 0; else { chips += l.chips || 0; han += l.han || 0; if (l.convert) mult = hanMult(han) * tileX; if (l.mult) mult = (mult === null ? hanMult(han) * tileX : mult) + l.mult; if (l.xmult && mult !== null) mult *= l.xmult; } setMath(); };
