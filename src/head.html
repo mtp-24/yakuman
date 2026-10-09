@@ -142,7 +142,9 @@ aside{display:flex;flex-direction:column;gap:10px;min-width:0}
 
 /* Overlays */
 .overlay{position:fixed;inset:0;background:rgba(5,10,9,.86);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:24px 16px;z-index:20}
-.modal{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px;max-width:900px;width:100%;min-width:0}
+.modal{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px;max-width:900px;width:100%;min-width:0;position:relative}
+.modal-x{position:sticky;top:0;float:right;margin:-8px -8px 0 8px;width:32px;height:32px;padding:0;display:inline-flex;align-items:center;justify-content:center;border-radius:8px;z-index:2;background:var(--panel)}
+.wallcount{color:var(--muted);margin-left:4px}
 .modal h2{font-size:26px;color:var(--accent);margin-bottom:6px}
 .shop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;margin:12px 0;align-items:stretch}
 .shopcard{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:6px}

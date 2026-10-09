@@ -142,7 +142,9 @@ aside{display:flex;flex-direction:column;gap:10px;min-width:0}
 
 /* Overlays */
 .overlay{position:fixed;inset:0;background:rgba(5,10,9,.86);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:24px 16px;z-index:20}
-.modal{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px;max-width:900px;width:100%;min-width:0}
+.modal{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px;max-width:900px;width:100%;min-width:0;position:relative}
+.modal-x{position:sticky;top:0;float:right;margin:-8px -8px 0 8px;width:32px;height:32px;padding:0;display:inline-flex;align-items:center;justify-content:center;border-radius:8px;z-index:2;background:var(--panel)}
+.wallcount{color:var(--muted);margin-left:4px}
 .modal h2{font-size:26px;color:var(--accent);margin-bottom:6px}
 .shop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;margin:12px 0;align-items:stretch}
 .shopcard{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:6px}
@@ -346,7 +348,6 @@ button.pulse{animation:btnpulse 1s ease-in-out infinite;box-shadow:0 0 0 0 rgba(
 <div id="app">
 <header>
   <h1 data-notr>Yakuman<span>MAHJONG ROGUELITE · PLAYTEST BUILD</span></h1>
-  <div class="hdr-stat" id="hdrRound"></div>
   <div class="hdr-stat" id="hdrMoney"></div>
   <div class="spacer"></div>
   <nav class="hdr-nav">
@@ -1109,6 +1110,8 @@ function waitsOf(hand, openCount) {
 // ===================== TERMINOLOGY SWITCH =====================
 let LANG = 'ja'; try { LANG = localStorage.getItem('yakuman.lang') === 'hk' ? 'hk' : 'ja'; } catch (e) { }
 let SHOW_DOTS = false; try { SHOW_DOTS = localStorage.getItem('yakuman.dots') === 'on'; } catch (e) { }
+// Helper hints under the hand, each off by default: tiles away / complete hand ready, waits, and what a selected discard does.
+let HINTS = { away: false, waits: false, without: false }; try { Object.assign(HINTS, JSON.parse(localStorage.getItem('yakuman.hints') || '{}')); } catch (e) { }
 const SPEEDS = { slow: 2.5, normal: 1, fast: 0.45, instant: 0 };
 let ANIM_SPEED = 'normal'; try { const v = localStorage.getItem('yakuman.speed'); if (SPEEDS[v] !== undefined) ANIM_SPEED = v; } catch (e) { }
 let HK_RE = null, HK_MAP = null;
@@ -1145,6 +1148,7 @@ function settingsHTML() {
   const dbgOn = !$('#debugBar').hidden;
   return `<h2>Settings</h2>
   <div class="setrow"><div><b>Terminology</b><div class="muted" data-notr>Riichi uses Japanese names (Chi, Pon, Kan, Han, Yaku, ¥). Hong Kong uses English names (Chow, Pung, Kong, Faan, $).</div></div><div class="setbtns"><button class="${LANG === 'ja' ? 'primary' : ''}" data-setlang="ja">Riichi</button><button class="${LANG === 'hk' ? 'primary' : ''}" data-setlang="hk">Hong Kong</button></div></div>
+  <div class="setrow"><div><b>Helper hints</b><div class="muted">Off by default. Shown under your hand: how many tiles you are from a complete hand, which tiles you are waiting on, and whether the tiles you select can go without setting you back.</div></div><div class="setbtns">${[['away', 'Tiles Away'], ['waits', 'Waiting On'], ['without', 'Without These']].map(([k, n]) => `<button class="${HINTS[k] ? 'primary' : ''}" data-sethint="${k}">${n}</button>`).join('')}</div></div>
   <div class="setrow"><div><b>Dead-tile dots (assist)</b><div class="muted">Off by default. When on, green dots mark tiles you can discard without losing progress toward a complete hand. A sizeable help: it solves the discard choice for you.</div></div><div class="setbtns"><button class="${SHOW_DOTS ? 'primary' : ''}" data-setdots="on">On</button><button class="${!SHOW_DOTS ? 'primary' : ''}" data-setdots="off">Off</button></div></div>
   <div class="setrow"><div><b>Scoring animation speed</b><div class="muted">How fast tiles and Talismans score. Instant shows the result at once. Clicking anywhere during scoring also skips.</div></div><div class="setbtns">${Object.keys(SPEEDS).map(k => `<button class="${ANIM_SPEED === k ? 'primary' : ''}" data-setspeed="${k}">${k[0].toUpperCase() + k.slice(1)}</button>`).join('')}</div></div>
   <div class="setrow"><div><b>Debug tools</b><div class="muted">A bar under the board with money, plays, items, bosses and editions for playtesting.</div></div><div class="setbtns"><button class="${dbgOn ? 'primary' : ''}" data-setdbg="on">Show</button><button class="${!dbgOn ? 'primary' : ''}" data-setdbg="off">Hide</button></div></div>
@@ -1542,9 +1546,8 @@ function tileSVG(t) {
 }
 function render() {
   if (!S) return; setRules(S);
-  $('#hdrRound').innerHTML = `Ante <b>${Math.min(S.ante, CFG.antes)}</b> / ${CFG.antes} · ${S.phase === 'blind' ? ({ small: 'Small Blind', big: 'Big Blind', boss: 'Boss' })[blindKind()] : S.phase === 'shop' ? 'Shop' : ''}`;
-  $('#hdrRound').title = `Seed ${S.seed} · ${DECKS[S.deckKey].name} · ${STAKES[S.stake].name}`;
   $('#hdrMoney').innerHTML = `YEN <b class="num">¥${S.money}</b>`;
+  $('#btnDeck').innerHTML = `Wall <span class="num wallcount">${S.phase === 'blind' ? S.wall.length : (S.deck || []).length}</span>`; $('#btnDeck').title = S.phase === 'blind' ? 'Tiles still face down in the Wall. Click to see every tile.' : 'Tiles in your Wall. Click to see every tile.';
   renderBlind(); renderTalismans(); renderConsumables(); renderOpen(); renderRiver(); renderHand(); renderActions(); renderLast();
   $('#msg').textContent = S.msg || ''; $('#msg').className = 'msg' + (S.msgErr ? ' err' : '');
   if (S.phase === 'cashout') showModal(cashoutHTML()); else if (S.phase === 'shop' && S.pack) { showModal(packHTML()); fillPackHand(); } else if (S.phase === 'shop') showModal(shopHTML()); else if (S.phase === 'select') showModal(selectHTML()); else if (S.phase === 'gameover') showModal(overHTML(false)); else if (S.phase === 'win') showModal(overHTML(true)); else if (!modalPinned) hideModal();
@@ -1590,7 +1593,7 @@ function renderBlind() {
     }
     else h += `<div class="handbox empty"><div class="hb-name muted">Select a play</div><div class="hb-math num"><span class="chipbox dim">0</span><span class="px">×</span><span class="multbox dim">0</span></div><div class="hb-han num"><span class="hanpill dim"><b class="hanval">0</b> Han</span></div></div>`;
   }
-  h += `<div class="stats"><div class="stat plays"><div class="label">Plays</div><div class="v num">${S.plays}</div></div><div class="stat discards"><div class="label">Discards</div><div class="v num">${S.discards}</div></div><div class="stat money"><div class="label">YEN</div><div class="v num">¥${S.money}</div></div><div class="stat"><div class="label">Wall</div><div class="v num">${S.wall.length}</div></div></div>`;
+  h += `<div class="stats"><div class="stat plays"><div class="label">Plays</div><div class="v num">${S.plays}</div></div><div class="stat discards"><div class="label">Discards</div><div class="v num">${S.discards}</div></div></div>`;
   if (S.indicators.length) { h += `<div class="label" style="margin-top:8px">Dora Indicators</div><div class="dora-ind" id="doraRow"></div>`; }
   if (S.flowers.length) h += `<div class="label" style="margin-top:8px">Flowers &amp; Seasons</div><div class="flowers">${S.flowers.map(f => `<span class="flowerchip" title="${FLW[f].desc}">${FLW[f].name}</span>`).join('')}</div>`;
   $('#blindCard').innerHTML = h;
@@ -1662,43 +1665,50 @@ function renderHint(hidden) {
   // Under The Purist only the visible (simple) tiles are counted; hidden tiles are treated as unknown, so this is a "no better than" estimate.
   const vis = hidden ? S.hand.filter(t => !(isHonor(t) || isTerminal(t))) : S.hand;
   const sh = handShanten(vis, S.open.length);
+  const markDots = () => { if (SHOW_DOTS && !hidden) { const dead = deadTiles(vis, S.open.length, sh, CFG.maxDiscardTiles); const els = $('#hand').children; for (let i = 0; i < S.hand.length; i++) if (dead.includes(S.hand[i])) els[i].classList.add('safe'); } };
+  const parts = [];
   if (S.pendingDiscard) {
+    // Settling a Call is an instruction, not a hint, so it always shows.
     const n = S.selected.length, need = S.pendingDiscard;
-    box.innerHTML = `<span class="pendnote">Settle your Call: select ${need} tile and press Discard. It does not use a Discard.${n === need ? ' Ready, press Discard.' : n > need ? ` ${n} selected, you need exactly ${need}.` : ''}</span>${sh === -1 ? ' <span class="hint-sel good">· complete hand ready once settled</span>' : ''}${SHOW_DOTS && !hidden ? ' <span class="hint-sel muted">· dotted tiles are safe to throw</span>' : ''}`;
-    if (SHOW_DOTS && !hidden) { const dead = deadTiles(vis, S.open.length, sh, CFG.maxDiscardTiles); const els = $('#hand').children; for (let i = 0; i < S.hand.length; i++) if (dead.includes(S.hand[i])) els[i].classList.add('safe'); }
-    return;
+    parts.push(`<span class="pendnote">Settle your Call: select ${need} tile and press Discard. It does not use a Discard.${n === need ? ' Ready, press Discard.' : n > need ? ` ${n} selected, you need exactly ${need}.` : ''}</span>`);
+    if (HINTS.away && sh === -1) parts.push('<span class="hint-sel good">complete hand ready once settled</span>');
+    if (SHOW_DOTS && !hidden) parts.push('<span class="hint-sel muted">dotted tiles are safe to throw</span>');
+    box.innerHTML = parts.join(' · '); markDots(); return;
   }
   const away = n => n === -1 ? 'Complete hand ready' : n === 0 ? '1 tile away (tenpai)' : `${n + 1} tiles away`;
-  let h = `<span class="hint-main ${sh <= 0 ? 'good' : ''}">${hidden ? 'Visible tiles: at least ' + away(sh).toLowerCase() : away(sh)}</span>`;
-  if (hidden) h += ` <span class="hint-sel muted">· face-down tiles are 1s, 9s, Winds or Dragons and are not counted</span>`;
-  if (!hidden && sh === 0) {
+  if (HINTS.away) {
+    parts.push(`<span class="hint-main ${sh <= 0 ? 'good' : ''}">${hidden ? 'Visible tiles: at least ' + away(sh).toLowerCase() : away(sh)}</span>`);
+    if (hidden) parts.push('<span class="hint-sel muted">face-down tiles are 1s, 9s, Winds or Dragons and are not counted</span>');
+  }
+  if (HINTS.waits && !hidden && sh === 0) {
     const waits = waitsOf(S.hand, S.open.length); const riverKeys = new Set(S.river.map(key));
     const names = waits.map(w => { const t = tileFromIdx(w); const f = riverKeys.has(key(t)); return `<span class="${f ? 'bad' : ''}">${tileName(t)}${f ? (canClaim() ? ' (in River: claim it with Kawauso, Furiten)' : ' (in River: Furiten)') : ''}</span>`; });
-    if (names.length) h += ` <span class="hint-sel">· waiting on ${names.join(', ')}</span>`;
+    if (names.length) parts.push(`<span class="hint-sel">waiting on ${names.join(', ')}</span>`);
   }
   const sel = selTiles().filter(t => vis.includes(t));
   const rtc = claimTile();
-  if (!hidden && rtc && sel.length === neededConcealed() - 1) {
+  if (HINTS.away && !hidden && rtc && sel.length === neededConcealed() - 1) {
     const best = bestHand(sel.concat([rtc]), S.open, S);
-    h += best ? ` <span class="hint-sel bad">· complete hand with ${tileName(rtc)} claimed from the River${S.talismans.includes('kappa') ? ': Kappa bonus' : ': Furiten, ×0.5'}</span>` : ` <span class="hint-sel muted">· ${tileName(rtc)} from the River does not complete these tiles</span>`;
+    parts.push(best ? `<span class="hint-sel bad">complete hand with ${tileName(rtc)} claimed from the River${S.talismans.includes('kappa') ? ': Kappa bonus' : ': Furiten, ×0.5'}</span>` : `<span class="hint-sel muted">${tileName(rtc)} from the River does not complete these tiles</span>`);
   }
+  let complete = false;
   if (!hidden && sel.length === neededConcealed()) {
     const best = bestHand(sel, S.open, S);
-    if (best) { const win = winningTile(sel); const f = win && S.river.some(t => key(t) === key(win)); h += ` <span class="hint-sel ${f ? 'bad' : 'good'}">· complete hand, winning tile ${tileName(win)}${win && win.rinshan ? ' (Kan replacement: Rinshan Kaihou +1 Han)' : ''}${f ? (S.talismans.includes('kappa') ? ' is in your River: Kappa bonus' : ' is in your River: Furiten, ×0.5') : ''}</span>`; box.innerHTML = h; return; }
+    if (best) { complete = true; if (HINTS.away) { const win = winningTile(sel); const f = win && S.river.some(t => key(t) === key(win)); parts.push(`<span class="hint-sel ${f ? 'bad' : 'good'}">complete hand, winning tile ${tileName(win)}${win && win.rinshan ? ' (Kan replacement: Rinshan Kaihou +1 Han)' : ''}${f ? (S.talismans.includes('kappa') ? ' is in your River: Kappa bonus' : ' is in your River: Furiten, ×0.5') : ''}</span>`); } }
   }
-  if (sel.length && sel.length < vis.length) {
+  if (!complete && HINTS.without && sel.length && sel.length < vis.length) {
     const rest = vis.filter(t => !sel.includes(t)); const sh2 = handShanten(rest, S.open.length);
-    h += ` <span class="hint-sel ${sh2 > sh ? 'bad' : 'good'}">· without ${sel.length === 1 ? 'this tile' : 'these'}: ${sh2 > sh ? 'sets you back to ' + away(sh2).toLowerCase() : 'safe, still ' + away(sh2).toLowerCase()}</span>`;
-  } else if (SHOW_DOTS) h += ` <span class="hint-sel muted">· dotted tiles are dead weight: all of them can go without losing progress</span>`;
-  box.innerHTML = h;
-  // mark single tiles whose removal does not raise shanten
-  if (SHOW_DOTS) { const dead = deadTiles(vis, S.open.length, sh, CFG.maxDiscardTiles); const els = $('#hand').children; const tiles = S.hand; for (let i = 0; i < tiles.length; i++) if (dead.includes(tiles[i])) els[i].classList.add('safe'); }
+    parts.push(`<span class="hint-sel ${sh2 > sh ? 'bad' : 'good'}">without ${sel.length === 1 ? 'this tile' : 'these'}: ${sh2 > sh ? 'sets you back to ' + away(sh2).toLowerCase() : 'safe, still ' + away(sh2).toLowerCase()}</span>`);
+  } else if (!complete && SHOW_DOTS && !hidden) parts.push('<span class="hint-sel muted">dotted tiles are dead weight: all of them can go without losing progress</span>');
+  box.innerHTML = parts.join(' · ');
+  markDots();
 }
 function renderActions() {
   const inBlind = S.phase === 'blind';
   const opt = inBlind ? playOption() : { err: '' };
   const bp = $('#btnPlay'); bp.disabled = !inBlind || !!opt.err || S.busy; bp.textContent = 'Play'; bp.title = opt.err || (opt.label ? opt.label.replace(/^Play /, '') : '');
-  const bd = $('#btnDiscard'); bd.disabled = !inBlind || S.busy || (!S.pendingDiscard && S.discards <= 0) || (S.pendingDiscard && S.selected.length !== S.pendingDiscard); bd.title = S.pendingDiscard && S.selected.length !== S.pendingDiscard ? `Select exactly ${S.pendingDiscard} tile to settle the Call` : ''; bd.textContent = S.pendingDiscard ? `Discard ${S.pendingDiscard} to settle the Call` : `Discard (${S.discards})`; bd.classList.toggle('pulse', !!S.pendingDiscard);
+  const maxD = S.boss === 'monk' ? 3 : CFG.maxDiscardTiles, tooMany = !S.pendingDiscard && S.selected.length > maxD;
+  const bd = $('#btnDiscard'); bd.disabled = !inBlind || S.busy || (!S.pendingDiscard && S.discards <= 0) || (S.pendingDiscard && S.selected.length !== S.pendingDiscard) || tooMany; bd.title = S.pendingDiscard && S.selected.length !== S.pendingDiscard ? `Select exactly ${S.pendingDiscard} tile to settle the Call` : tooMany ? `You can discard at most ${maxD} tiles at once` : ''; bd.textContent = S.pendingDiscard ? `Discard ${S.pendingDiscard} to settle the Call` : `Discard (${S.discards})`; bd.classList.toggle('pulse', !!S.pendingDiscard);
   const dk = $('#btnKan'); const dko = declareOption(); dk.disabled = !dko.ok; dk.title = dko.err || 'Set these 4 tiles aside as a closed Kan and draw a replacement tile';
   $('#preview').innerHTML = '';
   $('#btnCall').disabled = !inBlind || S.busy || !S.selRiver || S.selected.length < 2;
@@ -1817,7 +1827,11 @@ async function animateScore(ctx) {
 }
 // ===================== MODALS =====================
 let modalPinned = false;
-function showModal(html, pinned) { modalPinned = !!pinned; $('#modal').innerHTML = html; $('#overlay').hidden = false; fillExamples($('#modal')); translateDOM($('#modal')); }
+const CLOSE_X = '<button class="modal-x ghost" id="mX" title="Close" aria-label="Close"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>';
+// A modal with a Close or Cancel button can also be closed with the corner X, a click outside it, or Esc. Game-flow screens (cash-out, shop, packs, blind select) have none, so they stay put.
+function modalClosable() { return !$('#overlay').hidden && !!$('#modal #mClose'); }
+function closeModal() { const c = $('#modal #mClose'); if (c) c.click(); }
+function showModal(html, pinned) { modalPinned = !!pinned; $('#modal').innerHTML = html; if ($('#modal #mClose')) $('#modal').insertAdjacentHTML('afterbegin', CLOSE_X); $('#overlay').hidden = false; fillExamples($('#modal')); translateDOM($('#modal')); }
 function hideModal() { modalPinned = false; $('#overlay').hidden = true; }
 function cardHTML(it, idx) {
   const d = itemDef(it); const p = it.free ? 0 : itemPrice(it);
@@ -1925,7 +1939,7 @@ function rulesHTML() {
   <p><b>Blind Select.</b> After the shop you see the Ante's three blinds with their targets, rewards and the Boss's rule. A Small or Big Blind can be skipped for the Tag on its card instead of its money: free packs, editions, coupons, money, a bigger hand or a different Boss. Tags you hold show in the side panel.</p>
   <p><b>Setup.</b> A new run lets you choose a Wall (deck), a Stake (difficulty) and a seed. Sharing a seed replays the same Wall, shops and bosses.</p>
   <h3>Help and Controls</h3>
-  <p><b>Helper.</b> Under your hand the game shows how many tiles you are from a complete hand and, when you are one away, which tiles you are waiting on. Against The Purist it only counts your visible tiles. Settings has an optional assist that marks dead tiles with green dots.</p>
+  <p><b>Helper.</b> Settings has optional helper hints, all off by default: how many tiles you are from a complete hand, which tiles you are waiting on, and whether the tiles you select can go without setting you back. Against The Purist they only count your visible tiles. Another assist marks dead tiles with green dots.</p>
   <p><b>Arranging.</b> Drag hand tiles to reorder them. Dragging turns off auto-sort; Sort Hand sorts again. Tiles score in the order they sit, which matters for Shikigami.</p>
   <p><b>Keys.</b> Enter or P plays, D discards, C calls, K declares a Kan, Esc clears your selection. Click anywhere or press any key while a play scores to skip the animation.</p>
   </div><div style="margin-top:12px"><button id="mClose" class="primary">Close</button></div>`;
@@ -2053,10 +2067,13 @@ function bindEvents() {
   $('#btnNewRun').onclick = () => showModal(`<h2>Start a New Run?</h2><p class="muted">Your current run will be lost.</p><div style="display:flex;gap:8px"><button id="mNewRun" class="danger">New Run</button><button id="mClose">Cancel</button></div>`, true);
   document.addEventListener('click', e => { const b = e.target.closest('[data-copyseed]'); if (b) copySeed(b); if (S && S.busy && skipArmed) skipAnim = true; });
   $('#overlay').addEventListener('click', e => {
+    if (e.target === $('#overlay')) { if (modalClosable()) closeModal(); return; }
     const t = e.target.closest('button'); if (!t) return;
+    if (t.id === 'mX') { closeModal(); return; }
     if (t.dataset.copyseed != null) return;
     if (t.dataset.tab) { infoTab = t.dataset.tab; showModal(yakuHTML(), true); return; }
     if (t.dataset.setlang) { setLang(t.dataset.setlang); showModal(settingsHTML(), true); return; }
+    if (t.dataset.sethint) { HINTS[t.dataset.sethint] = !HINTS[t.dataset.sethint]; try { localStorage.setItem('yakuman.hints', JSON.stringify(HINTS)); } catch (e) { } render(); showModal(settingsHTML(), true); return; }
     if (t.dataset.setdots) { SHOW_DOTS = t.dataset.setdots === 'on'; try { localStorage.setItem('yakuman.dots', SHOW_DOTS ? 'on' : 'off'); } catch (e) { } render(); showModal(settingsHTML(), true); return; }
     if (t.dataset.setspeed) { ANIM_SPEED = t.dataset.setspeed; try { localStorage.setItem('yakuman.speed', ANIM_SPEED); } catch (e) { } showModal(settingsHTML(), true); return; }
     if (t.dataset.setdbg) { const b = $('#debugBar'); b.hidden = t.dataset.setdbg !== 'on'; if (!b.hidden) renderDebug(); showModal(settingsHTML(), true); return; }
@@ -2084,6 +2101,7 @@ function bindEvents() {
     else if (t.dataset.usecon != null) useConsumable(+t.dataset.usecon);
   });
   document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && modalClosable()) { closeModal(); return; }
     if (S.phase !== 'blind' || !$('#overlay').hidden) return;
     if (S.busy) { if (skipArmed) skipAnim = true; return; }
     if (e.key === 'Enter' || e.key === 'p') doPlay(); else if (e.key === 'd') doDiscard(); else if (e.key === 'c') doCall(); else if (e.key === 'k') doDeclareKan(); else if (e.key === 'Escape') { S.selected = []; S.selRiver = null; render(); }
