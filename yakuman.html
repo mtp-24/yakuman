@@ -843,7 +843,7 @@ button.pulse{animation:btnpulse2 2.6s ease-out infinite}
       <button id="btnDiscard" class="act act-discard"><span class="act-k" aria-hidden="true">D</span><span class="act-t" id="discTitle">Discard</span><span class="act-s" id="discSub"></span><span class="act-pips" id="discPips"></span></button>
       <span class="act-sep" aria-hidden="true"></span>
       <button id="btnCall" class="act act-call"><span class="act-k" aria-hidden="true">C</span><span class="act-t">Call</span><span class="act-s" id="callSub"></span></button>
-      <button id="btnKan" class="act act-kan"><span class="act-k" aria-hidden="true">K</span><span class="act-t">Declare Kan</span><span class="act-s" id="kanSub"></span></button>
+      <button id="btnKan" class="act act-kan" title="Set 4 identical tiles aside as a closed Kan and draw a replacement tile. The hand stays closed."><span class="act-k" aria-hidden="true">K</span><span class="act-t">Declare Kan</span><span class="act-s" id="kanSub"></span></button>
       <span class="msg" id="msg"></span>
     </div>
     <div class="preview" id="preview"></div>
@@ -2494,24 +2494,25 @@ function renderActions() {
   const hid = inBlind && hiddenSelected() && S.plays > 0 && !S.pendingDiscard;   // face-down tiles: never say in advance whether the selection is a valid play
   // Each action button says what it will do, or why it can't, and the Play and Discard buttons show what is left as dots.
   const pips = n => n > 8 ? `<b class="num">${n}</b>` : Array.from({ length: Math.max(0, n) }, () => '<i></i>').join('');
-  const sub = (id, text) => { const el = $(id); let t = tr(text || ''); t = t.charAt(0).toUpperCase() + t.slice(1); if (el.textContent !== t) el.textContent = t; el.title = t; };
+  // No changing tooltips on these buttons: browsers can keep showing a cached one (for example a Pung from the last Blind),
+  // and the line under each button already says the same thing.
+  const sub = (id, text) => { const el = $(id); let t = tr(text || ''); t = t.charAt(0).toUpperCase() + t.slice(1); if (el.textContent !== t) el.textContent = t; };
   const bp = $('#btnPlay'); bp.disabled = !inBlind || (!!opt.err && !hid) || S.busy;
   const pv = PREVIEW && PREVIEW.ctx ? PREVIEW.label : '';   // the play's name only: the score is revealed by the scoring animation
   sub('#playSub', !inBlind ? '' : hid ? 'face-down tiles: plays its best part' : opt.err ? (S.selected.length ? opt.err.replace(/\.$/, '') : 'select tiles to play') : pv || (opt.label || '').replace(/^Play /, ''));
-  bp.title = hid ? 'Face-down tiles selected' : (opt.err || pv); $('#playPips').innerHTML = inBlind ? pips(S.plays) : ''; $('#playPips').title = `${S.plays} Play${S.plays === 1 ? '' : 's'} left`;
+  $('#playPips').innerHTML = inBlind ? pips(S.plays) : '';
   const maxD = S.boss === 'monk' ? 3 : CFG.maxDiscardTiles, tooMany = !S.pendingDiscard && S.selected.length > maxD;
   const bd = $('#btnDiscard'); bd.disabled = !inBlind || S.busy || (!S.pendingDiscard && (S.discards <= 0 || !S.selected.length)) || (S.pendingDiscard && S.selected.length !== S.pendingDiscard) || tooMany;
   const nSel = S.selected.length;
   $('#discTitle').textContent = S.pendingDiscard ? `Discard ${S.pendingDiscard}` : nSel ? `Discard ${nSel}` : 'Discard';
   sub('#discSub', !inBlind ? '' : S.pendingDiscard ? (nSel === S.pendingDiscard ? 'settles your Call' : `select ${S.pendingDiscard} to settle your Call`) : S.discards <= 0 ? 'no Discards left' : tooMany ? `at most ${maxD} at once` : nSel ? `draws ${nSel} new tile${nSel === 1 ? '' : 's'}` : `select up to ${maxD} tiles`);
-  bd.title = $('#discSub').textContent; $('#discPips').innerHTML = inBlind && !S.pendingDiscard ? pips(S.discards) : ''; $('#discPips').title = `${S.discards} Discard${S.discards === 1 ? '' : 's'} left`; bd.classList.toggle('pulse', !!S.pendingDiscard);
-  const dk = $('#btnKan'); const dko = declareOption(); dk.disabled = !dko.ok; dk.title = dko.err || 'Set these 4 tiles aside as a closed Kan and draw a replacement tile';
+  $('#discPips').innerHTML = inBlind && !S.pendingDiscard ? pips(S.discards) : ''; bd.classList.toggle('pulse', !!S.pendingDiscard);
+  const dk = $('#btnKan'); const dko = declareOption(); dk.disabled = !dko.ok;
   sub('#kanSub', !inBlind ? '' : dko.ok ? 'draws a replacement tile' : 'needs 4 alike in your hand');
   $('#preview').innerHTML = '';
   const bc = $('#btnCall'); bc.disabled = !inBlind || S.busy || !S.selRiver || S.selected.length < 2;
   const freeMax = S.talismans.reduce((m, k) => Math.max(m, +TAL[k].freeCall || 0), 0), freeLeft = Math.max(0, freeMax - (S.freeCallsUsed || 0));
   sub('#callSub', !inBlind ? '' : S.boss === 'fisherman' ? 'The Fisherman forbids it' : !S.selRiver ? 'pick a River tile first' : S.selected.length < 2 ? 'plus 2–3 hand tiles' : freeLeft ? `free (${freeLeft} left)` : 'costs 1 Play');
-  bc.title = $('#callSub').textContent;
   $('#btnClear').disabled = !inBlind || S.busy;
 }
 function renderLast() {
