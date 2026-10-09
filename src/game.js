@@ -681,7 +681,7 @@ function renderBlind() {
   // The purse: money is always in view here, with the interest the next cash-out will pay. Plays and Discards left are on the action buttons.
   const interest = Math.min(hasF('winter') ? 10 : CFG.interestCap, Math.floor(S.money / CFG.interestPer));
   const wallN = S.phase === 'blind' ? S.wall.length : (S.deck || []).length;
-  h += `<div class="stats purserow"><div class="purse" title="Interest: +¥${interest} at the next cash-out (¥1 for every ¥${CFG.interestPer} you hold, up to ¥${hasF('winter') ? 10 : CFG.interestCap})"><span class="coin" aria-hidden="true">¥</span><span class="pv num" id="purseVal">¥${S.money}</span></div><button class="wallbtn" id="wallBtn" title="${S.phase === 'blind' ? 'Tiles still face down in the Wall. Click to see every tile.' : 'Tiles in your Wall. Click to see every tile.'}"><span class="wallico" aria-hidden="true"><i></i><i></i><i></i></span><span class="wtx"><span class="wv num">${wallN}</span><span class="wl">Wall</span></span></button></div>`;
+  h += `<div class="stats purserow"><div class="purse" title="Interest: +¥${interest} at the next cash-out (¥1 for every ¥${CFG.interestPer} you hold, up to ¥${hasF('winter') ? 10 : CFG.interestCap})"><span class="coin" aria-hidden="true">${coinSVG()}</span><span class="pv num" id="purseVal">¥${S.money}</span></div><button class="wallbtn" id="wallBtn" title="${S.phase === 'blind' ? 'Tiles still face down in the Wall. Click to see every tile.' : 'Tiles in your Wall. Click to see every tile.'}"><span class="wallico" aria-hidden="true"><i></i><i></i><i></i></span><span class="wtx"><span class="wv num">${wallN}</span><span class="wl">Wall</span></span></button></div>`;
   if (S.indicators.length) { h += `<div class="label" style="margin-top:8px">Dora Indicators</div><div class="dora-ind" id="doraRow"></div>`; }
   if (S.flowers.length) h += `<div class="label" style="margin-top:8px">Flowers &amp; Seasons</div><div class="flowers">${S.flowers.map(f => `<span class="flowerchip" title="${FLW[f].desc}">${FLW[f].name}</span>`).join('')}</div>`;
   $('#blindCard').innerHTML = h;
@@ -794,6 +794,17 @@ function renderHint(hidden) {
   box.innerHTML = parts.join(' · ');
   markDots();
 }
+// The purse coin follows the terminology: a brass 5-yen coin (holed, a lucky coin in Japan) or a silver HK$2 coin
+// (scalloped edge, bauhinia flower).
+function coinSVG() {
+  if (LANG === 'hk') {
+    const sc = Array.from({ length: 12 }, (_, k) => { const a = k / 12 * Math.PI * 2; return `<circle cx="${(20 + Math.cos(a) * 15.2).toFixed(2)}" cy="${(20 + Math.sin(a) * 15.2).toFixed(2)}" r="4.6"/>`; }).join('');
+    const petals = Array.from({ length: 5 }, (_, k) => `<ellipse cx="20" cy="13.6" rx="3.1" ry="5.4" transform="rotate(${k * 72 + 12} 20 20)"/>`).join('');
+    return `<svg viewBox="0 0 40 40" aria-hidden="true"><defs><radialGradient id="hkc" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#ffffff"/><stop offset=".5" stop-color="#d5dae1"/><stop offset="1" stop-color="#8d96a3"/></radialGradient></defs><g fill="url(#hkc)" stroke="#6f7884" stroke-width=".6">${sc}<circle cx="20" cy="20" r="15.6"/></g><circle cx="20" cy="20" r="13.2" fill="none" stroke="rgba(90,98,110,.55)" stroke-width=".8"/><g fill="rgba(110,118,130,.55)">${petals}</g><circle cx="20" cy="20" r="1.8" fill="#eef1f5"/></svg>`;
+  }
+  const teeth = Array.from({ length: 12 }, (_, k) => `<rect x="19.2" y="10.2" width="1.6" height="2.6" rx=".4" transform="rotate(${k * 30} 20 20)"/>`).join('');
+  return `<svg viewBox="0 0 40 40" aria-hidden="true"><defs><radialGradient id="jpc" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#fff0b8"/><stop offset=".45" stop-color="#e2b04c"/><stop offset="1" stop-color="#94661c"/></radialGradient></defs><circle cx="20" cy="20" r="19" fill="url(#jpc)" stroke="#7a5414" stroke-width=".8"/><circle cx="20" cy="20" r="16.6" fill="none" stroke="rgba(122,84,20,.55)" stroke-width=".8"/><g fill="rgba(122,84,20,.7)">${teeth}</g><circle cx="20" cy="20" r="5" fill="#1d140a" stroke="#7a5414" stroke-width=".8"/><path d="M11 27.5h18M13 30.5h14M15.5 33.2h9" stroke="rgba(122,84,20,.65)" stroke-width="1.1" stroke-linecap="round"/><path d="M9.5 21c0-4 1.6-7.4 4.4-9.6M30.5 21c0-4-1.6-7.4-4.4-9.6" stroke="rgba(122,84,20,.55)" stroke-width="1" fill="none" stroke-dasharray="1.6 1.4"/></svg>`;
+}
 let lastPurse = null;
 function bumpPurse() { const el = $('#purseVal'); if (!el) return; if (lastPurse !== null && lastPurse !== S.money) juice(el, .8); lastPurse = S.money; }
 function renderActions() {
@@ -809,7 +820,7 @@ function renderActions() {
   sub('#playSub', !inBlind ? '' : hid ? 'face-down tiles: plays its best part' : opt.err ? (S.selected.length ? opt.err.replace(/\.$/, '') : 'select tiles to play') : pv || (opt.label || '').replace(/^Play /, ''));
   bp.title = hid ? 'Face-down tiles selected' : (opt.err || pv); $('#playPips').innerHTML = inBlind ? pips(S.plays) : ''; $('#playPips').title = `${S.plays} Play${S.plays === 1 ? '' : 's'} left`;
   const maxD = S.boss === 'monk' ? 3 : CFG.maxDiscardTiles, tooMany = !S.pendingDiscard && S.selected.length > maxD;
-  const bd = $('#btnDiscard'); bd.disabled = !inBlind || S.busy || (!S.pendingDiscard && S.discards <= 0) || (S.pendingDiscard && S.selected.length !== S.pendingDiscard) || tooMany;
+  const bd = $('#btnDiscard'); bd.disabled = !inBlind || S.busy || (!S.pendingDiscard && (S.discards <= 0 || !S.selected.length)) || (S.pendingDiscard && S.selected.length !== S.pendingDiscard) || tooMany;
   const nSel = S.selected.length;
   $('#discTitle').textContent = S.pendingDiscard ? `Discard ${S.pendingDiscard}` : nSel ? `Discard ${nSel}` : 'Discard';
   sub('#discSub', !inBlind ? '' : S.pendingDiscard ? (nSel === S.pendingDiscard ? 'settles your Call' : `select ${S.pendingDiscard} to settle your Call`) : S.discards <= 0 ? 'no Discards left' : tooMany ? `at most ${maxD} at once` : nSel ? `draws ${nSel} new tile${nSel === 1 ? '' : 's'}` : `select up to ${maxD} tiles`);
@@ -882,22 +893,27 @@ function slotDropIndex(x, y, skipEl) {
 const motionOK = !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 let skipAnim = false, skipArmed = false;
 function wait(ms) { return new Promise(r => setTimeout(r, (motionOK && !skipAnim) ? Math.round(ms * SPEEDS[ANIM_SPEED]) : 0)); }
-// Balatro's "juice": each change kicks a damped spring for scale and a little rotation. Kicks stack rather than restart,
-// so a run of fast tile hits keeps the number bouncing smoothly. One rAF loop drives every juiced element.
+// Balatro's "juice", copied from its curve: size wobbles as sin(50.8 t) fading with (1 - t/T)^3 and tilt as sin(40.8 t)
+// fading with (1 - t/T)^2, over T = 0.4 s. Each kick is its own wave that starts at zero and they add up, so a run of
+// fast hits keeps wobbling without ever snapping back. One rAF loop drives every juiced element.
 const JUICE = new Map(); let juiceRAF = 0;
 function juice(el, amt = 1) {
   if (!el || !motionOK || skipAnim) return;
-  let q = JUICE.get(el); if (!q) { q = { s: 0, vs: 0, r: 0, vr: 0 }; JUICE.set(el, q); }
-  q.vs += 5.6 * amt; q.vr += (q.vr > 0 ? -1 : 1) * 110 * amt;
+  let list = JUICE.get(el); if (!list) { list = []; JUICE.set(el, list); }
+  list.push({ t0: performance.now(), s: .32 * amt, r: (Math.random() < .5 ? -1 : 1) * 7 * amt }); if (list.length > 4) list.shift();
   if (juiceRAF) return;
-  let last = performance.now();
+  const T = 400;
   const step = now => {
-    const dt = Math.min(.033, (now - last) / 1000); last = now; let alive = false;
-    for (const [e, k] of JUICE) {
-      k.vs += (-190 * k.s - 15 * k.vs) * dt; k.s += k.vs * dt;
-      k.vr += (-230 * k.r - 17 * k.vr) * dt; k.r += k.vr * dt;
-      if (!e.isConnected || (Math.abs(k.s) < .002 && Math.abs(k.vs) < .02 && Math.abs(k.r) < .05 && Math.abs(k.vr) < .5)) { e.style.transform = ''; JUICE.delete(e); continue; }
-      alive = true; e.style.transform = `scale(${(1 + Math.max(-.18, Math.min(.55, k.s))).toFixed(3)}) rotate(${Math.max(-10, Math.min(10, k.r)).toFixed(2)}deg)`;
+    let alive = false;
+    for (const [e, kicks] of JUICE) {
+      let sc = 0, rot = 0;
+      for (let k = kicks.length - 1; k >= 0; k--) {
+        const t = now - kicks[k].t0, f = 1 - t / T;
+        if (f <= 0) { kicks.splice(k, 1); continue; }
+        const ts = t / 1000; sc += kicks[k].s * Math.sin(50.8 * ts) * f * f * f; rot += kicks[k].r * Math.sin(40.8 * ts) * f * f;
+      }
+      if (!kicks.length || !e.isConnected) { e.style.transform = ''; JUICE.delete(e); continue; }
+      alive = true; e.style.transform = `scale(${(1 + Math.max(-.25, Math.min(.6, sc))).toFixed(3)}) rotate(${Math.max(-12, Math.min(12, rot)).toFixed(2)}deg)`;
     }
     juiceRAF = alive ? requestAnimationFrame(step) : 0;
   };
