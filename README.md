@@ -132,6 +132,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 121: Scoring box like Balatro: the Chips, Mult and Han numbers pop and wobble while the boxes stay still, and flames rise over the boxes once a play beats the target (blue on Chips, orange on Mult; taller at 3x and 10x the target). Chips and Han captions now line up.
 - Build 122: Monk's Wall targets x2 (like Balatro's Plasma Deck) and Lean Wall -1 Play (like the Black Deck), chosen from simulations. Next Blind is a vermilion button with a glow and light sweep so it stands apart from the gold Buy buttons. Tiles redrawn: lit ivory face with bevelled edges on a blue back slab, engraved symbols.
 - Build 123: Hanabi fireworks replace the flames: rockets launch from below the Chips and Mult boxes and burst above them once a play beats the target (1 rocket, 3 by 3x, 6 by 10x and then one every 0.7 s). Transform and opacity only, for smooth motion.
+- Build 124: The Wall view shows each tile's count under the tile in a larger label, with dots for copies still face down during a Blind, instead of small badges over the corner.
 - Build 7: multi-meld play ladder (Two Melds ... Four Melds), targets 300...45000, retrigger and scaling Talismans, Wall-Builder rewording, scoring animation.
 
 ## Simulators (in `sim/`)

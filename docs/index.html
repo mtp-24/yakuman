@@ -643,6 +643,10 @@ button.pulse{animation:btnpulse 1s ease-in-out infinite;box-shadow:0 0 0 0 rgba(
 .fwrocket{width:3px;height:18px;margin:-18px 0 0 -1.5px;border-radius:2px;background:linear-gradient(180deg,#fff 0%,var(--c) 25%,transparent 100%)}
 .fwspark{width:5px;height:5px;border-radius:50%}
 .fwflash{width:28px;height:28px;border-radius:50%;background:radial-gradient(circle,#fff 0%,var(--c) 35%,transparent 70%)}
+.wallcell{display:flex;flex-direction:column;align-items:center;padding-top:0} .wallrow{gap:12px 8px}
+.wcount{margin-top:7px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:12px;font-weight:600;color:var(--fg);line-height:1} .wcount.hasred span:last-child{color:#ff9d93}
+.wpips{display:flex;gap:3px} .wpips i{width:6px;height:6px;border-radius:50%;background:var(--accent)} .wpips i.off{background:transparent;box-shadow:inset 0 0 0 1.2px rgba(157,176,166,.7)}
+.wallcell.out .wcount{color:var(--muted)}
 </style>
 </head><body>
 <div id="app">
@@ -2508,12 +2512,12 @@ function deckHTML() {
   for (const t of all) { counts[idx(t)]++; if (t.red) reds[idx(t)]++; } for (const t of S.wall) inWall[idx(t)]++;
   const eng = all.filter(t => t.eng), redTotal = all.filter(t => t.red).length;
   const stat = (label, v) => `<div class="stat"><div class="label">${label}</div><div class="v num">${v}</div></div>`;
-  let h = `<div class="shophead"><h2>The Wall</h2></div><p class="muted" style="margin:2px 0 10px">${inBlind ? 'Each badge shows copies still face down in the Wall, out of copies in your deck.' : 'Each badge shows how many copies are in your deck.'}</p>`;
+  let h = `<div class="shophead"><h2>The Wall</h2></div><p class="muted" style="margin:2px 0 10px">${inBlind ? 'Under each tile: copies still face down in the Wall (filled dots), out of copies in your deck.' : 'Under each tile: how many copies are in your deck.'}</p>`;
   h += `<div class="overstats wallstats">${stat('Tiles', all.length)}${inBlind ? stat('Still in the Wall', S.wall.length) : ''}${stat('Red Fives', redTotal)}${stat('Engraved', eng.length)}</div>`;
   for (const [label, from, to] of [['Manzu', 0, 9], ['Pinzu', 9, 18], ['Souzu', 18, 27], ['Honors', 27, 34]]) h += `<div class="label" style="margin:12px 0 6px">${label}</div><div class="wallrow" data-from="${from}" data-to="${to}"></div>`;
   if (eng.length) { const byEng = {}; for (const t of eng) byEng[t.eng] = (byEng[t.eng] || 0) + 1; h += `<div class="label" style="margin:12px 0 6px">Engravings</div><div class="overtals">${Object.entries(byEng).map(([k, n]) => `<span class="tagchip" title="${eng.filter(t => t.eng === k).map(tileName).join(', ')}">${ENG[k].name} ×${n}</span>`).join('')}</div>`; }
   h += `<button id="mClose" hidden>Close</button>`;
-  setTimeout(() => { document.querySelectorAll('#modal .wallrow').forEach(g => { for (let i = +g.dataset.from; i < +g.dataset.to; i++) { const c = document.createElement('div'); c.className = 'wallcell' + (counts[i] === 0 || (inBlind && inWall[i] === 0) ? ' out' : ''); const t = tileFromIdx(i); c.appendChild(tileEl(t, { small: true })); const b = document.createElement('span'); b.className = 'wbadge num' + (reds[i] ? ' hasred' : ''); b.textContent = inBlind ? `${inWall[i]}/${counts[i]}` : `×${counts[i]}`; if (reds[i]) b.title = `${reds[i]} Red Five${reds[i] > 1 ? 's' : ''}`; c.appendChild(b); g.appendChild(c); } translateDOM(g); }); }, 0);
+  setTimeout(() => { document.querySelectorAll('#modal .wallrow').forEach(g => { for (let i = +g.dataset.from; i < +g.dataset.to; i++) { const c = document.createElement('div'); c.className = 'wallcell' + (counts[i] === 0 || (inBlind && inWall[i] === 0) ? ' out' : ''); const t = tileFromIdx(i); c.appendChild(tileEl(t, { small: true })); const b = document.createElement('div'); b.className = 'wcount num' + (reds[i] ? ' hasred' : ''); const pips = inBlind && counts[i] <= 6 ? `<span class="wpips">${Array.from({ length: counts[i] }, (_, k) => `<i class="${k < inWall[i] ? '' : 'off'}"></i>`).join('')}</span>` : ''; b.innerHTML = `${pips}<span>${inBlind ? `${inWall[i]}/${counts[i]}` : `×${counts[i]}`}</span>`; b.title = (inBlind ? `${inWall[i]} of ${counts[i]} still in the Wall` : `${counts[i]} in your deck`) + (reds[i] ? ` · ${reds[i]} Red Five${reds[i] > 1 ? 's' : ''}` : ''); c.appendChild(b); g.appendChild(c); } translateDOM(g); }); }, 0);
   return h;
 }
 function hanTableText() {
