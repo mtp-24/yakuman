@@ -1591,7 +1591,7 @@ function renderHint(hidden) {
 function renderActions() {
   const inBlind = S.phase === 'blind';
   const opt = inBlind ? playOption() : { err: '' };
-  const bp = $('#btnPlay'); bp.disabled = !inBlind || !!opt.err || S.busy; bp.textContent = opt.type ? opt.label : 'Play'; bp.title = opt.err || '';
+  const bp = $('#btnPlay'); bp.disabled = !inBlind || !!opt.err || S.busy; bp.textContent = 'Play'; bp.title = opt.err || (opt.label ? opt.label.replace(/^Play /, '') : '');
   const bd = $('#btnDiscard'); bd.disabled = !inBlind || S.busy || (!S.pendingDiscard && S.discards <= 0) || (S.pendingDiscard && S.selected.length !== S.pendingDiscard); bd.title = S.pendingDiscard && S.selected.length !== S.pendingDiscard ? `Select exactly ${S.pendingDiscard} tile to settle the Call` : ''; bd.textContent = S.pendingDiscard ? `Discard ${S.pendingDiscard} to settle the Call` : `Discard (${S.discards})`; bd.classList.toggle('pulse', !!S.pendingDiscard);
   const dk = $('#btnKan'); const dko = declareOption(); dk.disabled = !dko.ok; dk.title = dko.err || 'Set these 4 tiles aside as a closed Kan and draw a replacement tile';
   $('#preview').innerHTML = '';

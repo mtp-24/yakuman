@@ -60,6 +60,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 49: scoring animates in place (tiles light up in the hand and open melds, the side hand box is the live counter with the breakdown beneath, Talismans bounce in their slots) instead of a modal; animation speed setting (slow / normal / fast / instant) in Settings; click anywhere to skip.
 - Build 50: fixed the Play click itself skipping the scoring animation (skip is armed only after scoring starts); Slow speed is 2.5x.
 - Build 51: dead-tile dots are off by default and live only in Settings as an assist; the hand-header Dots button is gone.
+- Build 52: the Play button always reads "Play"; the play type shows in the side hand box (and in the button tooltip).
 - Build 7: multi-meld play ladder (Two Melds ... Four Melds), targets 300...45000, retrigger and scaling Talismans, Wall-Builder rewording, scoring animation.
 
 ## Simulators (in `sim/`)
