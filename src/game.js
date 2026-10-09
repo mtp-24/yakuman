@@ -590,7 +590,7 @@ function wait(ms) { return new Promise(r => setTimeout(r, (motionOK && !skipAnim
 async function animateScore(ctx) {
   skipAnim = false; skipArmed = false; setTimeout(() => { skipArmed = true; }, 250);
   const box = $('#scorebox'); if (!box) return;
-  box.innerHTML = `<div class="hb-name">${tr(ctx.rungName || '')}${ctx.kind === 'hand' ? ' <span class="muted">· ' + tr(ctx.desc) + '</span>' : ''}</div><div class="hb-total num" hidden><span class="tot">0</span></div><div class="hb-math num"><span class="chipbox">0</span><span class="px">×</span><span class="multbox">1</span></div><div class="hb-han num"><span class="hanpill"><b class="hanval">0</b> Han</span><span class="muted hantier"></span></div><div class="muted" style="font-size:10px;margin-top:4px">click to skip</div>`;
+  box.innerHTML = `<div class="hb-name">${tr(ctx.rungName || '')}${ctx.kind === 'hand' ? ' <span class="muted">· ' + tr(ctx.desc) + '</span>' : ''}</div><div class="hb-total num" hidden><span class="tot">0</span></div><div class="hb-math num"><span class="chipbox">0</span><span class="px">×</span><span class="multbox">1</span></div><div class="hb-han num"><span class="hanpill"><b class="hanval">0</b> ${tr('Han')}</span><span class="muted hantier"></span></div><div class="muted" style="font-size:10px;margin-top:4px">click to skip</div>`;
   // the breakdown streams into the Last Play panel as it happens
   const lp = $('#lastPlay'); lp.innerHTML = `<div class="label">Last Play</div><div style="font-family:var(--display);font-size:15px;margin:2px 0 6px">${tr(ctx.desc)}</div><div class="lp-lines"></div>`;
   const chipsEl = box.querySelector('.chipbox'), multEl = box.querySelector('.multbox'), totEl = box.querySelector('.tot'), totWrap = box.querySelector('.hb-total'), nameEl = box.querySelector('.hb-name'), linesBox = lp.querySelector('.lp-lines'), mathEl = box.querySelector('.hb-math'), hanEl = box.querySelector('.hanval'), hanPill = box.querySelector('.hanpill'), tierEl = box.querySelector('.hantier');
@@ -603,7 +603,7 @@ async function animateScore(ctx) {
     const c = Math.max(0, Math.round(chips)), m = fmtMult(curMult());
     chipsEl.textContent = c; multEl.textContent = m;
     if (lastChips !== null && c !== lastChips) bump(chipsEl, 'bump'); if (lastMult !== null && m !== lastMult) bump(multEl, 'bump');
-    const hv = Math.round(han); hanEl.textContent = hv; tierEl.textContent = `${tierName(hv)} ×${hanMult(hv)}`; hanPill.classList.toggle('done', mult !== null); tierEl.classList.toggle('done', mult !== null);
+    const hv = Math.round(han); hanEl.textContent = hv; tierEl.textContent = tr(`${tierName(hv)} ×${hanMult(hv)}`); hanPill.classList.toggle('done', mult !== null); tierEl.classList.toggle('done', mult !== null);
     if (lastHan !== null && hv !== lastHan) bump(hanPill, 'bump');
     lastChips = c; lastMult = m; lastHan = hv; fitText(chipsEl); fitText(multEl);
   };
