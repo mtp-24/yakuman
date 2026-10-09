@@ -1164,18 +1164,30 @@ async function animateScore(ctx) {
   const isStart = l => l.base || l.yaku || /^Scroll:/.test(l.label) || (ctx.kind === 'hand' && /^Yakuhai/.test(l.label));
   for (const l of ctx.lines) if (isStart(l)) { showLine(l); applyLine(l); }
   lastChips = null; lastMult = null; lastHan = null; setMath(); heat(); await wait(320);
+  // Like Balatro: every tile scores once in order (a Red Seal replays its tile straight away), then the retrigger
+  // Talismans fire left to right, each popping with Again! and replaying the tiles it affects. Only the order of the
+  // reveal changes; the totals are the engine's.
+  const perOf = h => ({ chips: h.chips / h.times, han: h.han / h.times, x: Math.pow(h.xmult, 1 / h.times) });
+  const popSlot = (el, text, cls) => { if (!el) return; el.classList.remove('bounce'); void el.offsetWidth; el.classList.add('bounce'); const g = document.createElement('div'); g.className = 'talpop num'; g.innerHTML = `<span class="hp ${cls}">${text}</span>`; el.appendChild(g); setTimeout(() => g.remove(), 900); };
+  const hitOnce = async (h, again) => {
+    const e = tileEls.get(h.id), per = perOf(h);
+    if (e) { e.classList.remove('hit'); void e.offsetWidth; e.classList.add('hit');
+      const pills = [again ? ['again', 'Again!'] : null, per.chips ? ['chips', `+${Math.round(per.chips)}`] : null, per.han ? ['han', tr(`+${per.han} Han`)] : null, per.x !== 1 ? ['x', `×${fmtMult(per.x)}`] : null].filter(Boolean);
+      const f = document.createElement('div'); f.className = 'hitpop num'; f.innerHTML = pills.map(([c, t]) => `<span class="hp ${c}">${t}</span>`).join(''); e.appendChild(f); setTimeout(() => f.remove(), 950); }
+    chips += per.chips; han += per.han; tileX *= per.x; setMath(); heat();
+    await wait(again ? 220 : 150);
+  };
+  const charmNames = new Set(S.talismans.map(k => TAL[k].name));
   for (const h of ctx.hits) {
-    const e = tileEls.get(h.id); const per = { chips: h.chips / h.times, han: h.han / h.times, x: Math.pow(h.xmult, 1 / h.times) };
-    for (let r = 0; r < h.times; r++) {
-      // Balatro-style: the tile lifts and wiggles, and each value pops above it as its own coloured badge.
-      if (r && h.who && h.who[r - 1]) { const slot = document.querySelector(`.slot[data-tal="${h.who[r - 1]}"]`); if (slot) { slot.classList.remove('bounce'); void slot.offsetWidth; slot.classList.add('bounce'); const g = document.createElement('div'); g.className = 'talpop num'; g.innerHTML = '<span class="hp again">Again!</span>'; slot.appendChild(g); setTimeout(() => g.remove(), 900); } }
-      if (e) { e.classList.remove('hit'); void e.offsetWidth; e.classList.add('hit');
-        const pills = [r ? ['again', 'Again!'] : null, per.chips ? ['chips', `+${Math.round(per.chips)}`] : null, per.han ? ['han', tr(`+${per.han} Han`)] : null, per.x !== 1 ? ['x', `×${fmtMult(per.x)}`] : null].filter(Boolean);
-        const f = document.createElement('div'); f.className = 'hitpop num'; f.innerHTML = pills.map(([c, t]) => `<span class="hp ${c}">${t}</span>`).join(''); e.appendChild(f); setTimeout(() => f.remove(), 950); }
-      chips += per.chips; han += per.han; tileX *= per.x; setMath(); heat();
-      await wait(r ? 240 : 150);
-    }
-    if (e) e.classList.remove('hit');
+    const own = 1 + (h.who || []).filter(n => !charmNames.has(n)).length;   // the tile itself plus any Red Seal replay
+    for (let r = 0; r < own; r++) await hitOnce(h, r > 0);
+    const e = tileEls.get(h.id); if (e) e.classList.remove('hit');
+  }
+  for (const k of S.talismans) {
+    const name = TAL[k].name, affected = ctx.hits.map(h => ({ h, n: (h.who || []).filter(x => x === name).length })).filter(o => o.n);
+    if (!affected.length) continue;
+    popSlot(document.querySelector(`.slot[data-tal="${name}"]`), 'Again!', 'again'); await wait(260);
+    for (const { h, n } of affected) { for (let q = 0; q < n; q++) await hitOnce(h, true); const e = tileEls.get(h.id); if (e) e.classList.remove('hit'); }
   }
   for (const l of ctx.lines) { if (isStart(l) || l.tiles) continue; showLine(l); if (!l.info) applyLine(l); heat(); await wait(180); }
   chips = ctx.chips; han = ctx.han; mult = ctx.mult; setMath(); heat();

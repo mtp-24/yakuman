@@ -217,7 +217,8 @@ aside{display:flex;flex-direction:column;gap:10px;min-width:0}
 .stage-math .tot.final{animation:pulse .5s ease-out}
 @keyframes pulse{0%{transform:scale(1)}40%{transform:scale(1.25)}100%{transform:scale(1)}}
 .stage-skip{font-size:11px;text-align:right;margin-top:6px}
-.slot.bounce{animation:bounce .45s ease-out}
+.slot.bounce{animation:slotpop .22s cubic-bezier(.25,.8,.35,1)}
+@keyframes slotpop{0%{transform:scale(1)}35%{transform:scale(1.12)}65%{transform:scale(.98)}100%{transform:scale(1)}}   /* the same quick pop as scoring tiles, no tilt */
 @keyframes bounce{0%{transform:none}30%{transform:translateY(-8px) rotate(-2deg)}60%{transform:translateY(0) rotate(1deg)}100%{transform:none}}
 .tile.arrive{animation:arrive .3s ease-out}
 @keyframes arrive{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
