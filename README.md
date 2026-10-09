@@ -182,7 +182,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
   - Blue, Purple, Orange and Gold Stakes; Eternal, Perishable and Rental Talisman stickers; Rental charges show as minus rows at cash-out.
   - Eight Challenges from the title screen, recorded separately from Stakes and unlocks.
   - Twenty Achievements on the Profile tab.
-  - Seeded runs from before this build will produce different shops (rarity and stickers use the run's random numbers). Sim: 6.3% wins at White Stake (was 7.3%).
+  - Seeded runs from before this build will produce different shops (rarity and stickers use the run's random numbers). Sim (2,000 runs, White Stake): 6.0% wins, was 7.3%. The sim never buys the new Flowers it does not model.
 - Build 171: Cash-out puts the Cash Out button on top like Balatro, with the reward rows filling in beneath it; each paying Talisman gets its own row (e.g. Maneki-neko ¥3) instead of one Talismans total. No Next Up preview, so any number of rows fits.
 - Build 170: The cash-out tray grows up from the screen's bottom edge until its contents sit at the middle of the screen (still always covering the action bar), and re-centres on resize.
 - Build 169: Cash-out dimming sits on the board itself, so the page background below the board keeps the same colour as the sides.

@@ -769,7 +769,7 @@ button.pulse{animation:btnpulse2 2.6s ease-out infinite}
 @media (prefers-reduced-motion:reduce){.slot[class*="ed-"]::before,.shopcard[class*="ed-"]::before,.slot[class*="ed-"]::after,.shopcard[class*="ed-"]::after{animation:none}}
 /* Edition overlays sit behind the card's text and contents, so names and descriptions stay crisp */
 .slot[class*="ed-"]::before,.shopcard[class*="ed-"]::before{z-index:0}
-.slot[class*="ed-"] > :not(.pricetag):not(.talpop),.shopcard[class*="ed-"] > :not(.pricetag):not(.talpop){position:relative;z-index:1}
+.slot[class*="ed-"] > :not(.pricetag):not(.talpop):not(.offtag),.shopcard[class*="ed-"] > :not(.pricetag):not(.talpop){position:relative;z-index:1}
 .slot > .talpop{position:absolute;z-index:40}
 .shopcard[class*="ed-"] > .pricetag{z-index:2}
 /* The kind line (order, type, edition pill) stays on one row: the pill keeps its size at the right, the type label gives way */
@@ -837,12 +837,14 @@ button.pulse{animation:btnpulse2 2.6s ease-out infinite}
 .blindplate.cleared .bp-top .label:last-child{color:var(--good)}
 .rar{display:inline-block;margin-left:6px;padding:0 6px;border-radius:999px;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;line-height:16px;vertical-align:1px;color:#fff;font-family:var(--body);font-weight:600} .rar-common{background:#2b6cb0} .rar-uncommon{background:#2f855a} .rar-rare{background:#c53030} .rar-legendary{background:linear-gradient(90deg,#7b3fbf,#b04ad0)}
 .packtileart{display:flex;justify-content:center;align-items:center;min-height:88px;margin:0 auto 6px} .packtileart .tile{cursor:default} .shopcard.tilecard{background:linear-gradient(180deg,#1e3a30,#14281f);border:1px solid rgba(240,230,200,.25)}
-.slot.off{position:relative;filter:grayscale(.85) brightness(.7)} .slot.off::after{content:'Disabled';position:absolute;right:8px;bottom:6px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#ff8a7a;z-index:3}
+.slot.off{position:relative} .slot.off > :not(.offtag),.slot.off::before,.slot.off::after{filter:grayscale(.85) brightness(.65)} .slot .offtag{font-weight:700} .slot .offtag{position:absolute;right:8px;bottom:6px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#ff8a7a;z-index:3}
 .showdowntag{display:inline-block;margin:2px auto 4px;padding:1px 8px;border-radius:999px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#fff;background:linear-gradient(90deg,#6b2fb3,#a8362c)} .blindcard.showdown{box-shadow:0 0 0 1px rgba(168,54,44,.6),0 0 22px rgba(107,47,179,.35)}
 .stk{display:inline-block;margin-left:5px;padding:0 6px;border-radius:4px;font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;line-height:15px;vertical-align:1px;font-family:var(--body);font-weight:600} .stk-eternal{background:#3d2a5c;color:#e3cfff;border:1px solid #8f6bd1} .stk-perish{background:#2c4a5c;color:#cfeaff;border:1px solid #6ba7d1} .stk-rental{background:#5c4a1f;color:#ffe6a6;border:1px solid #d1a64a}
 .rrow b.neg{color:#ff8a7a}
 .sw-blue{background:#2f6fb8} .sw-purple{background:#7a3fb0} .sw-orange{background:#d9822b} .sw-gold{background:#d4a62a}
 .achgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px} .ach{display:flex;flex-direction:column;gap:2px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:rgba(0,0,0,.15);font-size:12px;opacity:.75} .ach b{font-size:13px} .ach.done{opacity:1;border-color:rgba(217,164,65,.6);background:linear-gradient(180deg,rgba(217,164,65,.14),rgba(0,0,0,.1))} .ach.done b::before{content:'★ ';color:var(--accent)} .ach .lockbar{margin-top:4px}
+/* Rarity and sticker tags wrap onto a second line instead of being clipped */
+.shopcard .kind:has(.rar),.shopcard .kind:has(.stk),.slot .kind:has(.stk){flex-wrap:wrap;row-gap:3px;white-space:normal} .shopcard .kind .rar,.shopcard .kind .stk,.slot .kind .stk{margin-left:0} .shelf .shopcard .kind,.packmodal .shop-grid:not(.owned-grid) .shopcard .kind{justify-content:center} .shelf .shopcard .kind .edtag,.packmodal .shop-grid:not(.owned-grid) .shopcard .kind .edtag{margin-left:0}
 </style>
 </head><body>
 <div id="app">
@@ -2051,6 +2053,7 @@ function collectDeck() {
   S.hand = []; S.wall = []; S.river = []; S.open = []; S.played = []; S.indicators = []; S.dora = []; S.selected = []; S.selRiver = null;
 }
 function winBlind() {
+  S.crimsonOff = null;   // the Boss is beaten: a Talisman The Crimson Oni silenced works again, and still pays at cash-out
   const kind = blindKind();
   const base = (kind === 'small' && smallPaysNothing()) ? 0 : CFG.blindReward[kind], left = S.plays, interest = Math.min(interestCap(), Math.floor(S.money / CFG.interestPer));
   // Each paying Talisman gets its own cash-out row, like Jokers in Balatro.
@@ -2276,7 +2279,7 @@ function rollCard() {
   return { kind: 'kami', key: pickKami().key };
 }
 function genShop() {
-  const fl = flowerPool(S.flowers);
+  const fl = flowerPool(S.flowers).filter(f => S.ante > 1 || !f.key.startsWith('wisteria'));   // Wisteria cannot go back from Ante 1
   const packKey = pick(['omikuji', 'omikuji', 'scroll', 'scroll', 'talisman', 'kami', 'mega', 'tile', 'tile', 'megatile'].filter(k => k !== 'talisman' || !chal('noTalismans')));
   S.shop = { cards: Array.from({ length: shopSlots() }, rollCard), firstFree: hasF('autumn2'), scroll: { kind: 'scroll', key: pick(SCROLLS).key }, flower: fl.length ? { kind: 'flower', key: pick(fl).key } : null, pack: { kind: 'pack', key: packKey }, coupon: false, freeReroll: false, freePacks: [] };
   // consume tags that act on this shop
@@ -2379,13 +2382,13 @@ function itemDef(it) { return it.kind === 'tile' ? tileDef(it.tile) : it.kind ==
 function buy(it) {
   const def = itemDef(it), p = itemPrice(it);
   if (S.money < p) { setMsg(`Not enough YEN: ${def.name} costs ¥${p}.`, true); return render(); }
-  if (chal('inflation')) S.inflation = (S.inflation || 0) + 1;
-  if (it.kind === 'pack') { S.money -= p; it.sold = true; if (!S.quiet) sfx('buy'); openPack(it.key, false); return render(); }
+  const inflate = () => { if (chal('inflation') && !S.quiet) S.inflation = (S.inflation || 0) + 1; };
+  if (it.kind === 'pack') { S.money -= p; it.sold = true; inflate(); if (!S.quiet) sfx('buy'); openPack(it.key, false); return render(); }
   if (it.kind === 'talisman') { if (S.talismans.length >= talSlots()) { setMsg(`All ${talSlots()} Talisman slots are full. Sell one first.`, true); return render(); } gainTalisman(it.key, it.sticker); if (it.edition) S.editions[it.key] = it.edition; }
   else if (it.kind === 'omikuji' || it.kind === 'kami') { if (S.consumables.length >= conSlots()) { setMsg('Consumable slots are full. Use one first.', true); return render(); } S.consumables.push({ kind: it.kind, key: it.key }); }
   else if (it.kind === 'scroll') { const [t, k] = it.key.split(':'); S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] = (S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] || 0) + 1; for (const tk of liveTals(S)) if (TAL[tk].onScroll) TAL[tk].onScroll(S); PROFILE.scrollsUsed++; saveProfile(); }
   else if (it.kind === 'flower') { S.flowers.push(it.key); if (it.key === 'wisteria' || it.key === 'wisteria2') goBackAnte(); }
-  S.money -= p; it.sold = true; if (!S.quiet) sfx('buy'); setMsg(`Bought ${def.name}.`); render();
+  S.money -= p; it.sold = true; inflate(); if (!S.quiet) sfx('buy'); setMsg(`Bought ${def.name}.`); render();
 }
 function itemPrice(it) { if (it.sticker && it.sticker.rental && it.kind === 'talisman') return S.shop && S.shop.coupon ? 0 : 1; const def = itemDef(it); let base = def.cost + (it.edition ? EDITIONS[it.edition].price : 0); if (it.kind === 'talisman') base += stakeTalCost(); if (S.shop && S.shop.coupon && (it.kind === 'talisman' || it.kind === 'omikuji' || it.kind === 'kami')) return 0; return price(base); }
 // Wisteria: back one Ante, like Balatro's Hieroglyph. You stay on the same Blind of the earlier Ante, which gets a fresh Boss.
@@ -2727,6 +2730,7 @@ function renderTalismans() {
     const k = S.talismans[i]; const el = document.createElement('div');
     if (k) { const ed = S.editions[k]; el.className = 'slot filled' + (S.selTal === k ? ' sel' : '') + (ed ? ' ed-' + ed : '') + (talOff(S).includes(k) ? ' off' : ''); el.dataset.tal = TAL[k].name; const tgt = TAL[k].copies ? talTarget(S, k) : null; el.innerHTML = `<div class="kind"><span class="order">${i + 1}</span>${ed || (S.stickers && S.stickers[k]) ? '' : 'Talisman'}${stickerTags(S.stickers && S.stickers[k])}${ed ? `<span class="edtag ed-${ed}">${EDITIONS[ed].name}</span>` : ''}</div><div class="n">${TAL[k].name}</div><div class="d">${TAL[k].desc}${tgt ? ` <b>Now: ${tgt.name}.</b>` : TAL[k].copies ? ' <b>Nothing to copy.</b>' : ''}${ed ? ` <b>${EDITIONS[ed].desc}.</b>` : ''}${TAL[k].status ? ' <b>(' + TAL[k].status(S) + ')</b>' : ''}</div>`; bindSlotDrag(el, k); }
     else { el.className = 'slot'; el.innerHTML = `<div class="d">Empty slot</div>`; }
+    if (k && talOff(S).includes(k)) el.insertAdjacentHTML('beforeend', '<span class="offtag">Disabled</span>');
     box.appendChild(el);
   }
   const ts = $('#talSell'); ts.innerHTML = '';

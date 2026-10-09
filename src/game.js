@@ -280,6 +280,7 @@ function collectDeck() {
   S.hand = []; S.wall = []; S.river = []; S.open = []; S.played = []; S.indicators = []; S.dora = []; S.selected = []; S.selRiver = null;
 }
 function winBlind() {
+  S.crimsonOff = null;   // the Boss is beaten: a Talisman The Crimson Oni silenced works again, and still pays at cash-out
   const kind = blindKind();
   const base = (kind === 'small' && smallPaysNothing()) ? 0 : CFG.blindReward[kind], left = S.plays, interest = Math.min(interestCap(), Math.floor(S.money / CFG.interestPer));
   // Each paying Talisman gets its own cash-out row, like Jokers in Balatro.
@@ -505,7 +506,7 @@ function rollCard() {
   return { kind: 'kami', key: pickKami().key };
 }
 function genShop() {
-  const fl = flowerPool(S.flowers);
+  const fl = flowerPool(S.flowers).filter(f => S.ante > 1 || !f.key.startsWith('wisteria'));   // Wisteria cannot go back from Ante 1
   const packKey = pick(['omikuji', 'omikuji', 'scroll', 'scroll', 'talisman', 'kami', 'mega', 'tile', 'tile', 'megatile'].filter(k => k !== 'talisman' || !chal('noTalismans')));
   S.shop = { cards: Array.from({ length: shopSlots() }, rollCard), firstFree: hasF('autumn2'), scroll: { kind: 'scroll', key: pick(SCROLLS).key }, flower: fl.length ? { kind: 'flower', key: pick(fl).key } : null, pack: { kind: 'pack', key: packKey }, coupon: false, freeReroll: false, freePacks: [] };
   // consume tags that act on this shop
@@ -608,13 +609,13 @@ function itemDef(it) { return it.kind === 'tile' ? tileDef(it.tile) : it.kind ==
 function buy(it) {
   const def = itemDef(it), p = itemPrice(it);
   if (S.money < p) { setMsg(`Not enough YEN: ${def.name} costs ¥${p}.`, true); return render(); }
-  if (chal('inflation')) S.inflation = (S.inflation || 0) + 1;
-  if (it.kind === 'pack') { S.money -= p; it.sold = true; if (!S.quiet) sfx('buy'); openPack(it.key, false); return render(); }
+  const inflate = () => { if (chal('inflation') && !S.quiet) S.inflation = (S.inflation || 0) + 1; };
+  if (it.kind === 'pack') { S.money -= p; it.sold = true; inflate(); if (!S.quiet) sfx('buy'); openPack(it.key, false); return render(); }
   if (it.kind === 'talisman') { if (S.talismans.length >= talSlots()) { setMsg(`All ${talSlots()} Talisman slots are full. Sell one first.`, true); return render(); } gainTalisman(it.key, it.sticker); if (it.edition) S.editions[it.key] = it.edition; }
   else if (it.kind === 'omikuji' || it.kind === 'kami') { if (S.consumables.length >= conSlots()) { setMsg('Consumable slots are full. Use one first.', true); return render(); } S.consumables.push({ kind: it.kind, key: it.key }); }
   else if (it.kind === 'scroll') { const [t, k] = it.key.split(':'); S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] = (S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] || 0) + 1; for (const tk of liveTals(S)) if (TAL[tk].onScroll) TAL[tk].onScroll(S); PROFILE.scrollsUsed++; saveProfile(); }
   else if (it.kind === 'flower') { S.flowers.push(it.key); if (it.key === 'wisteria' || it.key === 'wisteria2') goBackAnte(); }
-  S.money -= p; it.sold = true; if (!S.quiet) sfx('buy'); setMsg(`Bought ${def.name}.`); render();
+  S.money -= p; it.sold = true; inflate(); if (!S.quiet) sfx('buy'); setMsg(`Bought ${def.name}.`); render();
 }
 function itemPrice(it) { if (it.sticker && it.sticker.rental && it.kind === 'talisman') return S.shop && S.shop.coupon ? 0 : 1; const def = itemDef(it); let base = def.cost + (it.edition ? EDITIONS[it.edition].price : 0); if (it.kind === 'talisman') base += stakeTalCost(); if (S.shop && S.shop.coupon && (it.kind === 'talisman' || it.kind === 'omikuji' || it.kind === 'kami')) return 0; return price(base); }
 // Wisteria: back one Ante, like Balatro's Hieroglyph. You stay on the same Blind of the earlier Ante, which gets a fresh Boss.
@@ -956,6 +957,7 @@ function renderTalismans() {
     const k = S.talismans[i]; const el = document.createElement('div');
     if (k) { const ed = S.editions[k]; el.className = 'slot filled' + (S.selTal === k ? ' sel' : '') + (ed ? ' ed-' + ed : '') + (talOff(S).includes(k) ? ' off' : ''); el.dataset.tal = TAL[k].name; const tgt = TAL[k].copies ? talTarget(S, k) : null; el.innerHTML = `<div class="kind"><span class="order">${i + 1}</span>${ed || (S.stickers && S.stickers[k]) ? '' : 'Talisman'}${stickerTags(S.stickers && S.stickers[k])}${ed ? `<span class="edtag ed-${ed}">${EDITIONS[ed].name}</span>` : ''}</div><div class="n">${TAL[k].name}</div><div class="d">${TAL[k].desc}${tgt ? ` <b>Now: ${tgt.name}.</b>` : TAL[k].copies ? ' <b>Nothing to copy.</b>' : ''}${ed ? ` <b>${EDITIONS[ed].desc}.</b>` : ''}${TAL[k].status ? ' <b>(' + TAL[k].status(S) + ')</b>' : ''}</div>`; bindSlotDrag(el, k); }
     else { el.className = 'slot'; el.innerHTML = `<div class="d">Empty slot</div>`; }
+    if (k && talOff(S).includes(k)) el.insertAdjacentHTML('beforeend', '<span class="offtag">Disabled</span>');
     box.appendChild(el);
   }
   const ts = $('#talSell'); ts.innerHTML = '';
