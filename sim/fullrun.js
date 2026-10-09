@@ -7,6 +7,8 @@ const SCR_PRI={'m:hand':6,'m:chi':5,'m:pon':3,'m:pair':2,'m:kan':1,'y:tanyao':4,
 const FLW_PRI={bamboo:8,plum:7,orchid:6,chrysanthemum:4,winter:4,summer:4,spring:1,autumn:1};
 const RESERVE=+process.argv[4]||0; const ORDERED=process.argv[6]==='ordered'; const VARIANT=process.argv[5]||'base'; CFG.sharkPerAction=true;
 if(VARIANT==='pairs') CFG.pairLadder=true;
+// 'p4d3' style variants set Plays and Discards per Blind (Balatro's defaults are 4 hands and 3 discards)
+{ const m=VARIANT.match(/^p(\d+)d(\d+)$/); if(m){ CFG.playsPerBlind=+m[1]; CFG.discardsPerBlind=+m[2]; } }
 if(VARIANT==='noclaim') TAL_PRI.kawauso=-99;   // baseline: the bot never buys Kawauso
 // 'start-<talisman>': begin every run already holding that Talisman, to compare what one slot is worth
 const START=VARIANT.startsWith('start-')?VARIANT.slice(6):null; if(START&&START!=='kawauso') TAL_PRI.kawauso=-99;
@@ -67,6 +69,7 @@ function playBlind(S,stats){
   S.plays=Math.max(1,CFG.playsPerBlind+S.bonusPlays+talMod(S,'plays')+(hasF(S,'bamboo')?1:0)); S.discards=CFG.discardsPerBlind+talMod(S,'discards')+(hasF(S,'orchid')?1:0);
   S.wall=shuffle(S.deck.slice()); S.deck=[]; S.hand=[]; S.river=[]; S.lastDiscard=[]; S.open=[]; S.played=[]; S.dora=[]; S.indicators=[]; S.score=0; S.firstPlayDone=false; S.bossSuit=S.boss==='collector'?pick(['m','p','s']):null; setRules(S); draw(S);
   for(const k of S.talismans) if(TAL[k].onBlindStart) TAL[k].onBlindStart(S);
+  USE.p0=S.plays; USE.d0=S.discards;
   const freeCall=S.talismans.some(k=>TAL[k].freeCall); if(S.talismans.includes('kawauso')){ stats.ownedBlinds++; S.everKawauso=true; } const claims0=stats.claims;
   while(S.plays>0&&S.score<S.target){
     const mNeed=4-S.open.length; const st=bestStructure(S.hand,mNeed);
@@ -82,7 +85,7 @@ function playBlind(S,stats){
     else { const used=sortTiles(takeTiles(S,sets)); const part=partitionPlay(used); if(!part){ S.hand.push(...used); S.plays--; continue; } playCtx(S,'meld',used,{part}); S.played.push(...used); }
     stats.partials++; draw(S);
   }
-  const won=S.score>=S.target; if(S.talismans.includes('kawauso')&&stats.claims>claims0) stats.blindsWithClaim++;
+  const won=S.score>=S.target; USE.blinds++; USE.playsUsed+=USE.p0-S.plays; USE.discUsed+=USE.d0-S.discards; if(won){ USE.won++; USE.playsLeft+=S.plays; USE.discLeft+=S.discards; if(USE.p0-S.plays===1) USE.onePlay++; } if(S.talismans.includes('kawauso')&&stats.claims>claims0) stats.blindsWithClaim++;
   if(won){ const base=CFG.blindReward[kind], left=S.plays, interest=Math.min(hasF(S,'winter')?10:CFG.interestCap,Math.floor(S.money/CFG.interestPer)); let tal=0; for(const k of S.talismans) if(TAL[k].onBlindEnd) tal+=TAL[k].onBlindEnd(S); S.money+=base+left+interest+tal+(hasF(S,'summer')?2:0); }
   S.deck=[...S.hand,...S.wall,...S.river,...S.open.flatMap(m=>m.tiles),...S.played,...S.indicators]; for(const t of S.deck) delete t.rinshan; S.hand=[];S.wall=[];S.river=[];S.open=[];S.played=[];
   return won;
@@ -100,7 +103,7 @@ function shop(S){
   const XM=new Set(['oni','ryu','nue','hannya','gashadokuro','rokurokubi','ushioni','nurarihyon','mizuchi','sekito','takibi','hoshizora','mabo','chochin','oshi','daimyo']);
   if(ORDERED) S.talismans.sort((a,b)=>(XM.has(a)?1:0)-(XM.has(b)?1:0));
 }
-const reach=new Array(9).fill(0); const dieAt={}; let wins=0; const moneyAt={}; const talAt={}; const stats={hands:0,partials:0,calls:0,kans:0,blinds:0,claims:0,claimWins:0,ownedBlinds:0,blindsWithClaim:0}; let runsKawauso=0; const STATS={rinshan:0,claimFuriten:0,claimKappa:0,claimPair:0}; const RUNGTOT={};
+const reach=new Array(9).fill(0); const dieAt={}; let wins=0; const moneyAt={}; const talAt={}; const stats={hands:0,partials:0,calls:0,kans:0,blinds:0,claims:0,claimWins:0,ownedBlinds:0,blindsWithClaim:0}; let runsKawauso=0; const USE={blinds:0,won:0,playsUsed:0,discUsed:0,playsLeft:0,discLeft:0,onePlay:0,p0:0,d0:0}; const STATS={rinshan:0,claimFuriten:0,claimKappa:0,claimPair:0}; const RUNGTOT={};
 for(let r=0;r<RUNS;r++){
   const S=newS(); globalThis.S=S; let alive=true; if(START) S.talismans.push(START);
   while(alive){
@@ -119,3 +122,4 @@ const rt=Object.values(RUNGTOT).reduce((a,b)=>a+b,0); console.log('Plays by rung
 console.log(`Per blind: ${(stats.hands/stats.blinds).toFixed(2)} complete hands, ${(stats.partials/stats.blinds).toFixed(2)} partials, ${(stats.calls/stats.blinds).toFixed(2)} calls, ${(stats.kans/stats.blinds).toFixed(3)} Kans | Rinshan Kaihou wins: ${STATS.rinshan} (${(100*STATS.rinshan/Math.max(1,stats.hands)).toFixed(2)}% of complete hands)`);
 if(RON) console.log(`River claims: ${(stats.claims/stats.blinds).toFixed(2)} per blind (${(100*stats.claims/Math.max(1,stats.hands)).toFixed(0)}% of complete hands), ${(100*stats.claimWins/Math.max(1,stats.claims)).toFixed(0)}% of claims cleared the Blind, ${(100*STATS.claimFuriten/Math.max(1,stats.claims)).toFixed(0)}% scored in Discard Lock, ${(100*STATS.claimKappa/Math.max(1,stats.claims)).toFixed(0)}% with Kappa, ${(100*STATS.claimPair/Math.max(1,stats.claims)).toFixed(0)}% completed the pair`);
 if(!RON) console.log(`Kawauso: bought in ${(100*runsKawauso/RUNS).toFixed(0)}% of runs, owned in ${(100*stats.ownedBlinds/stats.blinds).toFixed(1)}% of blinds; claims ${stats.claims} (${(stats.claims/Math.max(1,stats.ownedBlinds)).toFixed(2)} per owned blind, used in ${(100*stats.blindsWithClaim/Math.max(1,stats.ownedBlinds)).toFixed(0)}% of owned blinds), ${(100*stats.claimWins/Math.max(1,stats.claims)).toFixed(0)}% of claims cleared the Blind, ${(100*STATS.claimPair/Math.max(1,stats.claims)).toFixed(0)}% completed the pair`);
+console.log(`Usage: Plays ${CFG.playsPerBlind}, Discards ${CFG.discardsPerBlind} | per Blind ${(USE.playsUsed/USE.blinds).toFixed(2)} Plays and ${(USE.discUsed/USE.blinds).toFixed(2)} Discards used | won Blinds: ${(USE.playsLeft/Math.max(1,USE.won)).toFixed(2)} Plays and ${(USE.discLeft/Math.max(1,USE.won)).toFixed(2)} Discards left, ${(100*USE.onePlay/Math.max(1,USE.won)).toFixed(0)}% cleared with one Play | Blind clear rate ${(100*USE.won/USE.blinds).toFixed(1)}%`);
