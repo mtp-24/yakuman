@@ -288,7 +288,7 @@ button.pulse{animation:btnpulse 1s ease-in-out infinite;box-shadow:0 0 0 0 rgba(
 .chipbox.bump,.multbox.bump{animation:boxshake .32s cubic-bezier(.36,.07,.19,.97)}
 @keyframes boxshake{0%{transform:translate(0,0) scale(1)}20%{transform:translate(-3px,1px) scale(1.12)}40%{transform:translate(3px,-1px) scale(1.12)}60%{transform:translate(-2px,1px) scale(1.06)}80%{transform:translate(2px,0) scale(1.03)}100%{transform:translate(0,0) scale(1)}}
 @media (prefers-reduced-motion:reduce){.chipbox.bump,.multbox.bump{animation:none}}
-.roundscore{margin-top:6px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:6px 10px 8px;position:relative;overflow:hidden}
+.roundscore{margin-top:14px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:6px 10px 8px;position:relative;overflow:hidden}
 .rsbar{position:absolute;left:0;right:0;bottom:0;height:3px;background:rgba(255,255,255,.06)} .rsbar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),#f1cf7a);width:0;transition:width .3s}
 .roundscore .rs.met ~ .rsbar i{background:var(--good)}
 .roundscore .rs{font-family:var(--display);font-size:26px;color:var(--fg);line-height:1.1} .roundscore .rs.met{color:var(--good)}
@@ -302,6 +302,9 @@ button.pulse{animation:btnpulse 1s ease-in-out infinite;box-shadow:0 0 0 0 rgba(
 .hb-han{display:flex;align-items:center;gap:8px;margin-top:6px;font-size:11px}
 .hanpill{display:inline-block;padding:2px 8px;border-radius:10px;background:rgba(217,164,65,.18);border:1px solid rgba(217,164,65,.5);color:var(--accent);font-family:var(--body)} .hanpill b{font-size:13px}
 .hanpill.bump{animation:boxshake .32s cubic-bezier(.36,.07,.19,.97)}
+.hanpill.done,.hantier.done{opacity:.45}
+.cashout{text-align:center;padding:10px 0} .cashout h2{font-size:30px;margin:4px 0 10px}
+.cashlist{max-width:340px;margin:0 auto;text-align:left} .cashrow{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px dashed var(--line);font-size:14px} .cashrow b{color:var(--accent)} .cashrow.total{border-bottom:0;border-top:1px solid var(--line);font-size:16px;margin-top:4px;padding-top:8px}
 .tag{display:inline-block;font-size:10px;padding:1px 6px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);color:var(--muted);margin-left:4px}
 .flowers{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}
 .flowerchip{font-size:11px;background:rgba(240,163,184,.12);border:1px solid rgba(240,163,184,.4);border-radius:10px;padding:1px 7px;color:#f0a3b8}

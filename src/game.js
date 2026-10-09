@@ -113,7 +113,7 @@ function winBlind() {
   const finished = S.ante === CFG.antes && S.blindIndex === 2;
   S.blindIndex++; if (S.blindIndex > 2) { S.blindIndex = 0; S.ante++; rollAnteTags(); }
   if (finished) { S.phase = 'win'; return; }
-  genShop(); S.phase = 'shop';
+  genShop(); S.phase = 'cashout';
 }
 function loseRun() { S.phase = 'gameover'; }
 function rollAnteTags() { S.skipTags = { small: pick(Object.keys(TAGS)), big: pick(Object.keys(TAGS)) }; }
@@ -378,7 +378,7 @@ function render() {
   $('#hdrMoney').innerHTML = `YEN <b class="num">¥${S.money}</b>`;
   renderBlind(); renderTalismans(); renderConsumables(); renderOpen(); renderRiver(); renderHand(); renderActions(); renderLast();
   $('#msg').textContent = S.msg || ''; $('#msg').className = 'msg' + (S.msgErr ? ' err' : '');
-  if (S.phase === 'shop' && S.pack) showModal(packHTML()); else if (S.phase === 'shop') showModal(shopHTML()); else if (S.phase === 'select') showModal(selectHTML()); else if (S.phase === 'gameover') showModal(overHTML(false)); else if (S.phase === 'win') showModal(overHTML(true)); else if (!modalPinned) hideModal();
+  if (S.phase === 'cashout') showModal(cashoutHTML()); else if (S.phase === 'shop' && S.pack) showModal(packHTML()); else if (S.phase === 'shop') showModal(shopHTML()); else if (S.phase === 'select') showModal(selectHTML()); else if (S.phase === 'gameover') showModal(overHTML(false)); else if (S.phase === 'win') showModal(overHTML(true)); else if (!modalPinned) hideModal();
   $('#btnYaku').textContent = 'Run Info';
   translateDOM($('#app'));
   save();
@@ -411,9 +411,9 @@ function renderBlind() {
       const lvl = lvlKey ? (S.scrolls.meld[lvlKey] || 0) : 0;
       let chips = base.chips, han = base.han; if (pv.kind === 'hand') han += Math.max(1, c.yaku.reduce((a, y) => a + y.han, 0));
       for (const l of c.lines) if (/^Scroll:/.test(l.label)) { chips += l.chips || 0; han += l.han || 0; }
-      h += `<div class="handbox"><div class="hb-name">${pv.label}${lvlKey ? ` <span class="tag">Lv.${lvl + 1}</span>` : ''}<span class="muted"> · ${han} Han</span></div><div class="hb-math num"><span class="chipbox">${chips}</span><span class="px">×</span><span class="multbox">${hanMult(han)}</span></div></div>`;
+      h += `<div class="handbox"><div class="hb-name">${pv.label}${lvlKey ? ` <span class="tag">Lv.${lvl + 1}</span>` : ''}</div><div class="hb-math num"><span class="chipbox">${chips}</span><span class="px">×</span><span class="multbox">${hanMult(han)}</span></div><div class="hb-han num"><span class="hanpill"><b class="hanval">${han}</b> Han</span><span class="muted hantier">${tierName(han)} ×${hanMult(han)}</span></div></div>`;
     }
-    else h += `<div class="handbox empty"><div class="hb-name muted">Select a play</div><div class="hb-math num"><span class="chipbox dim">0</span><span class="px">×</span><span class="multbox dim">0</span></div></div>`;
+    else h += `<div class="handbox empty"><div class="hb-name muted">Select a play</div><div class="hb-math num"><span class="chipbox dim">0</span><span class="px">×</span><span class="multbox dim">0</span></div><div class="hb-han num"><span class="hanpill dim"><b class="hanval">0</b> Han</span></div></div>`;
   }
   h += `<div class="stats"><div class="stat plays"><div class="label">Plays</div><div class="v num">${S.plays}</div></div><div class="stat discards"><div class="label">Discards</div><div class="v num">${S.discards}</div></div><div class="stat money"><div class="label">YEN</div><div class="v num">¥${S.money}</div></div><div class="stat"><div class="label">Wall</div><div class="v num">${S.wall.length}</div></div></div>`;
   if (S.indicators.length) { h += `<div class="label" style="margin-top:8px">Dora Indicators</div><div class="dora-ind" id="doraRow"></div>`; }
@@ -601,7 +601,7 @@ async function animateScore(ctx) {
     const c = Math.max(0, Math.round(chips)), m = fmtMult(curMult());
     chipsEl.textContent = c; multEl.textContent = m;
     if (lastChips !== null && c !== lastChips) bump(chipsEl, 'bump'); if (lastMult !== null && m !== lastMult) bump(multEl, 'bump');
-    const hv = Math.round(han); hanEl.textContent = hv; tierEl.textContent = mult === null ? `→ ×${hanMult(hv)} ${tierName(hv)}` : 'converted';
+    const hv = Math.round(han); hanEl.textContent = hv; tierEl.textContent = `${tierName(hv)} ×${hanMult(hv)}`; hanPill.classList.toggle('done', mult !== null); tierEl.classList.toggle('done', mult !== null);
     if (lastHan !== null && hv !== lastHan) bump(hanPill, 'bump');
     lastChips = c; lastMult = m; lastHan = hv;
   };
@@ -642,12 +642,21 @@ function cardHTML(it, idx) {
   const ed = it.edition ? EDITIONS[it.edition] : null;
   return `<div class="shopcard ${it.kind}${it.sold ? ' sold' : ''}${ed ? ' ed-' + it.edition : ''}"><div class="kind">${kindLabel}${ed ? ` · <span class="edtag ed-${it.edition}">${ed.name}</span>` : ''}</div><div class="n">${d.name}</div><div class="d">${d.desc}${ed ? ` <b>${ed.name}: ${ed.desc}.</b>` : ''}</div><div class="buy"><span class="num" style="color:${p > S.money ? 'var(--bad)' : 'var(--accent)'}">${p === 0 ? 'Free' : '¥' + p}</span>${it.sold ? '<span class="muted">Sold</span>' : `<button class="primary" data-buy="${idx}" ${p > S.money ? `disabled title="You have ¥${S.money}; this costs ¥${p}"` : ''}>${it.kind === 'pack' ? 'Open' : 'Buy'}</button>`}</div></div>`;
 }
+function cashoutHTML() {
+  const r = S.reward; const names = { small: 'Small Blind', big: 'Big Blind', boss: 'Boss Blind' };
+  const bossName = r.kind === 'boss' && S.stats.bosses.length ? BOSSES[S.stats.bosses[S.stats.bosses.length - 1]].name : null;
+  let h = `<div class="cashout"><div class="label">${names[r.kind]} defeated</div><h2>${bossName ? bossName + ' beaten' : 'Blind cleared'}</h2>`;
+  h += `<div class="cashlist num">${[['Blind reward', r.base], ['Unused Plays', r.left], ['Interest (¥1 per ¥5)', r.interest], r.tal ? ['Talismans', r.tal] : null, r.summer ? ['Summer', r.summer] : null, r.invest ? ['Investment Tag', r.invest] : null].filter(Boolean).map(([k, v]) => `<div class="cashrow"><span>${k}</span><b>¥${v}</b></div>`).join('')}<div class="cashrow total"><span>Total</span><b>¥${r.total}</b></div></div>`;
+  h += `<div class="muted" style="font-size:12px;margin-top:6px">You now have ¥${S.money}.</div>`;
+  h += `<div style="margin-top:14px"><button id="mCashOut" class="primary" style="font-size:16px;padding:10px 20px">Cash Out →</button></div></div>`;
+  return h;
+}
 function shopHTML() {
   const r = S.reward; const items = [...S.shop.cards, S.shop.scroll, S.shop.flower, S.shop.pack].filter(Boolean);
   const next = ({ small: 'Small Blind', big: 'Big Blind', boss: 'Boss Blind' })[blindKind()];
   const nextBoss = blindKind() === 'boss' ? BOSSES[S.bossOrder[S.ante - 1]] : null;
   let h = `<h2>Shop</h2>`;
-  if (r) h += `<div class="label">Blind Defeated · Reward</div><div class="reward-list num"><span>${({ small: 'Small Blind', big: 'Big Blind', boss: 'Boss Blind' })[r.kind]} defeated</span><span>¥${r.base}</span><span>Unused Plays</span><span>¥${r.left}</span><span>Interest (¥1 per ¥5)</span><span>¥${r.interest}</span>${r.tal ? `<span>Talismans</span><span>¥${r.tal}</span>` : ''}${r.summer ? `<span>Summer</span><span>¥${r.summer}</span>` : ''}${r.invest ? `<span>Investment Tag</span><span>¥${r.invest}</span>` : ''}<span><b>Total</b></span><span><b>¥${r.total}</b></span></div>`;
+  if (false) h += `<div class="label">Blind Defeated · Reward</div><div class="reward-list num"><span>${({ small: 'Small Blind', big: 'Big Blind', boss: 'Boss Blind' })[r.kind]} defeated</span><span>¥${r.base}</span><span>Unused Plays</span><span>¥${r.left}</span><span>Interest (¥1 per ¥5)</span><span>¥${r.interest}</span>${r.tal ? `<span>Talismans</span><span>¥${r.tal}</span>` : ''}${r.summer ? `<span>Summer</span><span>¥${r.summer}</span>` : ''}${r.invest ? `<span>Investment Tag</span><span>¥${r.invest}</span>` : ''}<span><b>Total</b></span><span><b>¥${r.total}</b></span></div>`;
   h += `<div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center"><span>YEN: <b class="num" style="color:var(--accent)">¥${S.money}</b></span><span class="muted">Talismans ${S.talismans.length}/${talSlots()} · Consumables ${S.consumables.length}/${conSlots()}</span></div>`;
   if (S.shop.coupon) h += `<div class="msg">Coupon Tag: Talismans and consumables are free in this shop.</div>`;
   if (S.shop.freePacks.length) h += `<div style="display:flex;gap:8px;flex-wrap:wrap;margin:6px 0">${S.shop.freePacks.map((pk, i) => `<button class="primary" data-freepack="${i}">Open Free ${PACKS[pk].name}</button>`).join('')}</div>`;
@@ -849,6 +858,7 @@ function bindEvents() {
     else if (t.id === 'mStartRun') { const deck = ($('#modal input[name=deck]') || {}).value, stake = ($('#modal input[name=stake]') || {}).value, seed = ($('#seedInput') || {}).value; hideModal(); newRun({ deck, stake, seed }); }
     else if (t.id === 'mContinue') { hideModal(); render(); }
     else if (t.id === 'mRules') { showModal(rulesHTML() + '', true); $('#mClose').onclick = () => { showModal(menuHTML(!!load()), true); }; }
+    else if (t.id === 'mCashOut') { S.phase = 'shop'; S.msg = ''; render(); }
     else if (t.id === 'mNext') { S.shop = null; S.pack = null; S.msg = ''; S.phase = 'select'; render(); }
     else if (t.id === 'mPlayBlind') { S.msg = ''; startBlind(); render(); }
     else if (t.id === 'mRunInfo') { showModal(yakuHTML(), true); $('#mClose').onclick = () => { modalPinned = false; render(); }; }
