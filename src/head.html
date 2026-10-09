@@ -165,6 +165,12 @@ aside{display:flex;flex-direction:column;gap:10px;min-width:0}
 /* Pack screen: narrower so 8 tiles fit one row; only the tile row is centred, cards line up like the shop */
 .modal.packmodal{max-width:760px}
 .packmodal .packhand{justify-content:center}
+.ptile{display:flex;flex-direction:column;align-items:center;gap:5px;width:min-content}
+.pmark{font-size:10px;line-height:1.2;color:var(--accent);text-align:center;min-height:12px;font-weight:600}
+.ptile.gone .pmark{color:var(--bad)}
+.packhand .tile.marked{box-shadow:0 0 0 2px var(--accent),0 3px 0 #8f815f,0 0 12px rgba(217,164,65,.45)}
+.packhand .tile.gone{opacity:.4;filter:grayscale(1);cursor:default}
+.ptile.gone{position:relative} .ptile.gone::after{content:'';position:absolute;left:4%;right:4%;top:40%;height:3px;border-radius:2px;background:var(--bad);transform:rotate(-38deg);box-shadow:0 0 0 1px rgba(0,0,0,.35)}
 .shopcard{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:6px}
 .shopcard .kind{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
 .shopcard .n{font-family:var(--display);font-size:16px;color:var(--accent)}

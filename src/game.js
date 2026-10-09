@@ -302,26 +302,49 @@ function useOnWallTiles(def, pool, sel) {
   return after;
 }
 function usePackCard(i) {
-  const it = S.pack && S.pack.choices[i]; if (!it || it.sold || !S.pack.hand) return;
+  const it = S.pack && S.pack.choices[i]; if (!it || it.sold || !S.pack.hand || S.pack.done) return;
   const def = CONS[it.key];
   if (def.blindOnly) { setMsg(`${def.name} only works during a Blind. Keep it for later.`, true); return render(); }
   const dealt = packTiles(); const sel = S.pack.sel.map(id => dealt.find(t => t.id === id)).filter(Boolean);
   if (sel.length < def.sel[0] || sel.length > def.sel[1]) { setMsg(def.sel[0] === def.sel[1] ? (def.sel[0] === 0 ? 'Clear your tile selection first.' : `Select exactly ${def.sel[0]} tile${def.sel[0] > 1 ? 's' : ''} above.`) : `Select ${def.sel[0]}–${def.sel[1]} tiles above.`, true); return render(); }
+  // Snapshot the dealt tiles so the row can show exactly what this card did.
+  const snap = new Map(dealt.map(t => [t.id, { id: t.id, suit: t.suit, rank: t.rank, red: t.red, eng: t.eng, name: tileName(t) }]));
+  const order = S.pack.hand.slice();
   const m0 = S.money; const after = useOnWallTiles(def, dealt, sel);
   if (!after) { setMsg('That cannot be used right now.', true); return render(); }
-  S.pack.hand = after.map(t => t.id); S.pack.sel = [];
+  const marks = {}, changed = [], added = [], gone = [];
+  for (const t of after) {
+    const s = snap.get(t.id);
+    if (!s) { marks[t.id] = 'New'; added.push(tileName(t)); continue; }
+    if (s.suit !== t.suit || s.rank !== t.rank) marks[t.id] = '→ ' + tileName(t);
+    else if (s.eng !== t.eng && t.eng) marks[t.id] = ENG[t.eng].name;
+    else if (s.red !== t.red) marks[t.id] = 'Red Five';
+    if (marks[t.id]) changed.push(s.name);
+  }
+  for (const id of order) if (!after.some(t => t.id === id)) gone.push(snap.get(id));
+  // Row to display: the previous order with removed tiles left in place (greyed), new tiles at the end.
+  S.pack.view = order.map(id => after.some(t => t.id === id) ? { id } : { id, gone: snap.get(id) }).concat(after.filter(t => !snap.has(t.id)).map(t => ({ id: t.id })));
+  S.pack.marks = marks; S.pack.hand = after.map(t => t.id); S.pack.sel = [];
   it.sold = true; it.used = true; S.pack.left--;
-  const gained = S.money - m0, changedTiles = after.length !== dealt.length || sel.length > 0;
-  setMsg(`${def.name} used.${changedTiles ? ' The change stays in your Wall.' : ''}${gained ? ` +¥${gained}.` : ''}`);
-  if (S.pack.left <= 0) S.pack = null;
+  const gained = S.money - m0, list = a => a.length > 1 ? a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1] : a[0];
+  const parts = []; if (changed.length) parts.push(`used on ${list(changed)}`); if (added.length) parts.push(`added ${list(added)}`); if (gone.length) parts.push(`removed ${list(gone.map(g => g.name))}`); if (gained) parts.push(`+¥${gained}`);
+  setMsg(`${def.name}${parts.length ? ': ' + parts.join('; ') : (sel.length ? ' used: no tiles changed' : ' used')}.`);
+  // After the last pick the pack stays open so the result can be checked; Done returns to the shop.
+  if (S.pack.left <= 0) S.pack.done = true;
   render();
 }
 function fillPackHand() {
   const box = $('#packHand'); if (!box) return;
-  for (const t of packTiles()) {
-    const e = tileEl(t, { sel: S.pack.sel.includes(t.id) });
-    e.onclick = () => { const s = S.pack.sel, j = s.indexOf(t.id); if (j >= 0) s.splice(j, 1); else s.push(t.id); S.msg = ''; render(); };
-    box.appendChild(e);
+  const marks = S.pack.marks || {};
+  const view = S.pack.view || S.pack.hand.map(id => ({ id }));
+  for (const v of view) {
+    const t = v.gone || S.deck.find(x => x.id === v.id); if (!t) continue;
+    const w = document.createElement('div'); w.className = 'ptile' + (v.gone ? ' gone' : '');
+    const e = tileEl(t, { sel: !v.gone && S.pack.sel.includes(t.id) });
+    if (v.gone) e.classList.add('gone'); else if (marks[t.id]) e.classList.add('marked');
+    if (!v.gone && !S.pack.done) e.onclick = () => { const s = S.pack.sel, j = s.indexOf(t.id); if (j >= 0) s.splice(j, 1); else s.push(t.id); S.msg = ''; S.pack.marks = {}; S.pack.view = null; render(); };
+    const cap = document.createElement('div'); cap.className = 'pmark'; cap.textContent = v.gone ? 'Removed' : (marks[t.id] || '');
+    w.appendChild(e); w.appendChild(cap); box.appendChild(w);
   }
   translateDOM($('#modal'));
 }
@@ -809,6 +832,7 @@ function ownedHTML() {
   return `<div class="label" style="margin:10px 0 4px">Your Talismans · ${S.talismans.length}/${talSlots()} · fire left to right · sell to make room</div>` + (tal.length ? `<div class="shop-grid owned-grid">${tal.join('')}</div>` : `<div class="muted" style="font-size:12px">None yet.</div>`) + `<div class="label" style="margin:10px 0 4px">Your Consumables · ${S.consumables.length}/${conSlots()}</div>` + (con.length ? `<div class="muted" style="font-size:12px;margin:-2px 0 4px">Most consumables are used on tiles during a Blind. Ones that don't need tiles have a Use button here.</div><div class="shop-grid owned-grid">${con.join('')}</div>` : `<div class="muted" style="font-size:12px">None yet.</div>`);
 }
 function packButtons(it, i) {
+  if (S.pack.done) return `<span class="muted" style="font-size:11px">No picks left</span>`;
   const full = slotsFullMsg(it); const dis = full ? ` disabled title="${full}"` : '';
   if (!S.pack.hand || (it.kind !== 'omikuji' && it.kind !== 'kami')) return `<button class="primary" data-take="${i}"${dis}>${full ? 'Slots Full' : 'Take'}</button>`;
   const def = CONS[it.key];
@@ -818,12 +842,12 @@ function packButtons(it, i) {
 function packHTML() {
   const pk = PACKS[S.pack.key];
   let h = `<div class="shophead"><h2>${pk.name}</h2></div><p class="muted" style="margin:2px 0 8px">${pk.desc}${S.pack.free ? ' Free, from a Tag.' : ''}</p>`;
-  if (S.pack.hand) h += `<div class="packhandwrap"><div class="label">Your Tiles · ${packTiles().length} random tiles from your Wall</div><div class="muted" style="font-size:12px;margin:2px 0 6px">Select tiles, then press Use on a card. The change stays in your Wall for the rest of the run. Keep puts the card in your consumable slots instead.</div><div class="packhand" id="packHand"></div></div>`;
-  h += `<div class="shopsec secrow"><span class="label">Cards · choose ${S.pack.left} more</span></div>`;
+  if (S.pack.hand) h += `<div class="packhandwrap"><div class="label">Your Tiles · ${packTiles().length} random tiles from your Wall</div><div class="muted" style="font-size:12px;margin:2px 0 6px">${S.pack.done ? 'All picks used. Outlined tiles changed and stay that way in your Wall. Press Done to return to the shop.' : 'Select tiles, then press Use on a card. The change stays in your Wall for the rest of the run. Keep puts the card in your consumable slots instead.'}</div><div class="packhand" id="packHand"></div></div>`;
+  h += `<div class="shopsec secrow"><span class="label">${S.pack.done ? 'Cards · all picks used' : `Cards · choose ${S.pack.left} more`}</span></div>`;
   h += `<div class="shop-grid">${S.pack.choices.map((it, i) => { const d = itemDef(it); const ed = it.edition ? EDITIONS[it.edition] : null; return `<div class="shopcard ${it.kind}${it.sold ? ' sold' : ''}${ed ? ' ed-' + it.edition : ''}"><div class="kind">${{ talisman: 'Talisman', omikuji: 'Omikuji', kami: 'Kami Spirit', scroll: 'Scroll of Mastery' }[it.kind]}${ed ? ` · <span class="edtag ed-${it.edition}">${ed.name}</span>` : ''}</div><div class="n">${d.name}</div><div class="d">${d.desc}${ed ? ` <b>${ed.name}: ${ed.desc}.</b>` : ''}</div>${it.kind === 'scroll' && !it.sold ? scrollLevelHTML(it.key) : it.kind === 'talisman' && !it.sold ? talPreview(it.key) : ''}<div class="buy"><span></span>${it.sold ? `<span class="muted">${it.used ? 'Used' : 'Taken'}</span>` : packButtons(it, i)}</div></div>`; }).join('')}</div>`;
   h += `<div class="msg${S.msgErr ? ' err' : ''}" style="min-height:18px;margin:2px 0 6px">${S.msg || ''}</div>`;
   h += ownedHTML();
-  h += `<div class="shopfoot"><button id="mDeck" class="ghost">View Wall</button><span style="flex:1"></span><button id="mPackDone" class="ghost">Skip the Rest</button></div>`;
+  h += `<div class="shopfoot"><button id="mDeck" class="ghost">View Wall</button><span style="flex:1"></span>${S.pack.done ? '<button id="mPackDone" class="primary">Done</button>' : '<button id="mPackDone" class="ghost">Skip the Rest</button>'}</div>`;
   return h;
 }
 function overHTML(won) {
