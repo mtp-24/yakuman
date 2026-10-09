@@ -31,6 +31,15 @@ function translateDOM(root) {
   });
 }
 function setLang(l) { LANG = l; try { localStorage.setItem('yakuman.lang', l); } catch (e) { } if (modalPinned) hideModal(); render(); }
+function settingsHTML() {
+  const dbgOn = !$('#debugBar').hidden;
+  return `<h2>Settings</h2>
+  <div class="setrow"><div><b>Terminology</b><div class="muted">Riichi uses Japanese names (Chi, Pon, Kan, Han, Yaku, ¥). Hong Kong uses English names (Chow, Pung, Kong, Faan, $).</div></div><div class="setbtns"><button class="${LANG === 'ja' ? 'primary' : ''}" data-setlang="ja">Riichi</button><button class="${LANG === 'hk' ? 'primary' : ''}" data-setlang="hk">Hong Kong</button></div></div>
+  <div class="setrow"><div><b>Dead-tile dots</b><div class="muted">Green dots mark tiles you can discard without losing progress toward a complete hand.</div></div><div class="setbtns"><button class="${SHOW_DOTS ? 'primary' : ''}" data-setdots="on">On</button><button class="${!SHOW_DOTS ? 'primary' : ''}" data-setdots="off">Off</button></div></div>
+  <div class="setrow"><div><b>Debug tools</b><div class="muted">A bar under the board with money, plays, items, bosses and editions for playtesting.</div></div><div class="setbtns"><button class="${dbgOn ? 'primary' : ''}" data-setdbg="on">Show</button><button class="${!dbgOn ? 'primary' : ''}" data-setdbg="off">Hide</button></div></div>
+  <div class="setrow"><div><b>Saved run</b><div class="muted">The current run is saved in this browser automatically.</div></div><div class="setbtns"><button class="danger" data-wipe>Wipe save and reload</button></div></div>
+  <div style="margin-top:12px"><button id="mClose" class="primary">Close</button></div>`;
+}
 // ===================== STATE =====================
 let S = null;
 const SAVE_KEY = 'yakuman.save.v1';
@@ -366,8 +375,7 @@ function render() {
   renderBlind(); renderTalismans(); renderConsumables(); renderOpen(); renderRiver(); renderHand(); renderActions(); renderLast();
   $('#msg').textContent = S.msg || ''; $('#msg').className = 'msg' + (S.msgErr ? ' err' : '');
   if (S.phase === 'shop' && S.pack) showModal(packHTML()); else if (S.phase === 'shop') showModal(shopHTML()); else if (S.phase === 'select') showModal(selectHTML()); else if (S.phase === 'gameover') showModal(overHTML(false)); else if (S.phase === 'win') showModal(overHTML(true)); else if (!modalPinned) hideModal();
-  $('#btnLang').textContent = LANG === 'hk' ? 'Riichi Terms' : 'HK Terms';
-  $('#btnYaku').textContent = LANG === 'hk' ? 'Run Info · Faan' : 'Run Info · Yaku';
+  $('#btnYaku').textContent = 'Run Info';
   translateDOM($('#app'));
   save();
 }
@@ -688,13 +696,18 @@ function yakuHTML() {
   const tabs = [['run', 'Run'], ['ladder', 'Play Ladder'], ['yaku', 'Yaku'], ['yakuman', 'Yakuman']];
   let h = `<h2>Run Info</h2><div class="tabs">${tabs.map(([k, n]) => `<button class="tab${infoTab === k ? ' on' : ''}" data-tab="${k}">${n}</button>`).join('')}</div>`;
   if (infoTab === 'run') {
-    h += `<div class="runinfo"><span><b>Seed</b> <code class="seed">${S.seed}</code> <button class="ghost tiny-btn" data-copyseed>Copy</button></span><span><b>${DECKS[S.deckKey].name}</b> · ${STAKES[S.stake].name}</span><span><b>Ante</b> ${Math.min(S.ante, CFG.antes)} / ${CFG.antes}</span><span><b>Blinds won</b> ${st.blinds}</span><span><b>Complete hands</b> ${st.hands}</span><span><b>Partial plays</b> ${st.melds}</span><span><b>Calls</b> ${st.calls} · <b>Kans</b> ${st.kans}</span><span><b>Discards</b> ${st.discards}</span><span><b>Skipped blinds</b> ${st.skipped}</span><span><b>Best play</b> ${st.best.toLocaleString()}${st.bestDesc ? ' (' + st.bestDesc + ')' : ''}</span></div>`;
-    h += `<div class="label" style="margin:12px 0 4px">Talismans</div><div class="owned">${S.talismans.map((k, i) => `<span class="own"><span class="order">${i + 1}</span><b>${TAL[k].name}</b>${S.editions[k] ? ' <span class="edtag ed-' + S.editions[k] + '">' + EDITIONS[S.editions[k]].name + '</span>' : ''}</span>`).join('') || '<span class="muted">None</span>'}</div>`;
-    h += `<div class="label" style="margin:12px 0 4px">Flowers &amp; Seasons</div><div class="owned">${S.flowers.map(f => `<span class="own"><b>${FLW[f].name}</b> <span class="muted">${FLW[f].desc}</span></span>`).join('') || '<span class="muted">None</span>'}</div>`;
-    h += `<div class="label" style="margin:12px 0 4px">Tags Held</div><div class="owned">${(S.tags || []).map(t => `<span class="own"><b>${TAGS[t].name}</b> <span class="muted">${TAGS[t].desc}</span></span>`).join('') || '<span class="muted">None</span>'}</div>`;
-    const sc = Object.entries(S.scrolls.meld).filter(([, v]) => v).map(([k, v]) => `<span class="own"><b>${MELD_LABEL[k]}</b> Lv.${v + 1}</span>`).concat(Object.entries(S.scrolls.yaku).filter(([, v]) => v).map(([k, v]) => `<span class="own"><b>${(YAKU_SHEET.find(y => y.k === k) || { n: k }).n}</b> +${v} Han</span>`));
-    h += `<div class="label" style="margin:12px 0 4px">Mastery</div><div class="owned">${sc.join('') || '<span class="muted">No Scrolls yet</span>'}</div>`;
-    h += `<div class="label" style="margin:12px 0 4px">Bosses</div><div class="owned">${S.bossOrder.slice(0, CFG.antes).map((b, i) => { const known = i <= S.ante - 1 || st.bosses.includes(b); return `<span class="own${known ? '' : ' muted'}"><span class="order">A${i + 1}</span><b>${known ? BOSSES[b].name : '?'}</b></span>`; }).join('')}</div>`;
+    const kv = (k, v) => `<div class="kv"><span>${k}</span><b>${v}</b></div>`;
+    h += `<div class="infogrid">`;
+    h += `<div class="infocard"><div class="label">Run</div>${kv('Seed', `<code class="seed">${S.seed}</code> <button class="ghost tiny-btn" data-copyseed>Copy</button>`)}${kv('Wall', DECKS[S.deckKey].name)}${kv('Stake', STAKES[S.stake].name)}${kv('Ante', `${Math.min(S.ante, CFG.antes)} / ${CFG.antes}`)}${kv('Blinds won', st.blinds)}${kv('Skipped blinds', st.skipped)}${kv('Best play', `${st.best.toLocaleString()}${st.bestDesc ? ' <span class="muted">' + st.bestDesc + '</span>' : ''}`)}</div>`;
+    h += `<div class="infocard"><div class="label">Plays this run</div>${kv('Complete hands', st.hands)}${kv('Partial plays', st.melds)}${kv('Calls from the River', st.calls)}${kv('Kans', st.kans)}${kv('Discards', st.discards)}${kv('Most-played rung', most ? (MELD_LABEL[most] || (CFG.rungs[most.replace('rung', '').split('').join(',')] || {}).name || most) : '—')}</div>`;
+    const talRows = S.talismans.map((k, i) => { const ed = S.editions[k]; return `<div class="kv"><span><span class="order">${i + 1}</span>${TAL[k].name}${ed ? ` <span class="edtag ed-${ed}">${EDITIONS[ed].name}</span>` : ''}</span><b class="muted" style="font-weight:400;text-align:right;max-width:60%">${TAL[k].status ? TAL[k].status(S) : ''}</b></div>`; }).join('');
+    h += `<div class="infocard"><div class="label">Talismans · ${S.talismans.length}/${talSlots()} · fire in this order</div>${talRows || '<div class="muted">None</div>'}</div>`;
+    const sc = Object.entries(S.scrolls.meld).filter(([, v]) => v).map(([k, v]) => kv(MELD_LABEL[k], `Lv.${v + 1}`)).concat(Object.entries(S.scrolls.yaku).filter(([, v]) => v).map(([k, v]) => kv((YAKU_SHEET.find(y => y.k === k) || { n: k }).n, `+${v} Han`)));
+    h += `<div class="infocard"><div class="label">Mastery</div>${sc.join('') || '<div class="muted">No Scrolls yet</div>'}</div>`;
+    h += `<div class="infocard"><div class="label">Flowers &amp; Seasons</div>${S.flowers.map(f => kv(FLW[f].name, `<span class="muted" style="font-weight:400">${FLW[f].desc}</span>`)).join('') || '<div class="muted">None</div>'}</div>`;
+    h += `<div class="infocard"><div class="label">Tags held</div>${(S.tags || []).map(t => kv(TAGS[t].name, `<span class="muted" style="font-weight:400">${TAGS[t].desc}</span>`)).join('') || '<div class="muted">None</div>'}</div>`;
+    h += `</div>`;
+    h += `<div class="infocard" style="margin-top:10px"><div class="label">Bosses</div><div class="bossline">${S.bossOrder.slice(0, CFG.antes).map((b, i) => { const known = i <= S.ante - 1 || st.bosses.includes(b); const beaten = i < S.ante - 1; return `<div class="bossstep${beaten ? ' beaten' : i === S.ante - 1 ? ' now' : ''}"><span class="order">A${i + 1}</span><b>${known ? BOSSES[b].name : '?'}</b>${known ? `<span class="muted">${BOSSES[b].desc}</span>` : ''}</div>`; }).join('')}</div></div>`;
   } else if (infoTab === 'ladder') {
     const lv = k => (S && S.scrolls.meld[k]) || 0; const lvTag = k => lv(k) ? ` <span class="tag">Lv.${lv(k) + 1}</span>` : '';
     const val = k => `${CFG.meldBase[k].chips + lv(k) * CFG.scrollChips} chips, ${CFG.meldBase[k].han + lv(k) * CFG.scrollHan} Han`;
@@ -771,14 +784,18 @@ function bindEvents() {
   $('#btnDeck').onclick = () => showModal(deckHTML(), true);
   $('#btnRules').onclick = () => showModal(rulesHTML(), true);
   $('#btnYaku').onclick = () => showModal(yakuHTML(), true);
-  $('#btnLang').onclick = () => setLang(LANG === 'hk' ? 'ja' : 'hk');
-  $('#btnDebug').onclick = () => { const b = $('#debugBar'); b.hidden = !b.hidden; if (!b.hidden) renderDebug(); };
+
+  $('#btnSettings').onclick = () => showModal(settingsHTML(), true);
   $('#btnNewRun').onclick = () => showModal(`<h2>Start a New Run?</h2><p class="muted">Your current run will be lost.</p><div style="display:flex;gap:8px"><button id="mNewRun" class="danger">New Run</button><button id="mClose">Cancel</button></div>`, true);
   document.addEventListener('click', e => { const b = e.target.closest('[data-copyseed]'); if (b) copySeed(b); });
   $('#overlay').addEventListener('click', e => {
     const t = e.target.closest('button'); if (!t) return;
     if (t.dataset.copyseed != null) return;
     if (t.dataset.tab) { infoTab = t.dataset.tab; showModal(yakuHTML(), true); return; }
+    if (t.dataset.setlang) { setLang(t.dataset.setlang); showModal(settingsHTML(), true); return; }
+    if (t.dataset.setdots) { SHOW_DOTS = t.dataset.setdots === 'on'; try { localStorage.setItem('yakuman.dots', SHOW_DOTS ? 'on' : 'off'); } catch (e) { } render(); showModal(settingsHTML(), true); return; }
+    if (t.dataset.setdbg) { const b = $('#debugBar'); b.hidden = t.dataset.setdbg !== 'on'; if (!b.hidden) renderDebug(); showModal(settingsHTML(), true); return; }
+    if (t.dataset.wipe != null) { clearSave(); location.reload(); return; }
     if (t.id === 'mClose') { hideModal(); render(); }
     else if (t.id === 'mNewRun' || t.id === 'mStart') { showModal(setupHTML(), true); }
     else if (t.dataset.nav) { const [name, d] = t.dataset.nav.split(':'); const seed = ($('#seedInput') || {}).value || ''; setupSel[name] += +d; showModal(setupHTML(), true); $('#seedInput').value = seed; }

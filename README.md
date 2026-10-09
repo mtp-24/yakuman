@@ -54,6 +54,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 42: Buy, Open and Reroll buttons are disabled when you cannot afford them, with the price shown in red and the reason in a tooltip.
 - Build 43: while settling a Call, Discard is enabled only with exactly the needed number of tiles selected (selection itself stays free so consumables still work); the pending count is recomputed after a consumable changes the hand.
 - Build 44: dead-tile dots stay visible while settling a Call; hand rows get extra vertical gap so a lifted (selected) tile no longer covers the dots of the row above.
+- Build 45: Settings screen (terminology, dead-tile dots, debug tools, wipe save) replaces the header Terms and Debug buttons; Run Info button is just "Run Info"; the Run tab is organised into cards (Run, Plays, Talismans, Mastery, Flowers, Tags) with a boss timeline.
 - Build 7: multi-meld play ladder (Two Melds ... Four Melds), targets 300...45000, retrigger and scaling Talismans, Wall-Builder rewording, scoring animation.
 
 ## Simulators (in `sim/`)
