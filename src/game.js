@@ -443,6 +443,7 @@ function render() {
   $('#msg').textContent = S.msg || ''; $('#msg').className = 'msg' + (S.msgErr ? ' err' : '');
   if (S.phase === 'cashout') showModal(cashoutHTML()); else if (S.phase === 'shop' && S.pack) { showModal(packHTML()); fillPackHand(); } else if (S.phase === 'shop') showModal(shopHTML()); else if (S.phase === 'select') showModal(selectHTML()); else if (S.phase === 'gameover') showModal(overHTML(false)); else if (S.phase === 'win') showModal(overHTML(true)); else if (!modalPinned) hideModal();
   $('#btnYaku').textContent = 'Run Info';
+  document.querySelectorAll('.zhead > .muted').forEach(e => { e.title = e.textContent; });   // full text on hover when a header is truncated
   translateDOM($('#app')); fitNumbers();
   save();
 }
@@ -529,7 +530,7 @@ function renderOpen() {
 }
 function renderRiver() {
   const box = $('#river'); box.innerHTML = '';
-  $('#riverInfo').textContent = S.boss === 'fisherman' ? 'Discards stay here all Blind. The Fisherman forbids Calls and claims.' : canClaim() ? 'Discards stay here all Blind. Select one plus 2–3 hand tiles to Call, or plus the rest of a complete hand to claim it with Kawauso.' : 'Discards stay here all Blind. Select one plus 2–3 hand tiles to Call.';
+  $('#riverInfo').textContent = S.boss === 'fisherman' ? 'The Fisherman forbids Calls and claims this Blind.' : canClaim() ? `Select one plus 2–3 hand tiles to Call, or plus the other ${neededConcealed() - 1} of a complete hand to claim it with Kawauso.` : 'Select one plus 2–3 hand tiles to Call. Discards stay here all Blind.';
   for (const t of S.river) { const e = tileEl(t, { small: true, sel: S.selRiver === t.id }); e.onclick = () => { if (S.phase !== 'blind') return; S.selRiver = S.selRiver === t.id ? null : t.id; render(); }; box.appendChild(e); }
   if (!S.river.length) box.innerHTML = '<span class="muted empty">No discards yet</span>';
 }
