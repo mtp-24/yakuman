@@ -1168,7 +1168,9 @@ function waitsOf(hand, openCount) {
 let LANG = 'ja'; try { LANG = localStorage.getItem('yakuman.lang') === 'hk' ? 'hk' : 'ja'; } catch (e) { }
 let SHOW_DOTS = false; try { SHOW_DOTS = localStorage.getItem('yakuman.dots') === 'on'; } catch (e) { }
 // Helper hints under the hand: tiles away / complete hand ready is on by default; waits and what a selected discard does are off.
-let HINTS = { away: true, waits: false, without: false }; try { Object.assign(HINTS, JSON.parse(localStorage.getItem('yakuman.hints') || '{}')); } catch (e) { }
+let HINTS = { away: true, waits: false, without: false };
+// Corner numbers on tiles: 'all', 'some' (Characters and Winds, the default) or 'none'. Dots and Bamboo can be counted by their pips.
+let TILE_NUMS = 'some'; try { TILE_NUMS = localStorage.getItem('yakuman.tilenums') || 'some'; } catch (e) { } try { Object.assign(HINTS, JSON.parse(localStorage.getItem('yakuman.hints') || '{}')); } catch (e) { }
 const SPEEDS = { slow: 2.5, normal: 1, fast: 0.45, instant: 0 };
 let ANIM_SPEED = 'normal'; try { const v = localStorage.getItem('yakuman.speed'); if (SPEEDS[v] !== undefined) ANIM_SPEED = v; } catch (e) { }
 let HK_RE = null, HK_MAP = null;
@@ -1206,6 +1208,7 @@ function settingsHTML() {
   return `<h2>Settings</h2>
   <div class="setrow"><div><b>Terminology</b><div class="muted" data-notr>Riichi uses Japanese names (Chi, Pon, Kan, Han, Yaku, ¥). Hong Kong uses English names (Chow, Pung, Kong, Faan, $).</div></div><div class="setbtns"><button class="${LANG === 'ja' ? 'primary' : ''}" data-setlang="ja">Riichi</button><button class="${LANG === 'hk' ? 'primary' : ''}" data-setlang="hk">Hong Kong</button></div></div>
   <div class="setrow"><div><b>Helper hints</b><div class="muted">Shown under your hand. Tiles Away (on by default) says how many tiles you are from a complete hand. Waiting On lists the tiles you need, and Without These says whether the tiles you select can go without setting you back.</div></div><div class="setbtns">${[['away', 'Tiles Away'], ['waits', 'Waiting On'], ['without', 'Without These']].map(([k, n]) => `<button class="${HINTS[k] ? 'primary' : ''}" data-sethint="${k}">${n}</button>`).join('')}</div></div>
+  <div class="setrow"><div><b>Tile numbers</b><div class="muted">The small number or letter in a tile's corner. Characters and Winds is the default: Dots and Bamboo are counted by their pips. With All Tiles, some numbers sit over the Dots and Bamboo art.</div></div><div class="setbtns">${[['all', 'All Tiles'], ['some', 'Characters and Winds'], ['none', 'None']].map(([k, n]) => `<button class="${TILE_NUMS === k ? 'primary' : ''}" data-settilenums="${k}">${n}</button>`).join('')}</div></div>
   <div class="setrow"><div><b>Dead-tile dots (assist)</b><div class="muted">Off by default. When on, green dots mark tiles you can discard without losing progress toward a complete hand. A sizeable help: it solves the discard choice for you.</div></div><div class="setbtns"><button class="${SHOW_DOTS ? 'primary' : ''}" data-setdots="on">On</button><button class="${!SHOW_DOTS ? 'primary' : ''}" data-setdots="off">Off</button></div></div>
   <div class="setrow"><div><b>Scoring animation speed</b><div class="muted">How fast tiles and Talismans score. Instant shows the result at once. Clicking anywhere during scoring also skips.</div></div><div class="setbtns">${Object.keys(SPEEDS).map(k => `<button class="${ANIM_SPEED === k ? 'primary' : ''}" data-setspeed="${k}">${k[0].toUpperCase() + k.slice(1)}</button>`).join('')}</div></div>
   <div class="setrow"><div><b>Debug tools</b><div class="muted">A bar under the board with money, plays, items, bosses and editions for playtesting.</div></div><div class="setbtns"><button class="${dbgOn ? 'primary' : ''}" data-setdbg="on">Show</button><button class="${!dbgOn ? 'primary' : ''}" data-setdbg="off">Hide</button></div></div>
@@ -1608,14 +1611,14 @@ function tileSVG(t) {
   const small = n => `<text x="5" y="11" font-size="9" font-family="IBM Plex Sans, sans-serif" font-weight="600" fill="${t.red ? red : '#7a6e52'}">${n}</text>`;
   if (t.suit === 'z') {
     if (t.rank === 5) body = `<rect x="11" y="14" width="32" height="46" rx="3" fill="none" stroke="${blue}" stroke-width="3"/>`;
-    else { const col = t.rank === 6 ? green : t.rank === 7 ? red : ink; body = `<text x="27" y="50" text-anchor="middle" font-size="34" font-weight="700" font-family="Hiragino Mincho ProN, Noto Serif JP, serif" fill="${col}">${HONOR_NAMES[t.rank]}</text>`; if (t.rank <= 4) body += `<text x="5" y="11" font-size="9" font-family="IBM Plex Sans, sans-serif" font-weight="600" fill="#7a6e52">${'ESWN'[t.rank - 1]}</text>`; }
+    else { const col = t.rank === 6 ? green : t.rank === 7 ? red : ink; body = `<text x="27" y="50" text-anchor="middle" font-size="34" font-weight="700" font-family="Hiragino Mincho ProN, Noto Serif JP, serif" fill="${col}">${HONOR_NAMES[t.rank]}</text>`; if (t.rank <= 4 && TILE_NUMS !== 'none') body += `<text x="5" y="11" font-size="9" font-family="IBM Plex Sans, sans-serif" font-weight="600" fill="#7a6e52">${'ESWN'[t.rank - 1]}</text>`; }
   } else if (t.suit === 'm') {
-    body = small(t.rank) + `<text x="27" y="34" text-anchor="middle" font-size="24" font-weight="700" font-family="Hiragino Mincho ProN, Noto Serif JP, serif" fill="${t.red ? red : ink}">${CJK_NUM[t.rank]}</text><text x="27" y="62" text-anchor="middle" font-size="24" font-weight="700" font-family="Hiragino Mincho ProN, Noto Serif JP, serif" fill="${red}">萬</text>`;
+    body = (TILE_NUMS !== 'none' ? small(t.rank) : '') + `<text x="27" y="34" text-anchor="middle" font-size="24" font-weight="700" font-family="Hiragino Mincho ProN, Noto Serif JP, serif" fill="${t.red ? red : ink}">${CJK_NUM[t.rank]}</text><text x="27" y="62" text-anchor="middle" font-size="24" font-weight="700" font-family="Hiragino Mincho ProN, Noto Serif JP, serif" fill="${red}">萬</text>`;
   } else if (t.suit === 'p') {
-    body = '';   // Dots and Bamboo carry no corner number: the pips are counted, as on Japanese sets, and the number collided with the art
+    body = TILE_NUMS === 'all' ? small(t.rank) : '';   // Dots and Bamboo are counted by their pips, so by default they carry no corner number
     PIN_LAYOUT[t.rank].forEach(([x, y, r], i) => { const ring = t.red ? red : (i % 2 ? green : blue); body += `<circle cx="${x}" cy="${y}" r="${r}" fill="#fff" stroke="${ring}" stroke-width="${Math.max(2, r * 0.3)}"/><circle cx="${x}" cy="${y}" r="${r * 0.4}" fill="${t.red ? red : (i % 2 ? blue : green)}"/>`; });
   } else {
-    body = '';
+    body = TILE_NUMS === 'all' ? small(t.rank) : '';
     if (t.rank === 1) {
       const c = t.red ? red : green;
       body += `<path d="M27 56 C18 56 14 48 16 40 C18 32 24 30 27 30 C30 30 36 32 38 40 C40 48 36 56 27 56 Z" fill="${c}"/><circle cx="27" cy="25" r="6" fill="${c}"/><path d="M31 23 L38 25 L31 27 Z" fill="${red}"/><path d="M24 17 L27 11 L30 17" stroke="${red}" stroke-width="2" fill="none"/><path d="M20 56 L12 66 M27 57 L27 67 M34 56 L42 66" stroke="${c}" stroke-width="2.5" stroke-linecap="round"/>`;
@@ -1667,8 +1670,8 @@ function renderBlind() {
   const pct = S.target ? Math.min(100, 100 * S.score / S.target) : 0;
   const reward = (kind === 'small' && (S.stake === 'red' || S.stake === 'black')) ? 0 : CFG.blindReward[kind];
   const targetVal = inBlind ? S.target : Math.floor(CFG.anteBase[Math.min(S.ante, CFG.antes) - 1] * CFG.blindMult[kind] * stakeTargets());
-  let h = `<div class="blindplate${S.boss && inBlind ? ' bossplate' : ''}"><div class="bp-top"><span class="label">Ante ${Math.min(S.ante, CFG.antes)} of ${CFG.antes}</span><span class="label">${inBlind ? ({ small: 'Small Blind', big: 'Big Blind', boss: 'Boss Blind' })[kind] : 'Next up'}</span></div><div class="blind-name${S.boss && inBlind ? ' boss' : ''}">${name}</div>`;
-  if (inBlind && S.boss) h += `<div class="boss-desc">${BOSSES[S.boss].desc}${S.boss === 'collector' && S.bossSuit ? ` <b>This Blind: ${SUIT_EN[S.bossSuit]}.</b>` : ''}${S.boss === 'gatekeeper' ? (S.firstPlayDone ? ' <b>First Play done.</b>' : ' <b>Your next Play scores 0.</b>') : ''}</div>`;
+  let h = `<div class="blindplate${S.boss && inBlind ? ' bossplate' : ''}"><div class="bp-top"><span class="label">Ante ${Math.min(S.ante, CFG.antes)} of ${CFG.antes}</span><span class="label">${inBlind ? (kind === 'boss' ? 'Boss Blind' : '') : 'Next up'}</span></div><div class="blind-name${S.boss && inBlind ? ' boss' : ''}">${name}</div>`;
+  if (inBlind && S.boss) h += `<div class="boss-desc">${BOSSES[S.boss].desc}${S.boss === 'collector' && S.bossSuit ? ` <b>This Blind: ${SUIT_EN[S.bossSuit]}.</b>` : ''}${S.boss === 'gatekeeper' ? (S.firstPlayDone ? ' <b>First Play done.</b>' : '') : ''}</div>`;
   h += `<div class="bp-row"><div><div class="label">Score at least</div><div class="target num">${targetVal.toLocaleString()}</div></div><div class="bp-reward" title="Plus ¥1 per unused Play and ¥1 interest per ¥5 held (max ¥5)"><div class="label">Reward</div><div class="num">¥${reward}<span class="muted" style="font-size:11px;font-family:var(--body)"> +extras</span></div></div></div></div>`;
   if (S.tags && S.tags.length) h += `<div class="label" style="margin-top:8px">Tags</div><div class="flowers">${S.tags.map(t => `<span class="flowerchip" title="${TAGS[t].desc}">${TAGS[t].name}</span>`).join('')}</div>`;
   if (inBlind) h += `<div class="roundscore"><div class="label">Round Score</div><div class="rs num${S.score >= S.target ? ' met' : ''}" id="roundScore">${S.score.toLocaleString()}</div><div class="rsbar"><i id="roundBar" style="width:${pct}%"></i></div></div>`;
@@ -2204,6 +2207,7 @@ function bindEvents() {
     if (t.dataset.copyseed != null) return;
     if (t.dataset.tab) { infoTab = t.dataset.tab; showModal(yakuHTML(), true); return; }
     if (t.dataset.setlang) { setLang(t.dataset.setlang); showModal(settingsHTML(), true); return; }
+    if (t.dataset.settilenums) { TILE_NUMS = t.dataset.settilenums; try { localStorage.setItem('yakuman.tilenums', TILE_NUMS); } catch (e) { } render(); showModal(settingsHTML(), true); return; }
     if (t.dataset.sethint) { HINTS[t.dataset.sethint] = !HINTS[t.dataset.sethint]; try { localStorage.setItem('yakuman.hints', JSON.stringify(HINTS)); } catch (e) { } render(); showModal(settingsHTML(), true); return; }
     if (t.dataset.setdots) { SHOW_DOTS = t.dataset.setdots === 'on'; try { localStorage.setItem('yakuman.dots', SHOW_DOTS ? 'on' : 'off'); } catch (e) { } render(); showModal(settingsHTML(), true); return; }
     if (t.dataset.setspeed) { ANIM_SPEED = t.dataset.setspeed; try { localStorage.setItem('yakuman.speed', ANIM_SPEED); } catch (e) { } showModal(settingsHTML(), true); return; }
