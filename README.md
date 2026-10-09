@@ -142,6 +142,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 131: Tile motion (FLIP across renders): selecting lifts with a small spring (0.19 s) and deselecting drops (0.13 s), discards fly from the hand into their River spots with an arc and tilt (0.3 s, 30 ms apart), the hand glides to its new order (0.22 s), new tiles are dealt in with a quick flip (0.26 s, 20-35 ms apart), and Calls fly onto the table. Skipped when reduced motion is on.
 - Build 132: Snappier selection: fixed a bug that played the 0.22 s re-sort glide instead of the lift; the lift is now 0.11 s (drop 0.08 s) and a tile dips the moment it is pressed. Drawn tiles drop in from above with a landing bounce (0.34 s, 30-55 ms apart) and glow gold for under a second so new tiles are easy to spot.
 - Build 133: Live drag for hand tiles and Talismans, like Balatro: the dragged item floats under the pointer with a tilt that follows its motion, a gap moves through the row and the others slide aside (0.16 s) to make room, and on release it glides into the gap. Works across both hand rows.
+- Build 134: Select and deselect are a straight lift and drop with no overshoot (the press dip is gone too). Drag tilt is subtler: at most 4 degrees.
 - Build 7: multi-meld play ladder (Two Melds ... Four Melds), targets 300...45000, retrigger and scaling Talismans, Wall-Builder rewording, scoring animation.
 
 ## Simulators (in `sim/`)
