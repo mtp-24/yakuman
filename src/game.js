@@ -493,7 +493,7 @@ function render() {
   $('#btnDeck').innerHTML = `Wall <span class="num wallcount">${S.phase === 'blind' ? S.wall.length : (S.deck || []).length}</span>`; $('#btnDeck').title = S.phase === 'blind' ? 'Tiles still face down in the Wall. Click to see every tile.' : 'Tiles in your Wall. Click to see every tile.';
   renderBlind(); renderTalismans(); renderConsumables(); renderOpen(); renderRiver(); renderHand(); renderActions(); renderLast();
   $('#msg').textContent = S.msg || ''; $('#msg').className = 'msg' + (S.msgErr ? ' err' : '');
-  if (S.phase === 'cashout') showModal(cashoutHTML()); else if (S.phase === 'shop' && S.pack) { showModal(packHTML(), false, 'packmodal'); fillPackHand(); } else if (S.phase === 'shop') showModal(shopHTML()); else if (S.phase === 'select') showModal(selectHTML(), false, 'selectmodal'); else if (S.phase === 'gameover') showModal(overHTML(false), false, 'overmodal'); else if (S.phase === 'win') showModal(overHTML(true), false, 'overmodal winmodal'); else if (!modalPinned) hideModal();
+  if (S.phase === 'cashout') showModal(cashoutHTML(), false, 'cashmodal'); else if (S.phase === 'shop' && S.pack) { showModal(packHTML(), false, 'packmodal'); fillPackHand(); } else if (S.phase === 'shop') showModal(shopHTML()); else if (S.phase === 'select') showModal(selectHTML(), false, 'selectmodal'); else if (S.phase === 'gameover') showModal(overHTML(false), false, 'overmodal'); else if (S.phase === 'win') showModal(overHTML(true), false, 'overmodal winmodal'); else if (!modalPinned) hideModal();
   $('#btnYaku').textContent = 'Run Info';
   document.querySelectorAll('.zhead > .muted').forEach(e => { e.title = e.textContent; });   // full text on hover when a header is truncated
   translateDOM($('#app')); fitNumbers();
@@ -833,10 +833,12 @@ function cardHTML(it, idx) {
 function cashoutHTML() {
   const r = S.reward; const names = { small: 'Small Blind', big: 'Big Blind', boss: 'Boss Blind' };
   const bossName = r.kind === 'boss' && S.stats.bosses.length ? BOSSES[S.stats.bosses[S.stats.bosses.length - 1]].name : null;
-  let h = `<div class="cashout"><div class="label">${names[r.kind]} defeated</div><h2>${bossName ? bossName + ' beaten' : 'Blind cleared'}</h2>`;
-  h += `<div class="cashlist num">${[['Blind reward', r.base], ['Unused Plays', r.left], ['Interest (¥1 per ¥5)', r.interest], r.tal ? ['Talismans', r.tal] : null, r.summer ? ['Summer', r.summer] : null, r.invest ? ['Investment Tag', r.invest] : null].filter(Boolean).map(([k, v]) => `<div class="cashrow"><span>${k}</span><b>¥${v}</b></div>`).join('')}<div class="cashrow total"><span>Total</span><b>¥${r.total}</b></div></div>`;
-  h += `<div class="muted" style="font-size:12px;margin-top:6px">You now have ¥${S.money}.</div>`;
-  h += `<div style="margin-top:14px"><button id="mCashOut" class="primary" style="font-size:16px;padding:10px 20px">Cash Out →</button></div></div>`;
+  const cap = hasF('winter') ? 10 : CFG.interestCap;
+  const rows = [['Blind reward', names[r.kind], r.base], ['Unused Plays', `${r.left} × ¥1`, r.left], ['Interest', `¥1 per ¥${CFG.interestPer} held, up to ¥${cap}`, r.interest], r.tal ? ['Talismans', 'end-of-Blind payouts', r.tal] : null, r.summer ? ['Summer', 'Flower', r.summer] : null, r.invest ? ['Investment Tag', 'Boss bonus', r.invest] : null].filter(Boolean);
+  let h = `<div class="cashhead"><div class="label">${names[r.kind]} defeated</div><h2>${bossName ? bossName + ' beaten' : 'Blind cleared'}</h2>`;
+  if (S.target) h += `<div class="cashscore num"><b>${S.score.toLocaleString()}</b> <span class="muted">of ${S.target.toLocaleString()}</span></div>`;
+  h += `</div><div class="receipt">${rows.map(([k, d, v]) => `<div class="rrow"><div><div class="rl">${k}</div><div class="rd muted">${d}</div></div><b class="num">¥${v}</b></div>`).join('')}<div class="rtotal"><span>Total</span><b class="num">¥${r.total}</b></div></div>`;
+  h += `<div class="cashfoot"><span class="muted" style="font-size:12px">You now have</span>${walletHTML()}</div><button id="mCashOut" class="primary cashbtn">Cash Out →</button>`;
   return h;
 }
 const walletHTML = () => `<span class="wallet"><span class="cur">YEN</span><span class="v num">¥${S.money}</span></span>`;

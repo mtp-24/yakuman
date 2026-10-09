@@ -266,6 +266,14 @@ aside{display:flex;flex-direction:column;gap:10px;min-width:0}
 .seedline{font-size:11px;margin-top:8px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 /* Run over / run complete */
 .modal.overmodal{max-width:640px}
+/* Cash-out receipt */
+.modal.cashmodal{max-width:440px;text-align:center;border-color:rgba(217,164,65,.45);background:radial-gradient(ellipse at top,rgba(217,164,65,.12),transparent 60%),var(--panel)}
+.cashhead h2{margin:2px 0 2px;font-size:30px} .cashscore{font-size:13px;margin-bottom:12px} .cashscore b{font-family:var(--display);font-size:18px;font-weight:500;color:var(--good)}
+.receipt{text-align:left;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:4px 14px}
+.rrow{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 0;border-bottom:1px dashed var(--line)} .rrow .rl{font-size:14px} .rrow .rd{font-size:11px;margin-top:1px} .rrow b{font-family:var(--display);font-size:20px;font-weight:500;color:var(--accent)}
+.rtotal{display:flex;justify-content:space-between;align-items:baseline;padding:10px 0 8px} .rtotal span{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)} .rtotal b{font-family:var(--display);font-size:32px;font-weight:500;color:var(--accent);line-height:1}
+.cashfoot{display:flex;justify-content:center;align-items:center;gap:10px;margin:14px 0 12px}
+.cashbtn{width:100%;font-size:17px;padding:12px 20px}
 .modal.winmodal{border-color:rgba(217,164,65,.6);background:radial-gradient(ellipse at top,rgba(217,164,65,.16),transparent 60%),var(--panel);box-shadow:0 0 0 1px rgba(217,164,65,.25),0 0 40px rgba(217,164,65,.15)}
 .winmodal .overhead h2{color:var(--accent);text-shadow:0 0 18px rgba(217,164,65,.35)}
 /* Intro */
