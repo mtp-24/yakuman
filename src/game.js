@@ -448,7 +448,14 @@ function render() {
 }
 // Big numbers shrink to fit their box instead of wrapping onto a second line (targets, chips, Mult, totals, Round Score).
 function fitText(el, min) { if (!el) return; el.style.fontSize = ''; let fs = parseFloat(getComputedStyle(el).fontSize); while (el.scrollWidth > el.clientWidth + 1 && fs > (min || 11)) { fs -= 1; el.style.fontSize = fs + 'px'; } }
-function fitNumbers(root) { (root || document).querySelectorAll('.handbox .chipbox, .handbox .multbox, .bp-row .target, .roundscore .rs, .hb-total .tot').forEach(e => fitText(e)); }
+function fitNumbers(root) { (root || document).querySelectorAll('.handbox .chipbox, .handbox .multbox, .bp-row .target, .roundscore .rs, .hb-total .tot').forEach(e => fitText(e)); (root || document).querySelectorAll('.hanfoot').forEach(fitFoot); }
+// The Han caption puts its tier name (Baiman, ...) on a second line when one line does not fit the box.
+function fitFoot(el) { if (!el) return; el.classList.remove('short'); const t = el.querySelector('.hantier').textContent; el.title = el.querySelector('.hanline').textContent + (t ? ' · ' + t : ''); if (el.scrollWidth > el.clientWidth + 1) el.classList.add('short'); }
+// Chips × Mult boxes for the scoring summary. Han lives in a caption strip under Mult, because Han only exists to become Mult.
+const tierText = h => { const t = tierName(h); return t && t !== 'None' ? t : ''; };
+function mathBoxes(chips, mult, han, dim) {
+  return `<div class="hb-math num"><span class="boxwrap chipwrap${dim ? ' dim' : ''}"><span class="chipbox">${chips}</span><span class="boxfoot">Chips</span></span><span class="px">×</span><span class="boxwrap multwrap${dim ? ' dim' : ''}"><span class="multbox">${mult}</span><span class="boxfoot hanfoot"><span class="hanline"><b class="hanval">${han}</b> ${tr('Han')}</span><span class="hantier">${tr(tierText(han))}</span></span></span></div>`;
+}
 let PREVIEW = null;
 function computePreview() {
   PREVIEW = null; if (S.phase !== 'blind' || S.busy) return;
@@ -480,9 +487,9 @@ function renderBlind() {
       const lvl = lvlKey ? (S.scrolls.meld[lvlKey] || 0) : 0;
       let chips = base.chips, han = base.han; if (pv.kind === 'hand') han += Math.max(1, c.yaku.reduce((a, y) => a + y.han, 0));
       for (const l of c.lines) if (/^Scroll:/.test(l.label)) { chips += l.chips || 0; han += l.han || 0; }
-      h += `<div class="handbox"><div class="hb-name">${pv.label}${pv.claim ? ' <span class="tag">River Claim</span>' : ''}${lvlKey ? ` <span class="tag">Lv.${lvl + 1}</span>` : ''}</div><div class="hb-math num"><span class="chipbox">${chips}</span><span class="px">×</span><span class="multbox">${hanMult(han)}</span></div><div class="hb-han num"><span class="hanpill"><b class="hanval">${han}</b> Han</span><span class="muted hantier">${tierName(han)} ×${hanMult(han)}</span></div></div>`;
+      h += `<div class="handbox"><div class="hb-name">${pv.label}${pv.claim ? ' <span class="tag">River Claim</span>' : ''}${lvlKey ? ` <span class="tag">Lv.${lvl + 1}</span>` : ''}</div>${mathBoxes(chips, hanMult(han), han)}</div>`;
     }
-    else h += `<div class="handbox empty"><div class="hb-name muted">Select a play</div><div class="hb-math num"><span class="chipbox dim">0</span><span class="px">×</span><span class="multbox dim">0</span></div><div class="hb-han num"><span class="hanpill dim"><b class="hanval">0</b> Han</span></div></div>`;
+    else h += `<div class="handbox empty"><div class="hb-name muted">Select a play</div>${mathBoxes(0, 0, 0, true)}</div>`;
   }
   h += `<div class="stats"><div class="stat plays"><div class="label">Plays</div><div class="v num">${S.plays}</div></div><div class="stat discards"><div class="label">Discards</div><div class="v num">${S.discards}</div></div></div>`;
   if (S.indicators.length) { h += `<div class="label" style="margin-top:8px">Dora Indicators</div><div class="dora-ind" id="doraRow"></div>`; }
@@ -669,10 +676,10 @@ function wait(ms) { return new Promise(r => setTimeout(r, (motionOK && !skipAnim
 async function animateScore(ctx) {
   skipAnim = false; skipArmed = false; setTimeout(() => { skipArmed = true; }, 250);
   const box = $('#scorebox'); if (!box) return;
-  box.innerHTML = `<div class="hb-name">${tr(ctx.rungName || '')}${ctx.kind === 'hand' ? ' <span class="muted">· ' + tr(ctx.desc) + '</span>' : ''}</div><div class="hb-total num" hidden><span class="tot">0</span></div><div class="hb-math num"><span class="chipbox">0</span><span class="px">×</span><span class="multbox">1</span></div><div class="hb-han num"><span class="hanpill"><b class="hanval">0</b> ${tr('Han')}</span><span class="muted hantier"></span></div><div class="muted" style="font-size:10px;margin-top:4px">click to skip</div>`;
+  box.innerHTML = `<div class="hb-name">${tr(ctx.rungName || '')}${ctx.kind === 'hand' ? ' <span class="muted">· ' + tr(ctx.desc) + '</span>' : ''}</div><div class="hb-total num" hidden><span class="tot">0</span></div>${mathBoxes(0, 1, 0)}<div class="muted" style="font-size:10px;margin-top:4px">click to skip</div>`;
   // the breakdown streams into the Last Play panel as it happens
   const lp = $('#lastPlay'); lp.innerHTML = `<div class="label">Last Play</div><div style="font-family:var(--display);font-size:15px;margin:2px 0 6px">${tr(ctx.desc)}</div><div class="lp-lines"></div>`;
-  const chipsEl = box.querySelector('.chipbox'), multEl = box.querySelector('.multbox'), totEl = box.querySelector('.tot'), totWrap = box.querySelector('.hb-total'), nameEl = box.querySelector('.hb-name'), linesBox = lp.querySelector('.lp-lines'), mathEl = box.querySelector('.hb-math'), hanEl = box.querySelector('.hanval'), hanPill = box.querySelector('.hanpill'), tierEl = box.querySelector('.hantier');
+  const chipsEl = box.querySelector('.chipbox'), multEl = box.querySelector('.multbox'), totEl = box.querySelector('.tot'), totWrap = box.querySelector('.hb-total'), nameEl = box.querySelector('.hb-name'), linesBox = lp.querySelector('.lp-lines'), mathEl = box.querySelector('.hb-math'), hanEl = box.querySelector('.hanval'), hanPill = box.querySelector('.hanfoot'), tierEl = box.querySelector('.hantier');
   const tileEls = new Map(); document.querySelectorAll('#hand .tile[data-id], #open .tile[data-id]').forEach(e => tileEls.set(+e.dataset.id, e));
   let chips = 0, han = 0, tileX = 1, mult = null;
   const curMult = () => mult === null ? hanMult(han) * tileX : mult;
@@ -681,10 +688,10 @@ async function animateScore(ctx) {
   const setMath = () => {
     const c = Math.max(0, Math.round(chips)), m = fmtMult(curMult());
     chipsEl.textContent = c; multEl.textContent = m;
-    if (lastChips !== null && c !== lastChips) bump(chipsEl, 'bump'); if (lastMult !== null && m !== lastMult) bump(multEl, 'bump');
-    const hv = Math.round(han); hanEl.textContent = hv; tierEl.textContent = tr(`${tierName(hv)} ×${hanMult(hv)}`); hanPill.classList.toggle('done', mult !== null); tierEl.classList.toggle('done', mult !== null);
-    if (lastHan !== null && hv !== lastHan) bump(hanPill, 'bump');
-    lastChips = c; lastMult = m; lastHan = hv; fitText(chipsEl); fitText(multEl);
+    if (lastChips !== null && c !== lastChips) bump(chipsEl.parentElement, 'bump'); if (lastMult !== null && m !== lastMult) bump(multEl.parentElement, 'bump');
+    const hv = Math.round(han); hanEl.textContent = hv; tierEl.textContent = tr(tierText(hv)); hanPill.classList.toggle('done', mult !== null);
+    if (lastHan !== null && hv !== lastHan) bump(hanPill.parentElement, 'bump');
+    lastChips = c; lastMult = m; lastHan = hv; fitText(chipsEl); fitText(multEl); fitFoot(hanPill);
   };
   const showLine = l => { const d = document.createElement('div'); d.className = 'row sline' + (l.zero ? ' bad' : '') + (l.yaku ? ' yaku' : '') + (l.tal ? ' tal' : '') + (l.convert ? ' convert' : ''); d.innerHTML = `<span>${tr(l.label)}</span><span class="num">${tr(l.val)}</span>`; linesBox.appendChild(d); if (l.tal) { const slot = document.querySelector(`.slot[data-tal="${l.tal}"]`); if (slot) { slot.classList.remove('bounce'); void slot.offsetWidth; slot.classList.add('bounce'); } } };
   const applyLine = l => { if (l.zero) chips = 0; else { chips += l.chips || 0; han += l.han || 0; if (l.convert) mult = hanMult(han) * tileX; if (l.mult) mult = (mult === null ? hanMult(han) * tileX : mult) + l.mult; if (l.xmult && mult !== null) mult *= l.xmult; } setMath(); };

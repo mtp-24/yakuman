@@ -319,6 +319,20 @@ button.pulse{animation:btnpulse 1s ease-in-out infinite;box-shadow:0 0 0 0 rgba(
 .hanpill{display:inline-block;padding:2px 8px;border-radius:10px;background:rgba(217,164,65,.18);border:1px solid rgba(217,164,65,.5);color:var(--accent);font-family:var(--body)} .hanpill b{font-size:13px}
 .hanpill.bump{animation:boxshake .32s cubic-bezier(.36,.07,.19,.97)}
 .hanpill.done,.hantier.done{opacity:.45}
+/* Chips and Mult boxes with caption strips; Han sits under Mult */
+.boxwrap{display:inline-flex;flex-direction:column;flex:1 1 0;min-width:0;border-radius:8px;overflow:hidden;box-shadow:inset 0 -3px 0 rgba(0,0,0,.25),0 2px 4px rgba(0,0,0,.35)}
+.handbox .boxwrap > .chipbox,.handbox .boxwrap > .multbox{flex:none;display:block;width:100%;min-width:0;border-radius:0;box-shadow:none}
+.boxfoot{font-family:var(--body);font-size:11px;text-align:center;padding:2px 6px 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3}
+.chipwrap .boxfoot{background:#174f82;color:#cfe3f6}
+.multwrap .boxfoot{background:#8f2c24;color:#f6d9a6} .hanfoot b{color:#ffd27a;font-weight:600}
+.hanfoot.done{color:rgba(246,217,166,.6)} .hanfoot.done b{color:rgba(255,210,122,.6)}
+.boxwrap.dim{opacity:.4}
+.handbox .hb-math{align-items:stretch} .handbox .hb-math .px{align-self:center}
+.boxfoot{flex:1 1 auto;display:flex;align-items:center;justify-content:center;gap:0}
+.hantier:not(:empty)::before{content:' · ';white-space:pre}
+.hanfoot.short{flex-direction:column;white-space:normal;line-height:1.2;padding:2px 4px 3px} .hanfoot.short .hantier::before{content:none} .hanfoot.short .hantier{font-size:10px;opacity:.85}
+.boxwrap.bump{animation:boxshake .32s cubic-bezier(.36,.07,.19,.97)}
+@media (prefers-reduced-motion:reduce){.boxwrap.bump{animation:none}}
 .shopcash{display:flex;align-items:baseline;gap:10px;margin:0 0 12px} .shopcash .label{font-family:var(--display);font-size:24px;letter-spacing:.04em;color:var(--muted);line-height:1} .shopcash b{font-family:var(--display);font-size:28px;line-height:1;color:var(--accent)}
 .cashout{text-align:center;padding:10px 0} .cashout h2{font-size:30px;margin:4px 0 10px}
 .cashlist{max-width:340px;margin:0 auto;text-align:left} .cashrow{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px dashed var(--line);font-size:14px} .cashrow b{color:var(--accent)} .cashrow.total{border-bottom:0;border-top:1px solid var(--line);font-size:16px;margin-top:4px;padding-top:8px}

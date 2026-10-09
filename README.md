@@ -87,6 +87,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 76: Talisman cards in the shop and in packs show an "If bought" preview of their live value (growing Talismans from zero, Hoshi, Hatsumōde and Oshi from the run so far, Kagami and Utsushi say what they would copy); Hoshi, Hatsumōde and Oshi also show live values once owned. Fix: a Talisman gained again after selling starts fresh instead of keeping its old progress. Duplicate View Wall button in the shop removed. Gashadokuro text says it counts hands played while you own it.
 - Build 77: on screens 1100px and wider, Talismans and Consumables sit side by side in one row (columns sized by slot count), saving about 100px of height; narrower screens keep the stacked layout.
 - Build 78: header buttons reordered to Wall, Run Info, Rules, Settings, New Run.
+- Build 79: scoring summary redesign. Han moves out of its separate pill into a caption strip under the Mult box ("10 Han · Baiman", wrapping to two lines in the narrow side panel), with a matching "Chips" strip under Chips so both boxes stay level; the whole box shakes when its value or Han changes.
 - Build 7: multi-meld play ladder (Two Melds ... Four Melds), targets 300...45000, retrigger and scaling Talismans, Wall-Builder rewording, scoring animation.
 
 ## Simulators (in `sim/`)
