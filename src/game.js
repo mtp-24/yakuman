@@ -413,7 +413,7 @@ function renderBlind() {
       for (const l of c.lines) if (/^Scroll:/.test(l.label)) { chips += l.chips || 0; han += l.han || 0; }
       h += `<div class="handbox"><div class="hb-name">${pv.label}${lvlKey ? ` <span class="tag">Lv.${lvl + 1}</span>` : ''}<span class="muted"> · ${han} Han</span></div><div class="hb-math num"><span class="chipbox">${chips}</span><span class="px">×</span><span class="multbox">${hanMult(han)}</span></div></div>`;
     }
-    else h += `<div class="handbox empty"><div class="hb-name muted">${S.selected.length ? (pv && pv.err ? pv.err : 'Not a valid play') : 'Select tiles to see the score'}</div><div class="hb-math num"><span class="chipbox dim">0</span><span class="px">×</span><span class="multbox dim">0</span></div></div>`;
+    else h += `<div class="handbox empty"><div class="hb-name muted">Select a play</div><div class="hb-math num"><span class="chipbox dim">0</span><span class="px">×</span><span class="multbox dim">0</span></div></div>`;
   }
   h += `<div class="stats"><div class="stat plays"><div class="label">Plays</div><div class="v num">${S.plays}</div></div><div class="stat discards"><div class="label">Discards</div><div class="v num">${S.discards}</div></div><div class="stat money"><div class="label">YEN</div><div class="v num">¥${S.money}</div></div><div class="stat"><div class="label">Wall</div><div class="v num">${S.wall.length}</div></div></div>`;
   if (S.indicators.length) { h += `<div class="label" style="margin-top:8px">Dora Indicators</div><div class="dora-ind" id="doraRow"></div>`; }
@@ -761,12 +761,14 @@ function renderDebug() {
   <select id="dbgScr"><option value="">Add scroll…</option>${SCROLLS.map(t => `<option value="${t.key}">${t.name}</option>`).join('')}</select>
   <select id="dbgFlw"><option value="">Add flower…</option>${FLOWERS.map(t => `<option value="${t.key}">${t.name}</option>`).join('')}</select>
   <select id="dbgEd"><option value="">Edition for selected Talisman…</option>${Object.entries(EDITIONS).map(([k, e]) => `<option value="${k}">${e.name}</option>`).join('')}<option value="none">None</option></select>
+  <button data-dbg="demo" title="Stage a complete hand with Red Fives, engravings and Talismans, then press Play to watch it score">Demo hand</button>
   <button data-dbg="reset" class="ghost">Wipe save</button>`;
   bar.querySelectorAll('[data-dbg]').forEach(b => b.onclick = () => {
     const a = b.dataset.dbg;
     if (a === 'money') S.money += 25; else if (a === 'play') S.plays++; else if (a === 'discard') S.discards++;
     else if (a === 'win') { if (S.phase === 'blind') { S.score = S.target; winBlind(); } }
     else if (a === 'refill') { if (S.phase === 'blind') { S.wall.push(...S.hand); shuffle(S.wall); S.hand = []; S.selected = []; draw(); } }
+    else if (a === 'demo') { stageDemoHand(); }
     else if (a === 'reset') { clearSave(); location.reload(); return; }
     render();
   });
@@ -776,6 +778,20 @@ function renderDebug() {
   $('#dbgScr').onchange = e => { const k = e.target.value; if (!k) return; buyFree({ kind: 'scroll', key: k }); e.target.value = ''; render(); };
   $('#dbgEd').onchange = e => { const k = e.target.value; if (!k || !S.selTal) return; if (k === 'none') delete S.editions[S.selTal]; else S.editions[S.selTal] = k; e.target.value = ''; render(); };
   $('#dbgFlw').onchange = e => { const k = e.target.value; if (!k) return; if (!S.flowers.includes(k)) S.flowers.push(k); e.target.value = ''; render(); };
+}
+// A staged complete hand that exercises most of the scoring sequence: Tanyao + Pinfu + Iipeikou, a Red Five, Red Seal, Gold Foil,
+// Jade and Glass engravings, Scroll levels, a Foil +Mult Talisman, a scaling Talisman and a Polychrome xMult Talisman.
+function stageDemoHand() {
+  if (S.phase !== 'blind') { setMsg('Start a blind first, then stage the demo hand.', true); return render(); }
+  S.wall.push(...S.hand); S.hand = []; S.open = []; S.pendingDiscard = 0; S.selected = [];
+  const mk = (suit, rank, red, eng) => { const t = mkTile(suit, rank, !!red); t.eng = eng || null; t.d = ++S.drawSeq; return t; };
+  const tiles = [mk('m', 2), mk('m', 3), mk('m', 4), mk('m', 2, false, 'redseal'), mk('m', 3), mk('m', 4, false, 'gold'), mk('p', 5, true), mk('p', 6), mk('p', 7, false, 'jade'), mk('s', 3), mk('s', 4), mk('s', 5, false, 'glass'), mk('s', 8), mk('s', 8), mk('z', 1), mk('z', 5), mk('p', 1)];
+  S.hand = tiles; S.sortHand = false;
+  S.selected = tiles.slice(0, 14).map(t => t.id);
+  S.talismans = ['tengu', 'kasaobake', 'hannya']; S.editions = { tengu: 'foil', hannya: 'poly' }; S.talState.kasaobake = 6;
+  S.scrolls.meld.chi = Math.max(S.scrolls.meld.chi || 0, 1);
+  if (S.target < 3000) S.target = 3000;
+  setMsg('Demo hand staged: 14 tiles selected. Press Play to watch it score.'); render();
 }
 function buyFree(it) { const m = S.money; S.money = 999; buy(it); S.money = m; }
 
