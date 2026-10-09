@@ -1456,7 +1456,15 @@ function renderBlind() {
   if (inBlind) {
     const pv = PREVIEW;
     if (S.pendingDiscard) h += `<div class="handbox pend"><div class="hb-name">Settle your Call</div><div class="muted" style="font-size:12px">Discard ${S.pendingDiscard} tile, then you can Play.</div></div>`;
-    else if (pv && pv.ctx) { const c = pv.ctx; const hot = S.target && c.total >= S.target; h += `<div class="handbox"><div class="hb-name">${pv.label}<span class="muted"> · ${c.han} Han · ${c.tier}${c.furiten ? ' · Furiten' : ''}</span></div><div class="hb-math num"><span class="pchips">${c.chips}</span><span class="px">×</span><span class="pmult">${fmtMult(c.mult)}</span><span class="px">=</span><span class="ptot${hot ? ' hot' : ''}">${c.total.toLocaleString()}</span></div></div>`; }
+    else if (pv && pv.ctx) {
+      // Balatro-style: only the play's base values here; tiles, Yaku bonuses and Talismans are revealed when the play scores.
+      const c = pv.ctx; const base = c.lines.find(l => l.base) || { chips: 0, han: 0 };
+      const lvlKey = pv.kind === 'hand' ? 'hand' : (['chi', 'pon', 'kan', 'pair', 'single'].includes(c.meldType) ? c.meldType : null);
+      const lvl = lvlKey ? (S.scrolls.meld[lvlKey] || 0) : 0;
+      let chips = base.chips, han = base.han; if (pv.kind === 'hand') han += Math.max(1, c.yaku.reduce((a, y) => a + y.han, 0));
+      for (const l of c.lines) if (/^Scroll:/.test(l.label)) { chips += l.chips || 0; han += l.han || 0; }
+      h += `<div class="handbox"><div class="hb-name">${pv.label}${lvlKey ? ` <span class="tag">Lv.${lvl + 1}</span>` : ''}<span class="muted"> · ${han} Han</span></div><div class="hb-math num"><span class="pchips">${chips}</span><span class="px">×</span><span class="pmult">${hanMult(han)}</span></div></div>`;
+    }
     else h += `<div class="handbox empty"><div class="hb-name muted">${S.selected.length ? (pv && pv.err ? pv.err : 'Not a valid play') : 'Select tiles to see the score'}</div><div class="hb-math num muted"><span>0</span><span class="px">×</span><span>0</span></div></div>`;
   }
   h += `<div class="stats"><div class="stat plays"><div class="label">Plays</div><div class="v num">${S.plays}</div></div><div class="stat discards"><div class="label">Discards</div><div class="v num">${S.discards}</div></div><div class="stat money"><div class="label">YEN</div><div class="v num">¥${S.money}</div></div><div class="stat"><div class="label">Wall</div><div class="v num">${S.wall.length}</div></div></div>`;
