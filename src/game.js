@@ -47,7 +47,7 @@ function settingsHTML() {
   <div class="setrow"><div><b>Scoring animation speed</b><div class="muted">How fast tiles and Talismans score. Instant shows the result at once. Clicking anywhere during scoring also skips.</div></div><div class="setbtns">${Object.keys(SPEEDS).map(k => `<button class="${ANIM_SPEED === k ? 'primary' : ''}" data-setspeed="${k}">${k[0].toUpperCase() + k.slice(1)}</button>`).join('')}</div></div>
   <div class="setrow"><div><b>Debug tools</b><div class="muted">A bar under the board with money, plays, items, bosses and editions for playtesting.</div></div><div class="setbtns"><button class="${dbgOn ? 'primary' : ''}" data-setdbg="on">Show</button><button class="${!dbgOn ? 'primary' : ''}" data-setdbg="off">Hide</button></div></div>
   <div class="setrow"><div><b>Saved run</b><div class="muted">The current run is saved in this browser automatically.</div></div><div class="setbtns"><button class="danger" data-wipe>Wipe save and reload</button></div></div>
-  <div style="margin-top:12px"><button id="mClose" class="primary">Close</button></div>`;
+  <button id="mClose" hidden>Close</button>`;
 }
 // ===================== STATE =====================
 let S = null;
@@ -868,7 +868,7 @@ function deckHTML() {
   let h = `<div class="deckwrap"></div><h2>The Wall</h2><p class="muted" style="margin:0 0 10px">${all.length} tiles in your deck${S.phase === 'blind' ? ` · ${S.wall.length} still face down in the Wall` : ''}. Each cell: total copies${S.phase === 'blind' ? ' (left in Wall)' : ''}.</p>`;
   for (const [label, from, to] of [['Manzu', 0, 9], ['Pinzu', 9, 18], ['Souzu', 18, 27], ['Honors', 27, 34]]) h += `<div class="label" style="margin:8px 0 4px">${label}</div><div class="deckrow" data-from="${from}" data-to="${to}"></div>`;
   const eng = all.filter(t => t.eng); if (eng.length) h += `<p style="margin-top:10px;font-size:12px">Engraved: ${eng.map(t => tileName(t) + ' [' + ENG[t.eng].name + ']').join(', ')}</p>`;
-  h += `<div style="margin-top:12px"><button id="mClose" class="primary">Close</button></div>`;
+  h += `<button id="mClose" hidden>Close</button>`;
   setTimeout(() => { document.querySelectorAll('#modal .deckrow').forEach(g => { for (let i = +g.dataset.from; i < +g.dataset.to; i++) { const c = document.createElement('div'); c.className = 'deckcell'; const t = tileFromIdx(i); c.appendChild(tileEl(t, { small: true })); c.innerHTML += `<b>${counts[i]}</b>${S.phase === 'blind' ? ` (${inWall[i]})` : ''}${reds[i] ? `<br><span style="color:var(--redfive)">${reds[i]} red</span>` : ''}`; g.appendChild(c); } translateDOM(g); }); }, 0);
   return h;
 }
@@ -911,7 +911,7 @@ function rulesHTML() {
   <p><b>Helper.</b> Under your hand the game shows how many tiles you are from a complete hand. Settings can turn that off, and can turn on two more hints: which tiles you are waiting on, and whether the tiles you select can go without setting you back. Against The Purist they only count your visible tiles. Another assist marks dead tiles with green dots.</p>
   <p><b>Arranging.</b> Drag hand tiles to reorder them. Dragging turns off auto-sort; Sort Hand sorts again. Tiles score in the order they sit, which matters for Shikigami.</p>
   <p><b>Keys.</b> Enter or P plays, D discards, C calls, K declares a Kan, Esc clears your selection. Click anywhere or press any key while a play scores to skip the animation.</p>
-  </div><div style="margin-top:12px"><button id="mClose" class="primary">Close</button></div>`;
+  </div><button id="mClose" hidden>Close</button>`;
 }
 function mostPlayedRung() { let best = null, n = 0; for (const [k, v] of Object.entries(S.stats.rungs || {})) if (v > n) { n = v; best = k; } return best; }
 function mostScoredYaku() { let best = null, n = 0; for (const [k, v] of Object.entries(S.stats.yaku || {})) if (v > n) { n = v; best = k; } return best; }
@@ -955,7 +955,7 @@ function yakuHTML() {
     h += `<p class="muted" style="margin:8px 0">${infoTab === 'yaku' ? 'A complete hand is 4 melds + 1 pair (14 tiles) unless noted. Han is shown as closed / open; a hand is Open once you have Called from the River. A complete hand with no Yaku still counts as 1 Han.' : 'Each Yakuman is worth 13 Han (×100). Several in one hand stack.'} Examples are drawn with tiles; a Kan shows as four of a kind.</p>`;
     h += `<div class="yakulist">` + list.map(y => { const b = y.k && S.scrolls.yaku[y.k]; const n = y.k ? yc(y.k) : 0; return `<div class="yakucard"><div class="yh"><b>${y.n}</b>${y.c ? ' <span class="tag">Closed only</span>' : ''}${b ? ` <span class="tag">Scroll +${b}</span>` : ''}<span class="num" style="margin-left:auto;color:var(--accent)">${y.h} Han</span><span class="muted num" style="margin-left:10px">${n ? 'Scored ×' + n : 'Not yet scored'}</span></div><div class="yd">${y.d}</div>${y.ex ? exampleHTML(y.ex) : ''}</div>`; }).join('') + `</div>`;
   }
-  h += `<div style="margin-top:12px"><button id="mClose" class="primary">Close</button></div>`;
+  h += `<button id="mClose" hidden>Close</button>`;
   return h;
 }
 let setupSel = { deck: 0, stake: 0 };
