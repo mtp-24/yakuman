@@ -87,6 +87,13 @@ aside{display:flex;flex-direction:column;gap:10px;min-width:0}
 .slot.drop-before{box-shadow:-4px 0 0 0 var(--accent)} .slot.drop-after{box-shadow:4px 0 0 0 var(--accent)}
 .sline.convert{color:var(--accent);border-top:1px dashed var(--line);margin-top:2px;padding-top:4px}
 .slot .n{font-family:var(--display);color:var(--accent);font-size:14px}
+.slot .kind{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-bottom:1px}
+.hb-head{height:36px;display:flex;align-items:center;min-width:0;margin:-3px 0 6px}
+.hb-head .hb-title{font-family:var(--display);color:var(--fg);line-height:1.15;font-size:22px;overflow-wrap:anywhere;font-weight:500}
+.hb-head .hb-title.muted{color:var(--muted)}
+.hb-head .hb-title .tag{font-family:var(--body);font-size:10px;vertical-align:middle;margin-left:4px}
+.hb-head .hb-title.one,.hb-head .hb-tot{position:relative;top:-2px}
+.hb-head .hb-tot{display:block;font-family:var(--display);font-size:32px;color:var(--accent);width:100%;text-align:center;line-height:36px;white-space:nowrap;overflow:hidden}
 .slot .d{color:var(--muted);font-size:11px;line-height:1.3;margin-top:2px}
 .slot.kami .n{color:#c9a7e8} .slot.omikuji .n{color:var(--info)}
 .row-tiles{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;min-height:calc(var(--th) + 8px)}
@@ -336,7 +343,8 @@ button.pulse{animation:btnpulse 1s ease-in-out infinite;box-shadow:0 0 0 0 rgba(
 .handbox .hb-math{align-items:stretch} .handbox .hb-math .px{align-self:center}
 .boxfoot{flex:1 1 auto;display:flex;align-items:center;justify-content:center;gap:0}
 .hantier:not(:empty)::before{content:' · ';white-space:pre}
-.hanfoot.short{flex-direction:column;white-space:normal;line-height:1.2;padding:2px 4px 3px} .hanfoot.short .hantier::before{content:none} .hanfoot.short .hantier{font-size:10px;opacity:.85}
+/* Han caption is always two lines (count, then tier) so the scoring box keeps one height from preview to total */
+.hanfoot{flex-direction:column;white-space:normal;line-height:1.2;padding:2px 4px 3px} .hanfoot .hantier::before{content:none} .hanfoot .hantier{font-size:10px;opacity:.85;min-height:12px}
 .boxwrap.bump{animation:boxshake .32s cubic-bezier(.36,.07,.19,.97)}
 @media (prefers-reduced-motion:reduce){.boxwrap.bump{animation:none}}
 .shophead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:4px} .shophead h2{margin:0}

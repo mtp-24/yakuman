@@ -450,14 +450,19 @@ function render() {
 }
 // Big numbers shrink to fit their box instead of wrapping onto a second line (targets, chips, Mult, totals, Round Score).
 function fitText(el, min) { if (!el) return; el.style.fontSize = ''; let fs = parseFloat(getComputedStyle(el).fontSize); while (el.scrollWidth > el.clientWidth + 1 && fs > (min || 11)) { fs -= 1; el.style.fontSize = fs + 'px'; } }
-function fitNumbers(root) { (root || document).querySelectorAll('.handbox .chipbox, .handbox .multbox, .bp-row .target, .roundscore .rs, .hb-total .tot').forEach(e => fitText(e)); (root || document).querySelectorAll('.hanfoot').forEach(fitFoot); }
-// The Han caption puts its tier name (Baiman, ...) on a second line when one line does not fit the box.
-function fitFoot(el) { if (!el) return; el.classList.remove('short'); const t = el.querySelector('.hantier').textContent; el.title = el.querySelector('.hanline').textContent + (t ? ' · ' + t : ''); if (el.scrollWidth > el.clientWidth + 1) el.classList.add('short'); }
+function fitNumbers(root) { (root || document).querySelectorAll('.handbox .chipbox, .handbox .multbox, .bp-row .target, .roundscore .rs, .hb-total .tot').forEach(e => fitText(e)); (root || document).querySelectorAll('.hanfoot').forEach(fitFoot); (root || document).querySelectorAll('.hb-head .hb-title').forEach(fitTitle); }
+// The Han caption always shows the tier name (Baiman, ...) on its second line; the tooltip has both.
+function fitFoot(el) { if (!el) return; const t = el.querySelector('.hantier').textContent; el.title = el.querySelector('.hanline').textContent + (t ? ' · ' + t : ''); }
 // Chips × Mult boxes for the scoring summary. Han lives in a caption strip under Mult, because Han only exists to become Mult.
 const tierText = h => { const t = tierName(h); return t && t !== 'None' ? t : ''; };
 function mathBoxes(chips, mult, han, dim) {
   return `<div class="hb-math num"><span class="boxwrap chipwrap${dim ? ' dim' : ''}"><span class="chipbox">${chips}</span><span class="boxfoot">Chips</span></span><span class="px">×</span><span class="boxwrap multwrap${dim ? ' dim' : ''}"><span class="multbox">${mult}</span><span class="boxfoot hanfoot"><span class="hanline"><b class="hanval">${han}</b> ${tr('Han')}</span><span class="hantier">${tr(tierText(han))}</span></span></span></div>`;
 }
+// Scoring box title row: a fixed 36px row that holds the play's name (preview and scoring) and then the total, so the box never changes height.
+function titleHTML(label, lvl, claim, muted) { return `<div class="hb-head"><span class="hb-title${muted ? ' muted' : ''}">${label}${claim ? ' <span class="tag">River Claim</span>' : ''}${lvl ? ` <span class="tag">Lv.${lvl}</span>` : ''}</span><span class="hb-tot tot num" hidden>0</span></div>`; }
+function playLevel(kind, meldType) { const k = kind === 'hand' ? 'hand' : (['chi', 'pon', 'kan', 'pair', 'single'].includes(meldType) ? meldType : null); return k ? (S.scrolls.meld[k] || 0) + 1 : 0; }
+// Largest title size (22px down to 12px) that fits the row in at most two lines; never cut off.
+function fitTitle(el) { if (!el) return; const row = el.parentElement; let fs = 22; el.style.fontSize = fs + 'px'; while ((el.scrollHeight > row.clientHeight + 1 || el.scrollWidth > row.clientWidth + 1) && fs > 12) { fs -= 1; el.style.fontSize = fs + 'px'; } el.classList.toggle('one', el.getBoundingClientRect().height < parseFloat(getComputedStyle(el).lineHeight) * 1.5); }
 let PREVIEW = null;
 function computePreview() {
   PREVIEW = null; if (S.phase !== 'blind' || S.busy) return;
@@ -489,9 +494,9 @@ function renderBlind() {
       const lvl = lvlKey ? (S.scrolls.meld[lvlKey] || 0) : 0;
       let chips = base.chips, han = base.han; if (pv.kind === 'hand') han += Math.max(1, c.yaku.reduce((a, y) => a + y.han, 0));
       for (const l of c.lines) if (/^Scroll:/.test(l.label)) { chips += l.chips || 0; han += l.han || 0; }
-      h += `<div class="handbox"><div class="hb-name">${pv.label}${pv.claim ? ' <span class="tag">River Claim</span>' : ''}${lvlKey ? ` <span class="tag">Lv.${lvl + 1}</span>` : ''}</div>${mathBoxes(chips, hanMult(han), han)}</div>`;
+      h += `<div class="handbox">${titleHTML(pv.label, lvlKey ? lvl + 1 : 0, pv.claim)}${mathBoxes(chips, hanMult(han), han)}</div>`;
     }
-    else h += `<div class="handbox empty"><div class="hb-name muted">Select a play</div>${mathBoxes(0, 0, 0, true)}</div>`;
+    else h += `<div class="handbox empty">${titleHTML('Select a play', 0, false, true)}${mathBoxes(0, 0, 0, true)}</div>`;
   }
   h += `<div class="stats"><div class="stat plays"><div class="label">Plays</div><div class="v num">${S.plays}</div></div><div class="stat discards"><div class="label">Discards</div><div class="v num">${S.discards}</div></div></div>`;
   if (S.indicators.length) { h += `<div class="label" style="margin-top:8px">Dora Indicators</div><div class="dora-ind" id="doraRow"></div>`; }
@@ -506,7 +511,7 @@ function renderTalismans() {
   $('#talCount').textContent = `${S.talismans.length} / ${talSlots()} · fire left to right, drag to reorder`;
   for (let i = 0; i < talSlots(); i++) {
     const k = S.talismans[i]; const el = document.createElement('div');
-    if (k) { const ed = S.editions[k]; el.className = 'slot filled' + (S.selTal === k ? ' sel' : '') + (ed ? ' ed-' + ed : ''); el.dataset.tal = TAL[k].name; const tgt = TAL[k].copies ? talTarget(S, k) : null; el.innerHTML = `<div class="n"><span class="order">${i + 1}</span>${TAL[k].name}${ed ? ` <span class="edtag ed-${ed}">${EDITIONS[ed].name}</span>` : ''}</div><div class="d">${TAL[k].desc}${tgt ? ` <b>Now: ${tgt.name}.</b>` : TAL[k].copies ? ' <b>Nothing to copy.</b>' : ''}${ed ? ` <b>${EDITIONS[ed].desc}.</b>` : ''}${TAL[k].status ? ' <b>(' + TAL[k].status(S) + ')</b>' : ''}</div>`; bindSlotDrag(el, k); }
+    if (k) { const ed = S.editions[k]; el.className = 'slot filled' + (S.selTal === k ? ' sel' : '') + (ed ? ' ed-' + ed : ''); el.dataset.tal = TAL[k].name; const tgt = TAL[k].copies ? talTarget(S, k) : null; el.innerHTML = `<div class="kind"><span class="order">${i + 1}</span>Talisman${ed ? ` · <span class="edtag ed-${ed}">${EDITIONS[ed].name}</span>` : ''}</div><div class="n">${TAL[k].name}</div><div class="d">${TAL[k].desc}${tgt ? ` <b>Now: ${tgt.name}.</b>` : TAL[k].copies ? ' <b>Nothing to copy.</b>' : ''}${ed ? ` <b>${EDITIONS[ed].desc}.</b>` : ''}${TAL[k].status ? ' <b>(' + TAL[k].status(S) + ')</b>' : ''}</div>`; bindSlotDrag(el, k); }
     else { el.className = 'slot'; el.innerHTML = `<div class="d">Empty slot</div>`; }
     box.appendChild(el);
   }
@@ -517,7 +522,7 @@ function renderConsumables() {
   const box = $('#consumables'); box.innerHTML = ''; $('#conCount').textContent = `${S.consumables.length} / ${conSlots()} · click to use on selected tiles`;
   for (let i = 0; i < conSlots(); i++) {
     const c = S.consumables[i]; const el = document.createElement('div');
-    if (c) { const d = CONS[c.key]; el.className = 'slot filled ' + c.kind; el.innerHTML = `<div class="n">${d.name}<span class="tag">${c.kind === 'kami' ? 'Kami' : 'Omikuji'}</span></div><div class="d">${d.desc}</div>`; el.onclick = () => useConsumable(i); }
+    if (c) { const d = CONS[c.key]; el.className = 'slot filled ' + c.kind; el.innerHTML = `<div class="kind">${c.kind === 'kami' ? 'Kami Spirit' : 'Omikuji'}</div><div class="n">${d.name}</div><div class="d">${d.desc}</div>`; el.onclick = () => useConsumable(i); }
     else { el.className = 'slot'; el.innerHTML = `<div class="d">Empty slot</div>`; }
     box.appendChild(el);
   }
@@ -678,10 +683,11 @@ function wait(ms) { return new Promise(r => setTimeout(r, (motionOK && !skipAnim
 async function animateScore(ctx) {
   skipAnim = false; skipArmed = false; setTimeout(() => { skipArmed = true; }, 250);
   const box = $('#scorebox'); if (!box) return;
-  box.innerHTML = `<div class="hb-name">${tr(ctx.rungName || '')}${ctx.kind === 'hand' ? ' <span class="muted">· ' + tr(ctx.desc) + '</span>' : ''}</div><div class="hb-total num" hidden><span class="tot">0</span></div>${mathBoxes(0, 1, 0)}<div class="muted" style="font-size:10px;margin-top:4px">click to skip</div>`;
+  const label = ctx.kind === 'hand' ? (ctx.yaku.length ? ctx.yaku.map(y => y.name).join(', ') : 'Complete Hand') : ctx.rungName;
+  box.innerHTML = `${titleHTML(tr(label || ''), playLevel(ctx.kind, ctx.meldType), ctx.claimed)}${mathBoxes(0, 1, 0)}`; box.title = 'Click anywhere to skip'; fitTitle(box.querySelector('.hb-title'));
   // the breakdown streams into the Last Play panel as it happens
   const lp = $('#lastPlay'); lp.innerHTML = `<div class="label">Last Play</div><div style="font-family:var(--display);font-size:15px;margin:2px 0 6px">${tr(ctx.desc)}</div><div class="lp-lines"></div>`;
-  const chipsEl = box.querySelector('.chipbox'), multEl = box.querySelector('.multbox'), totEl = box.querySelector('.tot'), totWrap = box.querySelector('.hb-total'), nameEl = box.querySelector('.hb-name'), linesBox = lp.querySelector('.lp-lines'), mathEl = box.querySelector('.hb-math'), hanEl = box.querySelector('.hanval'), hanPill = box.querySelector('.hanfoot'), tierEl = box.querySelector('.hantier');
+  const chipsEl = box.querySelector('.chipbox'), multEl = box.querySelector('.multbox'), totEl = box.querySelector('.hb-tot'), totWrap = totEl, nameEl = box.querySelector('.hb-title'), linesBox = lp.querySelector('.lp-lines'), mathEl = box.querySelector('.hb-math'), hanEl = box.querySelector('.hanval'), hanPill = box.querySelector('.hanfoot'), tierEl = box.querySelector('.hantier');
   const tileEls = new Map(); document.querySelectorAll('#hand .tile[data-id], #open .tile[data-id]').forEach(e => tileEls.set(+e.dataset.id, e));
   let chips = 0, han = 0, tileX = 1, mult = null;
   const curMult = () => mult === null ? hanMult(han) * tileX : mult;
