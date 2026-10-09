@@ -108,6 +108,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 97: opening a pack clears the last shop message (it showed "Bought …" from before the pack); owned Talisman cards drop the redundant "Sells for" label, leaving the "Sell ¥n" button.
 - Build 98: pack results you can check. Every Use outlines the tiles it changed with a label (the engraving, "→ new tile", "Red Five" or "New"), keeps removed tiles in the row greyed and struck through, and names the tiles in the message. After the last pick the pack stays open with its cards locked and a Done button (View Wall still available); Keep or Take as the last pick still closes straight away.
 - Build 99: removed pack tiles show only the red strike (no "Removed" caption; hover says it); the Your Tiles label counts every tile shown, removed ones included.
+- Build 100: converted pack tiles (suit, rank or Red Five changes) show only the gold outline, since the new face is visible; engravings keep their name and duplicates keep "New".
 - Build 7: multi-meld play ladder (Two Melds ... Four Melds), targets 300...45000, retrigger and scaling Talismans, Wall-Builder rewording, scoring animation.
 
 ## Simulators (in `sim/`)

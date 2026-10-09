@@ -1484,10 +1484,10 @@ function usePackCard(i) {
   for (const t of after) {
     const s = snap.get(t.id);
     if (!s) { marks[t.id] = 'New'; added.push(tileName(t)); continue; }
-    if (s.suit !== t.suit || s.rank !== t.rank) marks[t.id] = '→ ' + tileName(t);
-    else if (s.eng !== t.eng && t.eng) marks[t.id] = ENG[t.eng].name;
-    else if (s.red !== t.red) marks[t.id] = 'Red Five';
-    if (marks[t.id]) changed.push(s.name);
+    // Conversions show on the tile itself, so they get only the outline; engravings also get their name.
+    const converted = s.suit !== t.suit || s.rank !== t.rank || s.red !== t.red, engraved = s.eng !== t.eng && t.eng;
+    if (engraved) marks[t.id] = ENG[t.eng].name; else if (converted) marks[t.id] = ' ';
+    if (converted || engraved) changed.push(s.name);
   }
   for (const id of order) if (!after.some(t => t.id === id)) gone.push(snap.get(id));
   // Row to display: the previous order with removed tiles left in place (greyed), new tiles at the end.
@@ -1511,7 +1511,7 @@ function fillPackHand() {
     const e = tileEl(t, { sel: !v.gone && S.pack.sel.includes(t.id) });
     if (v.gone) e.classList.add('gone'); else if (marks[t.id]) e.classList.add('marked');
     if (!v.gone && !S.pack.done) e.onclick = () => { const s = S.pack.sel, j = s.indexOf(t.id); if (j >= 0) s.splice(j, 1); else s.push(t.id); S.msg = ''; S.pack.marks = {}; S.pack.view = null; render(); };
-    const cap = document.createElement('div'); cap.className = 'pmark'; cap.textContent = v.gone ? '' : (marks[t.id] || '');   // removed tiles are struck through, no caption needed
+    const cap = document.createElement('div'); cap.className = 'pmark'; cap.textContent = v.gone ? '' : (marks[t.id] || '').trim();   // removed tiles are struck through, no caption needed
     w.appendChild(e); w.appendChild(cap); box.appendChild(w);
   }
   translateDOM($('#modal'));
