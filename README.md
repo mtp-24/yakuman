@@ -35,6 +35,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 19: tile-first layout. Tiles scale with the viewport (hand up to 84px, River/open melds up to 62px), open melds and River sit side by side on wide screens, phones get a compact header, the hand directly under the blind strip and a sticky action bar. Over-capacity hand wording after Duplication.
 - Build 20: drag-and-drop hand reordering (mouse and touch); tiles score in hand order; Shikigami uses the leftmost tile.
 - Build 21: header buttons grouped into an even grid on narrow screens; shop reward list names the blind properly; simulator shop rolls editions.
+- Build 22: The Wall-Builder zeroes only plays with fewer than two melds (was three).
 - Build 7: multi-meld play ladder (Two Melds ... Four Melds), targets 300...45000, retrigger and scaling Talismans, Wall-Builder rewording, scoring animation.
 
 ## Simulators (in `sim/`)

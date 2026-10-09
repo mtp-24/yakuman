@@ -248,7 +248,7 @@ function scoreCtx(S, kind, tiles, info) {
     L(`${TAL[k].name} (${e.name})`, parts.join(', '), { chips: r.chips, han: r.han, xmult: r.xmult || 1, tal: TAL[k].name });
   }
   // ---- Boss and Furiten
-  if (S.boss === 'wallbuilder' && kind === 'meld' && ctx.nMelds < 3) { ctx.chips = 0; L('The Wall-Builder', 'fewer than 3 melds: 0 Chips', { zero: true }); }
+  if (S.boss === 'wallbuilder' && kind === 'meld' && ctx.nMelds < 2) { ctx.chips = 0; L('The Wall-Builder', 'fewer than 2 melds: 0 Chips', { zero: true }); }
   ctx.baseMult = hanMult(ctx.han); ctx.tier = tierName(ctx.han);
   ctx.mult = ctx.baseMult * ctx.xmult;
   if (ctx.furiten) { ctx.mult *= 0.5; L(`Furiten (${ctx.winningTile} is in your River)`, '×0.5 Mult', { xmult: 0.5 }); }
