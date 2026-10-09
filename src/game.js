@@ -596,16 +596,22 @@ function tileTipHTML(t, back) {
   const eng = t.eng ? `<div class="tt-e"><b>${ENG[t.eng].name}</b> ${ENG[t.eng].desc}</div>` : '';
   return `<div class="tt-n">${tileName(t)}</div>${rows.map(r => `<div class="tt-r">${r}</div>`).join('')}${eng}`;
 }
-function showTileTip(el) {
+function showTileTip(el, html) {
   if (!tipEl) { tipEl = document.createElement('div'); tipEl.id = 'tiletip'; tipEl.setAttribute('role', 'tooltip'); document.body.appendChild(tipEl); }
-  tipEl.innerHTML = tileTipHTML(el._t, el.classList.contains('back')); translateDOM(tipEl);
+  tipEl.innerHTML = html || tileTipHTML(el._t, el.classList.contains('back')); translateDOM(tipEl);
   const r = el.getBoundingClientRect(), h = tipEl.offsetHeight, below = r.top - h - 10 < 4;
   tipEl.classList.toggle('below', below); tipEl.style.left = Math.max(80, Math.min(innerWidth - 80, r.left + r.width / 2)) + 'px'; tipEl.style.top = (below ? r.bottom + 10 : r.top - 10) + 'px';
   tipEl.classList.add('on'); const z = el.closest('#hand, #river, #open'); tipAnchor = z ? { id: el.dataset.id, zone: '#' + z.id } : null;
 }
 function hideTileTip() { if (tipEl) tipEl.classList.remove('on'); tipAnchor = null; }
-document.addEventListener('pointerover', e => { const el = e.target.closest('.tile'); if (!el || !el._t || e.pointerType === 'touch' || (S && S.busy) || drag || slotDrag) return; showTileTip(el); });
-document.addEventListener('pointerout', e => { const el = e.target.closest('.tile'); if (el && !(e.relatedTarget && el.contains(e.relatedTarget))) hideTileTip(); });
+// The same hover card for anything carrying data-hc-title (Flowers): a small label, the name, and the effect.
+const hoverCardHTML = el => `${el.dataset.hcKind ? `<div class="tt-k">${el.dataset.hcKind}</div>` : ''}<div class="tt-n">${el.dataset.hcTitle}</div><div class="tt-e tt-body">${el.dataset.hcBody || ''}</div>`;
+document.addEventListener('pointerover', e => {
+  if (e.pointerType === 'touch' || drag || slotDrag) return;
+  const hc = e.target.closest('[data-hc-title]'); if (hc) { showTileTip(hc, hoverCardHTML(hc)); return; }
+  const el = e.target.closest('.tile'); if (!el || !el._t || (S && S.busy)) return; showTileTip(el);
+});
+document.addEventListener('pointerout', e => { const el = e.target.closest('.tile, [data-hc-title]'); if (el && !(e.relatedTarget && el.contains(e.relatedTarget))) hideTileTip(); });
 document.addEventListener('pointerdown', () => hideTileTip(), true);
 // After a redraw (for example selecting the hovered tile) the card follows the same tile, or closes if it is gone.
 function refreshTileTip() { if (!tipAnchor || !tipEl || !tipEl.classList.contains('on')) return; const el = document.querySelector(`${tipAnchor.zone} .tile[data-id="${tipAnchor.id}"]`); if (el && el.matches(':hover') && !(S && S.busy)) showTileTip(el); else hideTileTip(); }
@@ -820,7 +826,7 @@ function renderBlind() {
   h += `<div class="stats"><div class="stat plays"><div class="label">Plays</div><div class="v num">${S.plays}</div></div><div class="stat discards"><div class="label">Discards</div><div class="v num">${S.discards}</div></div></div>`;
   h += `<div class="stats purserow"><div class="purse" title="Interest: +¥${interest} at the next cash-out (¥1 for every ¥${CFG.interestPer} you hold, up to ¥${hasF('winter') ? 10 : CFG.interestCap})"><span class="coin" aria-hidden="true">${coinSVG()}</span><span class="wtx"><span class="pv num" id="purseVal">¥${S.money}</span><span class="wl" data-notr>${LANG === 'hk' ? 'HKD' : 'JPY'}</span></span></div><button class="wallbtn" id="wallBtn" title="${S.phase === 'blind' ? 'Tiles still face down in the Wall. Click to see every tile.' : 'Tiles in your Wall. Click to see every tile.'}"><span class="wallico" aria-hidden="true"><i></i><i></i><i></i></span><span class="wtx"><span class="wv num">${wallN}</span><span class="wl">Wall</span></span></button></div>`;
   if (S.indicators.length) { h += `<div class="label" style="margin-top:8px">Dora Indicators</div><div class="dora-ind" id="doraRow"></div>`; }
-  if (S.flowers.length) h += `<div class="label" style="margin-top:8px">Flowers &amp; Seasons</div><div class="flowers">${S.flowers.map(f => `<span class="flowerchip" title="${FLW[f].desc}">${FLW[f].name}</span>`).join('')}</div>`;
+  if (S.flowers.length) h += `<div class="label" style="margin-top:8px">Flowers &amp; Seasons</div><div class="flowers">${S.flowers.map(f => `<span class="flowerchip" data-hc-kind="Flower" data-hc-title="${FLW[f].name}" data-hc-body="${FLW[f].desc.replace(/"/g, '&quot;')}">${FLW[f].name}</span>`).join('')}</div>`;
   $('#blindCard').innerHTML = h;
   if (S.indicators.length) { const row = $('#doraRow'); for (const t of S.indicators) { const e = tileEl(t, { small: true }); e.style.cursor = 'default'; const d = tileFromIdx(nextDora(idx(t))); e.title = 'Indicator: ' + tileName(t) + ' → Dora is ' + tileName(d); row.appendChild(e); } row.insertAdjacentHTML('beforeend', `<span class="muted" style="font-size:11px">Dora: ${S.dora.map(i => tileName(tileFromIdx(i))).join(', ')}</span>`); }
 }

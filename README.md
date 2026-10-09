@@ -172,6 +172,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 161: The original fire is back alongside the fireworks: embers rise behind the Chips and Mult boxes once a play beats the target (8, then 14 at 3x and 20 at 10x), clipped to the scoring box. Omagatoki's status reads 'active on the last Play, n Plays left'.
 - Build 162: Collection engravings use wide cards: the sample tile sits on a felt pad at the left, the name and effect beside it, an accent edge in each engraving's colour, two or three cards per row.
 - Build 163: Engraving cards drop the coloured accent edge.
+- Build 164: Flowers in the side panel use the same hover card as tiles (a Flower label, the name and the effect) instead of the plain tooltip; the hover card now works for any element with data-hc-title.
 - Build 7: multi-meld play ladder (Two Melds ... Four Melds), targets 300...45000, retrigger and scaling Talismans, Wall-Builder rewording, scoring animation.
 
 ## Simulators (in `sim/`)
