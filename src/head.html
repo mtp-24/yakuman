@@ -764,4 +764,8 @@ button.pulse{animation:btnpulse2 2.6s ease-out infinite}
 .slot.ed-poly::before,.shopcard.ed-poly::before,.slot.ed-poly::after,.shopcard.ed-poly::after{animation:edpoly 15s linear infinite;animation-delay:var(--edd,0s)}
 .slot.ed-foil::before,.shopcard.ed-foil::before,.slot.ed-neg::before,.shopcard.ed-neg::before{animation:edsheen3 15s ease-in-out infinite;animation-delay:var(--edd,0s)}
 @media (prefers-reduced-motion:reduce){.slot[class*="ed-"]::before,.shopcard[class*="ed-"]::before,.slot[class*="ed-"]::after,.shopcard[class*="ed-"]::after{animation:none}}
+/* Edition overlays sit behind the card's text and contents, so names and descriptions stay crisp */
+.slot[class*="ed-"]::before,.shopcard[class*="ed-"]::before{z-index:0}
+.slot[class*="ed-"] > :not(.pricetag),.shopcard[class*="ed-"] > :not(.pricetag){position:relative;z-index:1}
+.shopcard[class*="ed-"] > .pricetag{z-index:2}
 </style>

@@ -148,6 +148,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 137: Calmer still. Holographic and Polychrome are static; Foil and Negative sheen once every 15 s; edition glows minimal. Next Blind no longer pulses, its sweep is faint and passes every 9 s. The Discard pulse after a Call is a slow, faint ring.
 - Build 138: Holographic restyled as a trading-card hologram: a fine sparkle grid over a pink, cyan, violet and gold wash that slides back and forth every 12 s, with a matching edge. Polychrome's rainbow wash and edge flow again, slowly (20 s).
 - Build 139: Holographic sparkle fainter and spaced about twice as far apart. All edition effects share one 15 s cycle on a shared clock (syncEditions sets a negative animation delay when a card is drawn), so redraws no longer restart them and every edition card moves in step.
+- Build 140: Edition overlays sit behind the card's text instead of over it, so names and descriptions on Foil, Holographic and Polychrome cards read crisply.
 - Build 7: multi-meld play ladder (Two Melds ... Four Melds), targets 300...45000, retrigger and scaling Talismans, Wall-Builder rewording, scoring animation.
 
 ## Simulators (in `sim/`)
