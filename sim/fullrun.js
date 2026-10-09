@@ -5,8 +5,8 @@ const TAL_PRI={hashi:8,utsushi:7,kagami:7,nopperabo:6,sekito:7,aobozu:5,shiro:4,
 TAL_PRI.kawauso=6;
 const SCR_PRI={'m:hand':6,'m:chi':5,'m:pon':3,'m:pair':2,'m:kan':1,'y:tanyao':4,'y:pinfu':3,'y:yakuhai':3,'y:honitsu':2,'y:toitoi':2,'y:chinitsu':1,'y:chiitoitsu':1,'y:sanshoku':1,'y:ittsu':1,'y:chanta':1};
 const FLW_PRI={bamboo:8,plum:7,orchid:6,chrysanthemum:4,winter:4,summer:4,spring:1,autumn:1};
-// argv[7] 'ryu1': Ryūjin makes only the first Call of each Blind free
-const RYU1=process.argv[7]==='ryu1';
+// argv[7] 'ryuN' (ryu1, ryu2, ...): Ryūjin makes only the first N Calls of each Blind free
+const RYU_N=/^ryu\d+$/.test(process.argv[7]||'')?+process.argv[7].slice(3):0;
 const RESERVE=+process.argv[4]||0; const ORDERED=process.argv[6]==='ordered'; const VARIANT=process.argv[5]||'base'; CFG.sharkPerAction=true;
 if(VARIANT==='pairs') CFG.pairLadder=true;
 // 'p4d3' style variants set Plays and Discards per Blind (Balatro's defaults are 4 hands and 3 discards)
@@ -72,7 +72,7 @@ function playBlind(S,stats){
   S.wall=shuffle(S.deck.slice()); S.deck=[]; S.hand=[]; S.river=[]; S.lastDiscard=[]; S.open=[]; S.played=[]; S.dora=[]; S.indicators=[]; S.score=0; S.firstPlayDone=false; S.bossSuit=S.boss==='collector'?pick(['m','p','s']):null; setRules(S); draw(S);
   for(const k of S.talismans) if(TAL[k].onBlindStart) TAL[k].onBlindStart(S);
   USE.p0=S.plays; USE.d0=S.discards;
-  const freeCall=S.talismans.some(k=>TAL[k].freeCall); let freeLeft=freeCall?(RYU1?1:1e9):0; if(S.talismans.includes('kawauso')){ stats.ownedBlinds++; S.everKawauso=true; } const claims0=stats.claims;
+  const freeCall=S.talismans.some(k=>TAL[k].freeCall); let freeLeft=freeCall?(RYU_N||1e9):0; if(S.talismans.includes('kawauso')){ stats.ownedBlinds++; S.everKawauso=true; } const claims0=stats.claims;
   while(S.plays>0&&S.score<S.target){
     const mNeed=4-S.open.length; const st=bestStructure(S.hand,mNeed);
     if(st.m===mNeed&&st.p===1){ const sel=sortTiles(takeTiles(S,st.sets)); const b=bestHand(sel,S.open,S); if(b){ playCtx(S,'hand',sel.concat(S.open.flatMap(m=>m.tiles)),{yaku:b.yaku,dec:b.dec}); S.played.push(...sel,...S.open.flatMap(m=>m.tiles)); S.open=[]; stats.hands++; draw(S); continue; } else { S.hand.push(...sel); } }
