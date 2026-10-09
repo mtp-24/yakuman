@@ -1267,10 +1267,12 @@ function decorateBanner(cls) {
 // On narrow layouts, where the left column stacks above the board, it stays full screen.
 function placeOverlay(boardOnly) {
   const ov = $('#overlay'); ov.classList.remove('boardonly'); ['left', 'top', 'width', 'height'].forEach(k => ov.style[k] = '');
-  const board = document.querySelector('.board'); if (!boardOnly || !board || innerWidth <= 900) return;
+  const board = document.querySelector('.board'); if (board) board.classList.remove('cashdim'); if (!boardOnly || !board || innerWidth <= 900) return;
   const b = board.getBoundingClientRect(), top = Math.max(b.top, 0), bottom = innerHeight;   // runs to the screen's bottom edge, where the receipt rises from
-  const tz = board.querySelector('.talzone'), cut = tz ? Math.max(0, tz.getBoundingClientRect().bottom + 4 - top) : 0;   // the Talismans stay lightly dimmed; the rest is darker
-  ov.classList.add('boardonly'); Object.assign(ov.style, { left: b.left + 'px', top: top + 'px', width: b.width + 'px', height: (bottom - top) + 'px' }); ov.style.setProperty('--cut', cut + 'px');
+  // The dimming sits on the board itself, so the page background below it keeps its colour. The Talismans stay lightly dimmed; the rest is darker.
+  const tz = board.querySelector('.talzone'), cut = tz ? Math.max(0, tz.getBoundingClientRect().bottom + 4 - b.top) : 0;
+  board.classList.add('cashdim'); board.style.setProperty('--cut', cut + 'px');
+  ov.classList.add('boardonly'); Object.assign(ov.style, { left: b.left + 'px', top: top + 'px', width: b.width + 'px', height: (bottom - top) + 'px' });
   const ac = board.querySelector('.actions'); ov.style.setProperty('--reach', (ac ? Math.max(0, ac.getBoundingClientRect().top - 14 - top) : 0) + 'px');   // on tall screens the tray still reaches up over the action bar
 }
 ['resize', 'scroll'].forEach(ev => window.addEventListener(ev, () => { if ($('#overlay').classList.contains('boardonly')) placeOverlay(true); }));
