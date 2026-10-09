@@ -62,6 +62,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 51: dead-tile dots are off by default and live only in Settings as an assist; the hand-header Dots button is gone.
 - Build 52: the Play button always reads "Play"; the play type shows in the side hand box (and in the button tooltip).
 - Build 53: hand box shows only the play name, level and Han (neutral "Select a play" otherwise); Debug bar gains a "Demo hand" button that stages a complete hand showcasing the scoring animation.
+- Build 54: dead-tile dots also mark spare tiles when the hand is already complete (including while settling a Call); the settle message says when a complete hand is ready.
 - Build 7: multi-meld play ladder (Two Melds ... Four Melds), targets 300...45000, retrigger and scaling Talismans, Wall-Builder rewording, scoring animation.
 
 ## Simulators (in `sim/`)
