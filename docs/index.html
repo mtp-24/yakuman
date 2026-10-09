@@ -709,6 +709,18 @@ aside .card{background:linear-gradient(180deg,#2a1d10,#1d140a);border:1px solid 
 .slot.ed-neg::before,.shopcard.ed-neg::before{background:linear-gradient(110deg,transparent 35%,rgba(190,160,255,.18) 48%,transparent 60%);background-size:260% 100%;animation:edsheen 4.2s linear infinite}
 @media (prefers-reduced-motion:reduce){.slot[class*="ed-"]::before,.shopcard[class*="ed-"]::before,.slot.ed-poly::after,.shopcard.ed-poly::after{animation:none}}
 .wallbtn .wv{display:inline-block;transform-origin:50% 60%;font-variant-numeric:tabular-nums}
+
+/* Subtler editions: lighter overlays, smaller glows, slower drift, and the sheen passes only now and then */
+.slot.ed-foil,.shopcard.ed-foil{box-shadow:0 0 0 1px rgba(214,224,236,.45),0 0 7px rgba(190,215,255,.2)}
+.slot.ed-foil::before,.shopcard.ed-foil::before{background:linear-gradient(110deg,transparent 35%,rgba(225,238,255,.2) 46%,rgba(170,200,240,.08) 52%,transparent 62%),linear-gradient(180deg,rgba(195,212,236,.09),rgba(120,140,170,.04));background-size:260% 100%,100% 100%;animation:edsheen2 8s ease-in-out infinite}
+@keyframes edsheen2{0%,70%{background-position:160% 0,0 0}100%{background-position:-160% 0,0 0}}
+.slot.ed-holo,.shopcard.ed-holo{box-shadow:0 0 8px rgba(255,126,179,.2),0 0 6px rgba(122,252,255,.14)}
+.slot.ed-holo::before,.shopcard.ed-holo::before{opacity:.5;animation-duration:14s}
+.slot.ed-poly,.shopcard.ed-poly{box-shadow:0 0 8px rgba(255,170,60,.15),0 0 8px rgba(120,120,255,.15)}
+.slot.ed-poly::before,.shopcard.ed-poly::before{opacity:.5;animation-duration:16s}
+.slot.ed-poly::after,.shopcard.ed-poly::after{animation-duration:16s}
+.slot.ed-neg,.shopcard.ed-neg{box-shadow:0 0 0 1px rgba(154,122,230,.4),0 0 8px rgba(154,122,230,.28),inset 0 0 18px rgba(0,0,0,.6)}
+.slot.ed-neg::before,.shopcard.ed-neg::before{opacity:.6;animation:edsheen2 8s ease-in-out infinite}
 </style>
 </head><body>
 <div id="app">
