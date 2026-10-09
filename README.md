@@ -81,6 +81,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 70: Rules corrections, Han from Talismans and the Holographic edition counts before the Han table, and two pairs on their own are a valid play.
 - Build 71: pack hand. Omikuji, Mega Omikuji and Kami packs deal 8 random tiles from your Wall; select tiles and Use a card on them (changes stay in the Wall, destroyed tiles leave it, copies join it) or Keep the card for a Blind. Slip of the Indicator and Amaterasu stay Blind-only. Rules and Hong Kong terms updated (Fortune Sticks, Deities, Bonus Tile Slip).
 - Build 72: Raijin can be used from your slots in the shop, where it destroys 2 random tiles from your Wall (still +1 Play every Blind). Pack-hand and shop use share one Wall helper. Rules and Hong Kong text updated.
+- Build 73: Kawauso (Hong Kong: Otter Spirit), a ¥7 Talisman that lets you claim 1 River tile as the winning tile of a complete hand (select it with the rest of the hand and press Play). Claimed hands are always in Furiten, the tile leaves the River, Kappa turns it into a bonus, and The Fisherman forbids it. Hand box shows a River Claim tag, the helper points out claimable waits, and the River panel explains it. Simulator: bot buys and uses Kawauso; start-<talisman> variants compare one slot.
 - Build 7: multi-meld play ladder (Two Melds ... Four Melds), targets 300...45000, retrigger and scaling Talismans, Wall-Builder rewording, scoring animation.
 
 ## Simulators (in `sim/`)

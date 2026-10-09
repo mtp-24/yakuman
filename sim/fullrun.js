@@ -2,10 +2,14 @@
 const fs=require('fs'); const SRC=process.argv[2]; const RUNS=+process.argv[3]||200;
 require('vm').runInThisContext(fs.readFileSync(SRC+'/data.js','utf8')+fs.readFileSync(SRC+'/engine.js','utf8'));
 const TAL_PRI={hashi:8,utsushi:7,kagami:7,nopperabo:6,sekito:7,aobozu:5,shiro:4,takibi:3,hoshizora:4,mabo:2,chochin:6,hoshi:6,hatsumode:4,oshi:5,daimyo:3,kasaobake:7,ittanmomen:5,hannya:10,gashadokuro:9,ryujin:8,nureonna:8,ushioni:8,rokurokubi:7,daruma:7,nurarihyon:7,oni:6,ryu:6,kitsune:6,sazaeoni:6,tengu:6,komainu:6,maneki:5,nekomata:5,shikigami:5,yatagarasu:5,amanojaku:5,tsukumogami:5,kodama:4,namazu:4,jorogumo:4,koi:4,baku:4,nue:4,jizo:4,kappa:4,tsuru:3,yukionna:3,tanuki:3,mizuchi:3,nurikabe:3,funayurei:3,zashiki:2,amabie:2,hakutaku:2,hitotsume:2};
+TAL_PRI.kawauso=6;
 const SCR_PRI={'m:hand':6,'m:chi':5,'m:pon':3,'m:pair':2,'m:kan':1,'y:tanyao':4,'y:pinfu':3,'y:yakuhai':3,'y:honitsu':2,'y:toitoi':2,'y:chinitsu':1,'y:chiitoitsu':1,'y:sanshoku':1,'y:ittsu':1,'y:chanta':1};
 const FLW_PRI={bamboo:8,plum:7,orchid:6,chrysanthemum:4,winter:4,summer:4,spring:1,autumn:1};
 const RESERVE=+process.argv[4]||0; const ORDERED=process.argv[6]==='ordered'; const VARIANT=process.argv[5]||'base'; CFG.sharkPerAction=true;
 if(VARIANT==='pairs') CFG.pairLadder=true;
+if(VARIANT==='noclaim') TAL_PRI.kawauso=-99;   // baseline: the bot never buys Kawauso
+// 'start-<talisman>': begin every run already holding that Talisman, to compare what one slot is worth
+const START=VARIANT.startsWith('start-')?VARIANT.slice(6):null; if(START&&START!=='kawauso') TAL_PRI.kawauso=-99;
 if(VARIANT==='plays5') CFG.playsPerBlind=5;
 if(VARIANT==='gentle') { CFG.anteBase[0]=250; CFG.anteBase[1]=700; }
 if(VARIANT==='money8') CFG.startMoney=8;
@@ -36,6 +40,7 @@ function playCtx(S,kind,sel,info){ const ctx=scoreCtx(S,kind,sel,info); S.firstP
 // 'ron' scores it in Discard Lock (the claimed tile counts as being in your River, so Mult is halved unless Kappa); 'ronfull' has no penalty.
 // 'ronlast' is the strict version: only tiles from your most recent Discard action can be claimed (like real Ron on the latest discard).
 const RON=VARIANT==='ron'||VARIANT==='ronfull'||VARIANT==='ronlast';
+const claimOn=S=>RON||(S.boss!=='fisherman'&&S.talismans.some(k=>TAL[k].riverClaim));
 function withClaimRiver(S,r,fn){ const save=S.river; S.river=VARIANT==='ronfull'?S.river.filter(t=>key(t)!==key(r)):S.river; try{ return fn(); } finally { S.river=save; } }
 function findClaim(S,mNeed){ let best=null; const seen=new Set();
   const pool=VARIANT==='ronlast'?(S.lastDiscard||[]).filter(t=>S.river.includes(t)):S.river;
@@ -44,15 +49,16 @@ function findClaim(S,mNeed){ let best=null; const seen=new Set();
     const saveHand=S.hand; S.hand=hand2.slice(); const used=takeTiles(S,st2.sets);
     if(!used.includes(r)){ const k=used.findIndex(t=>idx(t)===ri); if(k<0){ S.hand=saveHand; continue; } S.hand.push(used[k]); S.hand=S.hand.filter(t=>t!==r); used[k]=r; }
     const rest=S.hand; S.hand=saveHand; const sel=sortTiles(used); const b=bestHand(sel,S.open,S); if(!b) continue;
-    const dSave=r.d; r.d=1e9; S.hand=rest;
-    const ctx=withClaimRiver(S,r,()=>scoreCtx(S,'hand',sel.concat(S.open.flatMap(m=>m.tiles)),{yaku:b.yaku,dec:b.dec,preview:true}));
-    S.hand=saveHand; r.d=dSave;
+    S.hand=rest; const riv=S.river; let ctx;
+    if(VARIANT==='ronfull'){ const dSave=r.d; r.d=1e9; ctx=withClaimRiver(S,r,()=>scoreCtx(S,'hand',sel.concat(S.open.flatMap(m=>m.tiles)),{yaku:b.yaku,dec:b.dec,preview:true})); r.d=dSave; }
+    else { S.river=riv.filter(t=>t!==r); ctx=scoreCtx(S,'hand',sel.concat(S.open.flatMap(m=>m.tiles)),{yaku:b.yaku,dec:b.dec,preview:true,claim:r.id}); S.river=riv; }
+    S.hand=saveHand;
     if(!best||ctx.total>best.total) best={r,sel,b,rest,total:ctx.total}; }
   return best; }
 function doClaim(S,c,stats){ { const st0=bestStructure(c.sel.filter(t=>t!==c.r),4-S.open.length); if(st0.m===4-S.open.length&&st0.p===0) STATS.claimPair++; }
-  S.hand=c.rest; c.r.d=++S.drawSeq;
-  const ctx=withClaimRiver(S,c.r,()=>playCtx(S,'hand',c.sel.concat(S.open.flatMap(m=>m.tiles)),{yaku:c.b.yaku,dec:c.b.dec}));
-  S.river=S.river.filter(t=>t!==c.r); S.played.push(...c.sel,...S.open.flatMap(m=>m.tiles)); S.open=[]; stats.hands++; stats.claims++; if(S.score>=S.target) stats.claimWins++; STATS.claimFuriten+=ctx.furiten?1:0; STATS.claimKappa+=S.talismans.includes('kappa')?1:0; draw(S); }
+  S.hand=c.rest; let ctx;
+  if(VARIANT==='ronfull'){ c.r.d=++S.drawSeq; ctx=withClaimRiver(S,c.r,()=>playCtx(S,'hand',c.sel.concat(S.open.flatMap(m=>m.tiles)),{yaku:c.b.yaku,dec:c.b.dec})); S.river=S.river.filter(t=>t!==c.r); }
+  else { S.river=S.river.filter(t=>t!==c.r); ctx=playCtx(S,'hand',c.sel.concat(S.open.flatMap(m=>m.tiles)),{yaku:c.b.yaku,dec:c.b.dec,claim:c.r.id}); } S.played.push(...c.sel,...S.open.flatMap(m=>m.tiles)); S.open=[]; stats.hands++; stats.claims++; if(S.score>=S.target) stats.claimWins++; STATS.claimFuriten+=ctx.furiten?1:0; STATS.claimKappa+=S.talismans.includes('kappa')?1:0; draw(S); }
 function estimatePartial(S,st){ const save=S.hand.slice(); let tiles;
   if(st.key<=0){ let k=0; for(let j=1;j<S.hand.length;j++) if(tileChips(S.hand[j],S)>tileChips(S.hand[k],S)) k=j; tiles=[S.hand[k]]; } else tiles=takeTiles(S,st.sets);
   S.hand=save; const part=partitionPlay(tiles); if(!part) return 0; return scoreCtx(S,'meld',tiles,{part,preview:true}).total; }
@@ -61,22 +67,22 @@ function playBlind(S,stats){
   S.plays=Math.max(1,CFG.playsPerBlind+S.bonusPlays+talMod(S,'plays')+(hasF(S,'bamboo')?1:0)); S.discards=CFG.discardsPerBlind+talMod(S,'discards')+(hasF(S,'orchid')?1:0);
   S.wall=shuffle(S.deck.slice()); S.deck=[]; S.hand=[]; S.river=[]; S.lastDiscard=[]; S.open=[]; S.played=[]; S.dora=[]; S.indicators=[]; S.score=0; S.firstPlayDone=false; S.bossSuit=S.boss==='collector'?pick(['m','p','s']):null; setRules(S); draw(S);
   for(const k of S.talismans) if(TAL[k].onBlindStart) TAL[k].onBlindStart(S);
-  const freeCall=S.talismans.some(k=>TAL[k].freeCall);
+  const freeCall=S.talismans.some(k=>TAL[k].freeCall); if(S.talismans.includes('kawauso')){ stats.ownedBlinds++; S.everKawauso=true; } const claims0=stats.claims;
   while(S.plays>0&&S.score<S.target){
     const mNeed=4-S.open.length; const st=bestStructure(S.hand,mNeed);
     if(st.m===mNeed&&st.p===1){ const sel=sortTiles(takeTiles(S,st.sets)); const b=bestHand(sel,S.open,S); if(b){ playCtx(S,'hand',sel.concat(S.open.flatMap(m=>m.tiles)),{yaku:b.yaku,dec:b.dec}); S.played.push(...sel,...S.open.flatMap(m=>m.tiles)); S.open=[]; stats.hands++; draw(S); continue; } else { S.hand.push(...sel); } }
-    if(RON&&S.river.length){ const c=findClaim(S,mNeed); if(c&&S.score+c.total>=S.target){ doClaim(S,c,stats); continue; } }
+    if(claimOn(S)&&S.river.length){ const c=findClaim(S,mNeed); if(c&&S.score+c.total>=S.target){ doClaim(S,c,stats); continue; } }
     // declare a closed Kan whenever four identical tiles are held
     { const counts={}; for(const t of S.hand) counts[idx(t)]=(counts[idx(t)]||0)+1; const ki=Object.keys(counts).find(k=>counts[k]>=4); if(ki!==undefined&&S.open.length<4){ const four=S.hand.filter(t=>idx(t)===+ki).slice(0,4); S.hand=S.hand.filter(t=>!four.includes(t)); S.open.push({type:'kan',tiles:sortTiles(four),calledId:null,closed:true}); const rp=S.wall.pop(); if(rp){ rp.d=++S.drawSeq; rp.rinshan=true; S.hand.push(rp); } stats.kans++; draw(S); continue; } }
     if(S.boss!=='fisherman'&&S.river.length&&S.open.length<4&&(freeCall||S.plays>1)){ const c=findCall(S); if(c){ S.hand=S.hand.filter(t=>t!==c.a&&t!==c.b&&t!==c.c3); S.river=S.river.filter(t=>t!==c.r); S.open.push({type:c.type,tiles:sortTiles([c.r,c.a,c.b].concat(c.c3?[c.c3]:[])),calledId:c.r.id}); if(!freeCall)S.plays--; for(const k of S.talismans) if(TAL[k].onCall) TAL[k].onCall(S); stats.calls++; if(c.type==='kan'){ const rp=S.wall.pop(); if(rp){ rp.d=++S.drawSeq; rp.rinshan=true; S.hand.push(rp); } stats.kans++; } if(S.hand.length>cap(S)){ const d=safeDiscards(S,1); if(d.length) S.river.push(d[0]); else S.river.push(S.hand.pop()); } draw(S); continue; } }
     if(S.discards>0){ let max=S.boss==='monk'?3:CFG.maxDiscardTiles; if(S.boss==='loanshark') max=CFG.sharkPerAction?(S.money>=1?max:0):Math.min(max,S.money); if(max>0){ const dead=safeDiscards(S,max); if(dead.length){ S.river.push(...dead); S.lastDiscard=dead.slice(); S.discards--; if(S.boss==='loanshark') S.money-=CFG.sharkPerAction?1:dead.length; for(const k of S.talismans) if(TAL[k].onDiscard) TAL[k].onDiscard(S,dead); draw(S); continue; } } }
-    if(RON&&S.river.length){ const c=findClaim(S,mNeed); if(c&&c.total>estimatePartial(S,st)){ doClaim(S,c,stats); continue; } }
+    if(claimOn(S)&&S.river.length){ const c=findClaim(S,mNeed); if(c&&c.total>estimatePartial(S,st)){ doClaim(S,c,stats); continue; } }
     // cash a partial (avoid tiny ones under the Wall-Builder if we still have plays to spare)
     let sets=st.sets; if(st.key<=0){ let k=0; for(let j=1;j<S.hand.length;j++) if(tileChips(S.hand[j],S)>tileChips(S.hand[k],S)) k=j; sets=null; const t=S.hand.splice(k,1)[0]; const part=partitionPlay([t]); playCtx(S,'meld',[t],{part}); S.played.push(t); }
     else { const used=sortTiles(takeTiles(S,sets)); const part=partitionPlay(used); if(!part){ S.hand.push(...used); S.plays--; continue; } playCtx(S,'meld',used,{part}); S.played.push(...used); }
     stats.partials++; draw(S);
   }
-  const won=S.score>=S.target;
+  const won=S.score>=S.target; if(S.talismans.includes('kawauso')&&stats.claims>claims0) stats.blindsWithClaim++;
   if(won){ const base=CFG.blindReward[kind], left=S.plays, interest=Math.min(hasF(S,'winter')?10:CFG.interestCap,Math.floor(S.money/CFG.interestPer)); let tal=0; for(const k of S.talismans) if(TAL[k].onBlindEnd) tal+=TAL[k].onBlindEnd(S); S.money+=base+left+interest+tal+(hasF(S,'summer')?2:0); }
   S.deck=[...S.hand,...S.wall,...S.river,...S.open.flatMap(m=>m.tiles),...S.played,...S.indicators]; for(const t of S.deck) delete t.rinshan; S.hand=[];S.wall=[];S.river=[];S.open=[];S.played=[];
   return won;
@@ -94,13 +100,13 @@ function shop(S){
   const XM=new Set(['oni','ryu','nue','hannya','gashadokuro','rokurokubi','ushioni','nurarihyon','mizuchi','sekito','takibi','hoshizora','mabo','chochin','oshi','daimyo']);
   if(ORDERED) S.talismans.sort((a,b)=>(XM.has(a)?1:0)-(XM.has(b)?1:0));
 }
-const reach=new Array(9).fill(0); const dieAt={}; let wins=0; const moneyAt={}; const talAt={}; const stats={hands:0,partials:0,calls:0,kans:0,blinds:0,claims:0,claimWins:0}; const STATS={rinshan:0,claimFuriten:0,claimKappa:0,claimPair:0}; const RUNGTOT={};
+const reach=new Array(9).fill(0); const dieAt={}; let wins=0; const moneyAt={}; const talAt={}; const stats={hands:0,partials:0,calls:0,kans:0,blinds:0,claims:0,claimWins:0,ownedBlinds:0,blindsWithClaim:0}; let runsKawauso=0; const STATS={rinshan:0,claimFuriten:0,claimKappa:0,claimPair:0}; const RUNGTOT={};
 for(let r=0;r<RUNS;r++){
-  const S=newS(); globalThis.S=S; let alive=true;
+  const S=newS(); globalThis.S=S; let alive=true; if(START) S.talismans.push(START);
   while(alive){
     const won=playBlind(S,stats); stats.blinds++;
-    if(!won){ const key=`A${S.ante} ${['small','big','boss'][S.blindIndex]}${S.boss?' ('+BOSSES[S.boss].name+')':''}`; dieAt[key]=(dieAt[key]||0)+1; alive=false; break; }
-    if(S.ante===CFG.antes&&S.blindIndex===2){ wins++; reach[8]++; alive=false; break; }
+    if(!won){ if(S.everKawauso) runsKawauso++; const key=`A${S.ante} ${['small','big','boss'][S.blindIndex]}${S.boss?' ('+BOSSES[S.boss].name+')':''}`; dieAt[key]=(dieAt[key]||0)+1; alive=false; break; }
+    if(S.ante===CFG.antes&&S.blindIndex===2){ if(S.everKawauso) runsKawauso++; wins++; reach[8]++; alive=false; break; }
     S.blindIndex++; if(S.blindIndex>2){ S.blindIndex=0; S.ante++; reach[S.ante-1]++; moneyAt[S.ante]=(moneyAt[S.ante]||0)+S.money; talAt[S.ante]=(talAt[S.ante]||0)+S.talismans.length; }
     shop(S);
   }
@@ -112,3 +118,4 @@ console.log('Deaths:', Object.entries(dieAt).sort((a,b)=>b[1]-a[1]).slice(0,10).
 const rt=Object.values(RUNGTOT).reduce((a,b)=>a+b,0); console.log('Plays by rung: '+Object.entries(RUNGTOT).sort((a,b)=>b[1]-a[1]).map(([k,v])=>k+' '+(100*v/rt).toFixed(0)+'%').join(', '));
 console.log(`Per blind: ${(stats.hands/stats.blinds).toFixed(2)} complete hands, ${(stats.partials/stats.blinds).toFixed(2)} partials, ${(stats.calls/stats.blinds).toFixed(2)} calls, ${(stats.kans/stats.blinds).toFixed(3)} Kans | Rinshan Kaihou wins: ${STATS.rinshan} (${(100*STATS.rinshan/Math.max(1,stats.hands)).toFixed(2)}% of complete hands)`);
 if(RON) console.log(`River claims: ${(stats.claims/stats.blinds).toFixed(2)} per blind (${(100*stats.claims/Math.max(1,stats.hands)).toFixed(0)}% of complete hands), ${(100*stats.claimWins/Math.max(1,stats.claims)).toFixed(0)}% of claims cleared the Blind, ${(100*STATS.claimFuriten/Math.max(1,stats.claims)).toFixed(0)}% scored in Discard Lock, ${(100*STATS.claimKappa/Math.max(1,stats.claims)).toFixed(0)}% with Kappa, ${(100*STATS.claimPair/Math.max(1,stats.claims)).toFixed(0)}% completed the pair`);
+if(!RON) console.log(`Kawauso: bought in ${(100*runsKawauso/RUNS).toFixed(0)}% of runs, owned in ${(100*stats.ownedBlinds/stats.blinds).toFixed(1)}% of blinds; claims ${stats.claims} (${(stats.claims/Math.max(1,stats.ownedBlinds)).toFixed(2)} per owned blind, used in ${(100*stats.blindsWithClaim/Math.max(1,stats.ownedBlinds)).toFixed(0)}% of owned blinds), ${(100*stats.claimWins/Math.max(1,stats.claims)).toFixed(0)}% of claims cleared the Blind, ${(100*STATS.claimPair/Math.max(1,stats.claims)).toFixed(0)}% completed the pair`);

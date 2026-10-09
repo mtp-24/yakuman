@@ -239,16 +239,19 @@ function scoreCtx(S, kind, tiles, info) {
   // ---- Yaku (complete hands)
   if (kind === 'hand') {
     const y = { list: info.yaku.list.slice(), han: info.yaku.han, yakuman: info.yaku.yakuman };
-    const winT = winningTile(tiles.filter(t => !S.open.some(m => m.tiles.some(o => o.id === t.id))));
-    if (winT && winT.rinshan && !y.yakuman) { y.list.push({ key: 'rinshan', name: 'Rinshan Kaihou', han: 1 }); y.han += 1; }
+    // A tile claimed from the River (Kawauso) is the winning tile; it was never a Kan replacement draw.
+    const claimT = info.claim ? tiles.find(t => t.id === info.claim) || null : null; ctx.claimed = !!claimT;
+    const winT = claimT || winningTile(tiles.filter(t => !S.open.some(m => m.tiles.some(o => o.id === t.id))));
+    if (winT && winT.rinshan && !claimT && !y.yakuman) { y.list.push({ key: 'rinshan', name: 'Rinshan Kaihou', han: 1 }); y.han += 1; }
     for (const yk of y.list) L(yk.name, `+${yk.han} Han`, { han: yk.han, yaku: true });
     ctx.han += y.han; ctx.yaku = y.list;
     if (y.han === 0) { ctx.han += 1; L('Complete Hand (no Yaku)', '+1 Han', { han: 1, yaku: true }); }
     for (const yk of y.list) { const b = S.scrolls.yaku[yk.key] || 0; if (b) { ctx.han += b; L(`Scroll: ${yk.name}`, `+${b} Han`, { han: b }); } }
     ctx.desc = y.list.length ? y.list.map(k => k.name).join(', ') : 'Complete Hand';
     // Furiten: the winning tile is the most recently drawn concealed tile in the played hand. If a copy of it sits in your River, the hand is in Furiten.
-    const win = winningTile(tiles.filter(t => !S.open.some(m => m.tiles.some(o => o.id === t.id))));
-    const matches = win ? S.river.filter(t => key(t) === key(win)).length : 0;
+    // A claimed tile came out of your River, so it always counts as one copy there.
+    const win = winT;
+    const matches = win ? S.river.filter(t => t !== claimT && key(t) === key(win)).length + (claimT ? 1 : 0) : 0;
     ctx.winningTile = win ? tileName(win) : '';
     if (matches) {
       if (S.talismans.includes('kappa')) { ctx.chips += 100 * matches; L(`Kappa (${ctx.winningTile} ×${matches} in River)`, `+${100 * matches} Chips`, { chips: 100 * matches, tal: 'Kappa' }); }
@@ -286,7 +289,7 @@ function scoreCtx(S, kind, tiles, info) {
   // ---- Boss and Furiten
   if (S.boss === 'wallbuilder' && kind === 'meld' && ctx.nMelds < 2) { ctx.chips = 0; L('The Wall-Builder', 'fewer than 2 melds: 0 Chips', { zero: true }); }
   if (S.boss === 'gatekeeper' && !S.firstPlayDone) { ctx.chips = 0; L('The Gatekeeper', 'first Play of the Blind: 0 Chips', { zero: true }); }
-  if (ctx.furiten) { ctx.mult *= 0.5; L(`Furiten (${ctx.winningTile} is in your River)`, '×0.5 Mult', { xmult: 0.5 }); }
+  if (ctx.furiten) { ctx.mult *= 0.5; L(ctx.claimed ? `Furiten (${ctx.winningTile} claimed from your River)` : `Furiten (${ctx.winningTile} is in your River)`, '×0.5 Mult', { xmult: 0.5 }); }
   ctx.mult = Math.round(ctx.mult * 100) / 100; ctx.chips = Math.max(0, ctx.chips);
   ctx.total = Math.floor(ctx.chips * ctx.mult);
   return ctx;

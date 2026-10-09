@@ -64,6 +64,9 @@ const hasF = k => S.flowers.includes(k);
 const handSize = () => Math.max(8, CFG.handSize + (hasF('plum') ? 1 : 0) + (S.deckKey === 'abundant' ? 2 : 0) + (S.blindMods && S.blindMods.handSize || 0) - (S.boss === 'miser' && S.phase === 'blind' ? 3 : 0));
 const capacity = () => handSize() - 3 * S.open.length;
 const neededConcealed = () => 14 - 3 * S.open.length;
+// Kawauso: one River tile may complete a hand as its winning tile. The Fisherman forbids taking tiles from the River.
+const canClaim = () => S.boss !== 'fisherman' && S.talismans.some(k => TAL[k].riverClaim);
+const claimTile = () => (S.selRiver && canClaim()) ? S.river.find(t => t.id === S.selRiver) || null : null;
 const conSlots = () => CFG.consumableSlots + (hasF('spring') ? 1 : 0) + (S.deckKey === 'merchant' ? 1 : 0);
 const price = c => { let p = c; if (S.deckKey === 'merchant') p = Math.ceil(p * 1.25); if (hasF('chrysanthemum')) p = Math.ceil(p * 0.8); return Math.max(1, p); };
 const talSlots = () => CFG.talismanSlots + S.talismans.filter(k => S.editions[k] === 'neg').length;
@@ -127,6 +130,13 @@ function playOption() {
   if (S.plays <= 0) return { err: 'No Plays left.' };
   const sel = selTiles(); if (!sel.length) return { err: 'Select tiles to play.' };
   const need = neededConcealed();
+  const rt = claimTile();
+  if (!rt && S.selRiver && S.boss === 'fisherman' && S.talismans.some(k => TAL[k].riverClaim) && sel.length === need - 1) return { err: 'The Fisherman forbids claiming tiles from the River.' };
+  if (rt && sel.length === need - 1) {
+    const best = bestHand(sel.concat([rt]), S.open, S);
+    if (best) return { type: 'hand', best, claim: rt.id, label: 'Claim and Play Complete Hand: ' + (best.yaku.list.length ? best.yaku.list.map(y => y.name).join(', ') : 'no Yaku') };
+    return { err: `With ${tileName(rt)} from the River these ${need - 1} tiles are not a complete hand.` };
+  }
   if (sel.length === need) {
     const best = bestHand(sel, S.open, S);
     if (best) return { type: 'hand', best, label: 'Play Complete Hand: ' + (best.yaku.list.length ? best.yaku.list.map(y => y.name).join(', ') : 'no Yaku') };
@@ -142,7 +152,10 @@ async function doPlay() {
   if (S.phase !== 'blind' || S.busy) return; setRules(S);
   const opt = playOption(); if (opt.err) { setMsg(opt.err, true); return render(); }
   const sel = S.hand.filter(t => S.selected.includes(t.id)); let ctx;
-  if (opt.type === 'hand') { ctx = scoreCtx(S, 'hand', sel.concat(openTiles()), { yaku: opt.best.yaku, dec: opt.best.dec }); S.stats.hands++; }
+  // A claimed tile leaves the River before scoring, so River Talismans do not count it.
+  const claimed = opt.claim ? S.river.find(t => t.id === opt.claim) : null;
+  if (claimed) { S.river = S.river.filter(t => t !== claimed); sel.push(claimed); S.stats.claims = (S.stats.claims || 0) + 1; }
+  if (opt.type === 'hand') { ctx = scoreCtx(S, 'hand', sel.concat(openTiles()), { yaku: opt.best.yaku, dec: opt.best.dec, claim: opt.claim }); S.stats.hands++; }
   else { ctx = scoreCtx(S, 'meld', sel, { part: opt.part }); S.stats.melds++; }
   S.busy = true; setMsg(''); render();
   await animateScore(ctx);
@@ -439,8 +452,9 @@ function computePreview() {
   PREVIEW = null; if (S.phase !== 'blind' || S.busy) return;
   const opt = playOption(); if (!opt.type) { PREVIEW = { err: opt.err }; return; }
   const sel = S.hand.filter(t => S.selected.includes(t.id));
-  const ctx = opt.type === 'hand' ? scoreCtx(S, 'hand', sel.concat(openTiles()), { yaku: opt.best.yaku, dec: opt.best.dec, preview: true }) : scoreCtx(S, 'meld', sel, { part: opt.part, preview: true });
-  PREVIEW = { ctx, label: opt.type === 'hand' ? (ctx.yaku.length ? ctx.yaku.map(y => y.name).join(', ') : 'Complete Hand') : ctx.rungName, kind: opt.type };
+  const claimed = opt.claim ? [S.river.find(t => t.id === opt.claim)] : [];
+  const ctx = opt.type === 'hand' ? scoreCtx(S, 'hand', sel.concat(claimed, openTiles()), { yaku: opt.best.yaku, dec: opt.best.dec, preview: true, claim: opt.claim }) : scoreCtx(S, 'meld', sel, { part: opt.part, preview: true });
+  PREVIEW = { ctx, label: opt.type === 'hand' ? (ctx.yaku.length ? ctx.yaku.map(y => y.name).join(', ') : 'Complete Hand') : ctx.rungName, kind: opt.type, claim: !!opt.claim };
 }
 function renderBlind() {
   const kind = blindKind(); const inBlind = S.phase === 'blind'; computePreview(); if (!inBlind && S.phase !== 'win' && S.phase !== 'gameover') { /* preview */ }
@@ -464,7 +478,7 @@ function renderBlind() {
       const lvl = lvlKey ? (S.scrolls.meld[lvlKey] || 0) : 0;
       let chips = base.chips, han = base.han; if (pv.kind === 'hand') han += Math.max(1, c.yaku.reduce((a, y) => a + y.han, 0));
       for (const l of c.lines) if (/^Scroll:/.test(l.label)) { chips += l.chips || 0; han += l.han || 0; }
-      h += `<div class="handbox"><div class="hb-name">${pv.label}${lvlKey ? ` <span class="tag">Lv.${lvl + 1}</span>` : ''}</div><div class="hb-math num"><span class="chipbox">${chips}</span><span class="px">×</span><span class="multbox">${hanMult(han)}</span></div><div class="hb-han num"><span class="hanpill"><b class="hanval">${han}</b> Han</span><span class="muted hantier">${tierName(han)} ×${hanMult(han)}</span></div></div>`;
+      h += `<div class="handbox"><div class="hb-name">${pv.label}${pv.claim ? ' <span class="tag">River Claim</span>' : ''}${lvlKey ? ` <span class="tag">Lv.${lvl + 1}</span>` : ''}</div><div class="hb-math num"><span class="chipbox">${chips}</span><span class="px">×</span><span class="multbox">${hanMult(han)}</span></div><div class="hb-han num"><span class="hanpill"><b class="hanval">${han}</b> Han</span><span class="muted hantier">${tierName(han)} ×${hanMult(han)}</span></div></div>`;
     }
     else h += `<div class="handbox empty"><div class="hb-name muted">Select a play</div><div class="hb-math num"><span class="chipbox dim">0</span><span class="px">×</span><span class="multbox dim">0</span></div><div class="hb-han num"><span class="hanpill dim"><b class="hanval">0</b> Han</span></div></div>`;
   }
@@ -504,6 +518,7 @@ function renderOpen() {
 }
 function renderRiver() {
   const box = $('#river'); box.innerHTML = '';
+  $('#riverInfo').textContent = S.boss === 'fisherman' ? 'Discards stay here all Blind. The Fisherman forbids Calls and claims.' : canClaim() ? 'Discards stay here all Blind. Select one plus 2–3 hand tiles to Call, or plus the rest of a complete hand to claim it with Kawauso.' : 'Discards stay here all Blind. Select one plus 2–3 hand tiles to Call.';
   for (const t of S.river) { const e = tileEl(t, { small: true, sel: S.selRiver === t.id }); e.onclick = () => { if (S.phase !== 'blind') return; S.selRiver = S.selRiver === t.id ? null : t.id; render(); }; box.appendChild(e); }
   if (!S.river.length) box.innerHTML = '<span class="muted empty">No discards yet</span>';
 }
@@ -550,10 +565,15 @@ function renderHint(hidden) {
   if (hidden) h += ` <span class="hint-sel muted">· face-down tiles are 1s, 9s, Winds or Dragons and are not counted</span>`;
   if (!hidden && sh === 0) {
     const waits = waitsOf(S.hand, S.open.length); const riverKeys = new Set(S.river.map(key));
-    const names = waits.map(w => { const t = tileFromIdx(w); const f = riverKeys.has(key(t)); return `<span class="${f ? 'bad' : ''}">${tileName(t)}${f ? ' (in River: Furiten)' : ''}</span>`; });
+    const names = waits.map(w => { const t = tileFromIdx(w); const f = riverKeys.has(key(t)); return `<span class="${f ? 'bad' : ''}">${tileName(t)}${f ? (canClaim() ? ' (in River: claim it with Kawauso, Furiten)' : ' (in River: Furiten)') : ''}</span>`; });
     if (names.length) h += ` <span class="hint-sel">· waiting on ${names.join(', ')}</span>`;
   }
   const sel = selTiles().filter(t => vis.includes(t));
+  const rtc = claimTile();
+  if (!hidden && rtc && sel.length === neededConcealed() - 1) {
+    const best = bestHand(sel.concat([rtc]), S.open, S);
+    h += best ? ` <span class="hint-sel bad">· complete hand with ${tileName(rtc)} claimed from the River${S.talismans.includes('kappa') ? ': Kappa bonus' : ': Furiten, ×0.5'}</span>` : ` <span class="hint-sel muted">· ${tileName(rtc)} from the River does not complete these tiles</span>`;
+  }
   if (!hidden && sel.length === neededConcealed()) {
     const best = bestHand(sel, S.open, S);
     if (best) { const win = winningTile(sel); const f = win && S.river.some(t => key(t) === key(win)); h += ` <span class="hint-sel ${f ? 'bad' : 'good'}">· complete hand, winning tile ${tileName(win)}${win && win.rinshan ? ' (Kan replacement: Rinshan Kaihou +1 Han)' : ''}${f ? (S.talismans.includes('kappa') ? ' is in your River: Kappa bonus' : ' is in your River: Furiten, ×0.5') : ''}</span>`; box.innerHTML = h; return; }
@@ -781,7 +801,7 @@ function rulesHTML() {
   <p><b>Complete hand.</b> Select 14 tiles that make four melds and a pair, Seven Pairs, or Thirteen Orphans, and press Play. Its Yaku add Han. A complete hand with no Yaku still gets +1 Han. Each Yakuman counts as 13 Han, and they stack. Run Info lists all Yaku with example hands.</p>
   <p><b>Call.</b> Select one River tile and 2–3 hand tiles that form a meld with it, then press Call. It costs 1 Play and scores nothing yet, and you cannot Call with your last Play. The meld is set aside as Open and counts toward your complete hand. Open hands get less Han from some Yaku and lose closed-only Yaku such as Pinfu and Iipeikou. After a Call you discard 1 tile to settle it, which does not use a Discard.</p>
   <p><b>Kan.</b> Four identical tiles can be played as a partial Kan for points, or declared with Declare Kan to set them aside as a closed Kan that counts toward your complete hand without opening it. Every Kan, declared or called, draws one replacement tile. If that tile ends up as the winning tile of your complete hand, you score Rinshan Kaihou (+1 Han).</p>
-  <p><b>Furiten.</b> The winning tile of a complete hand is the newest tile you drew among the 14 you play. If a copy of that tile sits in your River, the hand is in Furiten and its Mult is halved. The helper marks waits that are already in your River.</p>
+  <p><b>Furiten.</b> The winning tile of a complete hand is the newest tile you drew among the 14 you play. If a copy of that tile sits in your River, the hand is in Furiten and its Mult is halved. The helper marks waits that are already in your River. With the ${TAL.kawauso.name} Talisman you can claim one River tile as the winning tile: select it together with the rest of the hand and press Play. A claimed hand is always in Furiten, the tile leaves the River, and The Fisherman forbids claiming.</p>
   <p><b>Bosses.</b> Every Ante ends with a Yakuza Boss Blind with a rule twist, shown in red on the blind plate and on the Blind Select screen. Each run meets ${CFG.antes} of the ${Object.keys(BOSSES).length} bosses.</p>
   <h3>Scoring</h3>
   <p><b>Score = Chips × Mult.</b> The play's rung gives base Chips and Han. Every scored tile then adds Chips: 2–8 are worth their face value, and 1s, 9s and Honors are worth 10.</p>
