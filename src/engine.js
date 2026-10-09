@@ -210,10 +210,10 @@ function scoreCtx(S, kind, tiles, info) {
   }
   // ---- per-tile loop with retriggers
   const redPer = S.talismans.includes('koi') ? 2 : 1;
-  const agg = { chips: 0, red: 0, redHan: 0, dora: 0, dm: 0, jade: 0, gold: 0, glass: 0, retrig: {} };
+  const agg = { chips: 0, red: 0, redHan: 0, dora: 0, dm: 0, jade: 0, gold: 0, glass: 0, gseal: 0, retrig: {} };
   tiles.forEach((t, ti) => {
     let extra = 0; const who = [];
-    if (t.eng === 'redseal') { extra += 1; who.push('Red Seal'); agg.retrig['Red Seal'] = (agg.retrig['Red Seal'] || 0) + 1; }
+    if (t.seal === 'red' || t.eng === 'redseal') { extra += 1; who.push('Red Seal'); agg.retrig['Red Seal'] = (agg.retrig['Red Seal'] || 0) + 1; }
     for (const k of S.talismans) { const d = talTarget(S, k); if (d && d.retrigger) { const n = d.retrigger(t, ctx, S, ti); if (n) { extra += n; for (let q = 0; q < n; q++) who.push(TAL[k].name); agg.retrig[TAL[k].name] = (agg.retrig[TAL[k].name] || 0) + n; } } }
     const times = 1 + extra; let c = 0, h = 0, x = 1, money = 0;
     for (let r = 0; r < times; r++) {
@@ -224,6 +224,7 @@ function scoreCtx(S, kind, tiles, info) {
       if (t.eng === 'jade') { x *= 1.5; agg.jade++; }
       if (t.eng === 'gold') { money += 1; agg.gold++; }
       if (t.eng === 'glass') { x *= 2; agg.glass++; }
+      if (t.seal === 'gold') { money += 3; agg.gseal++; }
     }
     if (t.eng === 'glass' && (info.preview ? false : rand() < 0.25)) ctx.shatter.push(t.id);
     ctx.chips += c; ctx.han += h; ctx.xmult *= x; ctx.money += money;
@@ -236,6 +237,7 @@ function scoreCtx(S, kind, tiles, info) {
   if (agg.dm) L(`Dragon Mark ×${agg.dm}`, `+${agg.dm} Han`, { han: agg.dm, info: true });
   if (agg.jade) { const x = Math.pow(1.5, agg.jade); L(`Jade ×${agg.jade}`, `×${x} Mult`, { xmult: x, info: true }); }
   if (agg.gold) L(`Gold Foil ×${agg.gold}`, `+¥${agg.gold}`, { info: true });
+  if (agg.gseal) L(`Gold Seal ×${agg.gseal}`, `+¥${3 * agg.gseal}`, { info: true });
   if (agg.glass) { const x = Math.pow(2, agg.glass); L(`Glass ×${agg.glass}`, `×${x} Mult`, { xmult: x, info: true }); }
   if (ctx.shatter.length) L(`Glass shattered ×${ctx.shatter.length}`, 'gone from your Wall', { info: true, bad: true });
   // ---- Yaku (complete hands)
