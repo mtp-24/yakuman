@@ -1,7 +1,7 @@
 // ===================== TERMINOLOGY SWITCH =====================
 let LANG = 'ja'; try { LANG = localStorage.getItem('yakuman.lang') === 'hk' ? 'hk' : 'ja'; } catch (e) { }
 let SHOW_DOTS = true; try { SHOW_DOTS = localStorage.getItem('yakuman.dots') !== 'off'; } catch (e) { }
-const SPEEDS = { slow: 1.7, normal: 1, fast: 0.45, instant: 0 };
+const SPEEDS = { slow: 2.5, normal: 1, fast: 0.45, instant: 0 };
 let ANIM_SPEED = 'normal'; try { const v = localStorage.getItem('yakuman.speed'); if (SPEEDS[v] !== undefined) ANIM_SPEED = v; } catch (e) { }
 let HK_RE = null, HK_MAP = null;
 function buildHK() {
@@ -583,10 +583,10 @@ function slotDropIndex(x, y, skipEl) {
 }
 // ===================== SCORING ANIMATION =====================
 const motionOK = !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-let skipAnim = false;
+let skipAnim = false, skipArmed = false;
 function wait(ms) { return new Promise(r => setTimeout(r, (motionOK && !skipAnim) ? Math.round(ms * SPEEDS[ANIM_SPEED]) : 0)); }
 async function animateScore(ctx) {
-  skipAnim = false;
+  skipAnim = false; skipArmed = false; setTimeout(() => { skipArmed = true; }, 250);
   const box = $('#scorebox'); if (!box) return;
   box.innerHTML = `<div class="hb-name">${tr(ctx.rungName || '')}${ctx.kind === 'hand' ? ' <span class="muted">· ' + tr(ctx.desc) + '</span>' : ''}</div><div class="hb-math num"><span class="chipbox">0</span><span class="px">×</span><span class="multbox">1</span></div><div class="hb-total num"><span class="eq">=</span><span class="tot">0</span></div><div class="hb-lines"></div><div class="muted" style="font-size:10px;margin-top:4px">click to skip</div>`;
   const chipsEl = box.querySelector('.chipbox'), multEl = box.querySelector('.multbox'), totEl = box.querySelector('.tot'), linesBox = box.querySelector('.hb-lines'), mathEl = box.querySelector('.hb-math');
@@ -796,7 +796,7 @@ function bindEvents() {
 
   $('#btnSettings').onclick = () => showModal(settingsHTML(), true);
   $('#btnNewRun').onclick = () => showModal(`<h2>Start a New Run?</h2><p class="muted">Your current run will be lost.</p><div style="display:flex;gap:8px"><button id="mNewRun" class="danger">New Run</button><button id="mClose">Cancel</button></div>`, true);
-  document.addEventListener('click', e => { const b = e.target.closest('[data-copyseed]'); if (b) copySeed(b); if (S && S.busy) skipAnim = true; });
+  document.addEventListener('click', e => { const b = e.target.closest('[data-copyseed]'); if (b) copySeed(b); if (S && S.busy && skipArmed) skipAnim = true; });
   $('#overlay').addEventListener('click', e => {
     const t = e.target.closest('button'); if (!t) return;
     if (t.dataset.copyseed != null) return;
@@ -828,7 +828,7 @@ function bindEvents() {
   });
   document.addEventListener('keydown', e => {
     if (S.phase !== 'blind' || !$('#overlay').hidden) return;
-    if (S.busy) { skipAnim = true; return; }
+    if (S.busy) { if (skipArmed) skipAnim = true; return; }
     if (e.key === 'Enter' || e.key === 'p') doPlay(); else if (e.key === 'd') doDiscard(); else if (e.key === 'c') doCall(); else if (e.key === 'k') doDeclareKan(); else if (e.key === 'Escape') { S.selected = []; S.selRiver = null; render(); }
   });
 }

@@ -58,6 +58,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 47: side hand box shows only the play's base (rung name, Scroll level, base chips × Mult from base Han, plus Yaku names for a complete hand) like Balatro; tile bonuses, Talismans and the total are revealed by the scoring animation.
 - Build 48: chips and Mult shown as Balatro-style blue and red boxes in the side hand box and the scoring stage.
 - Build 49: scoring animates in place (tiles light up in the hand and open melds, the side hand box is the live counter with the breakdown beneath, Talismans bounce in their slots) instead of a modal; animation speed setting (slow / normal / fast / instant) in Settings; click anywhere to skip.
+- Build 50: fixed the Play click itself skipping the scoring animation (skip is armed only after scoring starts); Slow speed is 2.5x.
 - Build 7: multi-meld play ladder (Two Melds ... Four Melds), targets 300...45000, retrigger and scaling Talismans, Wall-Builder rewording, scoring animation.
 
 ## Simulators (in `sim/`)
