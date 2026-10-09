@@ -163,6 +163,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 152: Tile hover card like Balatro: hovering any tile (hand, River, melds, packs, Wall view) shows its name, the Chips it adds when scored (boss rules and Talisman bonuses included), Red Five and Dora Han, and its engraving, in place of the plain tooltip. Hidden while dragging or scoring; follows the tile through redraws.
 - Build 153: Fixed edition Talismans (for example a Polychrome one) growing taller while scoring: the effect badge under the slot was being pulled into the card's layout by the edition text rule; it now floats outside it.
 - Build 154: Scoring tiles pop like Balatro (snap to 1.26x, settle, stay lifted; no tilt, 0.22 s). Retriggers name their source: each replay of a tile bounces the Talisman that caused it and shows Again! under its slot (Hakutaku, Nekomata, Shikigami, Kirin, Yatagarasu, and copiers), and the tile pops with its values again.
+- Build 155: Retrigger summary lines (for example Hakutaku: retrigger x10) no longer bounce their Talisman a second time after the tiles have scored; each replay already bounced it with Again!.
 - Build 7: multi-meld play ladder (Two Melds ... Four Melds), targets 300...45000, retrigger and scaling Talismans, Wall-Builder rewording, scoring animation.
 
 ## Simulators (in `sim/`)
