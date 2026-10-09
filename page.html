@@ -838,6 +838,9 @@ button.pulse{animation:btnpulse2 2.6s ease-out infinite}
 .packtileart{display:flex;justify-content:center;align-items:center;min-height:88px;margin:0 auto 6px} .packtileart .tile{cursor:default} .shopcard.tilecard{background:linear-gradient(180deg,#1e3a30,#14281f);border:1px solid rgba(240,230,200,.25)}
 .slot.off{position:relative;filter:grayscale(.85) brightness(.7)} .slot.off::after{content:'Disabled';position:absolute;right:8px;bottom:6px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#ff8a7a;z-index:3}
 .showdowntag{display:inline-block;margin:2px auto 4px;padding:1px 8px;border-radius:999px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#fff;background:linear-gradient(90deg,#6b2fb3,#a8362c)} .blindcard.showdown{box-shadow:0 0 0 1px rgba(168,54,44,.6),0 0 22px rgba(107,47,179,.35)}
+.stk{display:inline-block;margin-left:5px;padding:0 6px;border-radius:4px;font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;line-height:15px;vertical-align:1px;font-family:var(--body);font-weight:600} .stk-eternal{background:#3d2a5c;color:#e3cfff;border:1px solid #8f6bd1} .stk-perish{background:#2c4a5c;color:#cfeaff;border:1px solid #6ba7d1} .stk-rental{background:#5c4a1f;color:#ffe6a6;border:1px solid #d1a64a}
+.rrow b.neg{color:#ff8a7a}
+.sw-blue{background:#2f6fb8} .sw-purple{background:#7a3fb0} .sw-orange{background:#d9822b} .sw-gold{background:#d4a62a}
 </style>
 <div id="app">
 <header>
@@ -980,7 +983,17 @@ const STAKES = {
   white: { name: 'White Stake', desc: 'The standard game.' },
   red: { name: 'Red Stake', desc: 'Small Blinds give no reward money.' },
   green: { name: 'Green Stake', desc: 'Everything in Red Stake, and every blind target is ×1.3.' },
-  black: { name: 'Black Stake', desc: 'Everything in Green Stake, and Talismans cost ¥2 more.' },
+  black: { name: 'Black Stake', desc: 'Everything in Green Stake, Talismans cost ¥2 more, and some shop Talismans are Eternal: they can never be sold.' },
+  blue: { name: 'Blue Stake', desc: 'Everything in Black Stake, and −1 Discard every Blind.' },
+  purple: { name: 'Purple Stake', desc: 'Everything in Blue Stake, and targets grow faster: +5% more for every Ante.' },
+  orange: { name: 'Orange Stake', desc: 'Everything in Purple Stake, and some shop Talismans are Perishable: they stop working after 5 Blinds.' },
+  gold: { name: 'Gold Stake', desc: 'Everything in Orange Stake, and some shop Talismans are Rentals: ¥1 to buy, but ¥3 at the end of every Blind.' },
+};
+// Talisman stickers from the higher Stakes, like Balatro's.
+const STICKERS = {
+  eternal: { name: 'Eternal', desc: 'Can never be sold.' },
+  perish: { name: 'Perishable', desc: 'Stops working after 5 Blinds.' },
+  rental: { name: 'Rental', desc: 'Costs ¥3 at the end of every Blind.' },
 };
 function buildDeck(deckKey = 'standard') {
   const d = []; const suits = deckKey === 'lean' ? ['m', 'p'] : ['m', 'p', 's'];
@@ -1141,7 +1154,7 @@ const TALISMANS = [
   // --- Broad retriggers (Balatro's Dusk, Seltzer and Hack)
   { key: 'omagatoki', name: 'Ōmagatoki', cost: 7, desc: 'Every tile scores a second time on the last Play of each Blind.', retrigger: (t, c, S) => S.plays === 1 ? 1 : 0, status: S => S.phase === 'blind' ? (S.plays === 1 ? 'active now: last Play' : `active on the last Play, ${S.plays} Plays left`) : '' },
   { key: 'shojo', name: 'Shōjō', cost: 6, desc: 'Every tile scores a second time for your next 8 plays, then it is used up and leaves your board.', retrigger: () => 1,
-    afterScore: (c, S) => { const n = (S.talState.shojo ?? 8) - 1; S.talState.shojo = n; if (n <= 0) { S.talismans = S.talismans.filter(x => x !== 'shojo'); delete S.editions.shojo; delete S.talState.shojo; S.spent = (S.spent || []).concat('shojo'); } },
+    afterScore: (c, S) => { const n = (S.talState.shojo ?? 8) - 1; S.talState.shojo = n; if (n <= 0) { S.talismans = S.talismans.filter(x => x !== 'shojo'); delete S.editions.shojo; if (S.stickers) delete S.stickers.shojo; delete S.talState.shojo; S.spent = (S.spent || []).concat('shojo'); } },
     status: S => { const n = S.talState.shojo ?? 8; return `${n} play${n === 1 ? '' : 's'} left`; } },
   { key: 'azukiarai', name: 'Azukiarai', cost: 6, desc: 'Every 2, 3 and 4 tile scores a second time.', retrigger: t => !isHonor(t) && t.rank >= 2 && t.rank <= 4 ? 1 : 0 },
   // --- Money (Balatro's Rocket, Delayed Gratification, Cloud 9 and Satellite, plus a Mahjong one)
@@ -1831,16 +1844,25 @@ const shopSlots = () => 2 + (hasF('lotus') ? 1 : 0) + (hasF('lotus2') ? 1 : 0);
 const editionMult = () => hasF('sakura2') ? 4 : hasF('sakura') ? 2 : 1;
 const talSellValue = k => Math.max(1, Math.floor(talValue(k) / 2)) + (hasF('camellia') ? 1 : 0);
 const blindPlays = () => Math.max(1, CFG.playsPerBlind + S.bonusPlays + talMod('plays') + (hasF('bamboo') ? 1 : 0) + (hasF('bamboo2') ? 1 : 0) - (hasF('wisteria') ? 1 : 0) + (S.deckKey === 'gambler' ? 1 : 0) - (S.deckKey === 'abundant' || S.deckKey === 'lean' ? 1 : 0));
-const blindDiscards = () => Math.max(0, CFG.discardsPerBlind + S.bonusDiscards + talMod('discards') + (hasF('orchid') ? 1 : 0) + (hasF('orchid2') ? 1 : 0) - (hasF('wisteria2') ? 1 : 0) - (S.deckKey === 'gambler' ? 1 : 0));
+const blindDiscards = () => Math.max(0, CFG.discardsPerBlind + S.bonusDiscards + talMod('discards') + (hasF('orchid') ? 1 : 0) + (hasF('orchid2') ? 1 : 0) - (hasF('wisteria2') ? 1 : 0) - (stakeLevel(S.stake) >= 4 ? 1 : 0) - (S.deckKey === 'gambler' ? 1 : 0));
 const rerollPrice = () => S.shop && (S.shop.freeReroll || S.shop.firstFree) ? 0 : rerollCost();
 // Stakes stack like Balatro's: each one keeps every penalty of the Stakes below it.
 const STAKE_KEYS = Object.keys(STAKES);
 const stakeLevel = k => STAKE_KEYS.indexOf(k);
 const smallPaysNothing = () => stakeLevel(S.stake) >= 1;
-const stakeTargets = () => stakeLevel(S.stake) >= 2 ? 1.3 : 1;
+const stakeTargets = () => (stakeLevel(S.stake) >= 2 ? 1.3 : 1) * (stakeLevel(S.stake) >= 5 ? 1 + 0.05 * (S.ante - 1) : 1);
 // Monk's Wall pays for its easy flushes with doubled targets, like Balatro's Plasma Deck.
 const wallTargets = () => S.deckKey === 'monk' ? 2 : 1;
 const stakeTalCost = () => stakeLevel(S.stake) >= 3 ? 2 : 0;
+// Stickers for a shop or pack Talisman: Eternal from Black Stake, Perishable from Orange (never both), Rental from Gold.
+// Shōjō leaves by itself and Legendaries come from Hitodama, so they never carry one.
+function rollSticker(k) {
+  const lv = stakeLevel(S.stake); if (lv < 3 || k === 'shojo' || talRarity(k) === 'legendary') return null;
+  const st = {}, r = rand(); if (r < 0.3) st.eternal = true; else if (lv >= 6 && r < 0.6) st.perish = 5;
+  if (lv >= 7 && rand() < 0.3) st.rental = true; return Object.keys(st).length ? st : null;
+}
+const stickerTags = st => !st ? '' : (st.eternal ? '<span class="stk stk-eternal" title="Can never be sold">Eternal</span>' : '') + (st.perish !== undefined ? `<span class="stk stk-perish" title="Stops working after 5 Blinds">${st.perish > 0 ? `Perishable · ${st.perish}` : 'Perished'}</span>` : '') + (st.rental ? '<span class="stk stk-rental" title="¥3 at the end of every Blind">Rental</span>' : '');
+const isEternal = k => !!(S.stickers && S.stickers[k] && S.stickers[k].eternal);
 const rerollCost = () => hasF('autumn') ? 2 : CFG.rerollCost;
 function talMod(f) { return liveTals(S).reduce((a, k) => a + (TAL[k][f] || 0), 0); }
 function selTiles() { return S.selected.map(id => S.hand.find(t => t.id === id)).filter(Boolean); }
@@ -1879,7 +1901,7 @@ const UNLOCKS = [
   { kind: 'tal', key: 'kirin', goal: 'Beat 5 different Bosses', prog: P => [Object.keys(P.bosses).length, 5] },
   { kind: 'tal', key: 'hannya', goal: 'Reach Ante 6', prog: P => [P.bestAnte, 6] },
   { kind: 'tal', key: 'utsushi', goal: 'Win a run', prog: P => [P.wins, 1] },
-  { kind: 'tal', key: 'kagami', goal: 'Win a run on Red Stake or higher', prog: P => [(P.stakesWon.red || 0) + (P.stakesWon.green || 0) + (P.stakesWon.black || 0), 1] },
+  { kind: 'tal', key: 'kagami', goal: 'Win a run on Red Stake or higher', prog: P => [STAKE_KEYS.slice(1).reduce((n, k) => n + (P.stakesWon[k] || 0), 0), 1] },
 ];
 const LOCKS = {}; UNLOCKS.forEach(u => LOCKS[`${u.kind}:${u.key}`] = u);
 const UNLOCK_ALL_KEY = 'yakuman.unlockall';
@@ -1986,9 +2008,12 @@ function winBlind() {
   const tal = talPay.reduce((a, [, v]) => a + v, 0);
   const summer = (hasF('summer') ? 2 : 0) + (hasF('summer2') ? 2 : 0);
   let invest = 0; if (kind === 'boss' && S.tags.includes('investment')) { invest = 25; S.tags = S.tags.filter(t => t !== 'investment'); }
-  const total = base + left + interest + tal + summer + invest;
-  S.money += total; S.stats.blinds++; S.msg = ''; S.msgErr = false;
-  S.reward = { kind, base, left, interest, tal, talPay, summer, invest, total, wallLeft: S.wall.length };
+  // Gold Stake Rentals charge ¥3 each; Perishables count down one Blind.
+  const rent = S.talismans.filter(k => S.stickers && S.stickers[k] && S.stickers[k].rental).map(k => [k, 3]);
+  for (const [k, st] of Object.entries(S.stickers || {})) if (st.perish > 0) { st.perish--; if (!st.perish) setTimeout(() => toast(`<div class="label">Perished</div><b>${TAL[k].name}</b><div class="muted" style="font-size:11px">stops working from now on</div>`), 600); }
+  const total = base + left + interest + tal + summer + invest - rent.reduce((a, [, v]) => a + v, 0);
+  const before = S.money; S.money = Math.max(0, S.money + total); S.stats.blinds++; S.msg = ''; S.msgErr = false;
+  S.reward = { kind, base, left, interest, tal, talPay, summer, invest, rent, total, before, wallLeft: S.wall.length };
   const blue = blueSeals(); if (blue) setTimeout(() => toast(`<div class="label">Blue Seal${blue.n > 1 ? ' ×' + blue.n : ''}</div><b>${SCR[blue.key].name}</b><div class="muted" style="font-size:11px">levelled up by ${blue.n}</div>`), 300);
   collectDeck();
   const finished = S.ante === CFG.antes && S.blindIndex === 2 && !S.endless;
@@ -2189,13 +2214,13 @@ function useConsumable(i) {
   setMsg(`${def.name} used.${S.gotLegend ? ` ${TAL[S.gotLegend].name} joins your Talismans.` : ''}`); S.gotLegend = null; render();
 }
 function talValue(k) { return TAL[k].cost + (S.editions[k] ? EDITIONS[S.editions[k]].price : 0); }
-function sellTalisman(k) { const i = S.talismans.indexOf(k); if (i < 0) return; if (S.phase === 'blind') S.leafCut = true; if (S.crimsonOff === k) S.crimsonOff = null; const v = talSellValue(k); S.talismans.splice(i, 1); S.money += v; sfx('sell'); delete S.editions[k]; S.selTal = null; for (const t of S.talismans) if (TAL[t].onSell) TAL[t].onSell(S); PROFILE.sold++; saveProfile(); setMsg(`Sold ${TAL[k].name} for ¥${v}.`); render(); }
+function sellTalisman(k) { const i = S.talismans.indexOf(k); if (i < 0) return; if (isEternal(k)) { setMsg(`${TAL[k].name} is Eternal and can never be sold.`, true); return render(); } if (S.stickers) delete S.stickers[k]; if (S.phase === 'blind') S.leafCut = true; if (S.crimsonOff === k) S.crimsonOff = null; const v = talSellValue(k); S.talismans.splice(i, 1); S.money += v; sfx('sell'); delete S.editions[k]; S.selTal = null; for (const t of S.talismans) if (TAL[t].onSell) TAL[t].onSell(S); PROFILE.sold++; saveProfile(); setMsg(`Sold ${TAL[k].name} for ¥${v}.`); render(); }
 function sellConsumable(i) { const c = S.consumables[i]; if (!c) return; const v = Math.max(1, Math.floor(CONS[c.key].cost / 2)); S.consumables.splice(i, 1); S.money += v; sfx('sell'); setMsg(`Sold ${CONS[c.key].name} for ¥${v}.`); render(); }
 
 // ===================== SHOP =====================
 function rollCard() {
   const r = rand(), w = CFG.shopWeights;   // seeded, so a shared seed replays the same shop cards
-  if (r < w.talisman) { const pool = talPool(); if (pool.length) return { kind: 'talisman', key: pickTalisman(pool).key, edition: rollEdition(editionMult()) }; }
+  if (r < w.talisman) { const pool = talPool(); if (pool.length) { const key = pickTalisman(pool).key; return { kind: 'talisman', key, edition: rollEdition(editionMult()), sticker: rollSticker(key) }; } }
   if (r < w.talisman + w.omikuji) return { kind: 'omikuji', key: pick(OMIKUJI).key };
   return { kind: 'kami', key: pickKami().key };
 }
@@ -2218,7 +2243,7 @@ function openPack(key, free) {
   else if (key === 'kami') pool = KAMI.filter(o => !o.soul).map(o => ({ kind: 'kami', key: o.key }));
   let choices;
   if (key === 'tile' || key === 'megatile') choices = Array.from({ length: def.show }, () => ({ kind: 'tile', tile: packTile(S.deckKey) }));
-  else if (key === 'talisman') { const left = talPool(); choices = []; while (choices.length < def.show && left.length) { const t = pickTalisman(left); left.splice(left.indexOf(t), 1); choices.push({ kind: 'talisman', key: t.key, edition: rollEdition(editionMult()) }); } }
+  else if (key === 'talisman') { const left = talPool(); choices = []; while (choices.length < def.show && left.length) { const t = pickTalisman(left); left.splice(left.indexOf(t), 1); choices.push({ kind: 'talisman', key: t.key, edition: rollEdition(editionMult()), sticker: rollSticker(t.key) }); } }
   else choices = shuffle(pool.slice()).slice(0, def.show);
   if (key === 'kami' && choices.length && rand() < CFG.soulOdds * 2) choices[0] = { kind: 'kami', key: 'hitodama' };
   S.pack = { key, choices, left: def.keep, free: !!free }; S.msg = ''; S.msgErr = false;   // a fresh pack starts without the last shop message
@@ -2289,7 +2314,7 @@ function fillPackHand() {
 }
 function takeFromPack(i) {
   const it = S.pack.choices[i]; if (!it || it.sold) return;
-  if (it.kind === 'talisman') { if (S.talismans.length >= talSlots()) { setMsg('Talisman slots are full. Sell one from the list below first.', true); return render(); } gainTalisman(it.key); if (it.edition) S.editions[it.key] = it.edition; }
+  if (it.kind === 'talisman') { if (S.talismans.length >= talSlots()) { setMsg('Talisman slots are full. Sell one from the list below first.', true); return render(); } gainTalisman(it.key, it.sticker); if (it.edition) S.editions[it.key] = it.edition; }
   else if (it.kind === 'scroll') { const [t, k] = it.key.split(':'); S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] = (S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] || 0) + 1; for (const tk of liveTals(S)) if (TAL[tk].onScroll) TAL[tk].onScroll(S); PROFILE.scrollsUsed++; saveProfile(); }
   else if (it.kind === 'tile') { S.deck.push(it.tile); for (const k of liveTals(S)) if (TAL[k].onTileAdded) TAL[k].onTileAdded(S, 1); }
   else { if (S.consumables.length >= conSlots()) { setMsg('Consumable slots are full. Use or sell one first.', true); return render(); } S.consumables.push({ kind: it.kind, key: it.key }); }
@@ -2304,13 +2329,13 @@ function buy(it) {
   const def = itemDef(it), p = itemPrice(it);
   if (S.money < p) { setMsg(`Not enough YEN: ${def.name} costs ¥${p}.`, true); return render(); }
   if (it.kind === 'pack') { S.money -= p; it.sold = true; if (!S.quiet) sfx('buy'); openPack(it.key, false); return render(); }
-  if (it.kind === 'talisman') { if (S.talismans.length >= talSlots()) { setMsg(`All ${talSlots()} Talisman slots are full. Sell one first.`, true); return render(); } gainTalisman(it.key); if (it.edition) S.editions[it.key] = it.edition; }
+  if (it.kind === 'talisman') { if (S.talismans.length >= talSlots()) { setMsg(`All ${talSlots()} Talisman slots are full. Sell one first.`, true); return render(); } gainTalisman(it.key, it.sticker); if (it.edition) S.editions[it.key] = it.edition; }
   else if (it.kind === 'omikuji' || it.kind === 'kami') { if (S.consumables.length >= conSlots()) { setMsg('Consumable slots are full. Use one first.', true); return render(); } S.consumables.push({ kind: it.kind, key: it.key }); }
   else if (it.kind === 'scroll') { const [t, k] = it.key.split(':'); S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] = (S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] || 0) + 1; for (const tk of liveTals(S)) if (TAL[tk].onScroll) TAL[tk].onScroll(S); PROFILE.scrollsUsed++; saveProfile(); }
   else if (it.kind === 'flower') { S.flowers.push(it.key); if (it.key === 'wisteria' || it.key === 'wisteria2') goBackAnte(); }
   S.money -= p; it.sold = true; if (!S.quiet) sfx('buy'); setMsg(`Bought ${def.name}.`); render();
 }
-function itemPrice(it) { const def = itemDef(it); let base = def.cost + (it.edition ? EDITIONS[it.edition].price : 0); if (it.kind === 'talisman') base += stakeTalCost(); if (S.shop && S.shop.coupon && (it.kind === 'talisman' || it.kind === 'omikuji' || it.kind === 'kami')) return 0; return price(base); }
+function itemPrice(it) { if (it.sticker && it.sticker.rental && it.kind === 'talisman') return S.shop && S.shop.coupon ? 0 : 1; const def = itemDef(it); let base = def.cost + (it.edition ? EDITIONS[it.edition].price : 0); if (it.kind === 'talisman') base += stakeTalCost(); if (S.shop && S.shop.coupon && (it.kind === 'talisman' || it.kind === 'omikuji' || it.kind === 'kami')) return 0; return price(base); }
 // Wisteria: back one Ante, like Balatro's Hieroglyph. You stay on the same Blind of the earlier Ante, which gets a fresh Boss.
 function goBackAnte() { if (S.ante <= 1) return; S.ante--; S.bossOrder[S.ante - 1] = rollBoss(S.ante, S.bossOrder); }
 // Peony: reroll the Boss for ¥10, once per Ante (Tree Peony: any number of times).
@@ -2635,7 +2660,7 @@ function renderBlind() {
   const unpaid = S.phase === 'cashout' && S.reward && !S.reward.paid;
   const wallN = S.phase === 'blind' ? S.wall.length : unpaid && S.reward.wallLeft != null ? S.reward.wallLeft : (S.deck || []).length;
   h += `<div class="stats"><div class="stat plays"><div class="label">Plays</div><div class="v num">${S.plays}</div></div><div class="stat discards"><div class="label">Discards</div><div class="v num">${S.discards}</div></div></div>`;
-  h += `<div class="stats purserow"><div class="purse" title="Interest: +¥${interest} at the next cash-out (¥1 for every ¥${CFG.interestPer} you hold, up to ¥${interestCap()})"><span class="coin" aria-hidden="true">${coinSVG()}</span><span class="wtx"><span class="pv num" id="purseVal">¥${unpaid ? S.money - S.reward.total : S.money}</span><span class="wl" data-notr>${LANG === 'hk' ? 'HKD' : 'JPY'}</span></span></div><button class="wallbtn" id="wallBtn" title="${S.phase === 'blind' ? 'Tiles still face down in the Wall. Click to see every tile.' : 'Tiles in your Wall. Click to see every tile.'}"><span class="wallico" aria-hidden="true"><i></i><i></i><i></i></span><span class="wtx"><span class="wv num">${wallN}</span><span class="wl">Wall</span></span></button></div>`;
+  h += `<div class="stats purserow"><div class="purse" title="Interest: +¥${interest} at the next cash-out (¥1 for every ¥${CFG.interestPer} you hold, up to ¥${interestCap()})"><span class="coin" aria-hidden="true">${coinSVG()}</span><span class="wtx"><span class="pv num" id="purseVal">¥${unpaid ? (S.reward.before ?? S.money - S.reward.total) : S.money}</span><span class="wl" data-notr>${LANG === 'hk' ? 'HKD' : 'JPY'}</span></span></div><button class="wallbtn" id="wallBtn" title="${S.phase === 'blind' ? 'Tiles still face down in the Wall. Click to see every tile.' : 'Tiles in your Wall. Click to see every tile.'}"><span class="wallico" aria-hidden="true"><i></i><i></i><i></i></span><span class="wtx"><span class="wv num">${wallN}</span><span class="wl">Wall</span></span></button></div>`;
   if (S.indicators.length) { h += `<div class="label" style="margin-top:8px">Dora Indicators</div><div class="dora-ind" id="doraRow"></div>`; }
   if (S.flowers.length) h += `<div class="label" style="margin-top:8px">Flowers &amp; Seasons</div><div class="flowers">${S.flowers.map(f => `<span class="flowerchip" data-hc-kind="Flower" data-hc-title="${FLW[f].name}" data-hc-body="${FLW[f].desc.replace(/"/g, '&quot;')}">${FLW[f].name}</span>`).join('')}</div>`;
   $('#blindCard').innerHTML = h;
@@ -2648,12 +2673,12 @@ function renderTalismans() {
   $('#talCount').textContent = `${S.talismans.length} / ${talSlots()} · fire left to right, drag to reorder`;
   for (let i = 0; i < talSlots(); i++) {
     const k = S.talismans[i]; const el = document.createElement('div');
-    if (k) { const ed = S.editions[k]; el.className = 'slot filled' + (S.selTal === k ? ' sel' : '') + (ed ? ' ed-' + ed : '') + (talOff(S).includes(k) ? ' off' : ''); el.dataset.tal = TAL[k].name; const tgt = TAL[k].copies ? talTarget(S, k) : null; el.innerHTML = `<div class="kind"><span class="order">${i + 1}</span>${ed ? '' : 'Talisman'}${ed ? `<span class="edtag ed-${ed}">${EDITIONS[ed].name}</span>` : ''}</div><div class="n">${TAL[k].name}</div><div class="d">${TAL[k].desc}${tgt ? ` <b>Now: ${tgt.name}.</b>` : TAL[k].copies ? ' <b>Nothing to copy.</b>' : ''}${ed ? ` <b>${EDITIONS[ed].desc}.</b>` : ''}${TAL[k].status ? ' <b>(' + TAL[k].status(S) + ')</b>' : ''}</div>`; bindSlotDrag(el, k); }
+    if (k) { const ed = S.editions[k]; el.className = 'slot filled' + (S.selTal === k ? ' sel' : '') + (ed ? ' ed-' + ed : '') + (talOff(S).includes(k) ? ' off' : ''); el.dataset.tal = TAL[k].name; const tgt = TAL[k].copies ? talTarget(S, k) : null; el.innerHTML = `<div class="kind"><span class="order">${i + 1}</span>${ed || (S.stickers && S.stickers[k]) ? '' : 'Talisman'}${stickerTags(S.stickers && S.stickers[k])}${ed ? `<span class="edtag ed-${ed}">${EDITIONS[ed].name}</span>` : ''}</div><div class="n">${TAL[k].name}</div><div class="d">${TAL[k].desc}${tgt ? ` <b>Now: ${tgt.name}.</b>` : TAL[k].copies ? ' <b>Nothing to copy.</b>' : ''}${ed ? ` <b>${EDITIONS[ed].desc}.</b>` : ''}${TAL[k].status ? ' <b>(' + TAL[k].status(S) + ')</b>' : ''}</div>`; bindSlotDrag(el, k); }
     else { el.className = 'slot'; el.innerHTML = `<div class="d">Empty slot</div>`; }
     box.appendChild(el);
   }
   const ts = $('#talSell'); ts.innerHTML = '';
-  if (S.selTal && S.talismans.includes(S.selTal)) { const b = document.createElement('button'); b.className = 'ghost'; b.style.cssText = 'padding:3px 8px;font-size:12px'; b.textContent = `Sell ${TAL[S.selTal].name} for ¥${talSellValue(S.selTal)}`; b.onclick = () => sellTalisman(S.selTal); ts.appendChild(b); }
+  if (S.selTal && S.talismans.includes(S.selTal)) { const b = document.createElement('button'); b.className = 'ghost'; b.style.cssText = 'padding:3px 8px;font-size:12px'; b.textContent = isEternal(S.selTal) ? `${TAL[S.selTal].name} is Eternal` : `Sell ${TAL[S.selTal].name} for ¥${talSellValue(S.selTal)}`; if (isEternal(S.selTal)) b.disabled = true; b.onclick = () => sellTalisman(S.selTal); ts.appendChild(b); }
 }
 function renderConsumables() {
   const box = $('#consumables'); box.innerHTML = ''; $('#conCount').textContent = `${S.consumables.length} / ${conSlots()} · click to use on selected tiles`;
@@ -3095,7 +3120,7 @@ function hideModal() { modalPinned = false; $('#modal').getAnimations().forEach(
 // Its state lives under its own key, or its key plus a capitalised suffix (kasaobake, shiroSuit).
 const ownsState = (k, x) => x === k || (x.startsWith(k) && /[A-Z]/.test(x[k.length] || ''));   // 'shiro' owns 'shiroSuit', but 'hoshi' does not own 'hoshizora'
 const freshTalState = k => Object.fromEntries(Object.entries(S.talState || {}).filter(([x]) => !ownsState(k, x)));
-function gainTalisman(k) { S.talState = freshTalState(k); S.talismans.push(k); }
+function gainTalisman(k, sticker) { S.talState = freshTalState(k); S.talismans.push(k); S.stickers = S.stickers || {}; delete S.stickers[k]; if (sticker) S.stickers[k] = Object.assign({}, sticker); }
 // What a Talisman's live value would be the moment you buy it (same text its card shows once owned).
 function talPreview(k) {
   const d = TAL[k]; if (!d) return '';
@@ -3138,7 +3163,7 @@ function cardHTML(it, idx) {
   const ed = it.edition ? EDITIONS[it.edition] : null;
   const full = slotsFullMsg(it), no = p > S.money ? `You have ¥${S.money}; this costs ¥${p}` : full;
   const action = it.sold ? '<span class="muted soldnote">Sold</span>' : `<button class="primary" data-buy="${idx}" ${no ? `disabled title="${no}"` : ''}>${it.kind === 'pack' ? 'Open' : full ? 'Slots Full' : 'Buy'}</button>`;
-  return `<div class="shopcard ${it.kind}${it.sold ? ' sold' : ''}${ed ? ' ed-' + it.edition : ''}"><span class="pricetag num${p > S.money && !it.sold ? ' short' : ''}">${p === 0 ? 'Free' : '¥' + p}</span><div class="emblem">${emblem(it.kind)}</div><div class="kind">${kindLabel}${it.kind === 'talisman' ? rarityTag(it.key) : ''}${ed ? `<span class="edtag ed-${it.edition}">${ed.name}</span>` : ''}</div><div class="n">${d.name}</div><div class="d">${d.desc}${ed ? ` <b>${ed.name}: ${ed.desc}.</b>` : ''}</div>${it.kind === 'scroll' ? scrollLevelHTML(it.key) : it.kind === 'talisman' && !it.sold ? talPreview(it.key) : ''}<div class="buy">${action}</div></div>`;
+  return `<div class="shopcard ${it.kind}${it.sold ? ' sold' : ''}${ed ? ' ed-' + it.edition : ''}"><span class="pricetag num${p > S.money && !it.sold ? ' short' : ''}">${p === 0 ? 'Free' : '¥' + p}</span><div class="emblem">${emblem(it.kind)}</div><div class="kind">${kindLabel}${it.kind === 'talisman' ? rarityTag(it.key) + stickerTags(it.sticker) : ''}${ed ? `<span class="edtag ed-${it.edition}">${ed.name}</span>` : ''}</div><div class="n">${d.name}</div><div class="d">${d.desc}${ed ? ` <b>${ed.name}: ${ed.desc}.</b>` : ''}</div>${it.kind === 'scroll' ? scrollLevelHTML(it.key) : it.kind === 'talisman' && !it.sold ? talPreview(it.key) : ''}<div class="buy">${action}</div></div>`;
 }
 // The shop wallet counts from the amount it last showed to the new one (coin clinks), then gives a small bounce.
 let walletShown = null;
@@ -3150,10 +3175,12 @@ function tweenWallet() {
 }
 // Cash-out plays like Balatro's: the receipt rises, each reward line slides in and counts up with coin clinks, then the
 // amount on the Cash Out button counts up and rings a register. Once per cash-out; about 1.5 s.
+// A money amount with a real minus sign: ¥3, or −¥3 for a Rental charge.
+const money = (prefix, v) => v < 0 ? '−' + prefix + Math.abs(v) : prefix + v;
 function countUp(el, from, to, dur, prefix, sound) {
   if (!el) return; const t0 = performance.now(); let last = from;
-  const step = now => { const k = Math.min(1, (now - t0) / dur), v = Math.round(from + (to - from) * (1 - Math.pow(1 - k, 2))); if (v !== last && sound) sfx(sound); last = v; el.textContent = prefix + v; if (k < 1) requestAnimationFrame(step); };
-  requestAnimationFrame(step); setTimeout(() => { el.textContent = prefix + to; }, dur + 400);   // final value even if frames are paused
+  const step = now => { const k = Math.min(1, (now - t0) / dur), v = Math.round(from + (to - from) * (1 - Math.pow(1 - k, 2))); if (v !== last && sound) sfx(sound); last = v; el.textContent = money(prefix, v); if (k < 1) requestAnimationFrame(step); };
+  requestAnimationFrame(step); setTimeout(() => { el.textContent = money(prefix, to); }, dur + 400);   // final value even if frames are paused
 }
 function animateCashout() {
   const r = S.reward; if (!r || r.shown) return; r.shown = true;
@@ -3161,7 +3188,7 @@ function animateCashout() {
   const rows = [...m.querySelectorAll('.receipt .rrow')], amt = m.querySelector('.cashamt .num');
   if (!motionOK) { sfx('kaching'); return; }
   if ($('#overlay').classList.contains('boardonly')) m.animate([{ transform: 'translateY(105%)' }, { transform: 'none' }], { duration: 320, easing: 'cubic-bezier(.2,.8,.2,1)' });
-  const vals = rows.map(x => +x.querySelector('b').textContent.replace(/[^\d]/g, ''));
+  const vals = rows.map(x => +x.querySelector('b').dataset.v || 0);
   rows.forEach(x => { x.style.opacity = '0'; x.querySelector('b').textContent = cur + 0; }); if (amt) amt.textContent = cur + 0;
   rows.forEach((x, i) => setTimeout(() => {
     x.style.opacity = ''; x.animate([{ opacity: 0, transform: 'translateX(-10px)' }, { opacity: 1, transform: 'none' }], { duration: 200, easing: 'ease-out' });
@@ -3177,17 +3204,17 @@ function cashOut() {
   const r = S.reward; if (!r || r.paid) return; r.paid = true;
   const go = () => { S.phase = 'shop'; S.msg = ''; render(); };
   const m = $('#modal'), from = m.querySelector('.cashamt .coin'), purse = $('#purseVal'), cur = LANG === 'hk' ? '$' : '¥';
-  if (!motionOK || !from || !purse || !$('#overlay').classList.contains('boardonly')) { sfx('kaching'); go(); return; }
+  if (!motionOK || !from || !purse || r.total <= 0 || !$('#overlay').classList.contains('boardonly')) { if (r.total > 0) sfx('kaching'); go(); return; }
   const a = from.getBoundingClientRect(), p = purse.closest('.purse').querySelector('.coin').getBoundingClientRect();
   const sx = a.left + a.width / 2, sy = a.top + a.height / 2, ex = p.left + p.width / 2, ey = p.top + p.height / 2, lift = Math.min(160, Math.abs(sx - ex) * .25 + 60);
   m.animate([{ transform: 'none' }, { transform: 'translateY(110%)' }], { duration: 260, easing: 'ease-in', fill: 'forwards' });
   const n = Math.max(3, Math.min(8, r.total)), dur = 520, gap = 60, path = [];
   for (let k = 0; k <= 10; k++) { const t = k / 10; path.push({ transform: `translate(${(ex - sx) * t}px,${(ey - sy) * t - Math.sin(Math.PI * t) * lift}px) scale(${1 - .25 * t})` }); }
-  const startMoney = S.money - r.total;
+  const startMoney = r.before ?? S.money - r.total;
   for (let i = 0; i < n; i++) {
     const c = document.createElement('div'); c.className = 'flycoin'; c.innerHTML = coinSVG(); Object.assign(c.style, { left: sx - 13 + 'px', top: sy - 13 + 'px' }); document.body.appendChild(c);
     c.animate(path, { duration: dur, delay: i * gap, easing: 'cubic-bezier(.45,.05,.55,.95)', fill: 'both' }).onfinish = () => c.remove();
-    setTimeout(() => { sfx('coin'); const el = $('#purseVal'); if (el) el.textContent = cur + Math.round(startMoney + r.total * (i + 1) / n); }, dur + i * gap);
+    setTimeout(() => { sfx('coin'); const el = $('#purseVal'); if (el) el.textContent = cur + Math.round(startMoney + (S.money - startMoney) * (i + 1) / n); }, dur + i * gap);
     setTimeout(() => c.remove(), dur + i * gap + 400);   // in case frames are paused
   }
   const land = dur + (n - 1) * gap;
@@ -3199,12 +3226,12 @@ function cashoutHTML() {
   const bossName = r.kind === 'boss' && S.stats.bosses.length ? BOSSES[S.stats.bosses[S.stats.bosses.length - 1]].name : null;
   const cap = interestCap();
   const talRows = r.talPay ? r.talPay.map(([k, v]) => [TAL[k] ? TAL[k].name : k, 'Talisman', v]) : r.tal ? [['Talismans', 'end-of-Blind payouts', r.tal]] : [];   // older saves only kept the total
-  const rows = [['Blind reward', names[r.kind], r.base], ['Unused Plays', `${r.left} × ¥1`, r.left], ['Interest', `¥1 per ¥${CFG.interestPer} held, up to ¥${cap}`, r.interest], ...talRows, r.summer ? ['Summer', 'Flower', r.summer] : null, r.invest ? ['Investment Tag', 'Boss bonus', r.invest] : null].filter(Boolean);
+  const rows = [['Blind reward', names[r.kind], r.base], ['Unused Plays', `${r.left} × ¥1`, r.left], ['Interest', `¥1 per ¥${CFG.interestPer} held, up to ¥${cap}`, r.interest], ...talRows, r.summer ? ['Summer', 'Flower', r.summer] : null, r.invest ? ['Investment Tag', 'Boss bonus', r.invest] : null, ...(r.rent || []).map(([k, v]) => [TAL[k] ? TAL[k].name : k, 'Rental', -v])].filter(Boolean);
   const cur = LANG === 'hk' ? '$' : '¥';
   let h = `<div class="drawhead"><h2>${bossName ? bossName + ' beaten' : 'Blind cleared'}</h2><span class="label">${names[r.kind]} defeated</span></div>`;
   // Like Balatro, the Cash Out button sits on top and the reward rows fill in beneath it, so the button never moves.
-  h += `<button id="mCashOut" class="primary cashbtn">Cash Out <span class="cashamt"><span class="coin" aria-hidden="true">${coinSVG()}</span><span class="num">${cur}${r.total}</span></span></button>`;
-  h += `<div class="receipt">${rows.map(([k, d, v]) => `<div class="rrow"><span class="rl">${k}</span><span class="rd muted">${d}</span><span class="rlead" aria-hidden="true"></span><b class="num">¥${v}</b></div>`).join('')}</div>`;
+  h += `<button id="mCashOut" class="primary cashbtn">Cash Out <span class="cashamt"><span class="coin" aria-hidden="true">${coinSVG()}</span><span class="num">${money(cur, r.total)}</span></span></button>`;
+  h += `<div class="receipt">${rows.map(([k, d, v]) => `<div class="rrow"><span class="rl">${k}</span><span class="rd muted">${d}</span><span class="rlead" aria-hidden="true"></span><b class="num${v < 0 ? ' neg' : ''}" data-v="${v}">${money('¥', v)}</b></div>`).join('')}</div>`;
   return h;
 }
 // Same look as the play area's purse: the coin, the amount, and JPY or HKD underneath.
@@ -3230,7 +3257,7 @@ function shopHTML() {
   return h;
 }
 function ownedHTML() {
-  const tal = S.talismans.map((k, i) => { const ed = S.editions[k]; const tgt = TAL[k].copies ? talTarget(S, k) : null; return `<div class="shopcard talisman owned-card${ed ? ' ed-' + ed : ''}"><div class="kind"><span class="order" title="Firing order">${i + 1}</span>${rarityTag(k)}${ed ? `<span class="edtag ed-${ed}">${EDITIONS[ed].name}</span>` : ''}</div><div class="n">${TAL[k].name}</div><div class="d">${TAL[k].desc}${tgt ? ` <b>Now: ${tgt.name}.</b>` : ''}${ed ? ` <b>${EDITIONS[ed].desc}.</b>` : ''}${TAL[k].status ? ' <b>(' + TAL[k].status(S) + ')</b>' : ''}</div><div class="buy"><span></span><button class="ghost" data-sell="${k}">Sell ¥${talSellValue(k)}</button></div></div>`; });
+  const tal = S.talismans.map((k, i) => { const ed = S.editions[k]; const tgt = TAL[k].copies ? talTarget(S, k) : null; return `<div class="shopcard talisman owned-card${ed ? ' ed-' + ed : ''}"><div class="kind"><span class="order" title="Firing order">${i + 1}</span>${rarityTag(k)}${stickerTags(S.stickers && S.stickers[k])}${ed ? `<span class="edtag ed-${ed}">${EDITIONS[ed].name}</span>` : ''}</div><div class="n">${TAL[k].name}</div><div class="d">${TAL[k].desc}${tgt ? ` <b>Now: ${tgt.name}.</b>` : ''}${ed ? ` <b>${EDITIONS[ed].desc}.</b>` : ''}${TAL[k].status ? ' <b>(' + TAL[k].status(S) + ')</b>' : ''}</div><div class="buy"><span></span>${isEternal(k) ? '<span class="muted" style="font-size:11px">Eternal</span>' : `<button class="ghost" data-sell="${k}">Sell ¥${talSellValue(k)}</button>`}</div></div>`; });
   const con = S.consumables.map((c, i) => { const d = CONS[c.key]; return `<div class="shopcard ${c.kind} owned-card"><div class="kind">${c.kind === 'kami' ? 'Kami Spirit' : 'Omikuji'}</div><div class="n">${d.name}</div><div class="d">${d.desc}</div><div class="buy"><span class="muted">${d.anywhere ? 'Usable now' : 'Use during a Blind'}</span><span style="display:flex;gap:6px">${d.anywhere ? `<button class="ghost" data-usecon="${i}">Use</button>` : ''}<button class="ghost" data-sellcon="${i}">Sell ¥${Math.max(1, Math.floor(d.cost / 2))}</button></span></div></div>`; });
   return `<div class="label" style="margin:10px 0 4px">Your Talismans · ${S.talismans.length}/${talSlots()} · fire left to right · sell to make room</div>` + (tal.length ? `<div class="shop-grid owned-grid">${tal.join('')}</div>` : `<div class="muted" style="font-size:12px">None yet.</div>`) + `<div class="label" style="margin:10px 0 4px">Your Consumables · ${S.consumables.length}/${conSlots()}</div>` + (con.length ? `<div class="muted" style="font-size:12px;margin:-2px 0 4px">Most consumables are used on tiles during a Blind. Ones that don't need tiles have a Use button here.</div><div class="shop-grid owned-grid">${con.join('')}</div>` : `<div class="muted" style="font-size:12px">None yet.</div>`);
 }
@@ -3248,7 +3275,7 @@ function packHTML() {
   const tone = { omikuji: 'omikuji', mega: 'omikuji', kami: 'kami', scroll: 'scroll', talisman: 'talisman' }[S.pack.key] || 'pack';
   let h = `<div class="packhead ${tone}"><div class="packart">${emblem('pack')}</div><div class="packtitle"><div class="label">Booster pack${S.pack.free ? ' · free from a Tag' : ''}</div><h2>${pk.name}</h2><p>${pk.desc}</p></div><div class="packpicks"><b class="num">${S.pack.done ? 0 : S.pack.left}</b><span>${S.pack.done || S.pack.left !== 1 ? 'picks' : 'pick'} left</span></div></div>`;
   if (S.pack.hand) h += `<div class="packhandwrap"><div class="label">Your Tiles · ${(S.pack.view || S.pack.hand).length} random tiles from your Wall</div><div class="muted" style="font-size:12px;margin:2px 0 6px">${S.pack.done ? 'All picks used. Outlined tiles changed and stay that way in your Wall. Press Done to return to the shop.' : 'Select tiles, then press Use on a card. The change stays in your Wall for the rest of the run. Keep puts the card in your consumable slots instead.'}</div><div class="packhand" id="packHand"></div></div>`;
-  h += `<div class="shelf packshelf"><div class="shelflabel">${S.pack.done ? 'Cards · all picks used' : `Cards · choose ${S.pack.left} more`}</div><div class="shop-grid">${S.pack.choices.map((it, i) => { const d = itemDef(it); const ed = it.edition ? EDITIONS[it.edition] : null; return `<div class="shopcard ${it.kind === 'tile' ? 'tilecard' : it.kind}${it.sold ? ' sold' : ''}${ed ? ' ed-' + it.edition : ''}"><div class="${it.kind === 'tile' ? 'packtileart' : 'emblem'}" data-pt="${i}">${it.kind === 'tile' ? '' : emblem(it.kind)}</div><div class="kind">${{ talisman: 'Talisman', omikuji: 'Omikuji', kami: 'Kami Spirit', scroll: 'Scroll of Mastery', tile: 'Tile' }[it.kind]}${it.kind === 'talisman' ? rarityTag(it.key) : ''}${ed ? `<span class="edtag ed-${it.edition}">${ed.name}</span>` : ''}</div><div class="n">${d.name}</div><div class="d">${d.desc}${ed ? ` <b>${ed.name}: ${ed.desc}.</b>` : ''}</div>${it.kind === 'scroll' && !it.sold ? scrollLevelHTML(it.key) : it.kind === 'talisman' && !it.sold ? talPreview(it.key) : ''}<div class="buy"><span></span>${it.sold ? `<span class="muted">${it.used ? 'Used' : 'Taken'}</span>` : packButtons(it, i)}</div></div>`; }).join('')}</div></div>`;
+  h += `<div class="shelf packshelf"><div class="shelflabel">${S.pack.done ? 'Cards · all picks used' : `Cards · choose ${S.pack.left} more`}</div><div class="shop-grid">${S.pack.choices.map((it, i) => { const d = itemDef(it); const ed = it.edition ? EDITIONS[it.edition] : null; return `<div class="shopcard ${it.kind === 'tile' ? 'tilecard' : it.kind}${it.sold ? ' sold' : ''}${ed ? ' ed-' + it.edition : ''}"><div class="${it.kind === 'tile' ? 'packtileart' : 'emblem'}" data-pt="${i}">${it.kind === 'tile' ? '' : emblem(it.kind)}</div><div class="kind">${{ talisman: 'Talisman', omikuji: 'Omikuji', kami: 'Kami Spirit', scroll: 'Scroll of Mastery', tile: 'Tile' }[it.kind]}${it.kind === 'talisman' ? rarityTag(it.key) + stickerTags(it.sticker) : ''}${ed ? `<span class="edtag ed-${it.edition}">${ed.name}</span>` : ''}</div><div class="n">${d.name}</div><div class="d">${d.desc}${ed ? ` <b>${ed.name}: ${ed.desc}.</b>` : ''}</div>${it.kind === 'scroll' && !it.sold ? scrollLevelHTML(it.key) : it.kind === 'talisman' && !it.sold ? talPreview(it.key) : ''}<div class="buy"><span></span>${it.sold ? `<span class="muted">${it.used ? 'Used' : 'Taken'}</span>` : packButtons(it, i)}</div></div>`; }).join('')}</div></div>`;
   h += `<div class="msg${S.msgErr ? ' err' : ''}" style="min-height:18px;margin:2px 0 6px">${S.msg || ''}</div>`;
   h += ownedHTML();
   h += `<div class="shopfoot"><button id="mDeck" class="ghost">View Wall</button><span style="flex:1"></span>${S.pack.done ? '<button id="mPackDone" class="primary">Done</button>' : '<button id="mPackDone" class="ghost">Skip the Rest</button>'}</div>`;
@@ -3505,8 +3532,10 @@ function setupKey(name) { const keys = setupKeys(name), n = keys.length; return 
 const WALL_ART = { standard: '1m 5pr 9s 1z', red: '5mr 5pr 5sr', lean: '3m 7p 7z', monk: '2m 5p 8s', gambler: '7m 7p 7s', merchant: '8m 6z 8p', abundant: '2s 3s 4s 5s 6s' };
 const WALL_FACTS = () => ({ standard: [['136 tiles'], ['4 Red Fives']], red: [['136 tiles'], ['12 Red Fives', 'good']], lean: [['100 tiles'], ['No Souzu'], ['−1 Play', 'bad']], monk: [['108 tiles'], ['No Honors'], ['Targets ×2', 'bad']], gambler: [['+1 Play', 'good'], ['−1 Discard', 'bad']], merchant: [[`Start ¥${CFG.startMoney + 16}`, 'good'], ['+1 consumable slot', 'good'], ['Prices +25%', 'bad']], abundant: [['+2 hand size', 'good'], ['−1 Play', 'bad']] });
 // Stakes stack: earlier penalties show dimmed, the new one in red.
-const STAKE_FACTS = { red: [['Small Blinds pay nothing', 'bad']], green: [['Small Blinds pay nothing', 'old'], ['Targets ×1.3', 'bad']], black: [['Small Blinds pay nothing', 'old'], ['Targets ×1.3', 'old'], ['Talismans cost ¥2 more', 'bad']] };
-function stakeChipSVG(k) { const c = { white: '#ece4cf', red: '#c9453a', green: '#4f9d69', black: '#1a1a1a' }[k], ink = k === 'white' ? '#bfae82' : 'rgba(255,255,255,.85)'; return `<svg class="stakechipart" viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="40" r="36" fill="${c}" stroke="rgba(0,0,0,.35)" stroke-width="2"/>${[0, 45, 90, 135, 180, 225, 270, 315].map(a => `<rect x="36" y="4" width="8" height="12" rx="2" fill="${ink}" transform="rotate(${a} 40 40)"/>`).join('')}<circle cx="40" cy="40" r="22" fill="none" stroke="${ink}" stroke-width="2" stroke-dasharray="4 3"/><circle cx="40" cy="40" r="15" fill="rgba(0,0,0,.18)"/></svg>`; }
+// Each Stake lists what it adds (bad) under everything it keeps from the Stakes below (old).
+const STAKE_NEW = { red: ['Small Blinds pay nothing'], green: ['Targets ×1.3'], black: ['Talismans cost ¥2 more', 'Eternal Talismans'], blue: ['−1 Discard'], purple: ['Targets +5% per Ante'], orange: ['Perishable Talismans'], gold: ['Rental Talismans'] };
+const STAKE_FACTS = {}; { let kept = []; for (const k of Object.keys(STAKES).slice(1)) { STAKE_FACTS[k] = kept.map(t => [t, 'old']).concat(STAKE_NEW[k].map(t => [t, 'bad'])); kept = kept.concat(STAKE_NEW[k]); } }
+function stakeChipSVG(k) { const c = { white: '#ece4cf', red: '#c9453a', green: '#4f9d69', black: '#1a1a1a', blue: '#2f6fb8', purple: '#7a3fb0', orange: '#d9822b', gold: '#d4a62a' }[k], ink = k === 'white' ? '#bfae82' : 'rgba(255,255,255,.85)'; return `<svg class="stakechipart" viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="40" r="36" fill="${c}" stroke="rgba(0,0,0,.35)" stroke-width="2"/>${[0, 45, 90, 135, 180, 225, 270, 315].map(a => `<rect x="36" y="4" width="8" height="12" rx="2" fill="${ink}" transform="rotate(${a} 40 40)"/>`).join('')}<circle cx="40" cy="40" r="22" fill="none" stroke="${ink}" stroke-width="2" stroke-dasharray="4 3"/><circle cx="40" cy="40" r="15" fill="rgba(0,0,0,.18)"/></svg>`; }
 function setupHTML() {
   const chev = d => `<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="${d < 0 ? 'M10.5 2.5 5 8l5.5 5.5' : 'M5.5 2.5 11 8l-5.5 5.5'}" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
   const facts = list => `<div class="carfacts">${list.map(([t, tone]) => `<span class="fact${tone ? ' ' + tone : ''}">${t}</span>`).join('')}</div>`;
@@ -3682,7 +3711,7 @@ function boot(saved) {
     let maxId = 0; for (const t of [...S.deck, ...S.hand, ...S.wall, ...S.river, ...S.played, ...(S.indicators || []), ...S.open.flatMap(m => m.tiles), ...((S.pack && S.pack.choices) || []).filter(c => c.tile).map(c => c.tile)]) if (t.id > maxId) maxId = t.id; tileSeq = Math.max(tileSeq, maxId);
     for (const t of [...S.deck, ...S.hand, ...S.wall, ...S.river, ...S.played, ...(S.indicators || []), ...S.open.flatMap(m => m.tiles)]) normTile(t);
     // Repair any duplicates an older save may already contain
-    const seen = new Set(); for (const zone of [S.hand, S.wall, S.river, S.played, S.deck, S.indicators || [], ...S.open.map(m => m.tiles)]) for (const t of zone) { if (seen.has(t.id)) t.id = ++tileSeq; seen.add(t.id); } S.editions = S.editions || {}; S.seed = S.seed || 'legacy'; S.deckKey = S.deckKey || 'standard'; S.stake = S.stake || 'white'; if (S.rngState === undefined) S.rngState = hashSeed(S.seed + Date.now()); S.stats.rungs = S.stats.rungs || {}; S.stats.yaku = S.stats.yaku || {}; S.stats.bosses = S.stats.bosses || []; S.tags = S.tags || []; if (!S.skipTags) S.skipTags = { small: pick(Object.keys(TAGS)), big: pick(Object.keys(TAGS)) }; S.stats.skipped = S.stats.skipped || 0; S.stats.calls = S.stats.calls || 0; S.stats.kans = S.stats.kans || 0; S.stats.discards = S.stats.discards || 0; S.busy = false; S.newIds = []; S.drawSeq = S.drawSeq || 0; render(); showModal(menuHTML(true), true, 'menumodal'); }
+    const seen = new Set(); for (const zone of [S.hand, S.wall, S.river, S.played, S.deck, S.indicators || [], ...S.open.map(m => m.tiles)]) for (const t of zone) { if (seen.has(t.id)) t.id = ++tileSeq; seen.add(t.id); } S.editions = S.editions || {}; S.stickers = S.stickers || {}; S.seed = S.seed || 'legacy'; S.deckKey = S.deckKey || 'standard'; S.stake = S.stake || 'white'; if (S.rngState === undefined) S.rngState = hashSeed(S.seed + Date.now()); S.stats.rungs = S.stats.rungs || {}; S.stats.yaku = S.stats.yaku || {}; S.stats.bosses = S.stats.bosses || []; S.tags = S.tags || []; if (!S.skipTags) S.skipTags = { small: pick(Object.keys(TAGS)), big: pick(Object.keys(TAGS)) }; S.stats.skipped = S.stats.skipped || 0; S.stats.calls = S.stats.calls || 0; S.stats.kans = S.stats.kans || 0; S.stats.discards = S.stats.discards || 0; S.busy = false; S.newIds = []; S.drawSeq = S.drawSeq || 0; render(); showModal(menuHTML(true), true, 'menumodal'); }
   // No saved run: the title sits over an empty table. A stand-in state lets the page draw, but it is not a run:
   // it is never saved or counted, and the first run starts when the player presses New Run and picks a Wall and Stake.
   else { S = newState(); S.placeholder = true; S.phase = 'idle'; render(); }

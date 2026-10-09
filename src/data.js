@@ -76,7 +76,17 @@ const STAKES = {
   white: { name: 'White Stake', desc: 'The standard game.' },
   red: { name: 'Red Stake', desc: 'Small Blinds give no reward money.' },
   green: { name: 'Green Stake', desc: 'Everything in Red Stake, and every blind target is ×1.3.' },
-  black: { name: 'Black Stake', desc: 'Everything in Green Stake, and Talismans cost ¥2 more.' },
+  black: { name: 'Black Stake', desc: 'Everything in Green Stake, Talismans cost ¥2 more, and some shop Talismans are Eternal: they can never be sold.' },
+  blue: { name: 'Blue Stake', desc: 'Everything in Black Stake, and −1 Discard every Blind.' },
+  purple: { name: 'Purple Stake', desc: 'Everything in Blue Stake, and targets grow faster: +5% more for every Ante.' },
+  orange: { name: 'Orange Stake', desc: 'Everything in Purple Stake, and some shop Talismans are Perishable: they stop working after 5 Blinds.' },
+  gold: { name: 'Gold Stake', desc: 'Everything in Orange Stake, and some shop Talismans are Rentals: ¥1 to buy, but ¥3 at the end of every Blind.' },
+};
+// Talisman stickers from the higher Stakes, like Balatro's.
+const STICKERS = {
+  eternal: { name: 'Eternal', desc: 'Can never be sold.' },
+  perish: { name: 'Perishable', desc: 'Stops working after 5 Blinds.' },
+  rental: { name: 'Rental', desc: 'Costs ¥3 at the end of every Blind.' },
 };
 function buildDeck(deckKey = 'standard') {
   const d = []; const suits = deckKey === 'lean' ? ['m', 'p'] : ['m', 'p', 's'];
@@ -237,7 +247,7 @@ const TALISMANS = [
   // --- Broad retriggers (Balatro's Dusk, Seltzer and Hack)
   { key: 'omagatoki', name: 'Ōmagatoki', cost: 7, desc: 'Every tile scores a second time on the last Play of each Blind.', retrigger: (t, c, S) => S.plays === 1 ? 1 : 0, status: S => S.phase === 'blind' ? (S.plays === 1 ? 'active now: last Play' : `active on the last Play, ${S.plays} Plays left`) : '' },
   { key: 'shojo', name: 'Shōjō', cost: 6, desc: 'Every tile scores a second time for your next 8 plays, then it is used up and leaves your board.', retrigger: () => 1,
-    afterScore: (c, S) => { const n = (S.talState.shojo ?? 8) - 1; S.talState.shojo = n; if (n <= 0) { S.talismans = S.talismans.filter(x => x !== 'shojo'); delete S.editions.shojo; delete S.talState.shojo; S.spent = (S.spent || []).concat('shojo'); } },
+    afterScore: (c, S) => { const n = (S.talState.shojo ?? 8) - 1; S.talState.shojo = n; if (n <= 0) { S.talismans = S.talismans.filter(x => x !== 'shojo'); delete S.editions.shojo; if (S.stickers) delete S.stickers.shojo; delete S.talState.shojo; S.spent = (S.spent || []).concat('shojo'); } },
     status: S => { const n = S.talState.shojo ?? 8; return `${n} play${n === 1 ? '' : 's'} left`; } },
   { key: 'azukiarai', name: 'Azukiarai', cost: 6, desc: 'Every 2, 3 and 4 tile scores a second time.', retrigger: t => !isHonor(t) && t.rank >= 2 && t.rank <= 4 ? 1 : 0 },
   // --- Money (Balatro's Rocket, Delayed Gratification, Cloud 9 and Satellite, plus a Mahjong one)

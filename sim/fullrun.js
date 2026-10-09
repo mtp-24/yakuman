@@ -9,7 +9,7 @@ const FLW_PRI={bamboo:8,plum:7,orchid:6,chrysanthemum:4,winter:4,summer:4,spring
 for(const k of ['lotus','lotus2','peony','peony2','wisteria','wisteria2','sakura','sakura2','camellia','spring2','autumn2','chrys2','summer2']) FLW_PRI[k]=-99;
 // argv[7] 'ryuN' (ryu1, ryu2, ...): Ryūjin makes only the first N Calls of each Blind free
 // WALL=<deck key> and STAKE=<stake key> environment variables play a different Wall or Stake (default standard, white)
-const WALL=process.env.WALL||'standard', STAKE=process.env.STAKE||'white';
+const WALL=process.env.WALL||'standard', STAKE=process.env.STAKE||'white'; const SL=Object.keys(STAKES).indexOf(STAKE);
 // Tuning knobs for trying Wall drawbacks: WTGT target multiplier, WPLAY / WDISC / WSLOT added to Plays, Discards, Talisman slots
 const WTGT=+process.env.WTGT||1, WPLAY=+process.env.WPLAY||0, WDISC=+process.env.WDISC||0, WSLOT=+process.env.WSLOT||0;
 const RYU_N=/^ryu\d+$/.test(process.argv[7]||'')?+process.argv[7].slice(3):0;
@@ -75,8 +75,8 @@ function estimatePartial(S,st){ const save=S.hand.slice(); let tiles;
   if(st.key<=0){ let k=0; for(let j=1;j<S.hand.length;j++) if(tileChips(S.hand[j],S)>tileChips(S.hand[k],S)) k=j; tiles=[S.hand[k]]; } else tiles=takeTiles(S,st.sets);
   S.hand=save; const part=partitionPlay(tiles); if(!part) return 0; return scoreCtx(S,'meld',tiles,{part,preview:true}).total; }
 function playBlind(S,stats){
-  const kind=['small','big','boss'][S.blindIndex]; S.boss=kind==='boss'?S.bossOrder[S.ante-1]:null; S.target=Math.floor(CFG.anteBase[S.ante-1]*CFG.blindMult[kind]*((STAKE==='green'||STAKE==='black')?1.3:1)*WTGT*(WALL==='monk'?2:1)*(kind==='boss'?bossTarget(S.boss):1) /* Stakes stack */);
-  S.plays=Math.max(1,CFG.playsPerBlind+WPLAY+(WALL==='gambler'?1:0)-(WALL==='abundant'||WALL==='lean'?1:0)+S.bonusPlays+talMod(S,'plays')+(hasF(S,'bamboo')?1:0)+(hasF(S,'bamboo2')?1:0)-(hasF(S,'wisteria')?1:0)); S.discards=CFG.discardsPerBlind+WDISC-(WALL==='gambler'?1:0)+talMod(S,'discards')+(hasF(S,'orchid')?1:0)+(hasF(S,'orchid2')?1:0);
+  const kind=['small','big','boss'][S.blindIndex]; S.boss=kind==='boss'?S.bossOrder[S.ante-1]:null; S.target=Math.floor(CFG.anteBase[S.ante-1]*CFG.blindMult[kind]*(SL>=2?1.3:1)*(SL>=5?1+0.05*(S.ante-1):1)*WTGT*(WALL==='monk'?2:1)*(kind==='boss'?bossTarget(S.boss):1) /* Stakes stack */);
+  S.plays=Math.max(1,CFG.playsPerBlind+WPLAY+(WALL==='gambler'?1:0)-(WALL==='abundant'||WALL==='lean'?1:0)+S.bonusPlays+talMod(S,'plays')+(hasF(S,'bamboo')?1:0)+(hasF(S,'bamboo2')?1:0)-(hasF(S,'wisteria')?1:0)); S.discards=CFG.discardsPerBlind+WDISC-(WALL==='gambler'?1:0)+talMod(S,'discards')+(hasF(S,'orchid')?1:0)+(hasF(S,'orchid2')?1:0)-(SL>=4?1:0);
   if(S.boss==='needle') S.plays=1; if(S.boss==='drought') S.discards=0; S.leafCut=false; S.crimsonOff=S.boss==='crimson'&&S.talismans.length?pick(S.talismans):null;
   if(S.boss==='verdant'&&S.talismans.length){ S.talismans.pop(); S.leafCut=true; }   // a player sells one Talisman to wake the Leaf
   S.wall=shuffle(S.deck.slice()); S.deck=[]; S.hand=[]; S.river=[]; S.lastDiscard=[]; S.open=[]; S.played=[]; S.dora=[]; S.indicators=[]; S.score=0; S.firstPlayDone=false; S.bossSuit=S.boss==='collector'?pick(['m','p','s']):null; setRules(S); draw(S);
@@ -107,7 +107,7 @@ function shop(S){
   const price=c=>{ let p=c; if(WALL==='merchant') p=Math.ceil(p*1.25); if(hasF(S,'chrysanthemum')) p=Math.ceil(p*0.8); return Math.max(1,p); };
   const roll=()=>{ const r=Math.random(),w=CFG.shopWeights; if(r<w.talisman){ const pool=TALISMANS.filter(t=>!S.talismans.includes(t.key)&&talRarity(t.key)!=='legendary'); if(pool.length) return {kind:'talisman',def:pickTalisman(pool),edition:rollEdition()}; } if(r<w.talisman+w.omikuji) return {kind:'omikuji',def:pick(OMIKUJI)}; return {kind:'kami',def:pick(KAMI)}; };
   const cards=[roll(),roll()]; const scroll={kind:'scroll',def:pick(SCROLLS)}; const fl=flowerPool(S.flowers); const flower=fl.length?{kind:'flower',def:pick(fl)}:null;
-  const items=[...cards,scroll,flower].filter(Boolean).map(it=>{ let v=0; if(it.kind==='talisman') v=(TAL_PRI[it.def.key]||3)+(S.talismans.length<talSlots(S)?0:-99); else if(it.kind==='scroll') v=SCR_PRI[it.def.key]||1; else if(it.kind==='flower') v=FLW_PRI[it.def.key]||1; else v=-1; return {it,v:v+(it.edition?2:0),p:price(it.def.cost+(it.edition?EDITIONS[it.edition].price:0)+(it.kind==='talisman'&&STAKE==='black'?2:0))}; }).filter(x=>x.v>0).sort((a,b)=>b.v/b.p-a.v/a.p);
+  const items=[...cards,scroll,flower].filter(Boolean).map(it=>{ let v=0; if(it.kind==='talisman') v=(TAL_PRI[it.def.key]||3)+(S.talismans.length<talSlots(S)?0:-99); else if(it.kind==='scroll') v=SCR_PRI[it.def.key]||1; else if(it.kind==='flower') v=FLW_PRI[it.def.key]||1; else v=-1; return {it,v:v+(it.edition?2:0),p:price(it.def.cost+(it.edition?EDITIONS[it.edition].price:0)+(it.kind==='talisman'&&SL>=3?2:0))}; }).filter(x=>x.v>0).sort((a,b)=>b.v/b.p-a.v/a.p);
   for(const x of items){ if(S.money-x.p<RESERVE||x.v<=-50) continue; const it=x.it; if(it.kind==='talisman'){ if(S.talismans.length>=talSlots(S)) continue; S.talismans.push(it.def.key); if(it.edition) S.editions[it.def.key]=it.edition; } else if(it.kind==='scroll'){ const [t,k]=it.def.key.split(':'); const b=t==='m'?'meld':'yaku'; S.scrolls[b][k]=(S.scrolls[b][k]||0)+1; } else if(it.kind==='flower'){ S.flowers.push(it.def.key); } S.money-=x.p; S.bought.push(it.def.key); }
   // open a Talisman or Scroll pack when affordable and useful
   const pk=pick(['omikuji','omikuji','scroll','scroll','talisman','kami','mega']);
