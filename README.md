@@ -89,6 +89,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 78: header buttons reordered to Wall, Run Info, Rules, Settings, New Run.
 - Build 79: scoring summary redesign. Han moves out of its separate pill into a caption strip under the Mult box ("10 Han · Baiman", wrapping to two lines in the narrow side panel), with a matching "Chips" strip under Chips so both boxes stay level; the whole box shakes when its value or Han changes.
 - Build 80: zone headers (Open Melds, River, Hand, Talismans) stay on one line, with long info truncated and shown in full on hover, so the Open Melds and River rows line up; River instruction shortened. On wide screens every Talisman and Consumable slot, filled or empty, is the same height.
+- Build 81: Hong Kong fix, open meld labels read CHOW, PUNG and KONG (they were uppercased before translation, so CHI, PON and KAN slipped through).
 - Build 7: multi-meld play ladder (Two Melds ... Four Melds), targets 300...45000, retrigger and scaling Talismans, Wall-Builder rewording, scoring animation.
 
 ## Simulators (in `sim/`)

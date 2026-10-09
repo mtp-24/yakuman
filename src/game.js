@@ -526,7 +526,7 @@ function renderOpen() {
   const allClosed = S.open.every(m => m.closed);
   $('#openInfo').textContent = S.open.length ? (allClosed ? `${S.open.length} declared · hand is still closed for Yaku` : `${S.open.length} on the table · hand is Open for Yaku`) : 'Hand is closed.';
   if (!S.open.length) box.innerHTML = '<span class="muted empty">No melds on the table</span>';
-  for (const m of S.open) { const w = document.createElement('div'); w.className = 'meld' + (m.closed ? ' closedmeld' : ''); w.innerHTML = `<span class="mt">${m.closed ? 'CLOSED ' : ''}${MELD_LABEL[m.type].toUpperCase()}</span>`; for (const t of m.tiles) w.appendChild(tileEl(t, { small: true, called: t.id === m.calledId })); box.appendChild(w); }
+  for (const m of S.open) { const w = document.createElement('div'); w.className = 'meld' + (m.closed ? ' closedmeld' : ''); w.innerHTML = `<span class="mt">${m.closed ? 'Closed ' : ''}${MELD_LABEL[m.type]}</span>`; for (const t of m.tiles) w.appendChild(tileEl(t, { small: true, called: t.id === m.calledId })); box.appendChild(w); }
 }
 function renderRiver() {
   const box = $('#river'); box.innerHTML = '';

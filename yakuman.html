@@ -95,7 +95,7 @@ aside{display:flex;flex-direction:column;gap:10px;min-width:0}
 #hand{row-gap:20px;padding-top:12px}
 .meld{display:flex;gap:2px;padding:4px;border-radius:6px;background:rgba(0,0,0,.2);border:1px solid var(--line)}
 .meld.closedmeld{border-color:var(--good)}
-.meld .mt{font-size:10px;color:var(--muted);align-self:center;writing-mode:vertical-rl;margin-right:3px;letter-spacing:.1em}
+.meld .mt{font-size:10px;color:var(--muted);align-self:center;writing-mode:vertical-rl;margin-right:3px;letter-spacing:.1em;text-transform:uppercase}
 
 /* Tiles */
 .tile{position:relative;width:var(--tw);height:var(--th);border-radius:6px;background:linear-gradient(180deg,var(--tile),var(--tile2));border:1px solid var(--tile-edge);box-shadow:0 3px 0 #8f815f,0 4px 6px rgba(0,0,0,.4);display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--ink);font-family:var(--tilefont);cursor:pointer;user-select:none;transition:transform .12s;flex:0 0 auto}
@@ -1670,7 +1670,7 @@ function renderOpen() {
   const allClosed = S.open.every(m => m.closed);
   $('#openInfo').textContent = S.open.length ? (allClosed ? `${S.open.length} declared · hand is still closed for Yaku` : `${S.open.length} on the table · hand is Open for Yaku`) : 'Hand is closed.';
   if (!S.open.length) box.innerHTML = '<span class="muted empty">No melds on the table</span>';
-  for (const m of S.open) { const w = document.createElement('div'); w.className = 'meld' + (m.closed ? ' closedmeld' : ''); w.innerHTML = `<span class="mt">${m.closed ? 'CLOSED ' : ''}${MELD_LABEL[m.type].toUpperCase()}</span>`; for (const t of m.tiles) w.appendChild(tileEl(t, { small: true, called: t.id === m.calledId })); box.appendChild(w); }
+  for (const m of S.open) { const w = document.createElement('div'); w.className = 'meld' + (m.closed ? ' closedmeld' : ''); w.innerHTML = `<span class="mt">${m.closed ? 'Closed ' : ''}${MELD_LABEL[m.type]}</span>`; for (const t of m.tiles) w.appendChild(tileEl(t, { small: true, called: t.id === m.calledId })); box.appendChild(w); }
 }
 function renderRiver() {
   const box = $('#river'); box.innerHTML = '';
