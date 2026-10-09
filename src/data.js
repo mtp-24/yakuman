@@ -356,6 +356,7 @@ const TAGS = {
   juggle: { name: 'Juggle Tag', desc: '+3 hand size for the next Blind.' },
   boss: { name: 'Boss Tag', desc: 'Rerolls the next Boss.' },
   speed: { name: 'Speed Tag', desc: '+¥5 for every Blind you have skipped this run, right away.' },
+  tile: { name: 'Tile Tag', desc: 'A free Mega Tile Pack opens in the next shop.' },
 };
 // ===================== PACKS =====================
 const PACKS = {
@@ -364,7 +365,19 @@ const PACKS = {
   talisman: { name: 'Talisman Pack', cost: 6, show: 2, keep: 1, desc: 'Open 2 Talismans, keep 1.' },
   kami: { name: 'Kami Pack', cost: 6, show: 2, keep: 1, desc: 'Open 2 Kami Spirits. Use 1 on tiles from your Wall now, or keep it.' },
   mega: { name: 'Mega Omikuji Pack', cost: 7, show: 5, keep: 2, desc: 'Open 5 Omikuji. Use or keep 2.' },
+  // Balatro's Standard Packs: new tiles for your Wall, some engraved or sealed.
+  tile: { name: 'Tile Pack', cost: 4, show: 4, keep: 1, desc: 'Open 4 tiles and add 1 to your Wall. Some come engraved or sealed.' },
+  megatile: { name: 'Mega Tile Pack', cost: 7, show: 6, keep: 2, desc: 'Open 6 tiles and add 2 to your Wall. Some come engraved or sealed.' },
 };
+// A tile for a Tile Pack: any tile your Wall can hold, sometimes a Red Five, engraved (30%) or sealed (15%).
+function packTile(deckKey) {
+  const suits = deckKey === 'lean' ? ['m', 'p', 'z'] : deckKey === 'monk' ? ['m', 'p', 's'] : ['m', 'p', 's', 'z'];
+  const suit = pick(suits), rank = suit === 'z' ? 1 + Math.floor(rand() * 7) : 1 + Math.floor(rand() * 9);
+  const t = mkTile(suit, rank, suit !== 'z' && rank === 5 && rand() < 0.3);
+  if (rand() < 0.3) t.eng = pick(Object.keys(ENG));
+  if (rand() < 0.15) t.seal = pick(Object.keys(SEALS));
+  return t;
+}
 // ===================== YAKU CHEAT SHEET =====================
 const YAKU_SHEET = [
   { k: 'tanyao', ex: '234m 567p 345s 678s 88p', n: 'Tanyao', h: '1 / 1', d: 'All simples: only 2–8 suited tiles, no 1s, 9s or honors.' },

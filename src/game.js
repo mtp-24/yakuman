@@ -435,7 +435,7 @@ function rollCard() {
 }
 function genShop() {
   const fl = FLOWERS.filter(f => !S.flowers.includes(f.key));
-  const packKey = pick(['omikuji', 'omikuji', 'scroll', 'scroll', 'talisman', 'kami', 'mega']);
+  const packKey = pick(['omikuji', 'omikuji', 'scroll', 'scroll', 'talisman', 'kami', 'mega', 'tile', 'tile', 'megatile']);
   S.shop = { cards: [rollCard(), rollCard()], scroll: { kind: 'scroll', key: pick(SCROLLS).key }, flower: fl.length ? { kind: 'flower', key: pick(fl).key } : null, pack: { kind: 'pack', key: packKey }, coupon: false, freeReroll: false, freePacks: [] };
   // consume tags that act on this shop
   const take = t => { const i = S.tags.indexOf(t); if (i >= 0) { S.tags.splice(i, 1); return true; } return false; };
@@ -443,6 +443,7 @@ function genShop() {
   if (take('reroll')) S.shop.freeReroll = true;
   for (const ed of ['foil', 'holo', 'poly', 'neg']) if (take(ed)) { const c = S.shop.cards.find(x => x.kind === 'talisman'), pool = talPool(); if (c) c.edition = ed; else if (pool.length) S.shop.cards[0] = { kind: 'talisman', key: pickTalisman(pool).key, edition: ed }; }
   for (const pk of ['omikuji', 'scroll', 'talisman', 'kami']) while (take(pk)) S.shop.freePacks.push(pk);
+  while (take('tile')) S.shop.freePacks.push('megatile');
 }
 function openPack(key, free) {
   const def = PACKS[key]; let pool;
@@ -450,7 +451,8 @@ function openPack(key, free) {
   else if (key === 'scroll') pool = SCROLLS.map(o => ({ kind: 'scroll', key: o.key }));
   else if (key === 'kami') pool = KAMI.filter(o => !o.soul).map(o => ({ kind: 'kami', key: o.key }));
   let choices;
-  if (key === 'talisman') { const left = talPool(); choices = []; while (choices.length < def.show && left.length) { const t = pickTalisman(left); left.splice(left.indexOf(t), 1); choices.push({ kind: 'talisman', key: t.key, edition: rollEdition() }); } }
+  if (key === 'tile' || key === 'megatile') choices = Array.from({ length: def.show }, () => ({ kind: 'tile', tile: packTile(S.deckKey) }));
+  else if (key === 'talisman') { const left = talPool(); choices = []; while (choices.length < def.show && left.length) { const t = pickTalisman(left); left.splice(left.indexOf(t), 1); choices.push({ kind: 'talisman', key: t.key, edition: rollEdition() }); } }
   else choices = shuffle(pool.slice()).slice(0, def.show);
   if (key === 'kami' && choices.length && rand() < CFG.soulOdds * 2) choices[0] = { kind: 'kami', key: 'hitodama' };
   S.pack = { key, choices, left: def.keep, free: !!free }; S.msg = ''; S.msgErr = false;   // a fresh pack starts without the last shop message
@@ -504,6 +506,7 @@ function usePackCard(i) {
   if (S.pack.left <= 0) S.pack.done = true;
   render();
 }
+function fillPackTiles() { document.querySelectorAll('#modal .packtileart').forEach(b => { const it = S.pack && S.pack.choices[+b.dataset.pt]; if (it && it.tile && !b.children.length) b.appendChild(tileEl(it.tile)); }); }
 function fillPackHand() {
   const box = $('#packHand'); if (!box) return;
   const marks = S.pack.marks || {};
@@ -522,12 +525,15 @@ function takeFromPack(i) {
   const it = S.pack.choices[i]; if (!it || it.sold) return;
   if (it.kind === 'talisman') { if (S.talismans.length >= talSlots()) { setMsg('Talisman slots are full. Sell one from the list below first.', true); return render(); } gainTalisman(it.key); if (it.edition) S.editions[it.key] = it.edition; }
   else if (it.kind === 'scroll') { const [t, k] = it.key.split(':'); S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] = (S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] || 0) + 1; for (const tk of S.talismans) if (TAL[tk].onScroll) TAL[tk].onScroll(S); PROFILE.scrollsUsed++; saveProfile(); }
+  else if (it.kind === 'tile') { S.deck.push(it.tile); for (const k of S.talismans) if (TAL[k].onTileAdded) TAL[k].onTileAdded(S, 1); }
   else { if (S.consumables.length >= conSlots()) { setMsg('Consumable slots are full. Use or sell one first.', true); return render(); } S.consumables.push({ kind: it.kind, key: it.key }); }
-  it.sold = true; S.pack.left--; setMsg(`Took ${itemDef(it).name}.`);
+  it.sold = true; S.pack.left--; setMsg(it.kind === 'tile' ? `Added ${itemDef(it).name} to your Wall.` : `Took ${itemDef(it).name}.`);
   if (S.pack.left <= 0) S.pack = null;
   render();
 }
-function itemDef(it) { return it.kind === 'talisman' ? TAL[it.key] : it.kind === 'scroll' ? SCR[it.key] : it.kind === 'flower' ? FLW[it.key] : it.kind === 'pack' ? PACKS[it.key] : CONS[it.key]; }
+// A Tile Pack tile reads like a card: its name, then what its engraving and seal do.
+function tileDef(t) { const parts = [t.eng && ENG[t.eng] ? `<b>${ENG[t.eng].name}:</b> ${ENG[t.eng].desc}` : '', t.seal && SEALS[t.seal] ? `<b>${SEALS[t.seal].name}:</b> ${SEALS[t.seal].desc}` : '', t.red ? 'A Red Five: +1 Han when it scores.' : ''].filter(Boolean); return { name: tileName(t), desc: parts.length ? parts.join(' ') : 'A plain tile.', cost: 0 }; }
+function itemDef(it) { return it.kind === 'tile' ? tileDef(it.tile) : it.kind === 'talisman' ? TAL[it.key] : it.kind === 'scroll' ? SCR[it.key] : it.kind === 'flower' ? FLW[it.key] : it.kind === 'pack' ? PACKS[it.key] : CONS[it.key]; }
 function buy(it) {
   const def = itemDef(it), p = itemPrice(it);
   if (S.money < p) { setMsg(`Not enough YEN: ${def.name} costs ¥${p}.`, true); return render(); }
@@ -688,7 +694,7 @@ function render() {
   const motionBefore = tileSnapshot(), freshTiles = new Set(S.newIds || []);
   renderBlind(); renderTalismans(); renderConsumables(); renderOpen(); renderRiver(); renderHand(); renderActions(); renderLast();
   $('#msg').textContent = S.msg || ''; $('#msg').className = 'msg' + (S.msgErr ? ' err' : '');
-  if (S.phase === 'cashout') { showModal(cashoutHTML(), false, 'cashmodal'); placeOverlay(true); animateCashout(); } else if (S.phase === 'shop' && S.pack) { showModal(packHTML(), false, 'packmodal'); fillPackHand(); } else if (S.phase === 'shop') { showModal(shopHTML(), false, 'shopmodal'); tweenWallet(); } else if (S.phase === 'select') showModal(selectHTML(), false, 'selectmodal'); else if (S.phase === 'gameover') showModal(overHTML(false), false, 'overmodal'); else if (S.phase === 'win') showModal(overHTML(true), false, 'overmodal winmodal'); else if (!modalPinned) hideModal();
+  if (S.phase === 'cashout') { showModal(cashoutHTML(), false, 'cashmodal'); placeOverlay(true); animateCashout(); } else if (S.phase === 'shop' && S.pack) { showModal(packHTML(), false, 'packmodal'); fillPackTiles(); fillPackHand(); } else if (S.phase === 'shop') { showModal(shopHTML(), false, 'shopmodal'); tweenWallet(); } else if (S.phase === 'select') showModal(selectHTML(), false, 'selectmodal'); else if (S.phase === 'gameover') showModal(overHTML(false), false, 'overmodal'); else if (S.phase === 'win') showModal(overHTML(true), false, 'overmodal winmodal'); else if (!modalPinned) hideModal();
   $('#btnYaku').textContent = 'Run Info';
   document.querySelectorAll('.zhead > .muted').forEach(e => { e.title = e.textContent; });   // full text on hover when a header is truncated
   translateDOM($('#app')); fitNumbers();
@@ -1454,13 +1460,14 @@ function shopHTML() {
   return h;
 }
 function ownedHTML() {
-  const tal = S.talismans.map((k, i) => { const ed = S.editions[k]; const tgt = TAL[k].copies ? talTarget(S, k) : null; return `<div class="shopcard talisman owned-card${ed ? ' ed-' + ed : ''}"><div class="kind"><span class="order" title="Firing order">${i + 1}</span>${ed ? '' : 'Talisman'}${rarityTag(k)}${ed ? `<span class="edtag ed-${ed}">${EDITIONS[ed].name}</span>` : ''}</div><div class="n">${TAL[k].name}</div><div class="d">${TAL[k].desc}${tgt ? ` <b>Now: ${tgt.name}.</b>` : ''}${ed ? ` <b>${EDITIONS[ed].desc}.</b>` : ''}${TAL[k].status ? ' <b>(' + TAL[k].status(S) + ')</b>' : ''}</div><div class="buy"><span></span><button class="ghost" data-sell="${k}">Sell ¥${Math.max(1, Math.floor(talValue(k) / 2))}</button></div></div>`; });
+  const tal = S.talismans.map((k, i) => { const ed = S.editions[k]; const tgt = TAL[k].copies ? talTarget(S, k) : null; return `<div class="shopcard talisman owned-card${ed ? ' ed-' + ed : ''}"><div class="kind"><span class="order" title="Firing order">${i + 1}</span>${rarityTag(k)}${ed ? `<span class="edtag ed-${ed}">${EDITIONS[ed].name}</span>` : ''}</div><div class="n">${TAL[k].name}</div><div class="d">${TAL[k].desc}${tgt ? ` <b>Now: ${tgt.name}.</b>` : ''}${ed ? ` <b>${EDITIONS[ed].desc}.</b>` : ''}${TAL[k].status ? ' <b>(' + TAL[k].status(S) + ')</b>' : ''}</div><div class="buy"><span></span><button class="ghost" data-sell="${k}">Sell ¥${Math.max(1, Math.floor(talValue(k) / 2))}</button></div></div>`; });
   const con = S.consumables.map((c, i) => { const d = CONS[c.key]; return `<div class="shopcard ${c.kind} owned-card"><div class="kind">${c.kind === 'kami' ? 'Kami Spirit' : 'Omikuji'}</div><div class="n">${d.name}</div><div class="d">${d.desc}</div><div class="buy"><span class="muted">${d.anywhere ? 'Usable now' : 'Use during a Blind'}</span><span style="display:flex;gap:6px">${d.anywhere ? `<button class="ghost" data-usecon="${i}">Use</button>` : ''}<button class="ghost" data-sellcon="${i}">Sell ¥${Math.max(1, Math.floor(d.cost / 2))}</button></span></div></div>`; });
   return `<div class="label" style="margin:10px 0 4px">Your Talismans · ${S.talismans.length}/${talSlots()} · fire left to right · sell to make room</div>` + (tal.length ? `<div class="shop-grid owned-grid">${tal.join('')}</div>` : `<div class="muted" style="font-size:12px">None yet.</div>`) + `<div class="label" style="margin:10px 0 4px">Your Consumables · ${S.consumables.length}/${conSlots()}</div>` + (con.length ? `<div class="muted" style="font-size:12px;margin:-2px 0 4px">Most consumables are used on tiles during a Blind. Ones that don't need tiles have a Use button here.</div><div class="shop-grid owned-grid">${con.join('')}</div>` : `<div class="muted" style="font-size:12px">None yet.</div>`);
 }
 function packButtons(it, i) {
   if (S.pack.done) return `<span class="muted" style="font-size:11px">No picks left</span>`;
   const full = slotsFullMsg(it); const dis = full ? ` disabled title="${full}"` : '';
+  if (it.kind === 'tile') return `<button class="primary" data-take="${i}">Add to Wall</button>`;
   if (!S.pack.hand || (it.kind !== 'omikuji' && it.kind !== 'kami')) return `<button class="primary" data-take="${i}"${dis}>${full ? 'Slots Full' : 'Take'}</button>`;
   const def = CONS[it.key];
   const use = def.blindOnly ? `<span class="muted" style="font-size:11px">Blind only</span>` : `<button class="primary" data-packuse="${i}">Use</button>`;
@@ -1471,7 +1478,7 @@ function packHTML() {
   const tone = { omikuji: 'omikuji', mega: 'omikuji', kami: 'kami', scroll: 'scroll', talisman: 'talisman' }[S.pack.key] || 'pack';
   let h = `<div class="packhead ${tone}"><div class="packart">${emblem('pack')}</div><div class="packtitle"><div class="label">Booster pack${S.pack.free ? ' · free from a Tag' : ''}</div><h2>${pk.name}</h2><p>${pk.desc}</p></div><div class="packpicks"><b class="num">${S.pack.done ? 0 : S.pack.left}</b><span>${S.pack.done || S.pack.left !== 1 ? 'picks' : 'pick'} left</span></div></div>`;
   if (S.pack.hand) h += `<div class="packhandwrap"><div class="label">Your Tiles · ${(S.pack.view || S.pack.hand).length} random tiles from your Wall</div><div class="muted" style="font-size:12px;margin:2px 0 6px">${S.pack.done ? 'All picks used. Outlined tiles changed and stay that way in your Wall. Press Done to return to the shop.' : 'Select tiles, then press Use on a card. The change stays in your Wall for the rest of the run. Keep puts the card in your consumable slots instead.'}</div><div class="packhand" id="packHand"></div></div>`;
-  h += `<div class="shelf packshelf"><div class="shelflabel">${S.pack.done ? 'Cards · all picks used' : `Cards · choose ${S.pack.left} more`}</div><div class="shop-grid">${S.pack.choices.map((it, i) => { const d = itemDef(it); const ed = it.edition ? EDITIONS[it.edition] : null; return `<div class="shopcard ${it.kind}${it.sold ? ' sold' : ''}${ed ? ' ed-' + it.edition : ''}"><div class="emblem">${emblem(it.kind)}</div><div class="kind">${{ talisman: 'Talisman', omikuji: 'Omikuji', kami: 'Kami Spirit', scroll: 'Scroll of Mastery' }[it.kind]}${it.kind === 'talisman' ? rarityTag(it.key) : ''}${ed ? `<span class="edtag ed-${it.edition}">${ed.name}</span>` : ''}</div><div class="n">${d.name}</div><div class="d">${d.desc}${ed ? ` <b>${ed.name}: ${ed.desc}.</b>` : ''}</div>${it.kind === 'scroll' && !it.sold ? scrollLevelHTML(it.key) : it.kind === 'talisman' && !it.sold ? talPreview(it.key) : ''}<div class="buy"><span></span>${it.sold ? `<span class="muted">${it.used ? 'Used' : 'Taken'}</span>` : packButtons(it, i)}</div></div>`; }).join('')}</div></div>`;
+  h += `<div class="shelf packshelf"><div class="shelflabel">${S.pack.done ? 'Cards · all picks used' : `Cards · choose ${S.pack.left} more`}</div><div class="shop-grid">${S.pack.choices.map((it, i) => { const d = itemDef(it); const ed = it.edition ? EDITIONS[it.edition] : null; return `<div class="shopcard ${it.kind === 'tile' ? 'tilecard' : it.kind}${it.sold ? ' sold' : ''}${ed ? ' ed-' + it.edition : ''}"><div class="${it.kind === 'tile' ? 'packtileart' : 'emblem'}" data-pt="${i}">${it.kind === 'tile' ? '' : emblem(it.kind)}</div><div class="kind">${{ talisman: 'Talisman', omikuji: 'Omikuji', kami: 'Kami Spirit', scroll: 'Scroll of Mastery', tile: 'Tile' }[it.kind]}${it.kind === 'talisman' ? rarityTag(it.key) : ''}${ed ? `<span class="edtag ed-${it.edition}">${ed.name}</span>` : ''}</div><div class="n">${d.name}</div><div class="d">${d.desc}${ed ? ` <b>${ed.name}: ${ed.desc}.</b>` : ''}</div>${it.kind === 'scroll' && !it.sold ? scrollLevelHTML(it.key) : it.kind === 'talisman' && !it.sold ? talPreview(it.key) : ''}<div class="buy"><span></span>${it.sold ? `<span class="muted">${it.used ? 'Used' : 'Taken'}</span>` : packButtons(it, i)}</div></div>`; }).join('')}</div></div>`;
   h += `<div class="msg${S.msgErr ? ' err' : ''}" style="min-height:18px;margin:2px 0 6px">${S.msg || ''}</div>`;
   h += ownedHTML();
   h += `<div class="shopfoot"><button id="mDeck" class="ghost">View Wall</button><span style="flex:1"></span>${S.pack.done ? '<button id="mPackDone" class="primary">Done</button>' : '<button id="mPackDone" class="ghost">Skip the Rest</button>'}</div>`;
@@ -1901,7 +1908,7 @@ function boot(saved) {
   bindEvents();
   if (saved && saved.phase && saved.deck) { S = saved; S.talState = S.talState || {};
     // Resume the tile id counter above every id in the saved run, so tiles created later never collide with existing ones.
-    let maxId = 0; for (const t of [...S.deck, ...S.hand, ...S.wall, ...S.river, ...S.played, ...(S.indicators || []), ...S.open.flatMap(m => m.tiles)]) if (t.id > maxId) maxId = t.id; tileSeq = Math.max(tileSeq, maxId);
+    let maxId = 0; for (const t of [...S.deck, ...S.hand, ...S.wall, ...S.river, ...S.played, ...(S.indicators || []), ...S.open.flatMap(m => m.tiles), ...((S.pack && S.pack.choices) || []).filter(c => c.tile).map(c => c.tile)]) if (t.id > maxId) maxId = t.id; tileSeq = Math.max(tileSeq, maxId);
     for (const t of [...S.deck, ...S.hand, ...S.wall, ...S.river, ...S.played, ...(S.indicators || []), ...S.open.flatMap(m => m.tiles)]) normTile(t);
     // Repair any duplicates an older save may already contain
     const seen = new Set(); for (const zone of [S.hand, S.wall, S.river, S.played, S.deck, S.indicators || [], ...S.open.map(m => m.tiles)]) for (const t of zone) { if (seen.has(t.id)) t.id = ++tileSeq; seen.add(t.id); } S.editions = S.editions || {}; S.seed = S.seed || 'legacy'; S.deckKey = S.deckKey || 'standard'; S.stake = S.stake || 'white'; if (S.rngState === undefined) S.rngState = hashSeed(S.seed + Date.now()); S.stats.rungs = S.stats.rungs || {}; S.stats.yaku = S.stats.yaku || {}; S.stats.bosses = S.stats.bosses || []; S.tags = S.tags || []; if (!S.skipTags) S.skipTags = { small: pick(Object.keys(TAGS)), big: pick(Object.keys(TAGS)) }; S.stats.skipped = S.stats.skipped || 0; S.stats.calls = S.stats.calls || 0; S.stats.kans = S.stats.kans || 0; S.stats.discards = S.stats.discards || 0; S.busy = false; S.newIds = []; S.drawSeq = S.drawSeq || 0; render(); showModal(menuHTML(true), true, 'menumodal'); }
