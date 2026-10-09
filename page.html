@@ -349,7 +349,7 @@ button.pulse{animation:btnpulse 1s ease-in-out infinite;box-shadow:0 0 0 0 rgba(
     </div>
     <div class="zone handzone" id="handZone">
       <div class="callbanner" id="callBanner" hidden></div>
-      <div class="zhead"><span class="label">Hand</span><span class="muted" id="handInfo"></span><span style="flex:1"></span><button id="btnDots" class="ghost" style="padding:3px 8px;font-size:12px">Dots On</button><button id="btnSort" class="ghost" style="padding:3px 8px;font-size:12px;margin-left:6px">Sort</button></div>
+      <div class="zhead"><span class="label">Hand</span><span class="muted" id="handInfo"></span><span style="flex:1"></span><button id="btnSort" class="ghost" style="padding:3px 8px;font-size:12px">Sort</button></div>
       <div class="row-tiles" id="hand"></div>
       <div class="hint" id="hint"></div>
     </div>
@@ -1072,7 +1072,7 @@ function waitsOf(hand, openCount) {
 }
 // ===================== TERMINOLOGY SWITCH =====================
 let LANG = 'ja'; try { LANG = localStorage.getItem('yakuman.lang') === 'hk' ? 'hk' : 'ja'; } catch (e) { }
-let SHOW_DOTS = true; try { SHOW_DOTS = localStorage.getItem('yakuman.dots') !== 'off'; } catch (e) { }
+let SHOW_DOTS = false; try { SHOW_DOTS = localStorage.getItem('yakuman.dots') === 'on'; } catch (e) { }
 const SPEEDS = { slow: 2.5, normal: 1, fast: 0.45, instant: 0 };
 let ANIM_SPEED = 'normal'; try { const v = localStorage.getItem('yakuman.speed'); if (SPEEDS[v] !== undefined) ANIM_SPEED = v; } catch (e) { }
 let HK_RE = null, HK_MAP = null;
@@ -1109,7 +1109,7 @@ function settingsHTML() {
   const dbgOn = !$('#debugBar').hidden;
   return `<h2>Settings</h2>
   <div class="setrow"><div><b>Terminology</b><div class="muted">Riichi uses Japanese names (Chi, Pon, Kan, Han, Yaku, ¥). Hong Kong uses English names (Chow, Pung, Kong, Faan, $).</div></div><div class="setbtns"><button class="${LANG === 'ja' ? 'primary' : ''}" data-setlang="ja">Riichi</button><button class="${LANG === 'hk' ? 'primary' : ''}" data-setlang="hk">Hong Kong</button></div></div>
-  <div class="setrow"><div><b>Dead-tile dots</b><div class="muted">Green dots mark tiles you can discard without losing progress toward a complete hand.</div></div><div class="setbtns"><button class="${SHOW_DOTS ? 'primary' : ''}" data-setdots="on">On</button><button class="${!SHOW_DOTS ? 'primary' : ''}" data-setdots="off">Off</button></div></div>
+  <div class="setrow"><div><b>Dead-tile dots (assist)</b><div class="muted">Off by default. When on, green dots mark tiles you can discard without losing progress toward a complete hand. A sizeable help: it solves the discard choice for you.</div></div><div class="setbtns"><button class="${SHOW_DOTS ? 'primary' : ''}" data-setdots="on">On</button><button class="${!SHOW_DOTS ? 'primary' : ''}" data-setdots="off">Off</button></div></div>
   <div class="setrow"><div><b>Scoring animation speed</b><div class="muted">How fast tiles and Talismans score. Instant shows the result at once. Clicking anywhere during scoring also skips.</div></div><div class="setbtns">${Object.keys(SPEEDS).map(k => `<button class="${ANIM_SPEED === k ? 'primary' : ''}" data-setspeed="${k}">${k[0].toUpperCase() + k.slice(1)}</button>`).join('')}</div></div>
   <div class="setrow"><div><b>Debug tools</b><div class="muted">A bar under the board with money, plays, items, bosses and editions for playtesting.</div></div><div class="setbtns"><button class="${dbgOn ? 'primary' : ''}" data-setdbg="on">Show</button><button class="${!dbgOn ? 'primary' : ''}" data-setdbg="off">Hide</button></div></div>
   <div class="setrow"><div><b>Saved run</b><div class="muted">The current run is saved in this browser automatically.</div></div><div class="setbtns"><button class="danger" data-wipe>Wipe save and reload</button></div></div>
@@ -1542,7 +1542,7 @@ function renderHand() {
   $('#handInfo').textContent = (over > 0 && !S.pendingDiscard ? `${S.hand.length} tiles (${over} over the limit of ${capacity()}: no draw until you are back under it)` : `${S.hand.length} / ${capacity()} tiles`) + ` · ${S.selected.length} selected · complete hand needs ${neededConcealed()} from hand`;
   renderHint(hidden);
   $('#btnSort').textContent = hidden ? 'Manual Order' : (S.sortHand ? 'Auto-sort On' : 'Sort Hand'); $('#btnSort').disabled = hidden; $('#btnSort').title = S.sortHand ? 'New tiles are sorted in. Drag a tile to switch to manual order.' : 'Sort the hand now and keep it sorted. Drag tiles to reorder.';
-  $('#btnDots').textContent = SHOW_DOTS ? 'Dots On' : 'Dots Off'; $('#btnDots').title = 'Green dots mark tiles you can discard without losing progress';
+
 }
 // Greedy set of tiles that can all be discarded together without raising shanten. Isolated tiles are tried first.
 function deadTiles(hand, openCount, sh, limit) {
@@ -1757,7 +1757,7 @@ function rulesHTML() {
   <p><b>Arranging your hand.</b> Drag any hand tile to reorder it, with a mouse or a finger. Dragging switches off auto-sort; the Sort button sorts the hand again and keeps new tiles sorted in. Tiles score in the order they sit in your hand, which matters for Shikigami and for the scoring animation.</p>
   <p><b>Shop and Blind Select.</b> Every shop sells a booster pack: open it and keep one (or two) of what's inside. After the shop, the Blind Select screen shows the Ante's three blinds with their targets, rewards and the Boss's rule. A Small or Big Blind can be skipped for the Tag shown on its card instead of its cash: free packs, editions, coupons, money, a bigger hand or a different Boss. Tags you hold show in the side panel. You can sell Talismans and consumables from inside the shop.</p>
   <p><b>Setup.</b> New runs let you choose a Wall (deck), a Stake (difficulty) and a seed. Sharing a seed replays the same Wall, shops and bosses.</p>
-  <p><b>Helper.</b> Under your hand the game shows how many tiles you are from a complete hand, and tiles marked with a green dot can be discarded without losing progress. Select tiles to see whether that discard keeps you on track. Against The Purist it only counts your visible tiles.</p>
+  <p><b>Helper.</b> Under your hand the game shows how many tiles you are from a complete hand, and when you are one tile away, which tiles you are waiting on. Select tiles to see whether that discard keeps you on track. Against The Purist it only counts your visible tiles. An optional assist in Settings marks dead tiles with green dots.</p>
   <p><b>Kan.</b> Four identical tiles can be played as a partial Kan for points, or declared: press Declare Kan (or K) to set them aside as a closed Kan that counts toward your complete hand without opening it. Every Kan, declared or called from the River, draws one replacement tile from the Wall. If that replacement tile ends up as the winning tile of your complete hand, you score Rinshan Kaihou (+1 Han). A called Kan then settles with one discard like any Call.</p>
   <p><b>Furiten.</b> The winning tile of a complete hand is the newest tile you drew among the 14 you play. If a copy of that tile type sits in your River, the hand is in Furiten and the multiplier is halved. The helper shows your waits when you are one tile away and marks the ones already in your River. Kappa turns Furiten into a bonus.</p>
   <p><b>Engravings &amp; editions.</b> Omikuji can engrave tiles, and you can see it on the tile: Gold Foil (gold face, ¥1 when scored), Obsidian (dark stone face, +20 Chips), Jade (green face, ×1.5 Mult), Steel (brushed metal face, ×1.5 Mult while held), Glass (clear blue face, ×2 Mult, 1 in 4 chance to shatter), Red Seal (a red wax seal, scores twice) and Dragon Mark (a red emblem in the corner, +1 Han). Hover a tile for its exact effect. Shop Talismans sometimes come in an edition: Foil (+50 Chips), Holographic (+1 Han) or Polychrome (×1.5 Mult) on every play.</p>
@@ -1861,7 +1861,7 @@ function bindEvents() {
   $('#btnPlay').onclick = doPlay; $('#btnDiscard').onclick = doDiscard; $('#btnCall').onclick = doCall; $('#btnKan').onclick = doDeclareKan;
   $('#btnClear').onclick = () => { S.selected = []; S.selRiver = null; render(); };
   $('#btnSort').onclick = () => { S.sortHand = !S.sortHand; if (S.sortHand) S.hand = sortTiles(S.hand); render(); };
-  $('#btnDots').onclick = () => { SHOW_DOTS = !SHOW_DOTS; try { localStorage.setItem('yakuman.dots', SHOW_DOTS ? 'on' : 'off'); } catch (e) { } render(); };
+
   $('#btnDeck').onclick = () => showModal(deckHTML(), true);
   $('#btnRules').onclick = () => showModal(rulesHTML(), true);
   $('#btnYaku').onclick = () => showModal(yakuHTML(), true);
