@@ -389,7 +389,8 @@ function renderBlind() {
   if (inBlind) h += `<div class="bar"><i style="width:${pct}%"></i></div><div class="num" style="font-size:13px">Scored <b style="color:var(--accent)">${S.score.toLocaleString()}</b></div>`;
   if (inBlind) {
     const pv = PREVIEW;
-    if (pv && pv.ctx) { const c = pv.ctx; const hot = S.target && c.total >= S.target; h += `<div class="handbox"><div class="hb-name">${pv.label}<span class="muted"> · ${c.han} Han · ${c.tier}${c.furiten ? ' · Furiten' : ''}</span></div><div class="hb-math num"><span class="pchips">${c.chips}</span><span class="px">×</span><span class="pmult">${fmtMult(c.mult)}</span><span class="px">=</span><span class="ptot${hot ? ' hot' : ''}">${c.total.toLocaleString()}</span></div></div>`; }
+    if (S.pendingDiscard) h += `<div class="handbox pend"><div class="hb-name">Settle your Call</div><div class="muted" style="font-size:12px">Discard ${S.pendingDiscard} tile, then you can Play.</div></div>`;
+    else if (pv && pv.ctx) { const c = pv.ctx; const hot = S.target && c.total >= S.target; h += `<div class="handbox"><div class="hb-name">${pv.label}<span class="muted"> · ${c.han} Han · ${c.tier}${c.furiten ? ' · Furiten' : ''}</span></div><div class="hb-math num"><span class="pchips">${c.chips}</span><span class="px">×</span><span class="pmult">${fmtMult(c.mult)}</span><span class="px">=</span><span class="ptot${hot ? ' hot' : ''}">${c.total.toLocaleString()}</span></div></div>`; }
     else h += `<div class="handbox empty"><div class="hb-name muted">${S.selected.length ? (pv && pv.err ? pv.err : 'Not a valid play') : 'Select tiles to see the score'}</div><div class="hb-math num muted"><span>0</span><span class="px">×</span><span>0</span></div></div>`;
   }
   h += `<div class="stats"><div class="stat plays"><div class="label">Plays</div><div class="v num">${S.plays}</div></div><div class="stat discards"><div class="label">Discards</div><div class="v num">${S.discards}</div></div><div class="stat money"><div class="label">YEN</div><div class="v num">¥${S.money}</div></div><div class="stat"><div class="label">Wall</div><div class="v num">${S.wall.length}</div></div></div>`;
@@ -441,8 +442,10 @@ function renderHand() {
   const tiles = S.hand;
   for (const t of tiles) { const e = tileEl(t, { sel: S.selected.includes(t.id), back: hidden && (isHonor(t) || isTerminal(t)) }); if (S.newIds.includes(t.id)) e.classList.add('arrive'); e.dataset.id = t.id; bindTileDrag(e, t); box.appendChild(e); }
   S.newIds = [];
+  $('#handZone').classList.toggle('pending', !!S.pendingDiscard);
+  $('#callBanner').hidden = !S.pendingDiscard; if (S.pendingDiscard) $('#callBanner').textContent = `Call made. Discard ${S.pendingDiscard} tile to settle it before you can Play again.`;
   const over = S.hand.length - capacity();
-  $('#handInfo').textContent = (over > 0 ? `${S.hand.length} tiles (${over} over the limit of ${capacity()}: no draw until you are back under it)` : `${S.hand.length} / ${capacity()} tiles`) + ` · ${S.selected.length} selected · complete hand needs ${neededConcealed()} from hand`;
+  $('#handInfo').textContent = (over > 0 && !S.pendingDiscard ? `${S.hand.length} tiles (${over} over the limit of ${capacity()}: no draw until you are back under it)` : `${S.hand.length} / ${capacity()} tiles`) + ` · ${S.selected.length} selected · complete hand needs ${neededConcealed()} from hand`;
   renderHint(hidden);
   $('#btnSort').textContent = hidden ? 'Manual Order' : (S.sortHand ? 'Auto-sort On' : 'Sort Hand'); $('#btnSort').disabled = hidden; $('#btnSort').title = S.sortHand ? 'New tiles are sorted in. Drag a tile to switch to manual order.' : 'Sort the hand now and keep it sorted. Drag tiles to reorder.';
   $('#btnDots').textContent = SHOW_DOTS ? 'Dots On' : 'Dots Off'; $('#btnDots').title = 'Green dots mark tiles you can discard without losing progress';
@@ -461,6 +464,7 @@ function deadTiles(hand, openCount, sh, limit) {
 function renderHint(hidden) {
   const box = $('#hint');
   if (S.phase !== 'blind' || !S.hand.length) { box.innerHTML = ''; return; }
+  if (S.pendingDiscard) { box.innerHTML = `<span class="pendnote">Settle your Call: select ${S.pendingDiscard} tile and press Discard. It does not use a Discard.${S.selected.length === S.pendingDiscard ? ' Ready, press Discard.' : ''}</span>`; return; }
   // Under The Purist only the visible (simple) tiles are counted; hidden tiles are treated as unknown, so this is a "no better than" estimate.
   const vis = hidden ? S.hand.filter(t => !(isHonor(t) || isTerminal(t))) : S.hand;
   const sh = handShanten(vis, S.open.length);
@@ -489,7 +493,7 @@ function renderActions() {
   const inBlind = S.phase === 'blind';
   const opt = inBlind ? playOption() : { err: '' };
   const bp = $('#btnPlay'); bp.disabled = !inBlind || !!opt.err || S.busy; bp.textContent = opt.type ? opt.label : 'Play'; bp.title = opt.err || '';
-  const bd = $('#btnDiscard'); bd.disabled = !inBlind || S.busy || (!S.pendingDiscard && S.discards <= 0); bd.textContent = S.pendingDiscard ? `Discard ${S.pendingDiscard} to settle the Call` : `Discard (${S.discards})`;
+  const bd = $('#btnDiscard'); bd.disabled = !inBlind || S.busy || (!S.pendingDiscard && S.discards <= 0); bd.textContent = S.pendingDiscard ? `Discard ${S.pendingDiscard} to settle the Call` : `Discard (${S.discards})`; bd.classList.toggle('pulse', !!S.pendingDiscard);
   const dk = $('#btnKan'); const dko = declareOption(); dk.disabled = !dko.ok; dk.title = dko.err || 'Set these 4 tiles aside as a closed Kan and draw a replacement tile';
   $('#preview').innerHTML = '';
   $('#btnCall').disabled = !inBlind || S.busy || !S.selRiver || S.selected.length < 2;
