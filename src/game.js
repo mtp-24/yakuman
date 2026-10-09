@@ -47,6 +47,9 @@ function settingsHTML() {
   <div class="setrow"><div><b>Terminology</b><div class="muted" data-notr>Riichi uses Japanese names (Chi, Pon, Kan, Han, Yaku, ¥). Hong Kong uses English names (Chow, Pung, Kong, Faan, $).</div></div><div class="setbtns"><button class="${LANG === 'ja' ? 'primary' : ''}" data-setlang="ja">Riichi</button><button class="${LANG === 'hk' ? 'primary' : ''}" data-setlang="hk">Hong Kong</button></div></div>
   <div class="setrow"><div><b>Tile numbers</b><div class="muted">The small number or letter in a tile's corner. Characters and Winds is the default: Dots and Bamboo are counted by their pips. With All Tiles, some numbers sit over the Dots and Bamboo art.</div></div><div class="setbtns">${[['all', 'All Tiles'], ['some', 'Characters and Winds'], ['none', 'None']].map(([k, n]) => `<button class="${TILE_NUMS === k ? 'primary' : ''}" data-settilenums="${k}">${n}</button>`).join('')}</div></div>
   <div class="setrow"><div><b>Scoring animation speed</b><div class="muted">How fast tiles and Talismans score. Instant shows the result at once. Clicking anywhere during scoring also skips.</div></div><div class="setbtns">${Object.keys(SPEEDS).map(k => `<button class="${ANIM_SPEED === k ? 'primary' : ''}" data-setspeed="${k}">${k[0].toUpperCase() + k.slice(1)}</button>`).join('')}</div></div>
+  <div class="setsec">Your data</div>
+  <div class="setrow"><div><b>Profile</b><div class="muted">${PROFILE.runs} runs · ${PROFILE.wins} wins · best Ante ${PROFILE.bestAnte || '—'}. Saved in this browser. Export to move it, with your settings and current run, to another device.</div></div><div class="setbtns solo"><button class="ghost" id="mExport">Export</button><button class="ghost" id="mImport">Import</button></div></div>
+  <div class="setrow"><div><b>Reset profile</b><div class="muted">Clears lifetime stats. Your current run and settings stay.</div></div><div class="setbtns solo"><button class="danger" id="mResetProfile">Reset Profile</button></div></div>
   <div class="setsec">Advanced</div>
   <div class="setrow"><div><b>Debug tools</b><div class="muted">A bar under the board with money, plays, items, bosses and editions for playtesting.</div></div><div class="setbtns"><button class="${dbgOn ? 'primary' : ''}" data-setdbg="on">Show</button><button class="${!dbgOn ? 'primary' : ''}" data-setdbg="off">Hide</button></div></div>
   <div class="setrow"><div><b>Saved run</b><div class="muted">The current run is saved in this browser automatically.</div></div><div class="setbtns solo"><button class="danger" data-wipe>Wipe save and reload</button></div></div>
@@ -90,6 +93,13 @@ function openTiles() { return S.open.flatMap(m => m.tiles); }
 function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) { } }
 function load() { try { const s = localStorage.getItem(SAVE_KEY); return s ? JSON.parse(s) : null; } catch (e) { return null; } }
 function clearSave() { try { localStorage.removeItem(SAVE_KEY); } catch (e) { } }
+// ===================== PLAYER PROFILE =====================
+// Lifetime progress that outlives runs (New Run and Wipe save leave it alone). Unlocks will build on this.
+const PROFILE_KEY = 'yakuman.profile.v1';
+function blankProfile() { return { v: 1, created: Date.now(), runs: 0, wins: 0, bestAnte: 0, bestPlay: 0, bestPlayDesc: '', hands: 0, blinds: 0, stakesWon: {}, wallsWon: {}, bosses: {}, yaku: {}, unlocked: [] }; }
+let PROFILE = (() => { try { return Object.assign(blankProfile(), JSON.parse(localStorage.getItem(PROFILE_KEY) || '{}')); } catch (e) { return blankProfile(); } })();
+function saveProfile() { try { localStorage.setItem(PROFILE_KEY, JSON.stringify(PROFILE)); } catch (e) { } }
+const bump = (obj, k, n = 1) => { obj[k] = (obj[k] || 0) + n; };
 
 // ===================== BLIND FLOW =====================
 function startBlind() {
@@ -126,13 +136,16 @@ function winBlind() {
   collectDeck();
   const finished = S.ante === CFG.antes && S.blindIndex === 2;
   S.blindIndex++; if (S.blindIndex > 2) { S.blindIndex = 0; S.ante++; rollAnteTags(); }
+  PROFILE.blinds++; if (kind === 'boss' && S.boss) bump(PROFILE.bosses, S.boss);
+  if (finished) { PROFILE.wins++; bump(PROFILE.stakesWon, S.stake); bump(PROFILE.wallsWon, S.deckKey); PROFILE.bestAnte = CFG.antes; }
+  saveProfile();
   if (finished) { S.phase = 'win'; return; }
   genShop(); S.phase = 'cashout';
 }
-function loseRun() { S.phase = 'gameover'; }
+function loseRun() { S.phase = 'gameover'; PROFILE.bestAnte = Math.max(PROFILE.bestAnte, S.ante); saveProfile(); }
 function rollAnteTags() { S.skipTags = { small: pick(Object.keys(TAGS)), big: pick(Object.keys(TAGS)) }; }
 function blindTarget(kind) { return Math.floor(CFG.anteBase[Math.min(S.ante, CFG.antes) - 1] * CFG.blindMult[kind] * stakeTargets()); }
-function newRun(opts) { S = newState(opts || {}); rollAnteTags(); S.phase = 'select'; render(); }
+function newRun(opts) { S = newState(opts || {}); PROFILE.runs++; saveProfile(); rollAnteTags(); S.phase = 'select'; render(); }
 
 // ===================== ACTIONS =====================
 function setMsg(m, err) { S.msg = m; S.msgErr = !!err; }
@@ -193,6 +206,7 @@ async function doPlay() {
   S.plays--; S.score += ctx.total; S.money += ctx.money; S.lastPlay = ctx; S.firstPlayDone = true;
   S.stats.rungs[ctx.meldType] = (S.stats.rungs[ctx.meldType] || 0) + 1; for (const yk of ctx.yaku) S.stats.yaku[yk.key] = (S.stats.yaku[yk.key] || 0) + 1;
   if (ctx.total > S.stats.best) { S.stats.best = ctx.total; S.stats.bestDesc = ctx.desc; }
+  if (ctx.kind === 'hand') PROFILE.hands++; for (const yk of ctx.yaku) bump(PROFILE.yaku, yk.key); if (ctx.total > PROFILE.bestPlay) { PROFILE.bestPlay = ctx.total; PROFILE.bestPlayDesc = ctx.desc; } saveProfile();
   const keep = t => !ctx.shatter.includes(t.id);
   S.played.push(...sel.filter(keep)); S.hand = S.hand.filter(t => !sel.includes(t));
   if (opt.type === 'hand') { S.played.push(...openTiles().filter(keep)); S.open = []; }
@@ -951,6 +965,7 @@ function fullRulesHTML() {
   <h3>Help and Controls</h3>
   <p><b>Helper.</b> Under your hand the game shows how many tiles you are from a complete hand. Settings can turn that off, and can turn on two more hints: which tiles you are waiting on, and whether the tiles you select can go without setting you back. Against The Purist they only count your visible tiles. Another assist marks dead tiles with green dots.</p>
   <p><b>Arranging.</b> Drag hand tiles to reorder them. Dragging turns off auto-sort; Sort Hand sorts again. Tiles score in the order they sit, which matters for Shikigami. Sorting also works against The Purist, so face-down tiles sit in their sorted place. A selection with face-down tiles always plays: if it isn't a valid play, its best part scores and the other selected tiles go to the River.</p>
+  <p><b>Saving.</b> Your run saves automatically after every action. Run Info, Profile tab, keeps lifetime stats across runs. Settings, Your data, exports your profile, settings and current run as a code or file, so you can import them on another device or browser.</p>
   <p><b>Tile numbers.</b> Characters show their number and Winds their letter in the corner. Dots and Bamboo have none by default, since you count their pips. Settings can show numbers on all tiles or on none.</p>
   <p><b>Keys.</b> Enter or P plays, D discards, C calls, K declares a Kan, Esc clears your selection. Click anywhere or press any key while a play scores to skip the animation. Esc or a click outside closes Rules, Wall, Run Info and Settings.</p>
   </div>`;
@@ -1005,9 +1020,61 @@ let rulesTab = 'quick';
 function parseHand(str) { const out = []; for (const grp of str.split(' ')) { const m = grp.match(/^(\d+)([mpsz])$/); if (!m) continue; const tiles = [...m[1]].map(d => ({ id: 0, suit: m[2], rank: +d, red: false, eng: null })); out.push(tiles); } return out; }
 function exampleHTML(ex) { return `<div class="exrow" data-ex="${ex}"></div>`; }
 function fillExamples(root) { root.querySelectorAll('.exrow').forEach(row => { if (row.children.length) return; for (const grp of parseHand(row.dataset.ex)) { const g = document.createElement('div'); g.className = 'exgrp'; for (const t of grp) { const e = tileEl(t, { small: true }); e.classList.add('tiny'); e.style.cursor = 'default'; g.appendChild(e); } row.appendChild(g); } }); }
+// Lifetime stats from the player profile.
+function profileHTML() {
+  const P = PROFILE, stat = (label, v) => `<div class="stat"><div class="label">${label}</div><div class="v num">${v}</div></div>`;
+  const named = (obj, table, nameOf) => { const e = Object.entries(obj).sort((a, b) => b[1] - a[1]); return e.length ? e.map(([k, n]) => `<span class="tagchip">${nameOf(table, k)} ×${n}</span>`).join('') : '<span class="muted">None yet</span>'; };
+  const nm = (t, k) => (t[k] && t[k].name) || k, yn = (t, k) => ((YAKU_SHEET.find(y => y.k === k) || YAKUMAN_SHEET.find(y => y.k === k) || {}).n) || k;
+  let h = `<p class="muted" style="margin:8px 0">Your progress across every run in this browser. Export it from Settings to move it to another device.</p>`;
+  h += `<div class="overstats">${stat('Runs', P.runs)}${stat('Wins', P.wins)}${stat('Best Ante', P.bestAnte ? `${Math.min(P.bestAnte, CFG.antes)} / ${CFG.antes}` : '—')}${stat('Blinds won', P.blinds)}${stat('Complete Hands', P.hands)}</div>`;
+  h += `<div class="overbest"><div><div class="label">Best Play ever</div><div class="v num">${P.bestPlay ? P.bestPlay.toLocaleString() : '—'}</div></div>${P.bestPlayDesc ? `<div class="muted">${P.bestPlayDesc}</div>` : ''}</div>`;
+  h += `<div class="label" style="margin:12px 0 6px">Bosses beaten · ${Object.keys(P.bosses).length} of ${Object.keys(BOSSES).length}</div><div class="overtals">${named(P.bosses, BOSSES, nm)}</div>`;
+  h += `<div class="label" style="margin:12px 0 6px">Wins by Stake</div><div class="overtals">${named(P.stakesWon, STAKES, nm)}</div>`;
+  h += `<div class="label" style="margin:12px 0 6px">Wins by Wall</div><div class="overtals">${named(P.wallsWon, DECKS, nm)}</div>`;
+  h += `<div class="label" style="margin:12px 0 6px">Yaku scored</div><div class="overtals">${named(P.yaku, null, yn)}</div>`;
+  return h;
+}
+// ===================== EXPORT / IMPORT =====================
+// One save = profile + settings + current run, as gzip + base64 text ("YKM1Z:...") or plain JSON.
+const SETTING_KEYS = ['yakuman.lang', 'yakuman.speed', 'yakuman.dots', 'yakuman.hints', 'yakuman.tilenums'];
+function exportPayload() { const settings = {}; for (const k of SETTING_KEYS) { try { const v = localStorage.getItem(k); if (v != null) settings[k] = v; } catch (e) { } } save(); let run = null; try { run = localStorage.getItem(SAVE_KEY); } catch (e) { } return { app: 'yakuman', v: 1, exported: new Date().toISOString(), profile: PROFILE, settings, run }; }
+async function toCode(obj) {
+  const bytes = new TextEncoder().encode(JSON.stringify(obj)); let out = bytes, gz = false;
+  if (window.CompressionStream) { try { const cs = new CompressionStream('gzip'); const w = cs.writable.getWriter(); w.write(bytes); w.close(); out = new Uint8Array(await new Response(cs.readable).arrayBuffer()); gz = true; } catch (e) { out = bytes; gz = false; } }
+  let bin = ''; for (let i = 0; i < out.length; i++) bin += String.fromCharCode(out[i]); return (gz ? 'YKM1Z:' : 'YKM1:') + btoa(bin);
+}
+async function fromCode(text) {
+  text = (text || '').trim(); if (!text) throw new Error('Paste a save code or choose a file first.');
+  if (text.startsWith('{')) return JSON.parse(text);
+  const m = text.match(/^YKM1(Z?):([\s\S]+)$/); if (!m) throw new Error('That is not a Yakuman save code.');
+  const bin = atob(m[2].replace(/\s+/g, '')); let bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+  if (m[1]) { const ds = new DecompressionStream('gzip'); const w = ds.writable.getWriter(); w.write(bytes); w.close(); bytes = new Uint8Array(await new Response(ds.readable).arrayBuffer()); }
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+function checkSave(o) { if (!o || o.app !== 'yakuman' || typeof o.profile !== 'object') throw new Error('That save is not from Yakuman.'); if (o.v !== 1) throw new Error('That save is from a different version of Yakuman.'); if (o.run) JSON.parse(o.run); return o; }
+let PENDING_IMPORT = null, EXPORT_CODE = '';
+function exportHTML() {
+  return `<div class="shophead"><h2>Export Save</h2></div><p class="muted" style="margin:2px 0 10px">Your profile, settings and current run in one code. Copy it or save it as a file, then use Import on your other device or browser.</p>
+  <textarea id="saveCode" class="savecode" readonly rows="5">${EXPORT_CODE}</textarea><div class="muted" style="font-size:11px;margin-top:4px">${EXPORT_CODE.length.toLocaleString()} characters</div>
+  <div class="shopfoot"><button id="mClose" class="ghost">Back</button><span style="flex:1"></span><button id="mDownloadCode" class="ghost">Save as File</button><button id="mCopyCode" class="primary">Copy Code</button></div>`;
+}
+function importHTML(err) {
+  if (PENDING_IMPORT) {
+    const P = Object.assign(blankProfile(), PENDING_IMPORT.profile); let run = null; try { run = PENDING_IMPORT.run ? JSON.parse(PENDING_IMPORT.run) : null; } catch (e) { }
+    return `<div class="shophead"><h2>Replace This Save?</h2></div><p class="muted" style="margin:2px 0 10px">Loading replaces the profile, settings and current run in this browser.</p>
+    <div class="receipt"><div class="rrow"><div><div class="rl">Profile</div><div class="rd muted">${P.runs} runs · ${P.wins} wins · best Ante ${P.bestAnte || '—'}</div></div></div><div class="rrow"><div><div class="rl">Current run</div><div class="rd muted">${run ? `Ante ${Math.min(run.ante, CFG.antes)} · ${(DECKS[run.deckKey] || {}).name || 'Wall'} · ${(STAKES[run.stake] || {}).name || 'Stake'}` : 'None'}</div></div></div><div class="rrow" style="border-bottom:0"><div><div class="rl">Exported</div><div class="rd muted">${PENDING_IMPORT.exported ? new Date(PENDING_IMPORT.exported).toLocaleString() : 'unknown'}</div></div></div></div>
+    <div class="shopfoot"><button id="mClose" class="ghost">Cancel</button><span style="flex:1"></span><button id="mConfirmImport" class="danger">Replace and Reload</button></div>`;
+  }
+  return `<div class="shophead"><h2>Import Save</h2></div><p class="muted" style="margin:2px 0 10px">Paste a save code from Export, or choose a save file.</p>
+  <textarea id="importCode" class="savecode" rows="5" placeholder="YKM1Z:..."></textarea>
+  <div style="display:flex;gap:8px;align-items:center;margin-top:8px"><label class="ghost filebtn">Choose File<input type="file" id="importFile" accept=".txt,.json,text/plain,application/json" hidden></label><span class="muted" id="importFileName" style="font-size:12px"></span></div>
+  <div class="msg${err ? ' err' : ''}" style="min-height:18px;margin-top:6px">${err || ''}</div>
+  <div class="shopfoot"><button id="mClose" class="ghost">Back</button><span style="flex:1"></span><button id="mLoadSave" class="primary">Load Save</button></div>`;
+}
+function backToSettings() { $('#mClose').onclick = () => { PENDING_IMPORT = null; showModal(settingsHTML(), true); }; }
 function yakuHTML() {
   const st = S.stats; const most = mostPlayedRung(); const yc = k => (S && S.stats.yaku[k]) || 0;
-  const tabs = [['run', 'Run'], ['ladder', 'Play Ladder'], ['yaku', 'Yaku'], ['yakuman', 'Yakuman']];
+  const tabs = [['run', 'Run'], ['ladder', 'Play Ladder'], ['yaku', 'Yaku'], ['yakuman', 'Yakuman'], ['profile', 'Profile']];
   let h = `<h2>Run Info</h2><div class="tabs">${tabs.map(([k, n]) => `<button class="tab${infoTab === k ? ' on' : ''}" data-tab="${k}">${n}</button>`).join('')}</div>`;
   if (infoTab === 'run') {
     const kv = (k, v) => `<div class="kv"><span>${k}</span><b>${v}</b></div>`;
@@ -1022,6 +1089,7 @@ function yakuHTML() {
     h += `<div class="infocard"><div class="label">Tags held</div>${(S.tags || []).map(t => kv(TAGS[t].name, `<span class="muted" style="font-weight:400">${TAGS[t].desc}</span>`)).join('') || '<div class="muted">None</div>'}</div>`;
     h += `</div>`;
     h += `<div class="infocard" style="margin-top:10px"><div class="label">Bosses</div><div class="bossline">${S.bossOrder.slice(0, CFG.antes).map((b, i) => { const known = i <= S.ante - 1 || st.bosses.includes(b); const beaten = i < S.ante - 1; return `<div class="bossstep${beaten ? ' beaten' : i === S.ante - 1 ? ' now' : ''}"><span class="order">A${i + 1}</span><b>${known ? BOSSES[b].name : '?'}</b>${known ? `<span class="muted">${BOSSES[b].desc}</span>` : ''}</div>`; }).join('')}</div></div>`;
+  } else if (infoTab === 'profile') { h += profileHTML();
   } else if (infoTab === 'ladder') {
     const lv = k => (S && S.scrolls.meld[k]) || 0; const lvTag = k => lv(k) ? ` <span class="tag">Lv.${lv(k) + 1}</span>` : '';
     const val = k => `${CFG.meldBase[k].chips + lv(k) * CFG.scrollChips} chips, ${CFG.meldBase[k].han + lv(k) * CFG.scrollHan} Han`;
@@ -1130,6 +1198,7 @@ function bindEvents() {
   $('#btnRules').onclick = () => showModal(rulesHTML(), true);
   $('#btnCollection').onclick = () => showModal(collectionHTML(), true, 'colmodal');
   // Collection search filters the current tab by the cards' visible text (works in both terminologies).
+  document.addEventListener('change', e => { if (e.target.id !== 'importFile' || !e.target.files[0]) return; const f = e.target.files[0]; const r = new FileReader(); r.onload = () => { $('#importCode').value = String(r.result || ''); $('#importFileName').textContent = f.name; }; r.readAsText(f); });
   document.addEventListener('input', e => { if (e.target.id !== 'colSearch') return; const q = e.target.value.trim().toLowerCase(); let shown = 0; document.querySelectorAll('#modal .colcard').forEach(c => { const ok = !q || c.innerText.toLowerCase().includes(q); c.hidden = !ok; if (ok) shown++; }); const none = document.querySelector('#modal .colnone'); if (none) none.hidden = shown > 0; });
   $('#btnYaku').onclick = () => showModal(yakuHTML(), true);
 
@@ -1151,7 +1220,15 @@ function bindEvents() {
     if (t.dataset.setspeed) { ANIM_SPEED = t.dataset.setspeed; try { localStorage.setItem('yakuman.speed', ANIM_SPEED); } catch (e) { } showModal(settingsHTML(), true); return; }
     if (t.dataset.setdbg) { const b = $('#debugBar'); b.hidden = t.dataset.setdbg !== 'on'; if (!b.hidden) renderDebug(); showModal(settingsHTML(), true); return; }
     if (t.dataset.wipe != null) { clearSave(); location.reload(); return; }
-    if (t.id === 'mClose') { hideModal(); render(); }
+    if (t.id === 'mExport') { (async () => { EXPORT_CODE = await toCode(exportPayload()); showModal(exportHTML(), true, 'datamodal'); backToSettings(); })(); return; }
+    if (t.id === 'mImport') { PENDING_IMPORT = null; showModal(importHTML(), true, 'datamodal'); backToSettings(); return; }
+    if (t.id === 'mCopyCode') { const ta = $('#saveCode'); const done = () => { t.textContent = 'Copied'; setTimeout(() => { t.textContent = 'Copy Code'; }, 1400); }; const fallback = () => { ta.focus(); ta.select(); try { document.execCommand('copy'); done(); } catch (e) { t.textContent = 'Selected: press Copy'; } }; try { navigator.clipboard.writeText(EXPORT_CODE).then(done, fallback); } catch (e) { fallback(); } return; }
+    if (t.id === 'mDownloadCode') { try { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([EXPORT_CODE], { type: 'text/plain' })); a.download = `yakuman-save-${new Date().toISOString().slice(0, 10)}.txt`; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); } catch (e) { t.textContent = 'Not allowed here: copy the code'; } return; }
+    if (t.id === 'mLoadSave') { (async () => { try { PENDING_IMPORT = checkSave(await fromCode(($('#importCode') || {}).value)); showModal(importHTML(), true, 'datamodal'); backToSettings(); } catch (e) { const code = ($('#importCode') || {}).value || ''; showModal(importHTML(e.message || 'That save could not be read.'), true, 'datamodal'); backToSettings(); $('#importCode').value = code; } })(); return; }
+    if (t.id === 'mConfirmImport') { const o = PENDING_IMPORT; if (!o) return; try { localStorage.setItem(PROFILE_KEY, JSON.stringify(Object.assign(blankProfile(), o.profile))); for (const [k, v] of Object.entries(o.settings || {})) if (SETTING_KEYS.includes(k)) localStorage.setItem(k, v); if (o.run) localStorage.setItem(SAVE_KEY, o.run); else localStorage.removeItem(SAVE_KEY); } catch (e) { } location.reload(); return; }
+    if (t.id === 'mResetProfile') { showModal(`<div class="shophead"><h2>Reset Profile?</h2></div><p class="muted" style="margin:4px 0 0">Lifetime stats in this browser will be cleared. Export first if you want a copy.</p><div class="shopfoot"><button id="mClose" class="ghost">Cancel</button><span style="flex:1"></span><button id="mConfirmReset" class="danger">Reset Profile</button></div>`, true, 'confirmmodal'); backToSettings(); return; }
+    if (t.id === 'mConfirmReset') { PROFILE = blankProfile(); saveProfile(); showModal(settingsHTML(), true); return; }
+    if (t.id === 'mClose') { if (!t.onclick) { hideModal(); render(); } }   // a custom back action (to the menu or Settings) has already run
     else if (t.id === 'mNewRun' || t.id === 'mStart') { showModal(setupHTML(), true, 'setupmodal'); }
     else if (t.dataset.pick) { const [name, i] = t.dataset.pick.split(':'); const seed = ($('#seedInput') || {}).value || ''; setupSel[name] = +i; showModal(setupHTML(), true, 'setupmodal'); $('#seedInput').value = seed; }
     else if (t.dataset.nav) { const [name, d] = t.dataset.nav.split(':'); const seed = ($('#seedInput') || {}).value || ''; setupSel[name] += +d; showModal(setupHTML(), true, 'setupmodal'); $('#seedInput').value = seed; }
@@ -1189,7 +1266,7 @@ function boot(saved) {
     let maxId = 0; for (const t of [...S.deck, ...S.hand, ...S.wall, ...S.river, ...S.played, ...(S.indicators || []), ...S.open.flatMap(m => m.tiles)]) if (t.id > maxId) maxId = t.id; tileSeq = Math.max(tileSeq, maxId);
     // Repair any duplicates an older save may already contain
     const seen = new Set(); for (const zone of [S.hand, S.wall, S.river, S.played, S.deck, S.indicators || [], ...S.open.map(m => m.tiles)]) for (const t of zone) { if (seen.has(t.id)) t.id = ++tileSeq; seen.add(t.id); } S.editions = S.editions || {}; S.seed = S.seed || 'legacy'; S.deckKey = S.deckKey || 'standard'; S.stake = S.stake || 'white'; if (S.rngState === undefined) S.rngState = hashSeed(S.seed + Date.now()); S.stats.rungs = S.stats.rungs || {}; S.stats.yaku = S.stats.yaku || {}; S.stats.bosses = S.stats.bosses || []; S.tags = S.tags || []; if (!S.skipTags) S.skipTags = { small: pick(Object.keys(TAGS)), big: pick(Object.keys(TAGS)) }; S.stats.skipped = S.stats.skipped || 0; S.stats.calls = S.stats.calls || 0; S.stats.kans = S.stats.kans || 0; S.stats.discards = S.stats.discards || 0; S.busy = false; S.newIds = []; S.drawSeq = S.drawSeq || 0; render(); showModal(menuHTML(true), true, 'menumodal'); }
-  else { S = newState(); startBlind(); render(); showModal(menuHTML(false), true, 'menumodal'); }
+  else { S = newState(); PROFILE.runs++; saveProfile(); startBlind(); render(); showModal(menuHTML(false), true, 'menumodal'); }
 }
 try { if (window.claude && window.claude.hot) window.claude.hot.snapshot(() => S); } catch (e) { }
 const hotData = (window.claude && window.claude.hot && window.claude.hot.data) || null;
