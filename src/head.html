@@ -265,7 +265,20 @@ aside{display:flex;flex-direction:column;gap:10px;min-width:0}
 .carcard .dots{display:flex;gap:4px;margin-top:auto;padding-top:8px;justify-content:center} .carcard .dots i{width:6px;height:6px;border-radius:50%;background:var(--line);display:inline-block} .carcard .dots i.on{background:var(--accent)}
 .seedline{font-size:11px;margin-top:8px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 /* Run over / run complete */
-.modal.overmodal{max-width:640px} .overhead h2{margin:2px 0 4px;font-size:30px} .overhead h2.lost{color:var(--accent2)} .overhead p{margin:0 0 10px}
+.modal.overmodal{max-width:640px}
+.modal.winmodal{border-color:rgba(217,164,65,.6);background:radial-gradient(ellipse at top,rgba(217,164,65,.16),transparent 60%),var(--panel);box-shadow:0 0 0 1px rgba(217,164,65,.25),0 0 40px rgba(217,164,65,.15)}
+.winmodal .overhead h2{color:var(--accent);text-shadow:0 0 18px rgba(217,164,65,.35)}
+/* Intro */
+.modal.menumodal{max-width:560px;text-align:center;padding:26px 28px 20px;border-color:rgba(217,164,65,.45);background:radial-gradient(ellipse at top,rgba(217,164,65,.14),transparent 62%),var(--panel)}
+.herotiles{display:flex;justify-content:center;align-items:flex-end;height:104px;margin:0 0 22px}
+.herotiles .tile{--tw:54px;--th:calc(54px * 1.36);margin:0 -5px;transform-origin:50% 130%;box-shadow:0 3px 0 #8f815f,0 8px 16px rgba(0,0,0,.45)}
+.herotiles.small{height:84px} .herotiles.small .tile{--tw:44px;--th:calc(44px * 1.36)}
+.herotitle{font-family:var(--display);font-size:64px;font-weight:500;color:var(--accent);margin:0;line-height:1;letter-spacing:.02em;text-shadow:0 2px 0 rgba(0,0,0,.45),0 0 26px rgba(217,164,65,.25)}
+.herokanji{font-family:var(--tilefont);font-size:17px;color:var(--accent2);letter-spacing:.6em;padding-left:.6em;margin-top:8px}
+.herotag{color:var(--fg);opacity:.85;max-width:430px;margin:14px auto 18px;line-height:1.55;font-size:14px}
+.heroacts{display:flex;flex-direction:column;gap:8px;max-width:300px;margin:0 auto}
+.heroacts button{width:100%} .herobtn{font-size:16px;padding:10px 18px;display:flex;flex-direction:column;align-items:center;gap:2px} .herobtn span{font-size:11px;font-weight:400;opacity:.8}
+.herofoot{font-size:11px;margin-top:18px} .overhead h2{margin:2px 0 4px;font-size:30px} .overhead h2.lost{color:var(--accent2)} .overhead p{margin:0 0 10px}
 .overscore{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 12px 10px} .overscore .row{display:flex;justify-content:space-between;align-items:baseline;gap:10px} .overscore b{font-family:var(--display);font-size:20px;font-weight:500}
 .overbar{height:4px;border-radius:2px;background:rgba(255,255,255,.08);margin-top:6px;overflow:hidden} .overbar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),#f1cf7a)}
 .overstats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-top:12px} .overstats .stat{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;justify-content:space-between;gap:4px} .overstats .stat .v{font-size:22px}
