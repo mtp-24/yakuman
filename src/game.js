@@ -222,12 +222,14 @@ function collectDeck() {
 function winBlind() {
   const kind = blindKind();
   const base = (kind === 'small' && smallPaysNothing()) ? 0 : CFG.blindReward[kind], left = S.plays, interest = Math.min(hasF('winter') ? 10 : CFG.interestCap, Math.floor(S.money / CFG.interestPer));
-  let tal = 0; for (const k of S.talismans) if (TAL[k].onBlindEnd) tal += TAL[k].onBlindEnd(S);
+  // Each paying Talisman gets its own cash-out row, like Jokers in Balatro.
+  const talPay = []; for (const k of S.talismans) if (TAL[k].onBlindEnd) { const v = TAL[k].onBlindEnd(S) || 0; if (v) talPay.push([k, v]); }
+  const tal = talPay.reduce((a, [, v]) => a + v, 0);
   const summer = hasF('summer') ? 2 : 0;
   let invest = 0; if (kind === 'boss' && S.tags.includes('investment')) { invest = 25; S.tags = S.tags.filter(t => t !== 'investment'); }
   const total = base + left + interest + tal + summer + invest;
   S.money += total; S.stats.blinds++; S.msg = ''; S.msgErr = false;
-  S.reward = { kind, base, left, interest, tal, summer, invest, total, wallLeft: S.wall.length };
+  S.reward = { kind, base, left, interest, tal, talPay, summer, invest, total, wallLeft: S.wall.length };
   collectDeck();
   const finished = S.ante === CFG.antes && S.blindIndex === 2 && !S.endless;
   S.blindIndex++; if (S.blindIndex > 2) { S.blindIndex = 0; S.ante++; rollAnteTags(); ensureBosses(); if (!finished) PROFILE.bestAnte = Math.max(PROFILE.bestAnte, S.ante); }
@@ -1392,11 +1394,13 @@ function cashoutHTML() {
   const r = S.reward; const names = { small: 'Small Blind', big: 'Big Blind', boss: 'Boss Blind' };
   const bossName = r.kind === 'boss' && S.stats.bosses.length ? BOSSES[S.stats.bosses[S.stats.bosses.length - 1]].name : null;
   const cap = hasF('winter') ? 10 : CFG.interestCap;
-  const rows = [['Blind reward', names[r.kind], r.base], ['Unused Plays', `${r.left} × ¥1`, r.left], ['Interest', `¥1 per ¥${CFG.interestPer} held, up to ¥${cap}`, r.interest], r.tal ? ['Talismans', 'end-of-Blind payouts', r.tal] : null, r.summer ? ['Summer', 'Flower', r.summer] : null, r.invest ? ['Investment Tag', 'Boss bonus', r.invest] : null].filter(Boolean);
+  const talRows = r.talPay ? r.talPay.map(([k, v]) => [TAL[k] ? TAL[k].name : k, 'Talisman', v]) : r.tal ? [['Talismans', 'end-of-Blind payouts', r.tal]] : [];   // older saves only kept the total
+  const rows = [['Blind reward', names[r.kind], r.base], ['Unused Plays', `${r.left} × ¥1`, r.left], ['Interest', `¥1 per ¥${CFG.interestPer} held, up to ¥${cap}`, r.interest], ...talRows, r.summer ? ['Summer', 'Flower', r.summer] : null, r.invest ? ['Investment Tag', 'Boss bonus', r.invest] : null].filter(Boolean);
   const cur = LANG === 'hk' ? '$' : '¥';
   let h = `<div class="drawhead"><h2>${bossName ? bossName + ' beaten' : 'Blind cleared'}</h2><span class="label">${names[r.kind]} defeated</span></div>`;
-  h += `<div class="receipt">${rows.map(([k, d, v]) => `<div class="rrow"><span class="rl">${k}</span><span class="rd muted">${d}</span><span class="rlead" aria-hidden="true"></span><b class="num">¥${v}</b></div>`).join('')}</div>`;
+  // Like Balatro, the Cash Out button sits on top and the reward rows fill in beneath it, so the button never moves.
   h += `<button id="mCashOut" class="primary cashbtn">Cash Out <span class="cashamt"><span class="coin" aria-hidden="true">${coinSVG()}</span><span class="num">${cur}${r.total}</span></span></button>`;
+  h += `<div class="receipt">${rows.map(([k, d, v]) => `<div class="rrow"><span class="rl">${k}</span><span class="rd muted">${d}</span><span class="rlead" aria-hidden="true"></span><b class="num">¥${v}</b></div>`).join('')}</div>`;
   return h;
 }
 // Same look as the play area's purse: the coin, the amount, and JPY or HKD underneath.

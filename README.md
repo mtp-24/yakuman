@@ -173,6 +173,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 162: Collection engravings use wide cards: the sample tile sits on a felt pad at the left, the name and effect beside it, an accent edge in each engraving's colour, two or three cards per row.
 - Build 163: Engraving cards drop the coloured accent edge.
 - Build 164: Flowers in the side panel use the same hover card as tiles (a Flower label, the name and the effect) instead of the plain tooltip; the hover card now works for any element with data-hc-title.
+- Build 171: Cash-out puts the Cash Out button on top like Balatro, with the reward rows filling in beneath it; each paying Talisman gets its own row (e.g. Maneki-neko ¥3) instead of one Talismans total. No Next Up preview, so any number of rows fits.
 - Build 170: The cash-out tray grows up from the screen's bottom edge until its contents sit at the middle of the screen (still always covering the action bar), and re-centres on resize.
 - Build 169: Cash-out dimming sits on the board itself, so the page background below the board keeps the same colour as the sides.
 - Build 168: The cash-out tray now rises from the bottom edge of the screen into the board's column, like Balatro, with a wooden frame; on tall screens it still reaches up over the action bar. Fix: a scrollbar no longer appears on the board while the tray slides away.
