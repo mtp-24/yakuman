@@ -151,6 +151,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 140: Edition overlays sit behind the card's text instead of over it, so names and descriptions on Foil, Holographic and Polychrome cards read crisply.
 - Build 141: Edition pills never wrap: the kind line stays on one row, Talisman cards with an edition on the board and in your owned list show the order number and the pill instead of the word Talisman, and board slots use a compact pill.
 - Build 142: Shop and cash-out money use the play area's purse look (themed coin, amount, JPY or HKD underneath). Shop rail buttons get icons: circular arrows on Reroll Cards, the tile stack on View Wall.
+- Build 143: Shop banner: the decorative crest before the title is gone, and the money lines up with the title lettering.
 - Build 7: multi-meld play ladder (Two Melds ... Four Melds), targets 300...45000, retrigger and scaling Talismans, Wall-Builder rewording, scoring animation.
 
 ## Simulators (in `sim/`)
