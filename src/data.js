@@ -247,10 +247,10 @@ const CONS = {}; OMIKUJI.forEach(o => CONS[o.key] = Object.assign({ kind: 'omiku
 
 // ===================== SCROLLS OF MASTERY (Planets) =====================
 const SCROLLS = [
-  { key: 'm:pair', name: 'Scroll of Pairs', cost: 3, desc: 'Pair plays: +10 Chips and +1 Han, permanently.' },
-  { key: 'm:chi', name: 'Scroll of Sequences', cost: 3, desc: 'Chi plays: +10 Chips and +1 Han, permanently.' },
-  { key: 'm:pon', name: 'Scroll of Triplets', cost: 3, desc: 'Pon plays: +10 Chips and +1 Han, permanently.' },
-  { key: 'm:kan', name: 'Scroll of Quads', cost: 3, desc: 'Kan plays: +10 Chips and +1 Han, permanently.' },
+  { key: 'm:pair', name: 'Scroll of Pairs', cost: 3, desc: 'Every Pair in a play: +10 Chips. Any play with a Pair: +1 Han. Permanent, stacks per level.' },
+  { key: 'm:chi', name: 'Scroll of Sequences', cost: 3, desc: 'Every Chi in a play: +10 Chips. Any play with a Chi: +1 Han. Permanent, stacks per level.' },
+  { key: 'm:pon', name: 'Scroll of Triplets', cost: 3, desc: 'Every Pon in a play: +10 Chips. Any play with a Pon: +1 Han. Permanent, stacks per level.' },
+  { key: 'm:kan', name: 'Scroll of Quads', cost: 3, desc: 'Every Kan in a play: +10 Chips. Any play with a Kan: +1 Han. Permanent, stacks per level.' },
   { key: 'm:hand', name: 'Scroll of Completion', cost: 4, desc: 'Complete Hands: +10 Chips and +1 Han, permanently.' },
   { key: 'y:tanyao', name: 'Scroll of Tanyao', cost: 3, desc: '+1 Han whenever Tanyao scores.' },
   { key: 'y:pinfu', name: 'Scroll of Pinfu', cost: 3, desc: '+1 Han whenever Pinfu scores.' },
