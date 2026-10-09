@@ -96,7 +96,7 @@ function startBlind() {
   S.discards = Math.max(0, CFG.discardsPerBlind + S.bonusDiscards + talMod('discards') + (hasF('orchid') ? 1 : 0) - (S.deckKey === 'gambler' ? 1 : 0));
   S.wall = shuffle(S.deck.slice()); S.deck = []; S.hand = []; S.river = []; S.open = []; S.played = [];
   S.selected = []; S.selRiver = null; S.dora = []; S.indicators = []; S.pendingDiscard = 0; S.revealed = false; S.score = 0; S.lastPlay = null; S.reward = null; S.selTal = null;
-  S.firstPlayDone = false; S.bossSuit = S.boss === 'collector' ? pick(['m', 'p', 's']) : null;
+  S.firstPlayDone = false; S.freeCallsUsed = 0; S.bossSuit = S.boss === 'collector' ? pick(['m', 'p', 's']) : null;
   S.blindMods = S.nextBlindMods || {}; S.nextBlindMods = null;
   draw();
   for (const k of S.talismans) if (TAL[k].onBlindStart) TAL[k].onBlindStart(S);
@@ -204,18 +204,19 @@ function doCall() {
   if (S.phase !== 'blind' || S.busy) return;
   if (S.pendingDiscard) { setMsg('Settle your previous Call first.', true); return render(); }
   if (S.boss === 'fisherman') { setMsg('The Fisherman: River tiles cannot be Called this Blind.', true); return render(); }
-  const freeCall = S.talismans.some(k => TAL[k].freeCall);
+  // Ryūjin: a limited number of free Calls per Blind (the most any owned Talisman grants).
+  const freeMax = S.talismans.reduce((m, k) => Math.max(m, +TAL[k].freeCall || 0), 0), freeCall = (S.freeCallsUsed || 0) < freeMax;
   if (!freeCall && S.plays <= 1) { setMsg(S.plays <= 0 ? 'No Plays left.' : 'Calling would use your last Play and leave nothing to score with.', true); return render(); }
   const rt = S.river.find(t => t.id === S.selRiver); if (!rt) { setMsg('Select a tile in the River to call.', true); return render(); }
   const sel = selTiles(); if (sel.length < 2 || sel.length > 3) { setMsg('Select 2 or 3 hand tiles to meld with the River tile.', true); return render(); }
   if (S.open.length >= 4) { setMsg('You already have 4 open melds.', true); return render(); }
   const type = meldType([rt, ...sel]); if (!type) { setMsg('That River tile and your selection do not form a Chi, Pon or Kan.', true); return render(); }
-  if (!freeCall) S.plays--; S.river = S.river.filter(t => t !== rt); S.hand = S.hand.filter(t => !sel.includes(t));
+  if (freeCall) S.freeCallsUsed = (S.freeCallsUsed || 0) + 1; else S.plays--; S.river = S.river.filter(t => t !== rt); S.hand = S.hand.filter(t => !sel.includes(t));
   S.open.push({ type, tiles: sortTiles([rt, ...sel]), calledId: rt.id }); S.selected = []; S.selRiver = null;
   for (const k of S.talismans) if (TAL[k].onCall) TAL[k].onCall(S); S.stats.calls++; if (type === 'kan') S.stats.kans++;
   const rep = type === 'kan' ? drawReplacement() : null;
   S.pendingDiscard = Math.max(0, S.hand.length - capacity());
-  const note = `Called ${MELD_LABEL[type]} (open)${freeCall ? ', no Play spent' : ''}${rep ? `. Replacement tile drawn: ${tileName(rep)}` : ''}`;
+  const note = `Called ${MELD_LABEL[type]} (open)${freeCall ? `, no Play spent (${freeMax - S.freeCallsUsed} free Call${freeMax - S.freeCallsUsed === 1 ? '' : 's'} left)` : ''}${rep ? `. Replacement tile drawn: ${tileName(rep)}` : ''}`;
   if (S.pendingDiscard) setMsg(`${note}. Now discard ${S.pendingDiscard} tile to settle the Call.`); else { draw(); setMsg(note + '.'); }
   render();
 }
@@ -889,7 +890,7 @@ function rulesHTML() {
   <p><b>Plays and Discards.</b> You get ${CFG.playsPerBlind} Plays and ${CFG.discardsPerBlind} Discards per Blind, before Talismans, Flowers and Wall effects. A Discard throws up to ${CFG.maxDiscardTiles} tiles into the River, which stays visible for the whole Blind.</p>
   <p><b>Partial plays.</b> Select tiles that split into melds (Chi runs, Pon triplets, Kan quads) plus at most one pair, or two pairs on their own, and press Play. The box in the side panel names the rung it makes: Lone Tile, Pair, Two Pair, one meld, Two Melds, Three Melds, Ready Hand (three melds and a pair) or Four Melds. Bigger rungs score far more, so a hand one tile short is still worth cashing in. Each costs 1 Play. Run Info, Play Ladder tab, lists every rung's Chips and Han.</p>
   <p><b>Complete hand.</b> Select 14 tiles that make four melds and a pair, Seven Pairs, or Thirteen Orphans, and press Play. Its Yaku add Han. A complete hand with no Yaku still gets +1 Han. Each Yakuman counts as 13 Han, and they stack. Run Info lists all Yaku with example hands.</p>
-  <p><b>Call.</b> Select one River tile and 2–3 hand tiles that form a meld with it, then press Call. It costs 1 Play and scores nothing yet, and you cannot Call with your last Play. The meld is set aside as Open and counts toward your complete hand. Open hands get less Han from some Yaku and lose closed-only Yaku such as Pinfu and Iipeikou. After a Call you discard 1 tile to settle it, which does not use a Discard.</p>
+  <p><b>Call.</b> Select one River tile and 2–3 hand tiles that form a meld with it, then press Call. It costs 1 Play and scores nothing yet, and you cannot Call with your last Play. The ${TAL.ryujin.name} Talisman makes your first ${TAL.ryujin.freeCall} Calls each Blind free. The meld is set aside as Open and counts toward your complete hand. Open hands get less Han from some Yaku and lose closed-only Yaku such as Pinfu and Iipeikou. After a Call you discard 1 tile to settle it, which does not use a Discard.</p>
   <p><b>Kan.</b> Four identical tiles can be played as a partial Kan for points, or declared with Declare Kan to set them aside as a closed Kan that counts toward your complete hand without opening it. Every Kan, declared or called, draws one replacement tile. If that tile ends up as the winning tile of your complete hand, you score Rinshan Kaihou (+1 Han).</p>
   <p><b>Furiten.</b> The winning tile of a complete hand is the newest tile you drew among the 14 you play. If a copy of that tile sits in your River, the hand is in Furiten and its Mult is halved. The helper marks waits that are already in your River. With the ${TAL.kawauso.name} Talisman you can claim one River tile as the winning tile: select it together with the rest of the hand and press Play. A claimed hand is always in Furiten, the tile leaves the River, and The Fisherman forbids claiming.</p>
   <p><b>Bosses.</b> Every Ante ends with a Yakuza Boss Blind with a rule twist, shown in red on the blind plate and on the Blind Select screen. Each run meets ${CFG.antes} of the ${Object.keys(BOSSES).length} bosses.</p>

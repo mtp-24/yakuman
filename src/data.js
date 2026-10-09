@@ -193,7 +193,7 @@ const TALISMANS = [
   { key: 'kagami', name: 'Kagami', cost: 8, desc: 'Copies the ability of your leftmost Talisman.', copies: 'left' },
   // --- River play
   { key: 'nureonna', name: 'Nure-onna', cost: 6, desc: '+1 Mult for every tile in the River when you score (max +20).', onScore: (c, S) => S.river.length ? { mult: Math.min(20, S.river.length) } : null },
-  { key: 'ryujin', name: 'Ryūjin', cost: 8, desc: 'Calling from the River no longer costs a Play.', freeCall: true },
+  { key: 'ryujin', name: 'Ryūjin', cost: 8, desc: 'Your first 2 Calls each Blind cost no Play.', freeCall: 2, status: S => { const n = Math.max(0, 2 - (S.freeCallsUsed || 0)); return S.phase === 'blind' ? `${n} free Call${n === 1 ? '' : 's'} left this Blind` : '2 free Calls each Blind'; } },
   { key: 'kawauso', name: 'Kawauso', cost: 7, desc: 'You may claim 1 River tile as the winning tile of a complete hand: select it with the rest of the hand and press Play. Claimed hands are always in Furiten.', riverClaim: true },
   { key: 'namazu', name: 'Namazu', cost: 5, desc: 'Tiles you Called from the River give +30 Chips.', onTile: (t, S) => S.open.some(m => m.calledId === t.id) ? { chips: 30 } : null },
   { key: 'funayurei', name: 'Funayūrei', cost: 5, desc: 'Each Blind begins with 3 tiles from the Wall already in the River.', onBlindStart: S => { for (let i = 0; i < 3 && S.wall.length; i++) S.river.push(S.wall.pop()); } },

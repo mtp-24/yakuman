@@ -113,6 +113,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 102: pack results drop all captions (engraving names and "New"): changed and added tiles get only the gold outline, removed tiles only the strike, and the message names the tiles, grouping repeats ("2 Man ×2"). Simulator: argv[7] ryu1 tests a Ryūjin that makes only the first Call each Blind free.
 - Build 103: shop and pack cards keep their height when their buttons turn into "Sold", "Used" or "No picks left".
 - Build 104: The Purist allows sorting and manual order again; face-down tiles keep their true sorted position, a slight hint of what they are. Boss text updated.
+- Build 105: Ryūjin now makes only the first 2 Calls each Blind free (was every Call); its card shows the free Calls left, the Call message counts them down, and the Rules mention it. Simulator uses the same limit (starting with it: about 12% wins instead of 17%).
 - Build 7: multi-meld play ladder (Two Melds ... Four Melds), targets 300...45000, retrigger and scaling Talismans, Wall-Builder rewording, scoring animation.
 
 ## Simulators (in `sim/`)

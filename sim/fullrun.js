@@ -72,7 +72,7 @@ function playBlind(S,stats){
   S.wall=shuffle(S.deck.slice()); S.deck=[]; S.hand=[]; S.river=[]; S.lastDiscard=[]; S.open=[]; S.played=[]; S.dora=[]; S.indicators=[]; S.score=0; S.firstPlayDone=false; S.bossSuit=S.boss==='collector'?pick(['m','p','s']):null; setRules(S); draw(S);
   for(const k of S.talismans) if(TAL[k].onBlindStart) TAL[k].onBlindStart(S);
   USE.p0=S.plays; USE.d0=S.discards;
-  const freeCall=S.talismans.some(k=>TAL[k].freeCall); let freeLeft=freeCall?(RYU_N||1e9):0; if(S.talismans.includes('kawauso')){ stats.ownedBlinds++; S.everKawauso=true; } const claims0=stats.claims;
+  const freeCall=S.talismans.some(k=>TAL[k].freeCall); let freeLeft=freeCall?(RYU_N||S.talismans.reduce((m,k)=>Math.max(m,+TAL[k].freeCall||0),0)):0; if(S.talismans.includes('kawauso')){ stats.ownedBlinds++; S.everKawauso=true; } const claims0=stats.claims;
   while(S.plays>0&&S.score<S.target){
     const mNeed=4-S.open.length; const st=bestStructure(S.hand,mNeed);
     if(st.m===mNeed&&st.p===1){ const sel=sortTiles(takeTiles(S,st.sets)); const b=bestHand(sel,S.open,S); if(b){ playCtx(S,'hand',sel.concat(S.open.flatMap(m=>m.tiles)),{yaku:b.yaku,dec:b.dec}); S.played.push(...sel,...S.open.flatMap(m=>m.tiles)); S.open=[]; stats.hands++; draw(S); continue; } else { S.hand.push(...sel); } }
