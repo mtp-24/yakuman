@@ -681,6 +681,7 @@ aside .card{background:linear-gradient(180deg,#2a1d10,#1d140a);border:1px solid 
 .wallico i:nth-child(1){left:0;top:5px} .wallico i:nth-child(2){left:5px;top:2px} .wallico i:nth-child(3){left:10px;top:0}
 .wtx{display:flex;flex-direction:column;align-items:flex-start;line-height:1} .wallbtn .wv{font-family:var(--display);font-size:24px;color:var(--fg)} .wallbtn .wl{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-top:3px}
 .packhandwrap > .muted{min-height:34px}   /* the helper text keeps two lines so the pack never jumps when picks run out */
+.purse .wl{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#b9a27a;margin-top:3px} .purse .pv{font-size:24px}
 </style>
 <div id="app">
 <header>
@@ -2135,7 +2136,7 @@ function renderBlind() {
   // The purse: money is always in view here, with the interest the next cash-out will pay. Plays and Discards left are on the action buttons.
   const interest = Math.min(hasF('winter') ? 10 : CFG.interestCap, Math.floor(S.money / CFG.interestPer));
   const wallN = S.phase === 'blind' ? S.wall.length : (S.deck || []).length;
-  h += `<div class="stats purserow"><div class="purse" title="Interest: +¥${interest} at the next cash-out (¥1 for every ¥${CFG.interestPer} you hold, up to ¥${hasF('winter') ? 10 : CFG.interestCap})"><span class="coin" aria-hidden="true">${coinSVG()}</span><span class="pv num" id="purseVal">¥${S.money}</span></div><button class="wallbtn" id="wallBtn" title="${S.phase === 'blind' ? 'Tiles still face down in the Wall. Click to see every tile.' : 'Tiles in your Wall. Click to see every tile.'}"><span class="wallico" aria-hidden="true"><i></i><i></i><i></i></span><span class="wtx"><span class="wv num">${wallN}</span><span class="wl">Wall</span></span></button></div>`;
+  h += `<div class="stats purserow"><div class="purse" title="Interest: +¥${interest} at the next cash-out (¥1 for every ¥${CFG.interestPer} you hold, up to ¥${hasF('winter') ? 10 : CFG.interestCap})"><span class="coin" aria-hidden="true">${coinSVG()}</span><span class="wtx"><span class="pv num" id="purseVal">¥${S.money}</span><span class="wl" data-notr>${LANG === 'hk' ? 'HKD' : 'JPY'}</span></span></div><button class="wallbtn" id="wallBtn" title="${S.phase === 'blind' ? 'Tiles still face down in the Wall. Click to see every tile.' : 'Tiles in your Wall. Click to see every tile.'}"><span class="wallico" aria-hidden="true"><i></i><i></i><i></i></span><span class="wtx"><span class="wv num">${wallN}</span><span class="wl">Wall</span></span></button></div>`;
   if (S.indicators.length) { h += `<div class="label" style="margin-top:8px">Dora Indicators</div><div class="dora-ind" id="doraRow"></div>`; }
   if (S.flowers.length) h += `<div class="label" style="margin-top:8px">Flowers &amp; Seasons</div><div class="flowers">${S.flowers.map(f => `<span class="flowerchip" title="${FLW[f].desc}">${FLW[f].name}</span>`).join('')}</div>`;
   $('#blindCard').innerHTML = h;

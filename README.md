@@ -138,6 +138,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 127: Wall view drops the dots under tiles (they only fitted up to 6 copies, so Walls with added tiles showed them on some tiles and not others); every tile shows the same count.
 - Build 128: The purse shows only the coin and amount (interest stays in its tooltip). Beside it, a clickable Wall tile-stack shows the tile count and opens the Wall screen; the header Wall button is gone.
 - Build 129: Purse coin follows the terminology (brass 5-yen coin with its hole in Riichi, scalloped silver HK$2 coin with a bauhinia in Hong Kong). Chips, Mult and Han numbers use Balatro's juice curve (size sin(50.8t) fading cubically, tilt sin(40.8t) fading quadratically, 0.4 s), with kicks added together so fast hits never snap. Pack screen keeps its height when picks run out. Discard is disabled until a hand tile is selected.
+- Build 130: The purse mirrors the Wall stack: amount on top, JPY or HKD underneath.
 - Build 7: multi-meld play ladder (Two Melds ... Four Melds), targets 300...45000, retrigger and scaling Talismans, Wall-Builder rewording, scoring animation.
 
 ## Simulators (in `sim/`)
