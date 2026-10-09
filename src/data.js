@@ -34,6 +34,9 @@ const CFG = {
   hanTable: [1, 2, 4, 8, 15, 15, 25, 25, 40, 40, 40, 60, 60, 100],
   tierNames: ['None', 'Standard', 'Advanced', 'Master', 'Mangan', 'Mangan', 'Haneman', 'Haneman', 'Baiman', 'Baiman', 'Baiman', 'Sanbaiman', 'Sanbaiman', 'Yakuman'],
   shopWeights: { talisman: 0.5, omikuji: 0.35, kami: 0.15 },
+  // Talisman rarity odds in shops and packs, as in Balatro (Legendaries only come from Hitodama).
+  rarityWeights: { common: 0.70, uncommon: 0.25, rare: 0.05 },
+  soulOdds: 0.04,   // chance a Kami roll is Hitodama
 };
 function hanMult(h) { h = Math.max(0, Math.floor(h)); return h >= 13 ? 100 : CFG.hanTable[h]; }
 function tierName(h) { h = Math.max(0, Math.floor(h)); return h >= 13 ? 'Yakuman' : CFG.tierNames[h]; }
@@ -214,8 +217,40 @@ const TALISMANS = [
     afterScore: (c, S) => { const n = (S.talState.shojo ?? 8) - 1; S.talState.shojo = n; if (n <= 0) { S.talismans = S.talismans.filter(x => x !== 'shojo'); delete S.editions.shojo; delete S.talState.shojo; S.spent = (S.spent || []).concat('shojo'); } },
     status: S => { const n = S.talState.shojo ?? 8; return `${n} play${n === 1 ? '' : 's'} left`; } },
   { key: 'azukiarai', name: 'Azukiarai', cost: 6, desc: 'Every 2, 3 and 4 tile scores a second time.', retrigger: t => !isHonor(t) && t.rank >= 2 && t.rank <= 4 ? 1 : 0 },
+  // --- Money (Balatro's Rocket, Delayed Gratification, Cloud 9 and Satellite, plus a Mahjong one)
+  { key: 'takarabune', name: 'Takarabune', cost: 5, desc: 'Earn ¥1 at the end of each Blind. Pays ¥1 more every time you defeat a Boss.',
+    onBlindEnd: S => { const v = 1 + (S.talState.takarabune || 0); if (S.blindIndex === 2) S.talState.takarabune = (S.talState.takarabune || 0) + 1; return v; },
+    status: S => `pays ¥${1 + (S.talState.takarabune || 0)} now` },
+  { key: 'binbogami', name: 'Binbōgami', cost: 6, desc: 'If you used no Discards this Blind, earn ¥2 for each Discard left.',
+    onBlindEnd: S => (S.discardsUsed || 0) === 0 ? 2 * Math.max(0, S.discards) : 0, status: S => S.phase === 'blind' ? (S.discardsUsed ? 'no payout this Blind' : `¥${2 * S.discards} if you keep it up`) : '' },
+  { key: 'fukusuke', name: 'Fukusuke', cost: 5, desc: 'Earn ¥1 at the end of each Blind for every three 8 tiles in your Wall.',
+    onBlindEnd: S => Math.floor(allTiles(S).filter(t => t.suit !== 'z' && t.rank === 8).length / 3), status: S => `pays ¥${Math.floor(allTiles(S).filter(t => t.suit !== 'z' && t.rank === 8).length / 3)} now` },
+  { key: 'ebisu', name: 'Ebisu', cost: 6, desc: 'Earn ¥1 at the end of each Blind for each different Scroll of Mastery you have used this run.',
+    onBlindEnd: S => scrollKinds(S), status: S => `pays ¥${scrollKinds(S)} now` },
+  { key: 'kamaitachi', name: 'Kamaitachi', cost: 6, desc: 'Earn ¥5 if you clear the Blind with your first Play.', onBlindEnd: S => S.playsMade === 1 ? 5 : 0 },
+  // --- Legendary (Balatro's Triboulet, Yorick, Chicot and Canio). Only Hitodama creates them.
+  { key: 'orochi', name: 'Yamata-no-Orochi', cost: 10, rarity: 'legendary', desc: 'Every Honor tile that scores gives x1.5 Mult, counting each time it scores.',
+    onScore: c => { const n = c.hits.filter(h => { const t = c.tiles.find(x => x.id === h.id); return t && isHonor(t); }).reduce((a, h) => a + h.times, 0); return n ? { xmult: +Math.pow(1.5, n).toFixed(3) } : null; } },
+  { key: 'shuten', name: 'Shuten-dōji', cost: 10, rarity: 'legendary', desc: 'Gains x1 Mult for every 23 tiles you discard (starts at x1).',
+    onDiscard: (S, tiles) => { S.talState.shuten = (S.talState.shuten || 0) + tiles.length; }, onScore: (c, S) => { const x = 1 + Math.floor((S.talState.shuten || 0) / 23); return x > 1 ? { xmult: x } : null; },
+    status: S => { const n = S.talState.shuten || 0; return `x${1 + Math.floor(n / 23)} Mult, ${23 - n % 23} more to go` } },
+  { key: 'tamamo', name: 'Tamamo-no-Mae', cost: 10, rarity: 'legendary', desc: 'Disables the effect of every Boss Blind.' },
+  { key: 'hoo', name: 'Hō-ō', cost: 10, rarity: 'legendary', desc: 'Gains x1 Mult every time a tile is destroyed (starts at x1).',
+    onScore: (c, S) => S.talState.hoo ? { xmult: 1 + S.talState.hoo } : null, status: S => `x${1 + (S.talState.hoo || 0)} Mult` },
 ];
 const TAL = {}; TALISMANS.forEach(t => TAL[t.key] = t);
+// Rarity: set on the Talisman, or from its price (¥4–5 Common, ¥6 Uncommon, ¥7+ Rare).
+const RARITIES = { common: 'Common', uncommon: 'Uncommon', rare: 'Rare', legendary: 'Legendary' };
+function talRarity(k) { const t = TAL[k]; return t.rarity || (t.cost <= 5 ? 'common' : t.cost === 6 ? 'uncommon' : 'rare'); }
+// One weighted pick from a pool, like Balatro: roll a rarity first, then a Talisman of that rarity (any rarity if none is left).
+function pickTalisman(pool) {
+  if (!pool.length) return null; const w = CFG.rarityWeights, r = rand();
+  const want = r < w.common ? 'common' : r < w.common + w.uncommon ? 'uncommon' : 'rare';
+  const tier = pool.filter(t => talRarity(t.key) === want); return pick(tier.length ? tier : pool);
+}
+// Every tile in the run, wherever it is right now.
+function allTiles(S) { return [...(S.deck || []), ...(S.hand || []), ...(S.wall || []), ...(S.river || []), ...(S.played || []), ...(S.indicators || []), ...(S.open || []).flatMap(m => m.tiles)]; }
+function scrollKinds(S) { return Object.values(S.scrolls.meld).filter(v => v > 0).length + Object.values(S.scrolls.yaku).filter(v => v > 0).length; }
 
 // ===================== OMIKUJI (Tarot) & KAMI (Spectral) =====================
 function convertTile(t, suit, rank) { t.suit = suit; t.rank = rank; if (!(suit !== 'z' && rank === 5)) t.red = false; }
@@ -265,6 +300,10 @@ const KAMI = [
   { key: 'hachiman', name: 'Hachiman', cost: 4, sel: [1, 1], desc: 'Put a Blue Seal on 1 selected tile: if it is still in your hand when you win a Blind, the Scroll for your final play levels up.', use: (S, sel) => { sel[0].seal = 'blue'; } },
   { key: 'fujin', name: 'Fūjin', cost: 4, sel: [1, 1], desc: 'Put a Purple Seal on 1 selected tile: discarding it gives you a random Omikuji.', use: (S, sel) => { sel[0].seal = 'purple'; } },
 ];
+KAMI.push({ key: 'hitodama', name: 'Hitodama', cost: 4, sel: [0, 0], anywhere: true, soul: true, desc: 'Create a Legendary Talisman. Needs a free Talisman slot.',
+  use: S => { const pool = TALISMANS.filter(t => talRarity(t.key) === 'legendary' && !S.talismans.includes(t.key)); const slots = typeof talSlots === 'function' ? talSlots(S) : CFG.talismanSlots; if (!pool.length || S.talismans.length >= slots) return false; const t = pick(pool); S.talState = Object.fromEntries(Object.entries(S.talState || {}).filter(([x]) => x !== t.key)); S.talismans.push(t.key); S.gotLegend = t.key; } });
+// A Kami roll: Hitodama is rare, like Balatro's The Soul.
+function pickKami() { return rand() < CFG.soulOdds ? KAMI.find(k => k.soul) : pick(KAMI.filter(k => !k.soul)); }
 const CONS = {}; OMIKUJI.forEach(o => CONS[o.key] = Object.assign({ kind: 'omikuji' }, o)); KAMI.forEach(k => CONS[k.key] = Object.assign({ kind: 'kami' }, k));
 
 // ===================== SCROLLS OF MASTERY (Planets) =====================
@@ -363,8 +402,8 @@ const YAKUMAN_SHEET = [
 
 // ===================== TERMINOLOGY: Riichi (default) vs Hong Kong =====================
 // Display strings are translated at render time by whole-word replacement. Logic and saves never change.
-const HK_TALISMAN = { hashi: '橋 Bridge', nopperabo: '無面鬼 Faceless Ghost', sekito: '石塔 Stone Pagoda', aobozu: '青僧 Blue Monk', shiro: '城 Castle', takibi: '篝火 Bonfire', hoshizora: '星空 Starry Sky', mabo: '魔寶 Phantom Treasure', chochin: '燈籠 Lantern', hoshi: '星 Star', hatsumode: '頭炷香 First Incense', oshi: '偶像 Idol', daimyo: '大名 Lord', utsushi: '影印 Mirror Copy', kagami: '鏡 Mirror', kasaobake: '傘妖 Umbrella Ghost', ittanmomen: '布妖 Cloth Ghost', kappa: '水鬼 Water Ghost', kitsune: '狐仙 Fox Spirit', tanuki: '貔貅 Pixiu', maneki: '招財貓 Lucky Cat', tengu: '雷震子 Leizhenzi', oni: '牛魔王 Bull Demon King', daruma: '達摩 Bodhidharma', tsuru: '仙鶴 Crane', koi: '錦鯉 Golden Carp', ryu: '龍王 Dragon King', jizo: '地藏 Dizang', komainu: '石獅 Stone Lion', yukionna: '雪妖 Snow Demon', baku: '貘 Mo', nue: '四不像 Sibuxiang', kodama: '樹精 Tree Spirit', hannya: '夜叉 Yaksha', tsukumogami: '器靈 Object Spirit', nurikabe: '門神 Door God', tengoku: '馬騮精 Monkey Spirit', hitotsume: '獨眼鬼 One-eyed Ghost', nekomata: '貓妖 Cat Demon', shikigami: '紙人 Paper Effigy', kirin: '麒麟 Qilin', hakutaku: '白澤 Bai Ze', yatagarasu: '金烏 Golden Crow', gashadokuro: '骷髏精 Skeleton Spirit', jorogumo: '蜘蛛精 Spider Spirit', rokurokubi: '長頸鬼 Long-neck Ghost', ushioni: '牛頭 Ox-Head', nurarihyon: '無常 Wuchang', zashiki: '福童 Fortune Child', nureonna: '白蛇 White Snake', ryujin: '龍母 Dragon Mother', namazu: '鯉魚精 Carp Spirit', funayurei: '鬼船 Ghost Ship', sazaeoni: '螺精 Conch Spirit', amabie: '人魚 Mermaid', mizuchi: '蛟 Flood Dragon', kawauso: '水獺精 Otter Spirit', omagatoki: '黃昏 Twilight Hour', shojo: '猩猩 Wine Ape', azukiarai: '洗豆妖 Bean Washer' };
-const HK_CONS = { benzaiten: '辯才天 Goddess of Fortune', hachiman: '八幡 God of War', fujin: '風神 Wind God', steel: '鋼籤 Steel', redseal: '紅印籤 Red Seal', glass: '玻璃籤 Glass', dup: '分身籤 Duplication', ascend: '升籤 Ascension', descend: '降籤 Descent', toman: '萬子籤 Characters', topin: '筒子籤 Dots', tosou: '索子籤 Bamboo', destroy: '化灰籤 Dust', dragon: '紅中籤 Red Dragon', redfive: '紅五籤 Red Five', indicator: '寶牌籤 Bonus Tile Slip', wealth: '橫財籤 Windfall', gold: '金箔籤 Gold Foil', obsidian: '黑曜籤 Obsidian', dragonmark: '龍紋籤 Dragon Mark', jade: '翡翠籤 Jade', susanoo: '哪吒 Nezha', inari: '財神 God of Wealth', raijin: '雷公 Lei Gong', tsukuyomi: '嫦娥 Chang’e', amaterasu: '媽祖 Mazu' };
+const HK_TALISMAN = { takarabune: '寶船 Treasure Ship', binbogami: '窮神 God of Poverty', fukusuke: '福助 Fortune Doll', ebisu: '惠比壽 Fisherman God', kamaitachi: '鐮鼬 Sickle Weasel', orochi: '八岐大蛇 Eight-headed Serpent', shuten: '酒吞童子 Drunken Demon', tamamo: '九尾狐 Nine-tailed Fox', hoo: '鳳凰 Phoenix', hashi: '橋 Bridge', nopperabo: '無面鬼 Faceless Ghost', sekito: '石塔 Stone Pagoda', aobozu: '青僧 Blue Monk', shiro: '城 Castle', takibi: '篝火 Bonfire', hoshizora: '星空 Starry Sky', mabo: '魔寶 Phantom Treasure', chochin: '燈籠 Lantern', hoshi: '星 Star', hatsumode: '頭炷香 First Incense', oshi: '偶像 Idol', daimyo: '大名 Lord', utsushi: '影印 Mirror Copy', kagami: '鏡 Mirror', kasaobake: '傘妖 Umbrella Ghost', ittanmomen: '布妖 Cloth Ghost', kappa: '水鬼 Water Ghost', kitsune: '狐仙 Fox Spirit', tanuki: '貔貅 Pixiu', maneki: '招財貓 Lucky Cat', tengu: '雷震子 Leizhenzi', oni: '牛魔王 Bull Demon King', daruma: '達摩 Bodhidharma', tsuru: '仙鶴 Crane', koi: '錦鯉 Golden Carp', ryu: '龍王 Dragon King', jizo: '地藏 Dizang', komainu: '石獅 Stone Lion', yukionna: '雪妖 Snow Demon', baku: '貘 Mo', nue: '四不像 Sibuxiang', kodama: '樹精 Tree Spirit', hannya: '夜叉 Yaksha', tsukumogami: '器靈 Object Spirit', nurikabe: '門神 Door God', tengoku: '馬騮精 Monkey Spirit', hitotsume: '獨眼鬼 One-eyed Ghost', nekomata: '貓妖 Cat Demon', shikigami: '紙人 Paper Effigy', kirin: '麒麟 Qilin', hakutaku: '白澤 Bai Ze', yatagarasu: '金烏 Golden Crow', gashadokuro: '骷髏精 Skeleton Spirit', jorogumo: '蜘蛛精 Spider Spirit', rokurokubi: '長頸鬼 Long-neck Ghost', ushioni: '牛頭 Ox-Head', nurarihyon: '無常 Wuchang', zashiki: '福童 Fortune Child', nureonna: '白蛇 White Snake', ryujin: '龍母 Dragon Mother', namazu: '鯉魚精 Carp Spirit', funayurei: '鬼船 Ghost Ship', sazaeoni: '螺精 Conch Spirit', amabie: '人魚 Mermaid', mizuchi: '蛟 Flood Dragon', kawauso: '水獺精 Otter Spirit', omagatoki: '黃昏 Twilight Hour', shojo: '猩猩 Wine Ape', azukiarai: '洗豆妖 Bean Washer' };
+const HK_CONS = { hitodama: '鬼火 Ghost Fire', benzaiten: '辯才天 Goddess of Fortune', hachiman: '八幡 God of War', fujin: '風神 Wind God', steel: '鋼籤 Steel', redseal: '紅印籤 Red Seal', glass: '玻璃籤 Glass', dup: '分身籤 Duplication', ascend: '升籤 Ascension', descend: '降籤 Descent', toman: '萬子籤 Characters', topin: '筒子籤 Dots', tosou: '索子籤 Bamboo', destroy: '化灰籤 Dust', dragon: '紅中籤 Red Dragon', redfive: '紅五籤 Red Five', indicator: '寶牌籤 Bonus Tile Slip', wealth: '橫財籤 Windfall', gold: '金箔籤 Gold Foil', obsidian: '黑曜籤 Obsidian', dragonmark: '龍紋籤 Dragon Mark', jade: '翡翠籤 Jade', susanoo: '哪吒 Nezha', inari: '財神 God of Wealth', raijin: '雷公 Lei Gong', tsukuyomi: '嫦娥 Chang’e', amaterasu: '媽祖 Mazu' };
 const HK_SCROLL = { 'm:pair': '對子秘笈 Pairs Manual', 'm:chi': '上牌秘笈 Chow Manual', 'm:pon': '碰牌秘笈 Pung Manual', 'm:kan': '槓牌秘笈 Kong Manual', 'm:hand': '食糊秘笈 Winning Manual', 'y:tanyao': '斷幺九秘笈 All Simples Manual', 'y:pinfu': '平糊秘笈 All Chows Manual', 'y:yakuhai': '番牌秘笈 Honor Set Manual', 'y:honitsu': '混一色秘笈 Mixed Suit Manual', 'y:chinitsu': '清一色秘笈 Pure Suit Manual', 'y:toitoi': '對對糊秘笈 All Pungs Manual', 'y:chiitoitsu': '七對子秘笈 Seven Pairs Manual', 'y:sanshoku': '三色同順秘笈 Triple Chow Manual', 'y:ittsu': '一條龍秘笈 Straight Manual', 'y:chanta': '混全帶幺秘笈 Outside Hand Manual' };
 const HK_FLOWER = { plum: '梅 Plum', orchid: '蘭 Orchid', chrysanthemum: '菊 Chrysanthemum', bamboo: '竹 Bamboo', spring: '春 Spring', summer: '夏 Summer', autumn: '秋 Autumn', winter: '冬 Winter' };
 const HK_ENG = { steel: '鋼 Steel Inlay', glass: '玻璃 Glass', gold: '金箔 Gold Foil', obsidian: '黑曜 Obsidian Inlay', dragonmark: '龍紋 Dragon Mark', jade: '翡翠 Jade Inlay' };
