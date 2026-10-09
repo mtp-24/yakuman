@@ -86,6 +86,10 @@ aside{display:flex;flex-direction:column;gap:10px;min-width:0}
 .tile.sel{transform:translateY(-12px);box-shadow:0 3px 0 #8f815f,0 0 0 2px var(--accent),0 8px 14px rgba(0,0,0,.5)}
 .tile.small.sel{transform:translateY(-6px)}
 .tile.dim{opacity:.5}
+#hand .tile{touch-action:none}
+.tile.dragging{z-index:30;opacity:.9;box-shadow:0 10px 24px rgba(0,0,0,.6),0 0 0 2px var(--accent);transition:none;cursor:grabbing}
+.tile.drop-before{box-shadow:-4px 0 0 0 var(--accent),0 3px 0 #8f815f,0 4px 6px rgba(0,0,0,.4)}
+.tile.drop-after{box-shadow:4px 0 0 0 var(--accent),0 3px 0 #8f815f,0 4px 6px rgba(0,0,0,.4)}
 .tile svg{width:100%;height:100%;display:block;padding:2px}
 .sheet{width:100%;border-collapse:collapse;font-size:12px}
 .sheet th{text-align:left;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:4px 8px;border-bottom:1px solid var(--line)}

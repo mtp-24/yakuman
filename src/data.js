@@ -122,7 +122,7 @@ const TALISMANS = [
   { key: 'tengoku', name: 'Amanojaku', cost: 6, desc: 'Open-meld Complete Hands gain +2 Han. Closed ones gain nothing.', onScore: (c, S) => c.kind === 'hand' && S.open.length ? { han: 2 } : null },
   // --- Retriggers: a tile scores again (its chips, Red Five Han, Dora and engravings all repeat)
   { key: 'nekomata', name: 'Nekomata', cost: 6, desc: 'Red Fives score a second time.', retrigger: t => t.red ? 1 : 0 },
-  { key: 'shikigami', name: 'Shikigami', cost: 5, desc: 'The first tile of every play scores a second time.', retrigger: (t, c, S, i) => i === 0 ? 1 : 0 },
+  { key: 'shikigami', name: 'Shikigami', cost: 5, desc: 'The leftmost tile of every play scores a second time. Drag tiles to choose which.', retrigger: (t, c, S, i) => i === 0 ? 1 : 0 },
   { key: 'kirin', name: 'Kirin', cost: 6, desc: 'Honor tiles score a second time.', retrigger: t => isHonor(t) ? 1 : 0 },
   { key: 'hakutaku', name: 'Hakutaku', cost: 6, desc: 'Engraved tiles score a second time.', retrigger: t => t.eng ? 1 : 0 },
   { key: 'yatagarasu', name: 'Yatagarasu', cost: 7, desc: 'Tiles you Called from the River score three times.', retrigger: (t, c, S) => S.open.some(m => m.calledId === t.id) ? 2 : 0 },
