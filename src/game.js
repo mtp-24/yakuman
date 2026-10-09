@@ -635,7 +635,7 @@ function fitFoot(el) { if (!el) return; const t = el.querySelector('.hantier').t
 // Chips × Mult boxes for the scoring summary. Han lives in a caption strip under Mult, because Han only exists to become Mult.
 const tierText = h => { const t = tierName(h); return t && t !== 'None' ? t : ''; };
 function mathBoxes(chips, mult, han, dim) {
-  return `<div class="hb-math num"><span class="boxwrap chipwrap${dim ? ' dim' : ''}"><span class="chipbox">${chips}</span><span class="boxfoot">Chips</span></span><span class="px">×</span><span class="boxwrap multwrap${dim ? ' dim' : ''}"><span class="multbox">${mult}</span><span class="boxfoot hanfoot"><span class="hanline"><b class="hanval">${han}</b> ${tr('Han')}</span><span class="hantier">${tr(tierText(han))}</span></span></span></div>`;
+  return `<div class="hb-math num"><span class="boxwrap chipwrap${dim ? ' dim' : ''}"><span class="chipbox"><span class="nv">${chips}</span></span><span class="boxfoot capfoot chipfoot"><span class="hanline">Chips</span><span class="hantier"></span></span></span><span class="px">×</span><span class="boxwrap multwrap${dim ? ' dim' : ''}"><span class="multbox"><span class="nv">${mult}</span></span><span class="boxfoot capfoot hanfoot"><span class="hanline"><b class="hanval">${han}</b> ${tr('Han')}</span><span class="hantier">${tr(tierText(han))}</span></span></span></div>`;
 }
 // Scoring box title row: a fixed 36px row that holds the play's name (preview and scoring) and then the total, so the box never changes height.
 function titleHTML(label, lvl, claim, muted) { return `<div class="hb-head"><span class="hb-title${muted ? ' muted' : ''}">${label}${claim ? ' <span class="tag">River Claim</span>' : ''}${lvl ? ` <span class="tag">Lv.${lvl}</span>` : ''}</span><span class="hb-tot tot num" hidden>0</span></div>`; }
@@ -869,7 +869,7 @@ async function animateScore(ctx) {
   box.innerHTML = `${titleHTML(tr(label || ''), playLevel(ctx.kind, ctx.meldType), ctx.claimed)}${mathBoxes(0, 1, 0)}`; box.title = 'Click anywhere to skip'; fitTitle(box.querySelector('.hb-title'));
   // the breakdown streams into the Last Play panel as it happens
   const lp = $('#lastPlay'); lp.innerHTML = `<div class="label">Last Play</div><div style="font-family:var(--display);font-size:15px;margin:2px 0 6px">${tr(ctx.desc)}</div><div class="lp-lines"></div>`;
-  const chipsEl = box.querySelector('.chipbox'), multEl = box.querySelector('.multbox'), totEl = box.querySelector('.hb-tot'), totWrap = totEl, nameEl = box.querySelector('.hb-title'), linesBox = lp.querySelector('.lp-lines'), mathEl = box.querySelector('.hb-math'), hanEl = box.querySelector('.hanval'), hanPill = box.querySelector('.hanfoot'), tierEl = box.querySelector('.hantier');
+  const chipsBox = box.querySelector('.chipbox'), multBox = box.querySelector('.multbox'), chipsEl = chipsBox.querySelector('.nv'), multEl = multBox.querySelector('.nv'), totEl = box.querySelector('.hb-tot'), totWrap = totEl, nameEl = box.querySelector('.hb-title'), linesBox = lp.querySelector('.lp-lines'), mathEl = box.querySelector('.hb-math'), hanEl = box.querySelector('.hanval'), hanPill = box.querySelector('.hanfoot'), tierEl = box.querySelector('.hanfoot .hantier');
   const tileEls = new Map(); document.querySelectorAll('#hand .tile[data-id], #open .tile[data-id]').forEach(e => tileEls.set(+e.dataset.id, e));
   let chips = 0, han = 0, tileX = 1, mult = null;
   const curMult = () => mult === null ? hanMult(han) * tileX : mult;
@@ -878,15 +878,22 @@ async function animateScore(ctx) {
   const setMath = () => {
     const c = Math.max(0, Math.round(chips)), m = fmtMult(curMult());
     chipsEl.textContent = c; multEl.textContent = m;
-    if (lastChips !== null && c !== lastChips) bump(chipsEl.parentElement, 'bump'); if (lastMult !== null && m !== lastMult) bump(multEl.parentElement, 'bump');
+    // Like Balatro: the numbers pop and wobble, the boxes stay put.
+    if (lastChips !== null && c !== lastChips) bump(chipsEl, 'pop'); if (lastMult !== null && m !== lastMult) bump(multEl, 'pop');
     const hv = Math.round(han); hanEl.textContent = hv; tierEl.textContent = tr(tierText(hv)); hanPill.classList.toggle('done', mult !== null);
-    if (lastHan !== null && hv !== lastHan) bump(hanPill.parentElement, 'bump');
-    lastChips = c; lastMult = m; lastHan = hv; fitText(chipsEl); fitText(multEl); fitFoot(hanPill);
+    if (lastHan !== null && hv !== lastHan) bump(hanPill.querySelector('.hanline'), 'pop');
+    lastChips = c; lastMult = m; lastHan = hv; fitText(chipsBox); fitText(multBox); fitFoot(hanPill);
   };
   const showLine = l => { const d = document.createElement('div'); d.className = 'row sline' + (l.zero ? ' bad' : '') + (l.yaku ? ' yaku' : '') + (l.tal ? ' tal' : '') + (l.convert ? ' convert' : ''); d.innerHTML = `<span>${tr(l.label)}</span><span class="num">${tr(l.val)}</span>`; linesBox.appendChild(d); if (l.tal) { const slot = document.querySelector(`.slot[data-tal="${l.tal}"]`); if (slot) { slot.classList.remove('bounce'); void slot.offsetWidth; slot.classList.add('bounce'); } } };
   const applyLine = l => { if (l.zero) chips = 0; else { chips += l.chips || 0; han += l.han || 0; if (l.convert) mult = hanMult(han) * tileX; if (l.mult) mult = (mult === null ? hanMult(han) * tileX : mult) + l.mult; if (l.xmult && mult !== null) mult *= l.xmult; } setMath(); };
   let fire = 0;
-  const heat = () => { const tot = Math.max(0, chips) * curMult(); const lvl = S.target && tot >= 3 * S.target ? 2 : S.target && tot >= S.target ? 1 : 0; if (lvl !== fire) { fire = lvl; box.classList.toggle('hot', lvl >= 1); box.classList.toggle('blazing', lvl >= 2); if (lvl >= 1 && !box.querySelector('.ember')) for (let i = 0; i < 8; i++) { const em = document.createElement('i'); em.className = 'ember'; em.style.left = (8 + Math.random() * 84) + '%'; em.style.animationDelay = (Math.random() * 1.2) + 's'; em.style.animationDuration = (1 + Math.random()) + 's'; box.appendChild(em); } } };
+  // Balatro-style flames over the Chips and Mult boxes once the play beats the target: bigger at 3× and 10× the target.
+  const flameHTML = '<span class="flames" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>';
+  const heat = () => {
+    const tot = Math.max(0, chips) * curMult(), r = S.target ? tot / S.target : 0, lvl = r >= 10 ? 3 : r >= 3 ? 2 : r >= 1 ? 1 : 0;
+    if (lvl === fire) return; fire = lvl; box.dataset.fire = lvl; box.classList.toggle('hot', lvl >= 1);
+    if (lvl >= 1) box.querySelectorAll('.boxwrap').forEach(w => { if (!w.querySelector('.flames')) w.insertAdjacentHTML('afterbegin', flameHTML); });
+  };
   setMath();
   // Start from exactly what the hand box previewed: the play's base, its Scroll levels and the Yaku that name the hand.
   // Tiles, Dora, engravings and Talismans are then revealed on top of that, so the Han count only ever climbs.
