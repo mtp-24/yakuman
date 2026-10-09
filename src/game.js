@@ -306,10 +306,13 @@ const $ = s => document.querySelector(s);
 function fmtMult(m) { return Number.isInteger(m) ? m : (+m.toFixed(2)); }
 function tileEl(t, o = {}) {
   const el = document.createElement('div');
-  el.className = 'tile ' + t.suit + (t.red ? ' red' : '') + (t.eng === 'glass' ? ' glass' : '') + (o.sel ? ' sel' : '') + (o.small ? ' small' : '') + (o.back ? ' back' : '') + (o.called ? ' called' : '');
+  el.className = 'tile ' + t.suit + (t.red ? ' red' : '') + (t.eng ? ' eng-' + t.eng : '') + (o.sel ? ' sel' : '') + (o.small ? ' small' : '') + (o.back ? ' back' : '') + (o.called ? ' called' : '');
   if (!o.back) {
     el.innerHTML = tileSVG(t);
-    if (t.eng) el.innerHTML += `<span class="eng eng-${t.eng}">${ENG[t.eng].short}</span>`;
+    if (t.eng === 'redseal') el.innerHTML += '<span class="seal"></span>';
+    else if (t.eng === 'dragonmark') el.innerHTML += '<span class="dmark"></span>';
+    else if (t.eng === 'gold') el.innerHTML += '<span class="shine"></span>';
+    else if (t.eng === 'steel') el.innerHTML += '<span class="brush"></span>';
     el.title = tileName(t) + (t.eng ? ' · ' + ENG[t.eng].name + ': ' + ENG[t.eng].desc : '');
   } else el.title = 'Face down: a 1, 9, Wind or Dragon (The Purist)';
   return el;
@@ -658,7 +661,7 @@ function rulesHTML() {
   <p><b>Helper.</b> Under your hand the game shows how many tiles you are from a complete hand, and tiles marked with a green dot can be discarded without losing progress. Select tiles to see whether that discard keeps you on track. Against The Purist it only counts your visible tiles.</p>
   <p><b>Kan.</b> Four identical tiles can be played as a partial Kan for points, or declared: press Declare Kan (or K) to set them aside as a closed Kan that counts toward your complete hand without opening it. Every Kan, declared or called from the River, draws one replacement tile from the Wall. If that replacement tile ends up as the winning tile of your complete hand, you score Rinshan Kaihou (+1 Han). A called Kan then settles with one discard like any Call.</p>
   <p><b>Furiten.</b> The winning tile of a complete hand is the newest tile you drew among the 14 you play. If a copy of that tile type sits in your River, the hand is in Furiten and the multiplier is halved. The helper shows your waits when you are one tile away and marks the ones already in your River. Kappa turns Furiten into a bonus.</p>
-  <p><b>Engravings &amp; editions.</b> Omikuji can engrave tiles: Gold Foil (¥1), Obsidian (+20 Chips), Dragon Mark (+1 Han), Jade (×1.5 Mult), Red Seal (scores twice) and Glass (×2 Mult, 1 in 4 chance to shatter). Shop Talismans sometimes come in an edition: Foil (+50 Chips), Holographic (+1 Han) or Polychrome (×1.5 Mult) on every play.</p>
+  <p><b>Engravings &amp; editions.</b> Omikuji can engrave tiles, and you can see it on the tile: Gold Foil (gold face, ¥1 when scored), Obsidian (dark stone face, +20 Chips), Jade (green face, ×1.5 Mult), Steel (brushed metal face, ×1.5 Mult while held), Glass (clear blue face, ×2 Mult, 1 in 4 chance to shatter), Red Seal (a red wax seal, scores twice) and Dragon Mark (a red emblem in the corner, +1 Han). Hover a tile for its exact effect. Shop Talismans sometimes come in an edition: Foil (+50 Chips), Holographic (+1 Han) or Polychrome (×1.5 Mult) on every play.</p>
   <p><b>Red Fives &amp; Dora.</b> Each Red Five scored gives +1 Han. Dora indicators (from Omikuji) make matching tiles worth +1 Han each.</p>
   <p><b>Bosses.</b> Every third Blind is a Yakuza boss with a rule twist. Read the red box.</p>
   <p><b>Shop.</b> After each Blind, spend YEN on Talismans (passive, 5 slots), Omikuji and Kami (consumables, use on selected hand tiles), Scrolls of Mastery (permanent upgrades) and Flowers (run-long perks). Click a Talisman on the board to sell it.</p>

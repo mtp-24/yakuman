@@ -111,8 +111,20 @@ aside{display:flex;flex-direction:column;gap:10px;min-width:0}
 .tile .honor.h5{color:#1f4f8f;-webkit-text-stroke:1px #1f4f8f;color:transparent} .tile .honor.h6{color:#2e7d4f} .tile .honor.h7{color:#c9281c}
 .tile.back{background:linear-gradient(180deg,var(--tile-back),var(--tile-back2));border-color:#13304d;box-shadow:0 3px 0 #0f2740,0 4px 6px rgba(0,0,0,.4)}
 .tile.back::after{content:'';position:absolute;inset:5px;border:1px solid rgba(255,255,255,.25);border-radius:4px}
-.tile .eng{position:absolute;top:2px;right:3px;font-size:9px;font-family:var(--body);font-weight:700;border-radius:3px;padding:0 3px;color:#fff}
-.eng-gold{background:#b8860b} .eng-obsidian{background:#333} .eng-dragonmark{background:#c9281c} .eng-jade{background:#2e8b57}
+/* Engraved tile faces */
+.tile.eng-gold{background:linear-gradient(160deg,#fbeec1 0%,#e2c05e 45%,#c99a2e 100%);border-color:#9a7418;box-shadow:0 3px 0 #7d5c0f,0 4px 8px rgba(0,0,0,.4),0 0 10px rgba(226,192,94,.55)}
+.tile.eng-gold .shine{position:absolute;inset:0;border-radius:6px;background:linear-gradient(115deg,transparent 35%,rgba(255,255,255,.45) 48%,transparent 60%);pointer-events:none}
+.tile.eng-obsidian{background:linear-gradient(160deg,#c3c8cf 0%,#8a9099 55%,#62676e 100%);border-color:#2b2f34;box-shadow:0 3px 0 #1f2226,0 4px 8px rgba(0,0,0,.5)}
+.tile.eng-jade{background:linear-gradient(160deg,#dff3e6 0%,#9ad6b4 50%,#5fae88 100%);border-color:#2e7d4f;box-shadow:0 3px 0 #22573a,0 4px 8px rgba(0,0,0,.4)}
+.tile.eng-steel{background:linear-gradient(160deg,#eef2f6 0%,#c3ccd5 45%,#8f9ca8 100%);border-color:#56657a;box-shadow:0 3px 0 #3d4a57,0 4px 8px rgba(0,0,0,.45)}
+.tile.eng-steel .brush{position:absolute;inset:0;border-radius:6px;background:repeating-linear-gradient(0deg,rgba(255,255,255,.18) 0 1px,transparent 1px 3px);pointer-events:none}
+.tile.eng-glass{background:linear-gradient(160deg,rgba(238,247,255,.95) 0%,rgba(198,223,242,.9) 55%,rgba(169,203,230,.9) 100%);border-color:#86aecd;box-shadow:0 3px 0 #6f93ad,0 4px 6px rgba(0,0,0,.4),inset 0 0 12px rgba(255,255,255,.7)}
+.tile .seal{position:absolute;top:-5px;left:50%;transform:translateX(-50%);width:15px;height:15px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#ff7b6e,#b3140a 70%);border:2px solid #fff3e0;box-shadow:0 1px 3px rgba(0,0,0,.55)}
+.tile .seal::after{content:'';position:absolute;inset:4px;border-radius:50%;border:1px solid rgba(255,255,255,.7)}
+.tile .dmark{position:absolute;top:4px;right:4px;width:11px;height:11px;transform:rotate(45deg);background:#c9281c;border:1.5px solid #ffd27a;box-shadow:0 0 4px rgba(201,40,28,.7)}
+.tile .dmark::after{content:'';position:absolute;inset:3px;background:#ffd27a;transform:rotate(45deg);border-radius:1px}
+.tile.small .seal{width:12px;height:12px;top:-4px} .tile.small .dmark{width:9px;height:9px;top:3px;right:3px}
+.tile.tiny .seal{width:10px;height:10px;top:-3px;border-width:1.5px} .tile.tiny .dmark{width:7px;height:7px;top:2px;right:2px}
 .tile.safe::after{content:'';position:absolute;bottom:3px;left:50%;transform:translateX(-50%);width:6px;height:6px;border-radius:50%;background:var(--good);box-shadow:0 0 4px var(--good)}
 .hint{font-size:12px;color:var(--muted);margin-top:8px;min-height:16px}
 .hint .hint-main{color:var(--fg);font-weight:600}
@@ -181,8 +193,8 @@ aside{display:flex;flex-direction:column;gap:10px;min-width:0}
 .edtag.ed-foil{background:linear-gradient(90deg,#9aa5b1,#e6ecf2,#9aa5b1);color:#1b1b1b} .edtag.ed-holo{background:linear-gradient(90deg,#ff7eb3,#7afcff,#feff9c,#ff7eb3);color:#1b1b1b} .edtag.ed-poly{background:linear-gradient(90deg,#f97316,#eab308,#22c55e,#3b82f6,#a855f7);color:#fff}
 .slot.ed-foil,.shopcard.ed-foil{border-color:#c9d3dd;box-shadow:inset 0 0 0 1px rgba(255,255,255,.15)} .slot.ed-holo,.shopcard.ed-holo{border-image:linear-gradient(135deg,#ff7eb3,#7afcff,#feff9c) 1} .slot.ed-poly,.shopcard.ed-poly{border-image:linear-gradient(135deg,#f97316,#eab308,#22c55e,#3b82f6,#a855f7) 1}
 .tile.glass{background:linear-gradient(160deg,#eef7ff 0%,#c6dff2 55%,#a9cbe6 100%);border-color:#86aecd;box-shadow:0 3px 0 #6f93ad,0 4px 6px rgba(0,0,0,.4)}
-.eng-steel{background:#5a6b7a} .edtag.ed-neg{background:#111;color:#fff;border:1px solid #888} .slot.ed-neg,.shopcard.ed-neg{border-color:#888;box-shadow:inset 0 0 12px rgba(0,0,0,.6)}
-.eng-redseal{background:#c9281c;border-radius:50%} .eng-glass{background:#3b7fb8}
+.edtag.ed-neg{background:#111;color:#fff;border:1px solid #888} .slot.ed-neg,.shopcard.ed-neg{border-color:#888;box-shadow:inset 0 0 12px rgba(0,0,0,.6)}
+
 .stage-tiles .float.again{color:var(--bad)}
 .stage-math.hot .tot{color:#ff9f43;text-shadow:0 0 12px #ff6b1a,0 0 28px #ff3d00;animation:flame .5s ease-in-out infinite alternate}
 .stage-math.blazing{animation:shake .25s linear infinite}
@@ -1332,10 +1344,13 @@ const $ = s => document.querySelector(s);
 function fmtMult(m) { return Number.isInteger(m) ? m : (+m.toFixed(2)); }
 function tileEl(t, o = {}) {
   const el = document.createElement('div');
-  el.className = 'tile ' + t.suit + (t.red ? ' red' : '') + (t.eng === 'glass' ? ' glass' : '') + (o.sel ? ' sel' : '') + (o.small ? ' small' : '') + (o.back ? ' back' : '') + (o.called ? ' called' : '');
+  el.className = 'tile ' + t.suit + (t.red ? ' red' : '') + (t.eng ? ' eng-' + t.eng : '') + (o.sel ? ' sel' : '') + (o.small ? ' small' : '') + (o.back ? ' back' : '') + (o.called ? ' called' : '');
   if (!o.back) {
     el.innerHTML = tileSVG(t);
-    if (t.eng) el.innerHTML += `<span class="eng eng-${t.eng}">${ENG[t.eng].short}</span>`;
+    if (t.eng === 'redseal') el.innerHTML += '<span class="seal"></span>';
+    else if (t.eng === 'dragonmark') el.innerHTML += '<span class="dmark"></span>';
+    else if (t.eng === 'gold') el.innerHTML += '<span class="shine"></span>';
+    else if (t.eng === 'steel') el.innerHTML += '<span class="brush"></span>';
     el.title = tileName(t) + (t.eng ? ' · ' + ENG[t.eng].name + ': ' + ENG[t.eng].desc : '');
   } else el.title = 'Face down: a 1, 9, Wind or Dragon (The Purist)';
   return el;
@@ -1684,7 +1699,7 @@ function rulesHTML() {
   <p><b>Helper.</b> Under your hand the game shows how many tiles you are from a complete hand, and tiles marked with a green dot can be discarded without losing progress. Select tiles to see whether that discard keeps you on track. Against The Purist it only counts your visible tiles.</p>
   <p><b>Kan.</b> Four identical tiles can be played as a partial Kan for points, or declared: press Declare Kan (or K) to set them aside as a closed Kan that counts toward your complete hand without opening it. Every Kan, declared or called from the River, draws one replacement tile from the Wall. If that replacement tile ends up as the winning tile of your complete hand, you score Rinshan Kaihou (+1 Han). A called Kan then settles with one discard like any Call.</p>
   <p><b>Furiten.</b> The winning tile of a complete hand is the newest tile you drew among the 14 you play. If a copy of that tile type sits in your River, the hand is in Furiten and the multiplier is halved. The helper shows your waits when you are one tile away and marks the ones already in your River. Kappa turns Furiten into a bonus.</p>
-  <p><b>Engravings &amp; editions.</b> Omikuji can engrave tiles: Gold Foil (¥1), Obsidian (+20 Chips), Dragon Mark (+1 Han), Jade (×1.5 Mult), Red Seal (scores twice) and Glass (×2 Mult, 1 in 4 chance to shatter). Shop Talismans sometimes come in an edition: Foil (+50 Chips), Holographic (+1 Han) or Polychrome (×1.5 Mult) on every play.</p>
+  <p><b>Engravings &amp; editions.</b> Omikuji can engrave tiles, and you can see it on the tile: Gold Foil (gold face, ¥1 when scored), Obsidian (dark stone face, +20 Chips), Jade (green face, ×1.5 Mult), Steel (brushed metal face, ×1.5 Mult while held), Glass (clear blue face, ×2 Mult, 1 in 4 chance to shatter), Red Seal (a red wax seal, scores twice) and Dragon Mark (a red emblem in the corner, +1 Han). Hover a tile for its exact effect. Shop Talismans sometimes come in an edition: Foil (+50 Chips), Holographic (+1 Han) or Polychrome (×1.5 Mult) on every play.</p>
   <p><b>Red Fives &amp; Dora.</b> Each Red Five scored gives +1 Han. Dora indicators (from Omikuji) make matching tiles worth +1 Han each.</p>
   <p><b>Bosses.</b> Every third Blind is a Yakuza boss with a rule twist. Read the red box.</p>
   <p><b>Shop.</b> After each Blind, spend YEN on Talismans (passive, 5 slots), Omikuji and Kami (consumables, use on selected hand tiles), Scrolls of Mastery (permanent upgrades) and Flowers (run-long perks). Click a Talisman on the board to sell it.</p>
