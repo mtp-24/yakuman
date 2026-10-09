@@ -783,6 +783,13 @@ button.pulse{animation:btnpulse2 2.6s ease-out infinite}
 .rbico{width:18px;height:18px;color:#9ec5e8;flex:0 0 auto}
 .railbtn .wallico{transform:scale(.72);transform-origin:left center;width:19px;margin-right:2px}
 .norenbar .wallet{transform:translateY(3px)}   /* line the money up with the title's letters rather than its line box */
+/* Collection engraving cards: the sample tile sits at the bottom with the same spacing on every card, so rows line up */
+.colcard .coltile{margin-top:auto;padding-top:12px;display:flex;align-items:flex-end;min-height:76px}
+.colgrid{gap:12px;align-items:stretch}
+/* Conventional padlock: a wide, short body with a rounded shackle */
+.lockico{width:12px;height:9px;margin-top:6px;border-radius:2.5px;background:var(--muted);position:relative;flex:0 0 auto}
+.lockico::before{content:'';position:absolute;left:2.5px;top:-5.5px;width:7px;height:7px;border:1.6px solid var(--muted);border-bottom:0;border-radius:5px 5px 0 0;box-sizing:border-box}
+.lockico::after{content:'';position:absolute;left:5px;top:3px;width:2px;height:3px;border-radius:1px;background:rgba(0,0,0,.45)}
 </style>
 </head><body>
 <div id="app">
@@ -1600,6 +1607,7 @@ function settingsHTML() {
   <div class="setsec">Gameplay</div>
   <div class="setrow"><div><b>Helper hints</b><div class="muted">Shown under your hand. Tiles Away (on by default) says how many tiles you are from a complete hand. Waiting On lists the tiles you need, and Without These says whether the tiles you select can go without setting you back.</div></div><div class="setbtns">${[['away', 'Tiles Away'], ['waits', 'Waiting On'], ['without', 'Without These']].map(([k, n]) => `<button class="${HINTS[k] ? 'primary' : ''}" data-sethint="${k}">${n}</button>`).join('')}</div></div>
   <div class="setrow"><div><b>Dead-tile dots (assist)</b><div class="muted">Off by default. When on, green dots mark tiles you can discard without losing progress toward a complete hand. A sizeable help: it solves the discard choice for you.</div></div><div class="setbtns"><button class="${SHOW_DOTS ? 'primary' : ''}" data-setdots="on">On</button><button class="${!SHOW_DOTS ? 'primary' : ''}" data-setdots="off">Off</button></div></div>
+  <div class="setrow"><div><b>Sound</b><div class="muted">Tile clacks, scoring chimes and counters. Sound starts after your first click.</div></div><div class="setbtns"><button class="${SOUND ? 'primary' : ''}" data-setsound="on">On</button><button class="${!SOUND ? 'primary' : ''}" data-setsound="off">Off</button></div></div>
   <div class="setsec">Display</div>
   <div class="setrow"><div><b>Terminology</b><div class="muted" data-notr>Riichi uses Japanese names (Chi, Pon, Kan, Han, Yaku, ¥). Hong Kong uses English names (Chow, Pung, Kong, Faan, $).</div></div><div class="setbtns"><button class="${LANG === 'ja' ? 'primary' : ''}" data-setlang="ja">Riichi</button><button class="${LANG === 'hk' ? 'primary' : ''}" data-setlang="hk">Hong Kong</button></div></div>
   <div class="setrow"><div><b>Tile numbers</b><div class="muted">The small number or letter in a tile's corner. Characters and Winds is the default: Dots and Bamboo are counted by their pips. With All Tiles, some numbers sit over the Dots and Bamboo art.</div></div><div class="setbtns">${[['all', 'All Tiles'], ['some', 'Characters and Winds'], ['none', 'None']].map(([k, n]) => `<button class="${TILE_NUMS === k ? 'primary' : ''}" data-settilenums="${k}">${n}</button>`).join('')}</div></div>
@@ -1705,8 +1713,9 @@ function stakeLockAny(stake) {
   if (Object.keys(DECKS).some(w => !stakeLock(w, stake))) return null;
   return { kind: 'stake', key: stake, goal: `Win on ${STAKES[STAKE_KEYS[stakeLevel(stake) - 1]].name} with any Wall. Each Wall climbs the Stakes on its own.`, prog: () => [0, 1] };
 }
-// Names an entry in S.newUnlocks: 'tal:hannya' style, or 'stake:green:lean' for a Stake opened on one Wall.
-function unlockLabel(id) { const [kind, key, wall] = id.split(':'); if (kind === 'stake') return { kind: 'Stake', name: `${STAKES[key].name} · ${DECKS[wall].name}` }; const u = LOCKS[id]; return u ? { kind: UNLOCK_KIND[u.kind], name: unlockName(u) } : null; }
+// Names an entry in S.newUnlocks: 'tal:hannya' style, or 'stake:green:lean' for a Stake opened on one Wall
+// (older saves stored 'stake:red' without a Wall).
+function unlockLabel(id) { const [kind, key, wall] = id.split(':'); if (kind === 'stake') return STAKES[key] ? { kind: 'Stake', name: DECKS[wall] ? `${STAKES[key].name} · ${DECKS[wall].name}` : STAKES[key].name } : null; const u = LOCKS[id]; return u ? { kind: UNLOCK_KIND[u.kind], name: unlockName(u) } : null; }
 // ===================== DISCOVERY =====================
 // Like Balatro's Collection: Talismans, consumables, Scrolls, Flowers, packs, Tags and Bosses show as "?" until you come across one.
 const DISCOVER = ['tal', 'omikuji', 'kami', 'scroll', 'flower', 'pack', 'tag', 'boss'];
@@ -1846,6 +1855,7 @@ async function doPlay() {
     if (fb) { leftovers = all.filter(t => !fb.tiles.includes(t)); S.selected = fb.tiles.map(t => t.id); opt = { type: 'meld', part: fb.part, fallback: true }; }
   }
   if (opt.err) { setMsg(opt.err, true); return render(); }
+  sfx('play');
   const sel = S.hand.filter(t => S.selected.includes(t.id)); let ctx;
   // A claimed tile leaves the River before scoring, so River Talismans do not count it.
   const claimed = opt.claim ? S.river.find(t => t.id === opt.claim) : null;
@@ -1872,12 +1882,14 @@ async function doPlay() {
   if (S.plays <= 0) { loseRun(); return render(); }
   render();
 }
+// One clack per discarded tile, timed with their flight into the River.
+function sfxDiscard(n) { for (let k = 0; k < Math.min(n, 5); k++) setTimeout(() => sfx('discard'), 180 + k * 30); }
 function doDiscard() {
   if (S.phase !== 'blind' || S.busy) return;
   const sel = selTiles();
   if (S.pendingDiscard) {
     if (sel.length !== S.pendingDiscard) { setMsg(`Discard exactly ${S.pendingDiscard} tile to settle the Call.`, true); return render(); }
-    S.river.push(...sel); S.hand = S.hand.filter(t => !sel.includes(t)); S.pendingDiscard = 0; S.selected = []; draw(); setMsg('Call settled.'); return render();
+    S.river.push(...sel); S.hand = S.hand.filter(t => !sel.includes(t)); S.pendingDiscard = 0; S.selected = []; draw(); sfxDiscard(sel.length); setMsg('Call settled.'); return render();
   }
   if (S.discards <= 0) { setMsg('No Discards left.', true); return render(); }
   if (!sel.length) { setMsg('Select 1–' + CFG.maxDiscardTiles + ' tiles to discard.', true); return render(); }
@@ -1887,7 +1899,7 @@ function doDiscard() {
     if (S.money < 1) { setMsg('The Loan Shark has locked your discards: ¥0 left.', true); return render(); }
     S.money -= 1;
   }
-  S.discards--; S.stats.discards++; S.river.push(...sel); S.hand = S.hand.filter(t => !sel.includes(t)); S.selected = []; draw();
+  S.discards--; S.stats.discards++; S.river.push(...sel); S.hand = S.hand.filter(t => !sel.includes(t)); S.selected = []; draw(); sfxDiscard(sel.length);
   for (const k of S.talismans) if (TAL[k].onDiscard) TAL[k].onDiscard(S, sel);
   setMsg(`Discarded ${sel.length} tile${sel.length > 1 ? 's' : ''} to the River.`); render();
 }
@@ -1904,7 +1916,7 @@ function doCall() {
   const type = meldType([rt, ...sel]); if (!type) { setMsg('That River tile and your selection do not form a Chi, Pon or Kan.', true); return render(); }
   if (freeCall) S.freeCallsUsed = (S.freeCallsUsed || 0) + 1; else S.plays--; S.river = S.river.filter(t => t !== rt); S.hand = S.hand.filter(t => !sel.includes(t));
   S.open.push({ type, tiles: sortTiles([rt, ...sel]), calledId: rt.id }); S.selected = []; S.selRiver = null;
-  for (const k of S.talismans) if (TAL[k].onCall) TAL[k].onCall(S); S.stats.calls++; PROFILE.calls++; saveProfile(); if (type === 'kan') S.stats.kans++;
+  for (const k of S.talismans) if (TAL[k].onCall) TAL[k].onCall(S); S.stats.calls++; PROFILE.calls++; saveProfile(); sfx('call'); if (type === 'kan') S.stats.kans++;
   const rep = type === 'kan' ? drawReplacement() : null;
   S.pendingDiscard = Math.max(0, S.hand.length - capacity());
   const note = `Called ${MELD_LABEL[type]} (open)${freeCall ? `, no Play spent (${freeMax - S.freeCallsUsed} free Call${freeMax - S.freeCallsUsed === 1 ? '' : 's'} left)` : ''}${rep ? `. Replacement tile drawn: ${tileName(rep)}` : ''}`;
@@ -1921,7 +1933,7 @@ function declareOption() {
 function doDeclareKan() {
   const o = declareOption(); if (!o.ok) { if (o.err) setMsg(o.err, true); return render(); }
   const sel = o.sel; S.hand = S.hand.filter(t => !sel.includes(t));
-  S.open.push({ type: 'kan', tiles: sortTiles(sel), calledId: null, closed: true }); S.selected = []; S.stats.kans++;
+  S.open.push({ type: 'kan', tiles: sortTiles(sel), calledId: null, closed: true }); S.selected = []; S.stats.kans++; sfx('kan');
   const rep = drawReplacement(); draw();
   setMsg(`Declared a closed Kan of ${isHonor(sel[0]) ? HONOR_EN[sel[0].rank] : sel[0].rank + ' ' + SUIT_EN[sel[0].suit]}. Hand stays closed.${rep ? ' Replacement tile drawn: ' + tileName(rep) + '.' : ''}`);
   render();
@@ -2189,6 +2201,61 @@ function render() {
 // Edition effects run on one shared 15 s clock: each newly drawn edition card gets a negative delay matching the
 // clock, so a redraw picks up mid-cycle and all cards stay in step.
 function syncEditions() { const d = `${-(performance.now() % 15000).toFixed(0)}ms`; document.querySelectorAll('.slot[class*="ed-"], .shopcard[class*="ed-"]').forEach(e => { if (!e.style.getPropertyValue('--edd')) e.style.setProperty('--edd', d); }); }
+// ===================== SOUND =====================
+// Balatro-style effects synthesized with Web Audio (no sound files): tile clacks for select, draw, discard, Call and
+// Kan, a whoosh for Play, rising plinks for Chips, zings for Mult, ticks for counters, pops for fireworks.
+// Each sound has a minimum gap so bursts never pile up. Browsers only allow audio after the first click or key.
+let SOUND = (() => { try { return localStorage.getItem('yakuman.sound') !== 'off'; } catch (e) { return true; } })();
+let AC = null, MASTER = null, NOISE = null; const SFX_LAST = {};
+function audioCtx() {
+  if (!SOUND) return null;
+  try {
+    if (!AC) { const C = window.AudioContext || window.webkitAudioContext; if (!C) return null; AC = new C(); MASTER = AC.createGain(); MASTER.gain.value = .45; MASTER.connect(AC.destination);
+      NOISE = AC.createBuffer(1, AC.sampleRate * .4, AC.sampleRate); const d = NOISE.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; }
+    if (AC.state === 'suspended') AC.resume();
+    return AC;
+  } catch (e) { return null; }
+}
+['pointerdown', 'keydown'].forEach(ev => document.addEventListener(ev, () => { if (SOUND) audioCtx(); }, true));
+// A tile clack: a short burst of filtered noise plus a faint wooden knock.
+function sClack(t, f = 2600, dur = .06, g = .4) {
+  const src = AC.createBufferSource(); src.buffer = NOISE; const bp = AC.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = f; bp.Q.value = 5;
+  const env = AC.createGain(); env.gain.setValueAtTime(0, t); env.gain.linearRampToValueAtTime(g, t + .002); env.gain.exponentialRampToValueAtTime(.0008, t + dur);
+  src.connect(bp).connect(env).connect(MASTER); src.start(t); src.stop(t + dur + .02);
+  sTone(t, f / 5.5, 'triangle', dur * .9, g * .25);
+}
+function sTone(t, f, type = 'sine', dur = .12, g = .2, slideTo = 0) {
+  const o = AC.createOscillator(); o.type = type; o.frequency.setValueAtTime(f, t); if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t + dur);
+  const env = AC.createGain(); env.gain.setValueAtTime(0, t); env.gain.linearRampToValueAtTime(g, t + .004); env.gain.exponentialRampToValueAtTime(.0008, t + dur);
+  o.connect(env).connect(MASTER); o.start(t); o.stop(t + dur + .02);
+}
+function sWhoosh(t, dur = .2, g = .18, from = 500, to = 2400) {
+  const src = AC.createBufferSource(); src.buffer = NOISE; const bp = AC.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 1.4; bp.frequency.setValueAtTime(from, t); bp.frequency.exponentialRampToValueAtTime(to, t + dur);
+  const env = AC.createGain(); env.gain.setValueAtTime(0, t); env.gain.linearRampToValueAtTime(g, t + dur * .4); env.gain.exponentialRampToValueAtTime(.0008, t + dur);
+  src.connect(bp).connect(env).connect(MASTER); src.start(t); src.stop(t + dur + .02);
+}
+const SFX_GAP = { tick: .035, wall: .04, draw: .035, chip: .03, mult: .05, pop: .06, select: .02, deselect: .02 };
+function sfx(name, n = 0) {
+  const ac = audioCtx(); if (!ac || ac.state !== 'running') return;
+  const now = ac.currentTime; if (SFX_LAST[name] && now - SFX_LAST[name] < (SFX_GAP[name] || .015)) return; SFX_LAST[name] = now;
+  const step = k => Math.pow(1.0595, Math.min(k, 24));   // a semitone per step, capped at two octaves
+  switch (name) {
+    case 'select': sClack(now, 3300, .045, .32); break;
+    case 'deselect': sClack(now, 2300, .04, .22); break;
+    case 'draw': sClack(now, 2700 + Math.random() * 500, .05, .22); break;
+    case 'discard': sClack(now, 2100 + Math.random() * 300, .075, .42); sTone(now, 150, 'sine', .09, .12); break;
+    case 'play': sWhoosh(now, .22, .2); sClack(now + .12, 2500, .06, .3); break;
+    case 'call': sClack(now, 2000, .07, .45); sClack(now + .075, 2600, .06, .4); sTone(now, 190, 'sine', .14, .16, 120); break;
+    case 'kan': for (let k = 0; k < 4; k++) sClack(now + k * .065, 2000 + k * 260, .06, .4); sTone(now + .26, 130, 'sine', .22, .22, 80); break;
+    case 'wall': sTone(now, 900, 'square', .02, .025); break;
+    case 'tick': sTone(now, 1500, 'square', .018, .02); break;
+    case 'chip': { const f = 520 * step(n); sTone(now, f, 'triangle', .13, .16); sTone(now, f * 2, 'sine', .06, .05); break; }
+    case 'mult': { const f = 330 * step(n); sTone(now, f, 'square', .14, .05, f * 1.25); sTone(now, f * 1.5, 'sine', .12, .08); break; }
+    case 'xmult': sTone(now, 200, 'sawtooth', .3, .07, 620); sTone(now, 400, 'sine', .3, .1, 1240); break;
+    case 'total': [523, 659, 784].forEach((f, k) => sTone(now + k * .05, f, 'triangle', .28, .14)); break;
+    case 'pop': { const src = AC.createBufferSource(); src.buffer = NOISE; const lp = AC.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 900; const env = AC.createGain(); env.gain.setValueAtTime(.18, now); env.gain.exponentialRampToValueAtTime(.0008, now + .18); src.connect(lp).connect(env).connect(MASTER); src.start(now); src.stop(now + .2); break; }
+  }
+}
 // ===================== TILE MOTION =====================
 // The board is rebuilt on every render, so tiles would otherwise jump. Before a render we note where each tile was;
 // afterwards each tile animates from there (FLIP). Selecting lifts with a small spring, discards fly into the River
@@ -2223,7 +2290,7 @@ function tileMotion(before, fresh) {
       const d = deal * dealGap;
       e.animate([{ transform: `translate(0px,${lift - 46}px) scale(.86) rotate(-6deg)`, opacity: 0 }, { transform: `translate(0px,${lift + 5}px) scale(1.02) rotate(1deg)`, opacity: 1, offset: .7 }, { transform: end, opacity: 1 }],
         { duration: 340, delay: d, easing: 'cubic-bezier(.25,.8,.35,1)', fill: 'backwards' });
-      e.classList.add('fresh'); e.style.animationDelay = `${d}ms`; deal++;
+      e.classList.add('fresh'); e.style.animationDelay = `${d}ms`; setTimeout(() => sfx('draw'), d + 220); deal++;
     }
   });
 }
@@ -2412,7 +2479,7 @@ function tickWall() {
   const el = $('#wallBtn .wv'); if (!el) return; const target = +el.textContent;
   if (wallShown === null || target >= wallShown || !motionOK) { wallShown = target; return; }
   const from = wallShown, t0 = performance.now(), dur = 350; el.textContent = from; cancelAnimationFrame(wallTween);
-  const step = now => { const k = Math.min(1, (now - t0) / dur), v = Math.round(from + (target - from) * (1 - Math.pow(1 - k, 2))); wallShown = v; const cur = $('#wallBtn .wv'); if (cur) cur.textContent = v;
+  const step = now => { const k = Math.min(1, (now - t0) / dur), v = Math.round(from + (target - from) * (1 - Math.pow(1 - k, 2))); if (v !== wallShown) sfx('wall'); wallShown = v; const cur = $('#wallBtn .wv'); if (cur) cur.textContent = v;
     if (k < 1) wallTween = requestAnimationFrame(step); else { wallShown = target; if (cur) juice(cur, .5); } };
   wallTween = requestAnimationFrame(step);
   const token = ++wallToken; setTimeout(() => { if (token !== wallToken) return; const cur = $('#wallBtn .wv'); if (cur) cur.textContent = target; wallShown = target; }, dur + 300);   // safety if frames are paused; only the latest countdown may finish it
@@ -2500,7 +2567,7 @@ function bindTileDrag(el, t) {
     // On drop the hand is re-rendered in its new order; the tile glides from where it floats into the gap.
     if (d.moved && e.type === 'pointerup') { const idx = liveDragIndex(d.live); d.live.ph.remove(); el.classList.remove('dragging'); const rest = S.hand.filter(x => x !== d.t); rest.splice(idx, 0, d.t); S.hand = rest; S.sortHand = false; render(); return; }
     if (d.live) { liveDragCancel(d.live, el); render(); return; } el.style.transform = ''; el.classList.remove('dragging');
-    if (!d.moved && e.type === 'pointerup') { S.selected = S.selected.includes(t.id) ? S.selected.filter(x => x !== t.id) : [...S.selected, t.id]; render(); }
+    if (!d.moved && e.type === 'pointerup') { sfx(S.selected.includes(t.id) ? 'deselect' : 'select'); S.selected = S.selected.includes(t.id) ? S.selected.filter(x => x !== t.id) : [...S.selected, t.id]; render(); }
   };
   el.addEventListener('pointerup', finish); el.addEventListener('pointercancel', finish);
 }
@@ -2565,13 +2632,13 @@ async function animateScore(ctx) {
   const tileEls = new Map(); document.querySelectorAll('#hand .tile[data-id], #open .tile[data-id]').forEach(e => tileEls.set(+e.dataset.id, e));
   let chips = 0, han = 0, tileX = 1, mult = null;
   const curMult = () => mult === null ? hanMult(han) * tileX : mult;
-  let lastChips = null, lastMult = null, lastHan = null; const fitLen = { c: 0, m: 0 };
+  let lastChips = null, lastMult = null, lastHan = null; const fitLen = { c: 0, m: 0 }; let chipN = 0, multN = 0;
   const bump = (el, cls) => { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); };
   const setMath = () => {
     const c = Math.max(0, Math.round(chips)), m = fmtMult(curMult());
     chipsEl.textContent = c; multEl.textContent = m;
     // Like Balatro: the numbers pop and wobble, the boxes stay put.
-    if (lastChips !== null && c !== lastChips) juice(chipsEl); if (lastMult !== null && m !== lastMult) juice(multEl, 1.15);
+    if (lastChips !== null && c !== lastChips) { juice(chipsEl); sfx('chip', chipN++); } if (lastMult !== null && m !== lastMult) { juice(multEl, 1.15); sfx(+m >= +lastMult * 1.4 && lastMult > 1 ? 'xmult' : 'mult', multN++); }
     const hv = Math.round(han); hanEl.textContent = hv; tierEl.textContent = tr(tierText(hv)); hanPill.classList.toggle('done', mult !== null);
     if (lastHan !== null && hv !== lastHan) juice(hanPill.querySelector('.hanline'), .6);
     // Re-fit only when the number of characters changes, so layout isn't recalculated on every tick.
@@ -2588,7 +2655,7 @@ async function animateScore(ctx) {
   const FW = ['#ffd27a', '#7fd0ff', '#ff8a7a', '#f6b6c8', '#c9a7e8', '#bff3d1'];
   let fwTimer = null;
   const burst = (x, y, col) => {
-    if (!fx.isConnected) return;
+    if (!fx.isConnected) return; sfx('pop');
     const n = 16 + fire * 4, R = 24 + fire * 9;
     const fl = document.createElement('i'); fl.className = 'fwflash'; fl.style.cssText = `left:${x}px;top:${y}px;--c:${col}`; fx.appendChild(fl);
     fl.animate([{ transform: 'translate(-50%,-50%) scale(.2)', opacity: .95 }, { transform: 'translate(-50%,-50%) scale(1.7)', opacity: 0 }], { duration: 380, easing: 'ease-out', fill: 'both' }).onfinish = () => fl.remove();
@@ -2630,11 +2697,11 @@ async function animateScore(ctx) {
   chips = ctx.chips; han = ctx.han; mult = ctx.mult; setMath(); heat();
   await wait(350);
   // the total replaces the play name, then counts down into the round score
-  nameEl.hidden = true; totWrap.hidden = false; totEl.textContent = fmtN(ctx.total); totEl.classList.add('final'); fitText(totEl);
+  nameEl.hidden = true; totWrap.hidden = false; totEl.textContent = fmtN(ctx.total); totEl.classList.add('final'); fitText(totEl); sfx('total');
   await wait(ctx.kind === 'hand' ? 700 : 450);
   const rsEl = $('#roundScore'); const from = S.score, to = S.score + ctx.total; const dur = (motionOK && !skipAnim) ? Math.round(650 * SPEEDS[ANIM_SPEED]) : 0;
   if (rsEl) { rsEl.textContent = fmtN(to); fitText(rsEl); rsEl.textContent = fmtN(from); }
-  if (dur > 0) { const t0 = performance.now(); await new Promise(res => { const step = now => { const k = Math.min(1, (now - t0) / dur); const e = 1 - Math.pow(1 - k, 3); totEl.textContent = fmtN(Math.round(ctx.total * (1 - e))); if (rsEl) { const v = from + (to - from) * e; rsEl.textContent = fmtN(Math.round(v)); rsEl.classList.toggle('met', v >= S.target); const bar = $('#roundBar'); if (bar) bar.style.width = Math.min(100, 100 * v / S.target) + '%'; } if (k < 1) requestAnimationFrame(step); else res(); }; requestAnimationFrame(step); }); }
+  if (dur > 0) { const t0 = performance.now(); await new Promise(res => { const step = now => { const k = Math.min(1, (now - t0) / dur); const e = 1 - Math.pow(1 - k, 3); totEl.textContent = fmtN(Math.round(ctx.total * (1 - e))); if (rsEl) { const v = from + (to - from) * e; rsEl.textContent = fmtN(Math.round(v)); sfx('tick'); rsEl.classList.toggle('met', v >= S.target); const bar = $('#roundBar'); if (bar) bar.style.width = Math.min(100, 100 * v / S.target) + '%'; } if (k < 1) requestAnimationFrame(step); else res(); }; requestAnimationFrame(step); }); }
   if (rsEl) { rsEl.textContent = fmtN(to); fitText(rsEl); rsEl.classList.remove('bump'); void rsEl.offsetWidth; rsEl.classList.add('bump'); }
   await wait(250);
   if (fwTimer) clearInterval(fwTimer);
@@ -2913,7 +2980,7 @@ function profileHTML() {
 }
 // ===================== EXPORT / IMPORT =====================
 // One save = profile + settings + current run, as gzip + base64 text ("YKM1Z:...") or plain JSON.
-const SETTING_KEYS = ['yakuman.lang', 'yakuman.speed', 'yakuman.dots', 'yakuman.hints', 'yakuman.tilenums', 'yakuman.unlockall'];
+const SETTING_KEYS = ['yakuman.lang', 'yakuman.speed', 'yakuman.dots', 'yakuman.hints', 'yakuman.tilenums', 'yakuman.unlockall', 'yakuman.sound'];
 function exportPayload() { const settings = {}; for (const k of SETTING_KEYS) { try { const v = localStorage.getItem(k); if (v != null) settings[k] = v; } catch (e) { } } save(); let run = null; try { run = localStorage.getItem(SAVE_KEY); } catch (e) { } return { app: 'yakuman', v: 1, exported: new Date().toISOString(), profile: PROFILE, settings, run }; }
 async function toCode(obj) {
   const bytes = new TextEncoder().encode(JSON.stringify(obj)); let out = bytes, gz = false;
@@ -3130,6 +3197,7 @@ function bindEvents() {
     if (t.dataset.setlang) { setLang(t.dataset.setlang); showModal(settingsHTML(), true); return; }
     if (t.dataset.settilenums) { TILE_NUMS = t.dataset.settilenums; try { localStorage.setItem('yakuman.tilenums', TILE_NUMS); } catch (e) { } render(); showModal(settingsHTML(), true); return; }
     if (t.dataset.sethint) { HINTS[t.dataset.sethint] = !HINTS[t.dataset.sethint]; try { localStorage.setItem('yakuman.hints', JSON.stringify(HINTS)); } catch (e) { } render(); showModal(settingsHTML(), true); return; }
+    if (t.dataset.setsound) { SOUND = t.dataset.setsound === 'on'; try { localStorage.setItem('yakuman.sound', SOUND ? 'on' : 'off'); } catch (e) { } if (SOUND) { audioCtx(); setTimeout(() => sfx('select'), 30); } showModal(settingsHTML(), true); return; }
     if (t.dataset.setdots) { SHOW_DOTS = t.dataset.setdots === 'on'; try { localStorage.setItem('yakuman.dots', SHOW_DOTS ? 'on' : 'off'); } catch (e) { } render(); showModal(settingsHTML(), true); return; }
     if (t.dataset.setspeed) { ANIM_SPEED = t.dataset.setspeed; try { localStorage.setItem('yakuman.speed', ANIM_SPEED); } catch (e) { } showModal(settingsHTML(), true); return; }
     if (t.dataset.setdbg) { const b = $('#debugBar'); b.hidden = t.dataset.setdbg !== 'on'; if (!b.hidden) renderDebug(); showModal(settingsHTML(), true); return; }

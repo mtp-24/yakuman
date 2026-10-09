@@ -782,4 +782,11 @@ button.pulse{animation:btnpulse2 2.6s ease-out infinite}
 .rbico{width:18px;height:18px;color:#9ec5e8;flex:0 0 auto}
 .railbtn .wallico{transform:scale(.72);transform-origin:left center;width:19px;margin-right:2px}
 .norenbar .wallet{transform:translateY(3px)}   /* line the money up with the title's letters rather than its line box */
+/* Collection engraving cards: the sample tile sits at the bottom with the same spacing on every card, so rows line up */
+.colcard .coltile{margin-top:auto;padding-top:12px;display:flex;align-items:flex-end;min-height:76px}
+.colgrid{gap:12px;align-items:stretch}
+/* Conventional padlock: a wide, short body with a rounded shackle */
+.lockico{width:12px;height:9px;margin-top:6px;border-radius:2.5px;background:var(--muted);position:relative;flex:0 0 auto}
+.lockico::before{content:'';position:absolute;left:2.5px;top:-5.5px;width:7px;height:7px;border:1.6px solid var(--muted);border-bottom:0;border-radius:5px 5px 0 0;box-sizing:border-box}
+.lockico::after{content:'';position:absolute;left:5px;top:3px;width:2px;height:3px;border-radius:1px;background:rgba(0,0,0,.45)}
 </style>

@@ -152,6 +152,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 141: Edition pills never wrap: the kind line stays on one row, Talisman cards with an edition on the board and in your owned list show the order number and the pill instead of the word Talisman, and board slots use a compact pill.
 - Build 142: Shop and cash-out money use the play area's purse look (themed coin, amount, JPY or HKD underneath). Shop rail buttons get icons: circular arrows on Reroll Cards, the tile stack on View Wall.
 - Build 143: Shop banner: the decorative crest before the title is gone, and the money lines up with the title lettering.
+- Build 144: Sound effects synthesized with Web Audio, Balatro-style: tile clacks for select, draw, discard, Call (double) and Kong (four), a whoosh for Play, soft ticks for the Wall count and score count-up, rising plinks for Chips, zings for Mult and a sweep for xMult, a chord for the total, pops for fireworks; rate-limited so bursts never pile up. Settings, Gameplay: Sound On/Off (saved and exported). Collection sample tiles sit at the bottom of every card so rows line up. Lock icon redrawn as a conventional padlock. Fixed a crash on the run-over screen for runs saved before build 117 (old Stake unlock records).
 - Build 7: multi-meld play ladder (Two Melds ... Four Melds), targets 300...45000, retrigger and scaling Talismans, Wall-Builder rewording, scoring animation.
 
 ## Simulators (in `sim/`)
