@@ -105,6 +105,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 94: the scoring box title stays blank until a play is selected (no "Select a play" text); height unchanged.
 - Build 95: more space between the shop footer's "Next: Ante …" text and the Continue button.
 - Build 96: Dots and Bamboo tiles drop their corner number (it collided with the art on 3, 6, 7, 8, 9 Dots and 6, 8, 9 Bamboo; the pips are counted, as on Japanese sets). Characters keep their number and Winds their letter.
+- Build 97: opening a pack clears the last shop message (it showed "Bought …" from before the pack); owned Talisman cards drop the redundant "Sells for" label, leaving the "Sell ¥n" button.
 - Build 7: multi-meld play ladder (Two Melds ... Four Melds), targets 300...45000, retrigger and scaling Talismans, Wall-Builder rewording, scoring animation.
 
 ## Simulators (in `sim/`)
