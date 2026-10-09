@@ -195,7 +195,7 @@ function scoreCtx(S, kind, tiles, info) {
     const byType = {}; for (const m of melds) byType[m.type] = (byType[m.type] || 0) + 1; if (pairs.length) byType.pair = pairs.length;
     for (const [t, n] of Object.entries(byType)) { const lvl = S.scrolls.meld[t] || 0; if (lvl) { const c = lvl * CFG.scrollChips * n, h = lvl * CFG.scrollHan * n; ctx.chips += c; ctx.han += h; L(`Scroll: ${MELD_LABEL[t]}${n > 1 ? ' ×' + n : ''}`, `+${c} Chips, +${h} Han`, { chips: c, han: h }); } }
     if (melds.length >= 2 && ctx.nKan) { const c = CFG.kanBonus.chips * ctx.nKan, h = CFG.kanBonus.han * ctx.nKan; ctx.chips += c; ctx.han += h; L(`Kan ×${ctx.nKan}`, `+${c} Chips, +${h} Han`, { chips: c, han: h }); }
-    for (const m of melds) if (m.type !== 'chi' && m.i >= 27 && !(S.boss === 'typhoon' && m.i <= 30)) { ctx.han += 1; L(`Yakuhai (${HONOR_EN[m.i - 26]})`, '+1 Han', { han: 1 }); const b = S.scrolls.yaku.yakuhai || 0; if (b) { ctx.han += b; L('Scroll: Yakuhai', `+${b} Han`, { han: b }); } }
+    for (const m of melds) if (m.type !== 'chi' && m.i >= 27 && !(S.boss === 'typhoon' && m.i <= 30)) { ctx.han += 1; L(`Yakuhai (${HONOR_EN[m.i - 26]})`, '+1 Han', { han: 1 }); ctx.yaku.push({ key: 'yakuhai', name: `Yakuhai (${HONOR_EN[m.i - 26]})`, han: 1 }); const b = S.scrolls.yaku.yakuhai || 0; if (b) { ctx.han += b; L('Scroll: Yakuhai', `+${b} Han`, { han: b }); } }
     const t0 = tiles[0];
     if (info.part.single) ctx.desc = 'Lone ' + tileName(t0);
     else if (melds.length === 1 && !pairs.length) ctx.desc = rung.name + ' of ' + (isHonor(t0) ? HONOR_EN[t0.rank] : (melds[0].type === 'chi' ? sortTiles(tiles).map(t => t.rank).join('') + ' ' + SUIT_EN[t0.suit] : t0.rank + ' ' + SUIT_EN[t0.suit]));

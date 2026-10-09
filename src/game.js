@@ -340,8 +340,8 @@ function render() {
   renderBlind(); renderTalismans(); renderConsumables(); renderOpen(); renderRiver(); renderHand(); renderActions(); renderLast();
   $('#msg').textContent = S.msg || ''; $('#msg').className = 'msg' + (S.msgErr ? ' err' : '');
   if (S.phase === 'shop' && S.pack) showModal(packHTML()); else if (S.phase === 'shop') showModal(shopHTML()); else if (S.phase === 'gameover') showModal(overHTML(false)); else if (S.phase === 'win') showModal(overHTML(true)); else if (!modalPinned) hideModal();
-  $('#btnLang').textContent = LANG === 'hk' ? 'Riichi terms' : 'HK terms';
-  $('#btnYaku').textContent = LANG === 'hk' ? 'Run info · Faan' : 'Run info · Yaku';
+  $('#btnLang').textContent = LANG === 'hk' ? 'Riichi Terms' : 'HK Terms';
+  $('#btnYaku').textContent = LANG === 'hk' ? 'Run Info · Faan' : 'Run Info · Yaku';
   translateDOM($('#app'));
   save();
 }
@@ -349,13 +349,13 @@ function renderBlind() {
   const kind = blindKind(); const inBlind = S.phase === 'blind';
   const name = inBlind && S.boss ? BOSSES[S.boss].name : ({ small: 'Small Blind', big: 'Big Blind', boss: 'Boss Blind' })[kind];
   const pct = S.target ? Math.min(100, 100 * S.score / S.target) : 0;
-  let h = `<div class="label">Ante ${Math.min(S.ante, CFG.antes)} · ${inBlind ? 'Current blind' : 'Next up'}</div><div class="blind-name${S.boss && inBlind ? ' boss' : ''}">${name}</div>`;
+  let h = `<div class="label">Ante ${Math.min(S.ante, CFG.antes)} · ${inBlind ? 'Current Blind' : 'Next Up'}</div><div class="blind-name${S.boss && inBlind ? ' boss' : ''}">${name}</div>`;
   if (inBlind && S.boss) h += `<div class="boss-desc">${BOSSES[S.boss].desc}${S.boss === 'collector' && S.bossSuit ? ` <b>This Blind: ${SUIT_EN[S.bossSuit]}.</b>` : ''}${S.boss === 'gatekeeper' ? (S.firstPlayDone ? ' <b>First Play done.</b>' : ' <b>Your next Play scores 0.</b>') : ''}</div>`;
   if (S.tags && S.tags.length) h += `<div class="label" style="margin-top:8px">Tags</div><div class="flowers">${S.tags.map(t => `<span class="flowerchip" title="${TAGS[t].desc}">${TAGS[t].name}</span>`).join('')}</div>`;
-  h += `<div class="label" style="margin-top:8px">Score at least</div><div class="target num">${inBlind ? S.target.toLocaleString() : Math.floor(CFG.anteBase[Math.min(S.ante, CFG.antes) - 1] * CFG.blindMult[kind]).toLocaleString()}</div>`;
+  h += `<div class="label" style="margin-top:8px">Score at Least</div><div class="target num">${inBlind ? S.target.toLocaleString() : Math.floor(CFG.anteBase[Math.min(S.ante, CFG.antes) - 1] * CFG.blindMult[kind]).toLocaleString()}</div>`;
   if (inBlind) h += `<div class="bar"><i style="width:${pct}%"></i></div><div class="num" style="font-size:13px">Scored <b style="color:var(--accent)">${S.score.toLocaleString()}</b></div>`;
   h += `<div class="stats"><div class="stat plays"><div class="label">Plays</div><div class="v num">${S.plays}</div></div><div class="stat discards"><div class="label">Discards</div><div class="v num">${S.discards}</div></div><div class="stat money"><div class="label">YEN</div><div class="v num">¥${S.money}</div></div><div class="stat"><div class="label">Wall</div><div class="v num">${S.wall.length}</div></div></div>`;
-  if (S.indicators.length) { h += `<div class="label" style="margin-top:8px">Dora indicators</div><div class="dora-ind" id="doraRow"></div>`; }
+  if (S.indicators.length) { h += `<div class="label" style="margin-top:8px">Dora Indicators</div><div class="dora-ind" id="doraRow"></div>`; }
   if (S.flowers.length) h += `<div class="label" style="margin-top:8px">Flowers &amp; Seasons</div><div class="flowers">${S.flowers.map(f => `<span class="flowerchip" title="${FLW[f].desc}">${FLW[f].name}</span>`).join('')}</div>`;
   const sc = Object.entries(S.scrolls.meld).filter(([, v]) => v).map(([k, v]) => `${MELD_LABEL[k]} Lv.${v + 1}`).concat(Object.entries(S.scrolls.yaku).filter(([, v]) => v).map(([k, v]) => `${k} +${v}`));
   if (sc.length) h += `<div class="label" style="margin-top:8px">Mastery</div><div style="font-size:12px">${sc.join(' · ')}</div>`;
@@ -404,8 +404,8 @@ function renderHand() {
   const over = S.hand.length - capacity();
   $('#handInfo').textContent = (over > 0 ? `${S.hand.length} tiles (${over} over the limit of ${capacity()}: no draw until you are back under it)` : `${S.hand.length} / ${capacity()} tiles`) + ` · ${S.selected.length} selected · complete hand needs ${neededConcealed()} from hand`;
   renderHint(hidden);
-  $('#btnSort').textContent = hidden ? 'Manual order' : (S.sortHand ? 'Auto-sort on' : 'Sort hand'); $('#btnSort').disabled = hidden; $('#btnSort').title = S.sortHand ? 'New tiles are sorted in. Drag a tile to switch to manual order.' : 'Sort the hand now and keep it sorted. Drag tiles to reorder.';
-  $('#btnDots').textContent = SHOW_DOTS ? 'Dots on' : 'Dots off'; $('#btnDots').title = 'Green dots mark tiles you can discard without losing progress';
+  $('#btnSort').textContent = hidden ? 'Manual Order' : (S.sortHand ? 'Auto-sort On' : 'Sort Hand'); $('#btnSort').disabled = hidden; $('#btnSort').title = S.sortHand ? 'New tiles are sorted in. Drag a tile to switch to manual order.' : 'Sort the hand now and keep it sorted. Drag tiles to reorder.';
+  $('#btnDots').textContent = SHOW_DOTS ? 'Dots On' : 'Dots Off'; $('#btnDots').title = 'Green dots mark tiles you can discard without losing progress';
 }
 // Greedy set of tiles that can all be discarded together without raising shanten. Isolated tiles are tried first.
 function deadTiles(hand, openCount, sh, limit) {
@@ -463,8 +463,8 @@ function renderActions() {
 }
 function renderLast() {
   const c = S.lastPlay; const box = $('#lastPlay');
-  if (!c) { box.innerHTML = `<div class="label">Last play</div><div class="muted" style="font-size:12px;margin-top:4px">Nothing scored yet. Best this run: ${S.stats.best.toLocaleString()}${S.stats.bestDesc ? ' (' + S.stats.bestDesc + ')' : ''}</div>`; return; }
-  let h = `<div class="label">Last play</div><div style="font-family:var(--display);font-size:15px;margin:2px 0 6px">${c.desc}</div>`;
+  if (!c) { box.innerHTML = `<div class="label">Last Play</div><div class="muted" style="font-size:12px;margin-top:4px">Nothing scored yet. Best this run: ${S.stats.best.toLocaleString()}${S.stats.bestDesc ? ' (' + S.stats.bestDesc + ')' : ''}</div>`; return; }
+  let h = `<div class="label">Last Play</div><div style="font-family:var(--display);font-size:15px;margin:2px 0 6px">${c.desc}</div>`;
   if (c.kind === 'meld' && c.nMelds >= 2) h += `<div class="muted" style="font-size:11px;margin:-4px 0 6px">${c.nChi ? c.nChi + ' Chi ' : ''}${c.nPon ? c.nPon + ' Pon ' : ''}${c.nKan ? c.nKan + ' Kan ' : ''}${c.hasPair ? '+ pair' : ''}</div>`;
   for (const l of c.lines) h += `<div class="row"><span>${l.label}</span><span class="num">${l.val}</span></div>`;
   h += `<div class="formula num" style="margin-top:6px">${c.han} Han → ${c.tier} ×${c.baseMult}${c.xmult !== 1 ? ` · tiles ×${fmtMult(c.xmult)}` : ''}${c.mult !== c.baseMult * c.xmult ? ` → ×${fmtMult(c.mult)} after Talismans${c.furiten ? ' and Furiten' : ''}` : ''}</div>`;
@@ -568,21 +568,21 @@ function shopHTML() {
   const next = ({ small: 'Small Blind', big: 'Big Blind', boss: 'Boss Blind' })[blindKind()];
   const nextBoss = blindKind() === 'boss' ? BOSSES[S.bossOrder[S.ante - 1]] : null;
   let h = `<h2>Shop</h2>`;
-  if (r) h += `<div class="label">Blind defeated · reward</div><div class="reward-list num"><span>${({ small: 'Small Blind', big: 'Big Blind', boss: 'Boss Blind' })[r.kind]} defeated</span><span>¥${r.base}</span><span>Unused Plays</span><span>¥${r.left}</span><span>Interest (¥1 per ¥5)</span><span>¥${r.interest}</span>${r.tal ? `<span>Talismans</span><span>¥${r.tal}</span>` : ''}${r.summer ? `<span>Summer</span><span>¥${r.summer}</span>` : ''}${r.invest ? `<span>Investment Tag</span><span>¥${r.invest}</span>` : ''}<span><b>Total</b></span><span><b>¥${r.total}</b></span></div>`;
+  if (r) h += `<div class="label">Blind Defeated · Reward</div><div class="reward-list num"><span>${({ small: 'Small Blind', big: 'Big Blind', boss: 'Boss Blind' })[r.kind]} defeated</span><span>¥${r.base}</span><span>Unused Plays</span><span>¥${r.left}</span><span>Interest (¥1 per ¥5)</span><span>¥${r.interest}</span>${r.tal ? `<span>Talismans</span><span>¥${r.tal}</span>` : ''}${r.summer ? `<span>Summer</span><span>¥${r.summer}</span>` : ''}${r.invest ? `<span>Investment Tag</span><span>¥${r.invest}</span>` : ''}<span><b>Total</b></span><span><b>¥${r.total}</b></span></div>`;
   h += `<div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center"><span>YEN: <b class="num" style="color:var(--accent)">¥${S.money}</b></span><span class="muted">Talismans ${S.talismans.length}/${talSlots()} · Consumables ${S.consumables.length}/${conSlots()}</span></div>`;
   if (S.shop.coupon) h += `<div class="msg">Coupon Tag: Talismans and consumables are free in this shop.</div>`;
-  if (S.shop.freePacks.length) h += `<div style="display:flex;gap:8px;flex-wrap:wrap;margin:6px 0">${S.shop.freePacks.map((pk, i) => `<button class="primary" data-freepack="${i}">Open free ${PACKS[pk].name}</button>`).join('')}</div>`;
+  if (S.shop.freePacks.length) h += `<div style="display:flex;gap:8px;flex-wrap:wrap;margin:6px 0">${S.shop.freePacks.map((pk, i) => `<button class="primary" data-freepack="${i}">Open Free ${PACKS[pk].name}</button>`).join('')}</div>`;
   h += `<div class="shop-grid">${items.map((it, i) => cardHTML(it, i)).join('')}</div>`;
   h += ownedHTML();
   h += `<div class="msg${S.msgErr ? ' err' : ''}" style="margin-bottom:8px">${S.msg || ''}</div>`;
-  h += `<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px"><button id="mReroll">Reroll cards (${S.shop.freeReroll ? 'free' : '¥' + rerollCost()})</button><button id="mDeck" class="ghost">View Wall</button><span style="flex:1"></span><span class="muted">Next: Ante ${S.ante} ${next}${nextBoss ? ' · ' + nextBoss.name : ''}</span>${blindKind() !== 'boss' ? `<button id="mSkip" class="ghost" title="Skip this Blind: no reward money, but you gain a random Tag">Skip for a Tag</button>` : ''}<button id="mNext" class="primary">Next Blind →</button></div>`;
+  h += `<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px"><button id="mReroll">Reroll Cards (${S.shop.freeReroll ? 'free' : '¥' + rerollCost()})</button><button id="mDeck" class="ghost">View Wall</button><span style="flex:1"></span><span class="muted">Next: Ante ${S.ante} ${next}${nextBoss ? ' · ' + nextBoss.name : ''}</span>${blindKind() !== 'boss' ? `<button id="mSkip" class="ghost" title="Skip this Blind: no reward money, but you gain a random Tag">Skip for a Tag</button>` : ''}<button id="mNext" class="primary">Next Blind →</button></div>`;
   if (S.consumables.length) h += `<div class="muted" style="font-size:12px;margin-top:8px">Consumables that need tiles are used during a Blind. Click one on the board to use it now if it needs none.</div>`;
   return h;
 }
 function ownedHTML() {
   const tal = S.talismans.map((k, i) => { const ed = S.editions[k]; const tgt = TAL[k].copies ? talTarget(S, k) : null; return `<div class="shopcard talisman owned-card${ed ? ' ed-' + ed : ''}"><div class="kind"><span class="order">${i + 1}</span>Talisman${ed ? ` · <span class="edtag ed-${ed}">${EDITIONS[ed].name}</span>` : ''}</div><div class="n">${TAL[k].name}</div><div class="d">${TAL[k].desc}${tgt ? ` <b>Now: ${tgt.name}.</b>` : ''}${ed ? ` <b>${EDITIONS[ed].desc}.</b>` : ''}${TAL[k].status ? ' <b>(' + TAL[k].status(S) + ')</b>' : ''}</div><div class="buy"><span class="muted">Sells for</span><button class="ghost" data-sell="${k}">Sell ¥${Math.max(1, Math.floor(talValue(k) / 2))}</button></div></div>`; });
   const con = S.consumables.map((c, i) => { const d = CONS[c.key]; return `<div class="shopcard ${c.kind} owned-card"><div class="kind">${c.kind === 'kami' ? 'Kami Spirit' : 'Omikuji'}</div><div class="n">${d.name}</div><div class="d">${d.desc}</div><div class="buy"><span class="muted">${d.anywhere ? 'Usable now' : 'Use during a Blind'}</span><span style="display:flex;gap:6px">${d.anywhere ? `<button class="ghost" data-usecon="${i}">Use</button>` : ''}<button class="ghost" data-sellcon="${i}">Sell ¥${Math.max(1, Math.floor(d.cost / 2))}</button></span></div></div>`; });
-  return `<div class="label" style="margin:10px 0 4px">Your Talismans · ${S.talismans.length}/${talSlots()} · fire left to right · sell to make room</div>` + (tal.length ? `<div class="shop-grid owned-grid">${tal.join('')}</div>` : `<div class="muted" style="font-size:12px">None yet.</div>`) + `<div class="label" style="margin:10px 0 4px">Your consumables · ${S.consumables.length}/${conSlots()}</div>` + (con.length ? `<div class="shop-grid owned-grid">${con.join('')}</div>` : `<div class="muted" style="font-size:12px">None yet.</div>`);
+  return `<div class="label" style="margin:10px 0 4px">Your Talismans · ${S.talismans.length}/${talSlots()} · fire left to right · sell to make room</div>` + (tal.length ? `<div class="shop-grid owned-grid">${tal.join('')}</div>` : `<div class="muted" style="font-size:12px">None yet.</div>`) + `<div class="label" style="margin:10px 0 4px">Your Consumables · ${S.consumables.length}/${conSlots()}</div>` + (con.length ? `<div class="shop-grid owned-grid">${con.join('')}</div>` : `<div class="muted" style="font-size:12px">None yet.</div>`);
 }
 function packHTML() {
   const pk = PACKS[S.pack.key];
@@ -590,7 +590,7 @@ function packHTML() {
   h += `<div class="shop-grid">${S.pack.choices.map((it, i) => { const d = itemDef(it); const ed = it.edition ? EDITIONS[it.edition] : null; return `<div class="shopcard ${it.kind}${it.sold ? ' sold' : ''}${ed ? ' ed-' + it.edition : ''}"><div class="kind">${{ talisman: 'Talisman', omikuji: 'Omikuji', kami: 'Kami Spirit', scroll: 'Scroll of Mastery' }[it.kind]}${ed ? ` · <span class="edtag ed-${it.edition}">${ed.name}</span>` : ''}</div><div class="n">${d.name}</div><div class="d">${d.desc}${ed ? ` <b>${ed.name}: ${ed.desc}.</b>` : ''}</div><div class="buy"><span></span>${it.sold ? '<span class="muted">Taken</span>' : `<button class="primary" data-take="${i}">Take</button>`}</div></div>`; }).join('')}</div>`;
   h += `<div class="msg${S.msgErr ? ' err' : ''}" style="margin:6px 0">${S.msg || ''}</div>`;
   h += ownedHTML();
-  h += `<div style="margin-top:12px"><button id="mPackDone" class="ghost">Skip the rest</button></div>`;
+  h += `<div style="margin-top:12px"><button id="mPackDone" class="ghost">Skip the Rest</button></div>`;
   return h;
 }
 function overHTML(won) {
@@ -611,7 +611,7 @@ function deckHTML() {
   return h;
 }
 function rulesHTML() {
-  return `<h2>How to play</h2><div class="menu-rules">
+  return `<h2>How to Play</h2><div class="menu-rules">
   <p><b>Goal.</b> Score at least the Blind's target before you run out of Plays. Beat all ${CFG.antes} Antes (Small, Big, Boss each) to win.</p>
   <p><b>Hand.</b> You hold ${CFG.handSize} tiles from a 136-tile Wall (4 of each tile; four of the 5s are Red Fives). You refill after every action. A complete hand uses 14 of them, so you always have spare tiles to work with.</p>
   <p><b>Partial play.</b> Select any tiles that split into melds (Chi runs, Pon triplets, Kan quads) plus at most one pair, and press Play. The button names the rung: Lone Tile, Pair, Two Pair, one meld, Two Melds, Three Melds, Ready Hand (3 melds + pair), Four Melds. Bigger rungs score far more, so a hand that falls one tile short is still worth cashing in. Costs 1 Play. See the Yaku button for the full ladder.</p>
@@ -640,20 +640,20 @@ function exampleHTML(ex) { return `<div class="exrow" data-ex="${ex}"></div>`; }
 function fillExamples(root) { root.querySelectorAll('.exrow').forEach(row => { if (row.children.length) return; for (const grp of parseHand(row.dataset.ex)) { const g = document.createElement('div'); g.className = 'exgrp'; for (const t of grp) { const e = tileEl(t, { small: true }); e.classList.add('tiny'); e.style.cursor = 'default'; g.appendChild(e); } row.appendChild(g); } }); }
 function yakuHTML() {
   const st = S.stats; const most = mostPlayedRung(); const yc = k => (S && S.stats.yaku[k]) || 0;
-  const tabs = [['run', 'Run'], ['ladder', 'Play ladder'], ['yaku', 'Yaku'], ['yakuman', 'Yakuman']];
-  let h = `<h2>Run info</h2><div class="tabs">${tabs.map(([k, n]) => `<button class="tab${infoTab === k ? ' on' : ''}" data-tab="${k}">${n}</button>`).join('')}</div>`;
+  const tabs = [['run', 'Run'], ['ladder', 'Play Ladder'], ['yaku', 'Yaku'], ['yakuman', 'Yakuman']];
+  let h = `<h2>Run Info</h2><div class="tabs">${tabs.map(([k, n]) => `<button class="tab${infoTab === k ? ' on' : ''}" data-tab="${k}">${n}</button>`).join('')}</div>`;
   if (infoTab === 'run') {
     h += `<div class="runinfo"><span><b>Seed</b> ${S.seed}</span><span><b>${DECKS[S.deckKey].name}</b> · ${STAKES[S.stake].name}</span><span><b>Ante</b> ${Math.min(S.ante, CFG.antes)} / ${CFG.antes}</span><span><b>Blinds won</b> ${st.blinds}</span><span><b>Complete hands</b> ${st.hands}</span><span><b>Partial plays</b> ${st.melds}</span><span><b>Calls</b> ${st.calls} · <b>Kans</b> ${st.kans}</span><span><b>Discards</b> ${st.discards}</span><span><b>Skipped blinds</b> ${st.skipped}</span><span><b>Best play</b> ${st.best.toLocaleString()}${st.bestDesc ? ' (' + st.bestDesc + ')' : ''}</span></div>`;
     h += `<div class="label" style="margin:12px 0 4px">Talismans</div><div class="owned">${S.talismans.map((k, i) => `<span class="own"><span class="order">${i + 1}</span><b>${TAL[k].name}</b>${S.editions[k] ? ' <span class="edtag ed-' + S.editions[k] + '">' + EDITIONS[S.editions[k]].name + '</span>' : ''}</span>`).join('') || '<span class="muted">None</span>'}</div>`;
     h += `<div class="label" style="margin:12px 0 4px">Flowers &amp; Seasons</div><div class="owned">${S.flowers.map(f => `<span class="own"><b>${FLW[f].name}</b> <span class="muted">${FLW[f].desc}</span></span>`).join('') || '<span class="muted">None</span>'}</div>`;
-    h += `<div class="label" style="margin:12px 0 4px">Tags held</div><div class="owned">${(S.tags || []).map(t => `<span class="own"><b>${TAGS[t].name}</b> <span class="muted">${TAGS[t].desc}</span></span>`).join('') || '<span class="muted">None</span>'}</div>`;
+    h += `<div class="label" style="margin:12px 0 4px">Tags Held</div><div class="owned">${(S.tags || []).map(t => `<span class="own"><b>${TAGS[t].name}</b> <span class="muted">${TAGS[t].desc}</span></span>`).join('') || '<span class="muted">None</span>'}</div>`;
     const sc = Object.entries(S.scrolls.meld).filter(([, v]) => v).map(([k, v]) => `<span class="own"><b>${MELD_LABEL[k]}</b> Lv.${v + 1}</span>`).concat(Object.entries(S.scrolls.yaku).filter(([, v]) => v).map(([k, v]) => `<span class="own"><b>${(YAKU_SHEET.find(y => y.k === k) || { n: k }).n}</b> +${v} Han</span>`));
     h += `<div class="label" style="margin:12px 0 4px">Mastery</div><div class="owned">${sc.join('') || '<span class="muted">No Scrolls yet</span>'}</div>`;
     h += `<div class="label" style="margin:12px 0 4px">Bosses</div><div class="owned">${S.bossOrder.slice(0, CFG.antes).map((b, i) => { const known = i < S.ante - 1 || st.bosses.includes(b) || (i === S.ante - 1 && blindKind() === 'boss'); return `<span class="own${known ? '' : ' muted'}"><span class="order">A${i + 1}</span><b>${known ? BOSSES[b].name : '?'}</b></span>`; }).join('')}</div>`;
   } else if (infoTab === 'ladder') {
     const lv = k => (S && S.scrolls.meld[k]) || 0; const lvTag = k => lv(k) ? ` <span class="tag">Lv.${lv(k) + 1}</span>` : '';
     const val = k => `${CFG.meldBase[k].chips + lv(k) * CFG.scrollChips} chips, ${CFG.meldBase[k].han + lv(k) * CFG.scrollHan} Han`;
-    const played = k => { const n = (S && S.stats.rungs[k]) || 0; return `<td class="num">${n || '—'}${k === most && n ? ' <span class="tag">most</span>' : ''}</td>`; };
+    const played = k => { const n = (S && S.stats.rungs[k]) || 0; return `<td class="num">${n || '—'}${k === most && n ? ' <span class="tag">Most played</span>' : ''}</td>`; };
     h += `<p class="muted" style="margin:8px 0">Base values after your Scroll levels. "Played" counts this run; the most-played rung is marked.</p><div style="overflow-x:auto"><table class="sheet"><thead><tr><th>Play</th><th>Base</th><th>Played</th><th>Example</th></tr></thead><tbody>`;
     const exs = { single: '7p', pair: '77p', twopair: '33m 77p', chi: '456s', pon: '555z', kan: '8888m' };
     for (const k of ['single', 'pair', 'twopair', 'chi', 'pon', 'kan']) h += `<tr><td><b>${MELD_LABEL[k]}</b>${lvTag(k)}</td><td class="num">${val(k)}</td>${played(k)}<td>${exampleHTML(exs[k])}</td></tr>`;
@@ -667,14 +667,19 @@ function yakuHTML() {
   } else {
     const list = infoTab === 'yaku' ? YAKU_SHEET : YAKUMAN_SHEET;
     h += `<p class="muted" style="margin:8px 0">${infoTab === 'yaku' ? 'A complete hand is 4 melds + 1 pair (14 tiles) unless noted. Han is shown as closed / open; a hand is Open once you have Called from the River. A complete hand with no Yaku still counts as 1 Han.' : 'Each Yakuman is worth 13 Han (×100). Several in one hand stack.'} Examples are drawn with tiles; a Kan shows as four of a kind.</p>`;
-    h += `<div class="yakulist">` + list.map(y => { const b = y.k && S.scrolls.yaku[y.k]; const n = y.k ? yc(y.k) : 0; return `<div class="yakucard"><div class="yh"><b>${y.n}</b>${y.c ? ' <span class="tag">closed only</span>' : ''}${b ? ` <span class="tag">Scroll +${b}</span>` : ''}<span class="num" style="margin-left:auto;color:var(--accent)">${y.h} Han</span><span class="muted num" style="margin-left:10px">${n ? 'scored ×' + n : 'not yet scored'}</span></div><div class="yd">${y.d}</div>${y.ex ? exampleHTML(y.ex) : ''}</div>`; }).join('') + `</div>`;
+    h += `<div class="yakulist">` + list.map(y => { const b = y.k && S.scrolls.yaku[y.k]; const n = y.k ? yc(y.k) : 0; return `<div class="yakucard"><div class="yh"><b>${y.n}</b>${y.c ? ' <span class="tag">Closed only</span>' : ''}${b ? ` <span class="tag">Scroll +${b}</span>` : ''}<span class="num" style="margin-left:auto;color:var(--accent)">${y.h} Han</span><span class="muted num" style="margin-left:10px">${n ? 'Scored ×' + n : 'Not yet scored'}</span></div><div class="yd">${y.d}</div>${y.ex ? exampleHTML(y.ex) : ''}</div>`; }).join('') + `</div>`;
   }
   h += `<div style="margin-top:12px"><button id="mClose" class="primary">Close</button></div>`;
   return h;
 }
+function setupHTML() {
+  const radio = (name, obj, cur) => Object.entries(obj).map(([k, v]) => `<label class="opt"><input type="radio" name="${name}" value="${k}" ${k === cur ? 'checked' : ''}><b>${v.name}</b><span class="muted">${v.desc}</span></label>`).join('');
+  return `<h2>New Run</h2><div class="setup"><div><div class="label">Wall</div>${radio('deck', DECKS, 'standard')}</div><div><div class="label">Stake</div>${radio('stake', STAKES, 'white')}<div class="label" style="margin-top:12px">Seed</div><input id="seedInput" placeholder="random" maxlength="24" autocomplete="off"><div class="muted" style="font-size:11px;margin-top:4px">Share a seed and the same Wall, shops and bosses come up for everyone. Leave blank for a random run.</div></div></div>
+  <div style="display:flex;gap:8px;margin-top:14px"><button id="mStartRun" class="primary">Start Run</button><button id="mClose">Cancel</button></div>`;
+}
 function menuHTML(hasSave) {
   return `<h2 style="font-size:40px" data-notr>Yakuman</h2><p class="muted">A Mahjong roguelite in the Balatro mould. Playtest build. Switch between Riichi and Hong Kong terminology with the button in the header.</p>
-  <div style="display:flex;gap:8px;flex-wrap:wrap;margin:14px 0">${hasSave ? '<button id="mContinue" class="primary">Continue run</button>' : ''}<button id="mStart" class="${hasSave ? '' : 'primary'}">New run</button><button id="mRules" class="ghost">How to play</button></div>`;
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin:14px 0">${hasSave ? '<button id="mContinue" class="primary">Continue Run</button>' : ''}<button id="mStart" class="${hasSave ? '' : 'primary'}">New Run</button><button id="mRules" class="ghost">How to Play</button></div>`;
 }
 
 // ===================== DEBUG =====================
@@ -716,7 +721,7 @@ function bindEvents() {
   $('#btnYaku').onclick = () => showModal(yakuHTML(), true);
   $('#btnLang').onclick = () => setLang(LANG === 'hk' ? 'ja' : 'hk');
   $('#btnDebug').onclick = () => { const b = $('#debugBar'); b.hidden = !b.hidden; if (!b.hidden) renderDebug(); };
-  $('#btnNewRun').onclick = () => showModal(`<h2>Start a new run?</h2><p class="muted">Your current run will be lost.</p><div style="display:flex;gap:8px"><button id="mNewRun" class="danger">New run</button><button id="mClose">Cancel</button></div>`, true);
+  $('#btnNewRun').onclick = () => showModal(`<h2>Start a New Run?</h2><p class="muted">Your current run will be lost.</p><div style="display:flex;gap:8px"><button id="mNewRun" class="danger">New Run</button><button id="mClose">Cancel</button></div>`, true);
   $('#overlay').addEventListener('click', e => {
     const t = e.target.closest('button'); if (!t) return;
     if (t.dataset.tab) { infoTab = t.dataset.tab; showModal(yakuHTML(), true); return; }
