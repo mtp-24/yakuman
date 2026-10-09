@@ -70,6 +70,13 @@ aside{display:flex;flex-direction:column;gap:10px;min-width:0}
 .zone .zhead{display:flex;align-items:center;gap:10px;margin-bottom:6px}
 .zone .zhead .label{color:#bfd0c6}
 .slots{display:flex;gap:8px;flex-wrap:wrap}
+.concol{margin-top:8px}
+/* Wide screens: Talismans and Consumables share one row, each column sized by its slot count so every slot is the same width */
+@media (min-width:1100px){
+  .talcols{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,2fr);gap:8px}
+  .concol{margin-top:0;padding-left:8px;border-left:1px dashed var(--line)}
+  .talcols .slots{flex-wrap:nowrap} .talcols .slot{flex:1 1 0;min-width:0;max-width:none}
+}
 .slot{min-width:110px;min-height:50px;border:1px dashed var(--line);border-radius:8px;padding:5px 8px;background:rgba(0,0,0,.15);font-size:11px;flex:1 1 110px;max-width:200px}
 .slot.filled{border-style:solid;border-color:var(--accent);background:var(--panel);cursor:pointer}
 .slot.filled.sel{box-shadow:0 0 0 2px var(--accent)}

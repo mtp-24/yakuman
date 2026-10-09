@@ -492,6 +492,8 @@ function renderBlind() {
 }
 function renderTalismans() {
   const box = $('#talismans'); box.innerHTML = '';
+  // Column widths follow the slot counts (a Negative edition or Spring adds a slot); ignored when the columns stack.
+  $('.talcols').style.gridTemplateColumns = `minmax(0,${talSlots()}fr) minmax(0,${conSlots()}fr)`;
   $('#talCount').textContent = `${S.talismans.length} / ${talSlots()} · fire left to right, drag to reorder`;
   for (let i = 0; i < talSlots(); i++) {
     const k = S.talismans[i]; const el = document.createElement('div');
