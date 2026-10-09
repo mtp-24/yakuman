@@ -555,7 +555,7 @@ async function animateScore(ctx) {
 }
 // ===================== MODALS =====================
 let modalPinned = false;
-function showModal(html, pinned) { modalPinned = !!pinned; $('#modal').innerHTML = html; $('#overlay').hidden = false; translateDOM($('#modal')); }
+function showModal(html, pinned) { modalPinned = !!pinned; $('#modal').innerHTML = html; $('#overlay').hidden = false; fillExamples($('#modal')); translateDOM($('#modal')); }
 function hideModal() { modalPinned = false; $('#overlay').hidden = true; }
 function cardHTML(it, idx) {
   const d = itemDef(it); const p = it.free ? 0 : itemPrice(it);
@@ -629,37 +629,43 @@ function rulesHTML() {
 }
 function mostPlayedRung() { let best = null, n = 0; for (const [k, v] of Object.entries(S.stats.rungs || {})) if (v > n) { n = v; best = k; } return best; }
 function mostScoredYaku() { let best = null, n = 0; for (const [k, v] of Object.entries(S.stats.yaku || {})) if (v > n) { n = v; best = k; } return best; }
+let infoTab = 'run';
+function parseHand(str) { const out = []; for (const grp of str.split(' ')) { const m = grp.match(/^(\d+)([mpsz])$/); if (!m) continue; const tiles = [...m[1]].map(d => ({ id: 0, suit: m[2], rank: +d, red: false, eng: null })); out.push(tiles); } return out; }
+function exampleHTML(ex) { return `<div class="exrow" data-ex="${ex}"></div>`; }
+function fillExamples(root) { root.querySelectorAll('.exrow').forEach(row => { if (row.children.length) return; for (const grp of parseHand(row.dataset.ex)) { const g = document.createElement('div'); g.className = 'exgrp'; for (const t of grp) { const e = tileEl(t, { small: true }); e.classList.add('tiny'); e.style.cursor = 'default'; g.appendChild(e); } row.appendChild(g); } }); }
 function yakuHTML() {
-  const yc = k => (S && S.stats.yaku[k]) || 0;
-  const row = y => { const b = y.k && S && S.scrolls.yaku[y.k]; const n = y.k ? yc(y.k) : 0; return `<tr><td><b>${y.n}</b>${y.c ? ' <span class="tag">closed only</span>' : ''}${b ? ` <span class="tag">Scroll +${b}</span>` : ''}</td><td class="num">${y.h}${b ? ` <span style="color:var(--good)">+${b}</span>` : ''}</td><td class="num">${n || '—'}</td><td>${y.d}</td></tr>`; };
-  const st = S.stats; const most = mostPlayedRung();
-  let h = `<h2>Run info</h2><div class="runinfo"><span><b>Seed</b> ${S.seed}</span><span><b>${DECKS[S.deckKey].name}</b> · ${STAKES[S.stake].name}</span><span><b>Blinds won</b> ${st.blinds}</span><span><b>Complete hands</b> ${st.hands}</span><span><b>Partial plays</b> ${st.melds}</span><span><b>Calls</b> ${st.calls} · <b>Kans</b> ${st.kans}</span><span><b>Discards</b> ${st.discards}</span><span><b>Skipped blinds</b> ${st.skipped}</span><span><b>Best play</b> ${st.best.toLocaleString()}${st.bestDesc ? ' (' + st.bestDesc + ')' : ''}</span><span><b>Bosses faced</b> ${st.bosses.map(b => BOSSES[b].name).join(', ') || '—'}</span>${S.flowers.length ? `<span><b>Flowers</b> ${S.flowers.map(f => FLW[f].name).join(', ')}</span>` : ''}${S.tags && S.tags.length ? `<span><b>Tags held</b> ${S.tags.map(t => TAGS[t].name).join(', ')}</span>` : ''}</div>`;
-  h += `<p class="muted" style="margin:10px 0">A complete hand is 4 melds + 1 pair (14 tiles) unless noted. Han values are shown as closed / open. A hand is Open once you have Called from the River. A complete hand with no Yaku still counts as 1 Han. "Played" counts this run; your most-played rung is marked.</p>`;
-  h += `<div style="overflow-x:auto"><table class="sheet"><thead><tr><th>Play ladder</th><th>Base</th><th>Played</th><th></th></tr></thead><tbody>`;
-  const lv = k => (S && S.scrolls.meld[k]) || 0; const lvTag = k => lv(k) ? ` <span class="tag">Lv.${lv(k) + 1}</span>` : '';
-  const val = k => `${CFG.meldBase[k].chips + lv(k) * CFG.scrollChips} chips, ${CFG.meldBase[k].han + lv(k) * CFG.scrollHan} Han`;
-  const played = k => { const n = (S && S.stats.rungs[k]) || 0; return `<td class="num">${n || '—'}${k === most && n ? ' <span class="tag">most</span>' : ''}</td>`; };
-  for (const k of ['single', 'pair', 'twopair', 'chi', 'pon', 'kan']) h += `<tr><td><b>${MELD_LABEL[k]}</b>${lvTag(k)}</td><td class="num">${val(k)}</td>${played(k)}<td>${{ single: 'Any 1 tile.', pair: '2 identical tiles.', twopair: 'Two different pairs, no melds.', chi: '3 consecutive tiles of one suit. Add a pair for +10 chips.', pon: '3 identical tiles. Honor Pon adds Yakuhai (+1 Han).', kan: '4 identical tiles. Honor Kan adds Yakuhai.' }[k]}</td></tr>`;
-  for (const [k, r] of Object.entries(CFG.rungs)) h += `<tr><td><b>${r.name}</b></td><td class="num">${r.chips} chips, ${r.han} Han</td>${played('rung' + k.replace(',', ''))}<td>${k.split(',')[0]} melds${k.endsWith('1') ? ' + a pair' : ''} played together. Each Kan inside adds +${CFG.kanBonus.chips} chips, +${CFG.kanBonus.han} Han. Honor sets add Yakuhai.</td></tr>`;
-  h += `<tr><td><b>Complete Hand</b>${lvTag('hand')}</td><td class="num">${val('hand')}</td>${played('hand')}<td>4 melds + a pair, 14 tiles. Yaku below add Han (at least +1).</td></tr>`;
-  h += `<tr><td colspan="4" class="muted">Multi-meld rungs use the per-component Scroll levels above: each Chi, Pon, Kan or Pair inside the play adds its Scroll bonus.</td></tr>`;
-  h += `</tbody></table></div>`;
-  h += `<div style="overflow-x:auto;margin-top:10px"><table class="sheet"><thead><tr><th>Han</th><th>Mult</th><th>Tier</th></tr></thead><tbody>`;
-  for (const [hh, m, t] of [[0, 1, '—'], [1, 2, 'Standard'], [2, 4, 'Advanced'], [3, 8, 'Master'], ['4–5', 15, 'Mangan'], ['6–7', 25, 'Haneman'], ['8–10', 40, 'Baiman'], ['11–12', 60, 'Sanbaiman'], ['13+', 100, 'Yakuman']]) h += `<tr><td class="num">${hh}</td><td class="num">×${m}</td><td>${t}</td></tr>`;
-  h += `</tbody></table></div>`;
-  h += `<p style="margin:12px 0 6px"><b>Extra Han on any play:</b> each Red Five +1 (Koi: +2). Each tile matching a flipped Dora indicator +1. Dragon Mark engraving +1. Han is converted through the table once; after that Talismans fire left to right, adding Chips, adding flat Mult or multiplying Mult, so put +Mult Talismans before ×Mult ones. Furiten (the newest-drawn tile of your complete hand has a copy in your River) halves the final Mult.</p>`;
-  h += `<div style="overflow-x:auto"><table class="sheet"><thead><tr><th>Yaku</th><th>Han</th><th>Scored</th><th>Pattern</th></tr></thead><tbody>`;
-  for (const y of YAKU_SHEET) h += row(y);
-  h += `</tbody></table></div>`;
-  h += `<div style="overflow-x:auto;margin-top:10px"><table class="sheet"><thead><tr><th>Yakuman</th><th>Han</th><th>Scored</th><th>Pattern</th></tr></thead><tbody>`;
-  for (const y of YAKUMAN_SHEET) h += row(y);
-  h += `</tbody></table></div><div style="margin-top:12px"><button id="mClose" class="primary">Close</button></div>`;
+  const st = S.stats; const most = mostPlayedRung(); const yc = k => (S && S.stats.yaku[k]) || 0;
+  const tabs = [['run', 'Run'], ['ladder', 'Play ladder'], ['yaku', 'Yaku'], ['yakuman', 'Yakuman']];
+  let h = `<h2>Run info</h2><div class="tabs">${tabs.map(([k, n]) => `<button class="tab${infoTab === k ? ' on' : ''}" data-tab="${k}">${n}</button>`).join('')}</div>`;
+  if (infoTab === 'run') {
+    h += `<div class="runinfo"><span><b>Seed</b> ${S.seed}</span><span><b>${DECKS[S.deckKey].name}</b> · ${STAKES[S.stake].name}</span><span><b>Ante</b> ${Math.min(S.ante, CFG.antes)} / ${CFG.antes}</span><span><b>Blinds won</b> ${st.blinds}</span><span><b>Complete hands</b> ${st.hands}</span><span><b>Partial plays</b> ${st.melds}</span><span><b>Calls</b> ${st.calls} · <b>Kans</b> ${st.kans}</span><span><b>Discards</b> ${st.discards}</span><span><b>Skipped blinds</b> ${st.skipped}</span><span><b>Best play</b> ${st.best.toLocaleString()}${st.bestDesc ? ' (' + st.bestDesc + ')' : ''}</span></div>`;
+    h += `<div class="label" style="margin:12px 0 4px">Talismans</div><div class="owned">${S.talismans.map((k, i) => `<span class="own"><span class="order">${i + 1}</span><b>${TAL[k].name}</b>${S.editions[k] ? ' <span class="edtag ed-' + S.editions[k] + '">' + EDITIONS[S.editions[k]].name + '</span>' : ''}</span>`).join('') || '<span class="muted">None</span>'}</div>`;
+    h += `<div class="label" style="margin:12px 0 4px">Flowers &amp; Seasons</div><div class="owned">${S.flowers.map(f => `<span class="own"><b>${FLW[f].name}</b> <span class="muted">${FLW[f].desc}</span></span>`).join('') || '<span class="muted">None</span>'}</div>`;
+    h += `<div class="label" style="margin:12px 0 4px">Tags held</div><div class="owned">${(S.tags || []).map(t => `<span class="own"><b>${TAGS[t].name}</b> <span class="muted">${TAGS[t].desc}</span></span>`).join('') || '<span class="muted">None</span>'}</div>`;
+    const sc = Object.entries(S.scrolls.meld).filter(([, v]) => v).map(([k, v]) => `<span class="own"><b>${MELD_LABEL[k]}</b> Lv.${v + 1}</span>`).concat(Object.entries(S.scrolls.yaku).filter(([, v]) => v).map(([k, v]) => `<span class="own"><b>${(YAKU_SHEET.find(y => y.k === k) || { n: k }).n}</b> +${v} Han</span>`));
+    h += `<div class="label" style="margin:12px 0 4px">Mastery</div><div class="owned">${sc.join('') || '<span class="muted">No Scrolls yet</span>'}</div>`;
+    h += `<div class="label" style="margin:12px 0 4px">Bosses</div><div class="owned">${S.bossOrder.slice(0, CFG.antes).map((b, i) => { const known = i < S.ante - 1 || st.bosses.includes(b) || (i === S.ante - 1 && blindKind() === 'boss'); return `<span class="own${known ? '' : ' muted'}"><span class="order">A${i + 1}</span><b>${known ? BOSSES[b].name : '?'}</b></span>`; }).join('')}</div>`;
+  } else if (infoTab === 'ladder') {
+    const lv = k => (S && S.scrolls.meld[k]) || 0; const lvTag = k => lv(k) ? ` <span class="tag">Lv.${lv(k) + 1}</span>` : '';
+    const val = k => `${CFG.meldBase[k].chips + lv(k) * CFG.scrollChips} chips, ${CFG.meldBase[k].han + lv(k) * CFG.scrollHan} Han`;
+    const played = k => { const n = (S && S.stats.rungs[k]) || 0; return `<td class="num">${n || '—'}${k === most && n ? ' <span class="tag">most</span>' : ''}</td>`; };
+    h += `<p class="muted" style="margin:8px 0">Base values after your Scroll levels. "Played" counts this run; the most-played rung is marked.</p><div style="overflow-x:auto"><table class="sheet"><thead><tr><th>Play</th><th>Base</th><th>Played</th><th>Example</th></tr></thead><tbody>`;
+    const exs = { single: '7p', pair: '77p', twopair: '33m 77p', chi: '456s', pon: '555z', kan: '8888m' };
+    for (const k of ['single', 'pair', 'twopair', 'chi', 'pon', 'kan']) h += `<tr><td><b>${MELD_LABEL[k]}</b>${lvTag(k)}</td><td class="num">${val(k)}</td>${played(k)}<td>${exampleHTML(exs[k])}</td></tr>`;
+    const rex = { '2,0': '234m 777p', '2,1': '234m 777p 55s', '3,0': '234m 777p 456s', '3,1': '234m 777p 456s 55s', '4,0': '234m 777p 456s 678p', '4,1': '234m 777p 456s 678p 55s' };
+    for (const [k, r] of Object.entries(CFG.rungs)) h += `<tr><td><b>${r.name}</b></td><td class="num">${r.chips} chips, ${r.han} Han</td>${played('rung' + k.replace(',', ''))}<td>${exampleHTML(rex[k])}</td></tr>`;
+    h += `<tr><td><b>Complete Hand</b>${lvTag('hand')}</td><td class="num">${val('hand')}</td>${played('hand')}<td>${exampleHTML('234m 777p 456s 678p 55s')}</td></tr>`;
+    h += `</tbody></table></div><p class="muted" style="font-size:12px">Each Kan inside a multi-meld play adds +${CFG.kanBonus.chips} chips and +${CFG.kanBonus.han} Han. Honor sets add Yakuhai. Multi-meld rungs use the per-component Scroll levels: every Chi, Pon, Kan or Pair inside the play adds its Scroll bonus.</p>`;
+    h += `<div style="overflow-x:auto;margin-top:10px"><table class="sheet"><thead><tr><th>Han</th><th>Mult</th><th>Tier</th></tr></thead><tbody>`;
+    for (const [hh, m, t] of [[0, 1, '—'], [1, 2, 'Standard'], [2, 4, 'Advanced'], [3, 8, 'Master'], ['4–5', 15, 'Mangan'], ['6–7', 25, 'Haneman'], ['8–10', 40, 'Baiman'], ['11–12', 60, 'Sanbaiman'], ['13+', 100, 'Yakuman']]) h += `<tr><td class="num">${hh}</td><td class="num">×${m}</td><td>${t}</td></tr>`;
+    h += `</tbody></table></div><p style="margin:10px 0 0;font-size:12px"><b>Extra Han on any play:</b> each Red Five +1 (Koi: +2). Each tile matching a flipped Dora indicator +1. Dragon Mark engraving +1. Han is converted through the table once; after that Talismans fire left to right, adding Chips, adding flat Mult or multiplying Mult, so put +Mult Talismans before ×Mult ones. Furiten (the newest-drawn tile of your complete hand has a copy in your River) halves the final Mult.</p>`;
+  } else {
+    const list = infoTab === 'yaku' ? YAKU_SHEET : YAKUMAN_SHEET;
+    h += `<p class="muted" style="margin:8px 0">${infoTab === 'yaku' ? 'A complete hand is 4 melds + 1 pair (14 tiles) unless noted. Han is shown as closed / open; a hand is Open once you have Called from the River. A complete hand with no Yaku still counts as 1 Han.' : 'Each Yakuman is worth 13 Han (×100). Several in one hand stack.'} Examples are drawn with tiles; a Kan shows as four of a kind.</p>`;
+    h += `<div class="yakulist">` + list.map(y => { const b = y.k && S.scrolls.yaku[y.k]; const n = y.k ? yc(y.k) : 0; return `<div class="yakucard"><div class="yh"><b>${y.n}</b>${y.c ? ' <span class="tag">closed only</span>' : ''}${b ? ` <span class="tag">Scroll +${b}</span>` : ''}<span class="num" style="margin-left:auto;color:var(--accent)">${y.h} Han</span><span class="muted num" style="margin-left:10px">${n ? 'scored ×' + n : 'not yet scored'}</span></div><div class="yd">${y.d}</div>${y.ex ? exampleHTML(y.ex) : ''}</div>`; }).join('') + `</div>`;
+  }
+  h += `<div style="margin-top:12px"><button id="mClose" class="primary">Close</button></div>`;
   return h;
-}
-function setupHTML() {
-  const radio = (name, obj, cur) => Object.entries(obj).map(([k, v]) => `<label class="opt"><input type="radio" name="${name}" value="${k}" ${k === cur ? 'checked' : ''}><b>${v.name}</b><span class="muted">${v.desc}</span></label>`).join('');
-  return `<h2>New run</h2><div class="setup"><div><div class="label">Wall</div>${radio('deck', DECKS, 'standard')}</div><div><div class="label">Stake</div>${radio('stake', STAKES, 'white')}<div class="label" style="margin-top:12px">Seed</div><input id="seedInput" placeholder="random" maxlength="24" autocomplete="off"><div class="muted" style="font-size:11px;margin-top:4px">Share a seed and the same Wall, shops and bosses come up for everyone. Leave blank for a random run.</div></div></div>
-  <div style="display:flex;gap:8px;margin-top:14px"><button id="mStartRun" class="primary">Start run</button><button id="mClose">Cancel</button></div>`;
 }
 function menuHTML(hasSave) {
   return `<h2 style="font-size:40px" data-notr>Yakuman</h2><p class="muted">A Mahjong roguelite in the Balatro mould. Playtest build. Switch between Riichi and Hong Kong terminology with the button in the header.</p>
@@ -708,6 +714,7 @@ function bindEvents() {
   $('#btnNewRun').onclick = () => showModal(`<h2>Start a new run?</h2><p class="muted">Your current run will be lost.</p><div style="display:flex;gap:8px"><button id="mNewRun" class="danger">New run</button><button id="mClose">Cancel</button></div>`, true);
   $('#overlay').addEventListener('click', e => {
     const t = e.target.closest('button'); if (!t) return;
+    if (t.dataset.tab) { infoTab = t.dataset.tab; showModal(yakuHTML(), true); return; }
     if (t.id === 'mClose') { hideModal(); render(); }
     else if (t.id === 'mNewRun' || t.id === 'mStart') { showModal(setupHTML(), true); }
     else if (t.id === 'mStartRun') { const deck = ($('#modal input[name=deck]:checked') || {}).value, stake = ($('#modal input[name=stake]:checked') || {}).value, seed = ($('#seedInput') || {}).value; hideModal(); newRun({ deck, stake, seed }); }
