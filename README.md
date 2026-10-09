@@ -96,6 +96,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 85: pack screen text (title, description, Your Tiles) back to left-aligned like every other screen, with only the tile row and cards centred; bottom buttons now read View Wall, then Skip the Rest.
 - Build 86: shop buttons reordered to View Wall, then Reroll Cards.
 - Build 87: shop money shown as a gold wallet chip on the Shop title line; shop grouped like Balatro, with the two random cards and the Scroll under Cards, and the Flower and Booster Pack in fixed spots below; clearer consumables note; Rules list the shop slots and card odds. Fix: the two random shop cards now use the seeded RNG, so a shared seed replays them.
+- Build 88: shop controls sit next to what they act on: Reroll Cards beside the Cards heading, purchase messages right under the shop items, the consumables note under Your Consumables, and a footer with View Wall on the left and Next and Continue on the right.
 - Build 7: multi-meld play ladder (Two Melds ... Four Melds), targets 300...45000, retrigger and scaling Talismans, Wall-Builder rewording, scoring animation.
 
 ## Simulators (in `sim/`)
