@@ -978,7 +978,7 @@ let infoTab = 'run';
 let colTab = 'tal';
 function collectionHTML() {
   const run = !!(S && S.talismans);
-  const card = (cls, kind, name, desc, extra = '', badge = '') => `<div class="shopcard ${cls} colcard"><div class="kind">${kind}${badge ? ` <span class="tag colmark">${badge}</span>` : ''}</div><div class="n">${name}</div><div class="d">${desc}</div>${extra}</div>`;
+  const card = (cls, kind, name, desc, extra = '', badge = '') => `<div class="shopcard ${cls} colcard"><div class="kind">${kind}</div><div class="n">${name}</div><div class="d">${desc}</div>${extra}${badge ? `<div class="colfoot"><span class="tag colmark">${badge}</span></div>` : ''}</div>`;   // badges sit at the bottom so names line up
   const tabs = [
     ['tal', 'Talismans', TALISMANS.length], ['omi', LANG === 'hk' ? 'Fortune Sticks' : 'Omikuji', OMIKUJI.length], ['kami', 'Kami Spirits', KAMI.length], ['scroll', 'Scrolls', SCROLLS.length], ['flower', 'Flowers', FLOWERS.length], ['pack', 'Packs', Object.keys(PACKS).length],
     ['eng', 'Engravings', Object.keys(ENG).length], ['ed', 'Editions', Object.keys(EDITIONS).length], ['tag', 'Tags', Object.keys(TAGS).length], ['boss', 'Bosses', Object.keys(BOSSES).length], ['wall', 'Walls', Object.keys(DECKS).length], ['stake', 'Stakes', Object.keys(STAKES).length]];

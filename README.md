@@ -121,6 +121,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 110: the intro shows the title characters in Hong Kong mode too (役滿, traditional script; Riichi keeps 役満).
 - Build 111: New Run shows every Wall as a selectable card grid and Stakes as coloured chips with the chosen Stake explained; Settings grouped into Gameplay, Display and Advanced with segmented controls; the Wall view gains summary cards and a count badge on every tile (left in the Wall out of owned during a Blind), dimming tiles with none left.
 - Build 112: Collection screen (header and intro buttons) listing everything in the game, Balatro-style: Talismans, Omikuji, Kami, Scrolls, Flowers, Packs, Engravings (with example tiles), Editions, Tags, Bosses, Walls and Stakes, with counts, a search box and Owned / Held / This run markers.
+- Build 113: Collection badges (Blind only, Usable anytime, Owned, Held, This run) moved to a footer row at the bottom of each card, so they never wrap and every name lines up.
 - Build 7: multi-meld play ladder (Two Melds ... Four Melds), targets 300...45000, retrigger and scaling Talismans, Wall-Builder rewording, scoring animation.
 
 ## Simulators (in `sim/`)
