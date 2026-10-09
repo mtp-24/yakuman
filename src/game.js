@@ -727,7 +727,7 @@ function bindEvents() {
     else if (t.dataset.take != null) takeFromPack(+t.dataset.take);
     else if (t.id === 'mPackDone') { S.pack = null; render(); }
     else if (t.id === 'mDeck') { showModal(deckHTML(), true); $('#mClose').onclick = () => { modalPinned = false; render(); }; }
-    else if (t.dataset.buy != null) { const items = [...S.shop.cards, S.shop.scroll, S.shop.flower].filter(Boolean); buy(items[+t.dataset.buy]); }
+    else if (t.dataset.buy != null) { const items = [...S.shop.cards, S.shop.scroll, S.shop.flower, S.shop.pack].filter(Boolean); buy(items[+t.dataset.buy]); }
     else if (t.dataset.sell) sellTalisman(t.dataset.sell);
     else if (t.dataset.sellcon != null) sellConsumable(+t.dataset.sellcon);
     else if (t.dataset.usecon != null) useConsumable(+t.dataset.usecon);
