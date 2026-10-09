@@ -2785,21 +2785,22 @@ async function animateScore(ctx) {
     if ((m = /^\+(\d+) Han$/.exec(v))) return `+${Math.round(+m[1] * k)} Han`;
     if ((m = /^×([\d.]+) Mult$/.exec(v))) return `×${fmtMult(Math.pow(+m[1], k))} Mult`;
     if ((m = /^\+¥(\d+)$/.exec(v))) return `+¥${Math.round(+m[1] * k)}`; return v; };
-  const effCount = {}; let tileChipSum = 0, sealCount = 0;
+  const effCount = {}; let tileChipSum = 0;
   const logHit = (h, per) => {
     tileChipSum += per.chips; if (tilesLine) liveRow('tiles', tilesLine.label, `+${Math.round(tileChipSum)} Chips`);
     for (const e of effOf(h.id)) { effCount[e] = (effCount[e] || 0) + 1; const occ = effCount[e], n = Math.max(1, Math.round(finalEff[e].n * occ / (totOcc[e] || 1))); liveRow(e, `${e} ×${n}`, effVal(e, occ)); }
   };
+  // Balatro order: each tile scores, then its replays follow straight away in the engine's order (Red Seal first,
+  // then retrigger Talismans left to right). The Talisman behind each replay pops with Again! as it happens.
+  const sources = {};
   for (const h of ctx.hits) {
-    const own = 1 + (h.who || []).filter(n => !charmNames.has(n)).length;   // the tile itself plus any Red Seal replay
-    for (let r = 0; r < own; r++) { if (r > 0) { sealCount++; liveRow('Red Seal', `Red Seal: retrigger ×${sealCount}`, 'tiles scored again', 'tal'); } await hitOnce(h, r > 0); }
+    for (let r = 0; r < h.times; r++) {
+      if (r > 0) { const src = (h.who || [])[r - 1] || 'Red Seal'; sources[src] = (sources[src] || 0) + 1;
+        if (charmNames.has(src)) popSlot(document.querySelector(`.slot[data-tal="${src}"]`), 'Again!', 'again');
+        liveRow(src, `${src}: retrigger ×${sources[src]}`, 'tiles scored again', 'tal'); }
+      await hitOnce(h, r > 0);
+    }
     const e = tileEls.get(h.id); if (e) e.classList.remove('hit');
-  }
-  for (const k of S.talismans) {
-    const name = TAL[k].name, affected = ctx.hits.map(h => ({ h, n: (h.who || []).filter(x => x === name).length })).filter(o => o.n);
-    if (!affected.length) continue;
-    popSlot(document.querySelector(`.slot[data-tal="${name}"]`), 'Again!', 'again'); liveRow(name, `${name}: retrigger ×${affected.reduce((a, o) => a + o.n, 0)}`, 'tiles scored again', 'tal'); await wait(260);
-    for (const { h, n } of affected) { for (let q = 0; q < n; q++) await hitOnce(h, true); const e = tileEls.get(h.id); if (e) e.classList.remove('hit'); }
   }
   const liveKey = l => l.tiles ? 'tiles' : /: retrigger ×/.test(l.label) ? l.label.split(':')[0] : (/^(Red Five|Dora|Dragon Mark|Jade|Gold Foil|Glass) ×/.exec(l.label) || [])[1];
   for (const l of ctx.lines) { const k = liveKey(l); if (k && live.has(k)) liveRow(k, l.label, l.val); }

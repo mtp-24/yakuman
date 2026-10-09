@@ -166,6 +166,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 155: Retrigger summary lines (for example Hakutaku: retrigger x10) no longer bounce their Talisman a second time after the tiles have scored; each replay already bounced it with Again!.
 - Build 156: Scoring order like Balatro: every tile scores once first (Red Seals replay their tile straight away), then the retrigger Talismans fire left to right, each popping with Again! and replaying the tiles it affects, which pop again with their values. Talismans now use the same quick grow-and-settle pop as tiles instead of a tilting bounce.
 - Build 157: The Last Play breakdown follows the animation: the tiles line appears with the first tile and its Chips climb with every hit; Red Five, Dora, Dragon Mark, Jade, Gold Foil and Glass lines appear when a tile first triggers them and grow with each replay; Red Seal and each retrigger Talisman's line appear when they fire. The finished breakdown still shows the engine's exact lines.
+- Build 158: Back to Balatro's order: each tile scores, then its replays follow straight away in the engine's order (Red Seal first, then retrigger Talismans left to right), each Talisman popping with Again! as it replays the tile; its breakdown line counts up live. The animation now matches the engine's calculation order exactly.
 - Build 7: multi-meld play ladder (Two Melds ... Four Melds), targets 300...45000, retrigger and scaling Talismans, Wall-Builder rewording, scoring animation.
 
 ## Simulators (in `sim/`)
