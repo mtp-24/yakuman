@@ -2493,7 +2493,7 @@ function renderActions() {
   const pips = n => n > 8 ? `<b class="num">${n}</b>` : Array.from({ length: Math.max(0, n) }, () => '<i></i>').join('');
   const sub = (id, text) => { const el = $(id); let t = tr(text || ''); t = t.charAt(0).toUpperCase() + t.slice(1); if (el.textContent !== t) el.textContent = t; el.title = t; };
   const bp = $('#btnPlay'); bp.disabled = !inBlind || (!!opt.err && !hid) || S.busy;
-  const pv = PREVIEW && PREVIEW.ctx ? `${PREVIEW.label} · ${fmtN(PREVIEW.ctx.total)}` : '';
+  const pv = PREVIEW && PREVIEW.ctx ? PREVIEW.label : '';   // the play's name only: the score is revealed by the scoring animation
   sub('#playSub', !inBlind ? '' : hid ? 'face-down tiles: plays its best part' : opt.err ? (S.selected.length ? opt.err.replace(/\.$/, '') : 'select tiles to play') : pv || (opt.label || '').replace(/^Play /, ''));
   bp.title = hid ? 'Face-down tiles selected' : (opt.err || pv); $('#playPips').innerHTML = inBlind ? pips(S.plays) : ''; $('#playPips').title = `${S.plays} Play${S.plays === 1 ? '' : 's'} left`;
   const maxD = S.boss === 'monk' ? 3 : CFG.maxDiscardTiles, tooMany = !S.pendingDiscard && S.selected.length > maxD;
