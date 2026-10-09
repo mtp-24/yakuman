@@ -1503,7 +1503,7 @@ function collectionHTML() {
   else if (colTab === 'scroll') body = SCROLLS.map(sc => !isSeen('scroll', sc.key) ? hidden('scroll', 'Scroll of Mastery') : card('scroll', `Scroll of Mastery · ¥${sc.cost}`, sc.name, sc.desc, run ? scrollLevelHTML(sc.key) : '')).join('');
   else if (colTab === 'flower') body = FLOWERS.map(f => !isSeen('flower', f.key) ? hidden('flower', 'Flower') : card('flower', `Flower · ¥${f.cost}`, f.name, f.desc, '', run && S.flowers.includes(f.key) ? 'Owned' : '')).join('');
   else if (colTab === 'pack') body = Object.entries(PACKS).map(([pk, p]) => !isSeen('pack', pk) ? hidden('pack', 'Booster pack') : card('pack', `Booster pack · ¥${p.cost}`, p.name, p.desc)).join('');
-  else if (colTab === 'eng') body = Object.entries(ENG).map(([k, e]) => card('omikuji', 'Engraving', e.name, e.desc, `<div class="coltile" data-eng="${k}"></div>`)).join('');
+  else if (colTab === 'eng') body = Object.entries(ENG).map(([k, e]) => card(`omikuji engcard eng-${k}`, 'Engraving', e.name, e.desc, `<div class="coltile" data-eng="${k}"></div>`)).join('');
   else if (colTab === 'ed') body = Object.entries(EDITIONS).map(([k, e]) => card(`talisman ed-${k}`, `Edition · +¥${e.price}`, `<span class="edtag ed-${k}">${e.name}</span>`, `${e.desc}${k === 'neg' ? '' : ' on every play'}.`, `<div class="muted" style="font-size:11px;margin-top:4px">${Math.round(e.odds * 100)}% of shop Talismans</div>`)).join('');
   else if (colTab === 'tag') body = Object.entries(TAGS).map(([k, t]) => !isSeen('tag', k) ? hidden('pack', 'Tag') : card('pack', 'Tag', t.name, t.desc, '', run && S.tags.includes(k) ? 'Held' : '')).join('');
   else if (colTab === 'boss') body = Object.entries(BOSSES).map(([k, b]) => !isSeen('boss', k) ? hidden('bosscol', 'Boss Blind') : card('bosscol', 'Boss Blind', b.name, b.desc, '', run && S.stats && S.stats.bosses.includes(k) ? 'Met this run' : '')).join('');
@@ -1511,7 +1511,7 @@ function collectionHTML() {
   else if (colTab === 'stake') body = Object.entries(STAKES).map(([k, st]) => card('flower', `<i class="sw sw-${k}" aria-hidden="true"></i> Stake`, st.name, st.desc, '', run && S.stake === k ? 'This run' : '', stakeLockAny(k))).join('');
   return `<div class="shophead"><h2>Collection</h2><input id="colSearch" placeholder="Search" autocomplete="off"></div><p class="muted" style="margin:2px 0 10px">Everything that can turn up in a run. Cards you haven't come across yet show as ?, and locked cards show their goal. Yaku and the Play Ladder are in Run Info.</p>
   <div class="tabs coltabs">${tabs.map(([k, n, c]) => `<button class="tab${colTab === k ? ' on' : ''}" data-ctab="${k}">${n} <span class="muted">${c}</span></button>`).join('')}</div>
-  <div class="shop-grid colgrid">${body}</div><div class="muted colnone" hidden>Nothing matches.</div><button id="mClose" hidden>Close</button>`;
+  <div class="shop-grid colgrid${colTab === 'eng' ? ' enggrid' : ''}">${body}</div><div class="muted colnone" hidden>Nothing matches.</div><button id="mClose" hidden>Close</button>`;
 }
 function fillColTiles(root) { root && root.querySelectorAll('.coltile').forEach(b => { if (!b.children.length) b.appendChild(tileEl({ id: 0, suit: 'p', rank: 5, red: false, eng: b.dataset.eng }, { small: true })); }); }
 let rulesTab = 'quick';

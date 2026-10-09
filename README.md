@@ -170,6 +170,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 159: Last Play no longer reshuffles when scoring ends: the play keeps the order its lines appeared in (saved with the play), the same colours, and the formula and total are added as the total appears.
 - Build 160: Three broad retrigger Talismans (Balatro's Dusk, Seltzer and Hack): Omagatoki (every tile scores twice on the last Play of each Blind, ¥7), Shojo (every tile scores twice for 8 plays, then it is used up and leaves the board with a notice, ¥6), Azukiarai (every 2, 3 and 4 tile scores twice, ¥6); Hong Kong names Twilight Hour, Wine Ape, Bean Washer. No run is created behind the title screen any more: with no saved run the title sits over an empty table that is never saved or counted, and closing a screen opened from the title returns to it.
 - Build 161: The original fire is back alongside the fireworks: embers rise behind the Chips and Mult boxes once a play beats the target (8, then 14 at 3x and 20 at 10x), clipped to the scoring box. Omagatoki's status reads 'active on the last Play, n Plays left'.
+- Build 162: Collection engravings use wide cards: the sample tile sits on a felt pad at the left, the name and effect beside it, an accent edge in each engraving's colour, two or three cards per row.
 - Build 7: multi-meld play ladder (Two Melds ... Four Melds), targets 300...45000, retrigger and scaling Talismans, Wall-Builder rewording, scoring animation.
 
 ## Simulators (in `sim/`)
