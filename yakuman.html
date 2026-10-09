@@ -790,17 +790,13 @@ button.pulse{animation:btnpulse2 2.6s ease-out infinite}
 .lockico{width:12px;height:9px;margin-top:6px;border-radius:2.5px;background:var(--muted);position:relative;flex:0 0 auto}
 .lockico::before{content:'';position:absolute;left:2.5px;top:-5.5px;width:7px;height:7px;border:1.6px solid var(--muted);border-bottom:0;border-radius:5px 5px 0 0;box-sizing:border-box}
 .lockico::after{content:'';position:absolute;left:5px;top:3px;width:2px;height:3px;border-radius:1px;background:rgba(0,0,0,.45)}
-/* Action button wrappers carry the flex sizing and a live tooltip; disabled buttons pass the hover to the wrapper */
+/* Action button wrappers carry the flex sizing and the native tooltip; disabled buttons pass the hover to the wrapper */
 .actw{position:relative;display:flex;flex:1 1 0;min-width:150px;max-width:240px}
 .actw > .act{flex:1 1 auto;min-width:0;max-width:none;width:100%}
 .act:disabled{pointer-events:none} .actw:has(.act:disabled){cursor:not-allowed}
-.act-tip{position:absolute;left:50%;bottom:calc(100% + 10px);transform:translate(-50%,4px);width:max-content;max-width:250px;padding:7px 10px;border-radius:8px;background:#151d19;border:1px solid #4d6a5c;color:var(--fg);font-size:12px;line-height:1.4;text-align:left;box-shadow:0 8px 20px rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:opacity .12s,transform .12s;z-index:40}
-.act-tip::after{content:'';position:absolute;left:50%;top:100%;margin-left:-6px;border:6px solid transparent;border-top-color:#4d6a5c}
-.actw:hover .act-tip{opacity:1;transform:translate(-50%,0);transition-delay:.35s}
-.act-tip:empty{display:none}
 @media (max-width:900px){.actw{flex:1 1 150px;max-width:none}}
-#kanTip{left:auto;right:0;transform:translateY(4px)} .actw:hover #kanTip{transform:none} #kanTip::after{left:auto;right:28px}
 .rtotal b,.cashfoot .pv{display:inline-block;transform-origin:50% 60%}
+.norenbar .wallet .pv{display:inline-block;transform-origin:50% 60%}
 </style>
 </head><body>
 <div id="app">
@@ -850,11 +846,11 @@ button.pulse{animation:btnpulse2 2.6s ease-out infinite}
       <div class="hint" id="hint"></div>
     </div>
     <div class="actions">
-      <span class="actw"><button id="btnPlay" class="act act-play"><span class="act-k" aria-hidden="true">⏎</span><span class="act-t">Play</span><span class="act-s" id="playSub"></span><span class="act-pips" id="playPips"></span></button><span class="act-tip" id="playTip" role="tooltip"></span></span>
-      <span class="actw"><button id="btnDiscard" class="act act-discard"><span class="act-k" aria-hidden="true">D</span><span class="act-t" id="discTitle">Discard</span><span class="act-s" id="discSub"></span><span class="act-pips" id="discPips"></span></button><span class="act-tip" id="discTip" role="tooltip"></span></span>
+      <span class="actw"><button id="btnPlay" class="act act-play"><span class="act-k" aria-hidden="true">⏎</span><span class="act-t">Play</span><span class="act-s" id="playSub"></span><span class="act-pips" id="playPips"></span></button></span>
+      <span class="actw"><button id="btnDiscard" class="act act-discard"><span class="act-k" aria-hidden="true">D</span><span class="act-t" id="discTitle">Discard</span><span class="act-s" id="discSub"></span><span class="act-pips" id="discPips"></span></button></span>
       <span class="act-sep" aria-hidden="true"></span>
-      <span class="actw"><button id="btnCall" class="act act-call"><span class="act-k" aria-hidden="true">C</span><span class="act-t">Call</span><span class="act-s" id="callSub"></span></button><span class="act-tip" id="callTip" role="tooltip"></span></span>
-      <span class="actw"><button id="btnKan" class="act act-kan"><span class="act-k" aria-hidden="true">K</span><span class="act-t">Declare Kan</span><span class="act-s" id="kanSub"></span></button><span class="act-tip" id="kanTip" role="tooltip"></span></span>
+      <span class="actw"><button id="btnCall" class="act act-call"><span class="act-k" aria-hidden="true">C</span><span class="act-t">Call</span><span class="act-s" id="callSub"></span></button></span>
+      <span class="actw"><button id="btnKan" class="act act-kan"><span class="act-k" aria-hidden="true">K</span><span class="act-t">Declare Kan</span><span class="act-s" id="kanSub"></span></button></span>
       <span class="msg" id="msg"></span>
     </div>
     <div class="preview" id="preview"></div>
@@ -1972,8 +1968,8 @@ function useConsumable(i) {
   setMsg(`${def.name} used.`); render();
 }
 function talValue(k) { return TAL[k].cost + (S.editions[k] ? EDITIONS[S.editions[k]].price : 0); }
-function sellTalisman(k) { const i = S.talismans.indexOf(k); if (i < 0) return; const v = Math.max(1, Math.floor(talValue(k) / 2)); S.talismans.splice(i, 1); S.money += v; delete S.editions[k]; S.selTal = null; for (const t of S.talismans) if (TAL[t].onSell) TAL[t].onSell(S); PROFILE.sold++; saveProfile(); setMsg(`Sold ${TAL[k].name} for ¥${v}.`); render(); }
-function sellConsumable(i) { const c = S.consumables[i]; if (!c) return; const v = Math.max(1, Math.floor(CONS[c.key].cost / 2)); S.consumables.splice(i, 1); S.money += v; setMsg(`Sold ${CONS[c.key].name} for ¥${v}.`); render(); }
+function sellTalisman(k) { const i = S.talismans.indexOf(k); if (i < 0) return; const v = Math.max(1, Math.floor(talValue(k) / 2)); S.talismans.splice(i, 1); S.money += v; sfx('sell'); delete S.editions[k]; S.selTal = null; for (const t of S.talismans) if (TAL[t].onSell) TAL[t].onSell(S); PROFILE.sold++; saveProfile(); setMsg(`Sold ${TAL[k].name} for ¥${v}.`); render(); }
+function sellConsumable(i) { const c = S.consumables[i]; if (!c) return; const v = Math.max(1, Math.floor(CONS[c.key].cost / 2)); S.consumables.splice(i, 1); S.money += v; sfx('sell'); setMsg(`Sold ${CONS[c.key].name} for ¥${v}.`); render(); }
 
 // ===================== SHOP =====================
 function rollCard() {
@@ -2078,15 +2074,15 @@ function itemDef(it) { return it.kind === 'talisman' ? TAL[it.key] : it.kind ===
 function buy(it) {
   const def = itemDef(it), p = itemPrice(it);
   if (S.money < p) { setMsg(`Not enough YEN: ${def.name} costs ¥${p}.`, true); return render(); }
-  if (it.kind === 'pack') { S.money -= p; it.sold = true; openPack(it.key, false); return render(); }
+  if (it.kind === 'pack') { S.money -= p; it.sold = true; if (!S.quiet) sfx('buy'); openPack(it.key, false); return render(); }
   if (it.kind === 'talisman') { if (S.talismans.length >= talSlots()) { setMsg(`All ${talSlots()} Talisman slots are full. Sell one first.`, true); return render(); } gainTalisman(it.key); if (it.edition) S.editions[it.key] = it.edition; }
   else if (it.kind === 'omikuji' || it.kind === 'kami') { if (S.consumables.length >= conSlots()) { setMsg('Consumable slots are full. Use one first.', true); return render(); } S.consumables.push({ kind: it.kind, key: it.key }); }
   else if (it.kind === 'scroll') { const [t, k] = it.key.split(':'); S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] = (S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] || 0) + 1; for (const tk of S.talismans) if (TAL[tk].onScroll) TAL[tk].onScroll(S); PROFILE.scrollsUsed++; saveProfile(); }
   else if (it.kind === 'flower') { S.flowers.push(it.key); }
-  S.money -= p; it.sold = true; setMsg(`Bought ${def.name}.`); render();
+  S.money -= p; it.sold = true; if (!S.quiet) sfx('buy'); setMsg(`Bought ${def.name}.`); render();
 }
 function itemPrice(it) { const def = itemDef(it); let base = def.cost + (it.edition ? EDITIONS[it.edition].price : 0); if (it.kind === 'talisman') base += stakeTalCost(); if (S.shop && S.shop.coupon && (it.kind === 'talisman' || it.kind === 'omikuji' || it.kind === 'kami')) return 0; return price(base); }
-function reroll() { const c = S.shop.freeReroll ? 0 : rerollCost(); if (S.money < c) { setMsg(`Reroll costs ¥${c}.`, true); return render(); } S.money -= c; S.shop.cards = [rollCard(), rollCard()]; render(); }
+function reroll() { const c = S.shop.freeReroll ? 0 : rerollCost(); if (S.money < c) { setMsg(`Reroll costs ¥${c}.`, true); return render(); } S.money -= c; S.shop.cards = [rollCard(), rollCard()]; sfx('reroll'); render(); }
 function skipBlind() {
   if (S.phase !== 'select' || blindKind() === 'boss') return;
   const tag = (S.skipTags && S.skipTags[blindKind()]) || pick(Object.keys(TAGS)); S.stats.skipped++;
@@ -2202,11 +2198,11 @@ function render() {
   const motionBefore = tileSnapshot(), freshTiles = new Set(S.newIds || []);
   renderBlind(); renderTalismans(); renderConsumables(); renderOpen(); renderRiver(); renderHand(); renderActions(); renderLast();
   $('#msg').textContent = S.msg || ''; $('#msg').className = 'msg' + (S.msgErr ? ' err' : '');
-  if (S.phase === 'cashout') { showModal(cashoutHTML(), false, 'cashmodal'); animateCashout(); } else if (S.phase === 'shop' && S.pack) { showModal(packHTML(), false, 'packmodal'); fillPackHand(); } else if (S.phase === 'shop') showModal(shopHTML(), false, 'shopmodal'); else if (S.phase === 'select') showModal(selectHTML(), false, 'selectmodal'); else if (S.phase === 'gameover') showModal(overHTML(false), false, 'overmodal'); else if (S.phase === 'win') showModal(overHTML(true), false, 'overmodal winmodal'); else if (!modalPinned) hideModal();
+  if (S.phase === 'cashout') { showModal(cashoutHTML(), false, 'cashmodal'); animateCashout(); } else if (S.phase === 'shop' && S.pack) { showModal(packHTML(), false, 'packmodal'); fillPackHand(); } else if (S.phase === 'shop') { showModal(shopHTML(), false, 'shopmodal'); tweenWallet(); } else if (S.phase === 'select') showModal(selectHTML(), false, 'selectmodal'); else if (S.phase === 'gameover') showModal(overHTML(false), false, 'overmodal'); else if (S.phase === 'win') showModal(overHTML(true), false, 'overmodal winmodal'); else if (!modalPinned) hideModal();
   $('#btnYaku').textContent = 'Run Info';
   document.querySelectorAll('.zhead > .muted').forEach(e => { e.title = e.textContent; });   // full text on hover when a header is truncated
   translateDOM($('#app')); fitNumbers();
-  tileMotion(motionBefore, freshTiles); syncEditions();
+  tileMotion(motionBefore, freshTiles); syncEditions(); if (S.phase !== 'shop' && !S.quiet) walletShown = S.money;
   save();
 }
 // Edition effects run on one shared 15 s clock: each newly drawn edition card gets a negative delay matching the
@@ -2266,6 +2262,9 @@ function sfx(name, n = 0) {
     case 'total': [523, 659, 784].forEach((f, k) => sTone(now + k * .05, f, 'triangle', .28, .14)); break;
     case 'coin': { const f = 1900 + Math.random() * 300; sTone(now, f, 'triangle', .09, .1); sTone(now + .03, f * 1.33, 'sine', .1, .07); break; }
     case 'kaching': sClack(now, 1800, .05, .35); [1318, 1760, 2637].forEach((f, k) => sTone(now + .04 + k * .025, f, 'triangle', .6, .1)); sTone(now + .04, 3520, 'sine', .35, .04); break;
+    case 'buy': sClack(now, 1600, .05, .3); sTone(now + .03, 2100, 'triangle', .12, .1); sTone(now + .09, 1600, 'triangle', .14, .09); break;
+    case 'sell': [1500, 2000, 2500].forEach((f, k) => sTone(now + k * .06, f, 'triangle', .12, .09)); break;
+    case 'reroll': sWhoosh(now, .18, .14, 800, 3000); sClack(now + .08, 2600, .04, .2); sClack(now + .13, 3000, .04, .18); break;
     case 'pop': { const src = AC.createBufferSource(); src.buffer = NOISE; const lp = AC.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 900; const env = AC.createGain(); env.gain.setValueAtTime(.18, now); env.gain.exponentialRampToValueAtTime(.0008, now + .18); src.connect(lp).connect(env).connect(MASTER); src.start(now); src.stop(now + .2); break; }
   }
 }
@@ -2515,25 +2514,25 @@ function renderActions() {
   sub('#playSub', !inBlind ? '' : hid ? 'face-down tiles: plays its best part' : opt.err ? (S.selected.length ? opt.err.replace(/\.$/, '') : 'select tiles to play') : pv || (opt.label || '').replace(/^Play /, ''));
   $('#playPips').innerHTML = inBlind ? pips(S.plays) : '';
   // Live tooltips (part of the page, rewritten every render, so never stale; they also show on disabled buttons).
-  const tip = (id, text) => { const el = $(id); const t = tr(text); if (el.textContent !== t) el.textContent = t; };
-  const pl = `${S.plays} Play${S.plays === 1 ? '' : 's'} left.`, dl = `${S.discards} Discard${S.discards === 1 ? '' : 's'} left.`;
-  tip('#playTip', !inBlind ? 'Play selected tiles during a Blind.' : hid ? 'Face-down tiles are selected. If they are not a valid play, the best part scores and the rest go to the River. ' + pl : opt.err ? `${opt.err} ${pl}` : `Play this ${pv || 'selection'}. ${pl}`);
+  // Native tooltips live on each button's wrapper: a disabled button gets no mouse events, so Chrome would keep the tooltip
+  // from when it was last enabled (the stale Pung); the wrapper always gets them and Chrome reads its current title.
+  const tipOn = (btn, text) => { const w = $(btn).parentElement; const t = tr(text || ''); if (w.title !== t) w.title = t; };
+  tipOn('#btnPlay', !inBlind ? '' : hid ? 'Face-down tiles selected' : (opt.err || pv));
   const maxD = S.boss === 'monk' ? 3 : CFG.maxDiscardTiles, tooMany = !S.pendingDiscard && S.selected.length > maxD;
   const bd = $('#btnDiscard'); bd.disabled = !inBlind || S.busy || (!S.pendingDiscard && (S.discards <= 0 || !S.selected.length)) || (S.pendingDiscard && S.selected.length !== S.pendingDiscard) || tooMany;
   const nSel = S.selected.length;
   $('#discTitle').textContent = S.pendingDiscard ? `Discard ${S.pendingDiscard}` : nSel ? `Discard ${nSel}` : 'Discard';
   sub('#discSub', !inBlind ? '' : S.pendingDiscard ? (nSel === S.pendingDiscard ? 'settles your Call' : `select ${S.pendingDiscard} to settle your Call`) : S.discards <= 0 ? 'no Discards left' : tooMany ? `at most ${maxD} at once` : nSel ? `draws ${nSel} new tile${nSel === 1 ? '' : 's'}` : `select up to ${maxD} tiles`);
   $('#discPips').innerHTML = inBlind && !S.pendingDiscard ? pips(S.discards) : ''; bd.classList.toggle('pulse', !!S.pendingDiscard);
-  tip('#discTip', !inBlind ? 'Discard during a Blind.' : S.pendingDiscard ? `After a Call, discard ${S.pendingDiscard} tile to settle it. This does not use a Discard.` : `Throw up to ${maxD} selected tiles into the River and draw replacements. ${dl}`);
+  tipOn('#btnDiscard', $('#discSub').textContent);
   const dk = $('#btnKan'); const dko = declareOption(); dk.disabled = !dko.ok;
   sub('#kanSub', !inBlind ? '' : dko.ok ? 'draws a replacement tile' : 'needs 4 alike in your hand');
-  const kanRule = 'Set 4 identical tiles aside as a closed Kan and draw a replacement tile. The hand stays closed.';
-  tip('#kanTip', kanRule + (inBlind && !dko.ok && dko.err && !/^Select 4/.test(dko.err) ? ` ${dko.err}` : ''));
+  tipOn('#btnKan', dko.err || 'Set these 4 tiles aside as a closed Kan and draw a replacement tile');
   $('#preview').innerHTML = '';
   const bc = $('#btnCall'); bc.disabled = !inBlind || S.busy || !S.selRiver || S.selected.length < 2;
   const freeMax = S.talismans.reduce((m, k) => Math.max(m, +TAL[k].freeCall || 0), 0), freeLeft = Math.max(0, freeMax - (S.freeCallsUsed || 0));
-  tip('#callTip', `Take a River tile to finish a Chi, Pon or Kan with 2–3 of your tiles. ${freeLeft ? `Free (${freeLeft} free Call${freeLeft === 1 ? '' : 's'} left this Blind).` : 'Costs 1 Play.'}${S.boss === 'fisherman' ? ' The Fisherman forbids Calls this Blind.' : ''}`);
-  sub('#callSub', !inBlind ? '' : S.boss === 'fisherman' ? 'The Fisherman forbids it' : !S.selRiver ? 'pick a River tile first' : S.selected.length < 2 ? 'plus 2–3 hand tiles' : freeLeft ? `free (${freeLeft} left)` : 'costs 1 Play');
+  const callNote = !inBlind ? '' : S.boss === 'fisherman' ? 'The Fisherman forbids it' : !S.selRiver ? 'pick a River tile first' : S.selected.length < 2 ? 'plus 2–3 hand tiles' : freeLeft ? `free (${freeLeft} left)` : 'costs 1 Play';
+  sub('#callSub', callNote); tipOn('#btnCall', tr(callNote).charAt(0).toUpperCase() + tr(callNote).slice(1));
   $('#btnClear').disabled = !inBlind || S.busy;
 }
 function renderLast() {
@@ -2794,6 +2793,14 @@ function cardHTML(it, idx) {
   const full = slotsFullMsg(it), no = p > S.money ? `You have ¥${S.money}; this costs ¥${p}` : full;
   const action = it.sold ? '<span class="muted soldnote">Sold</span>' : `<button class="primary" data-buy="${idx}" ${no ? `disabled title="${no}"` : ''}>${it.kind === 'pack' ? 'Open' : full ? 'Slots Full' : 'Buy'}</button>`;
   return `<div class="shopcard ${it.kind}${it.sold ? ' sold' : ''}${ed ? ' ed-' + it.edition : ''}"><span class="pricetag num${p > S.money && !it.sold ? ' short' : ''}">${p === 0 ? 'Free' : '¥' + p}</span><div class="emblem">${emblem(it.kind)}</div><div class="kind">${kindLabel}${ed ? `<span class="edtag ed-${it.edition}">${ed.name}</span>` : ''}</div><div class="n">${d.name}</div><div class="d">${d.desc}${ed ? ` <b>${ed.name}: ${ed.desc}.</b>` : ''}</div>${it.kind === 'scroll' ? scrollLevelHTML(it.key) : it.kind === 'talisman' && !it.sold ? talPreview(it.key) : ''}<div class="buy">${action}</div></div>`;
+}
+// The shop wallet counts from the amount it last showed to the new one (coin clinks), then gives a small bounce.
+let walletShown = null;
+function tweenWallet() {
+  const el = $('#modal .norenbar .wallet .pv'); if (S.quiet) return;
+  if (!el || walletShown === null || walletShown === S.money || !motionOK) { walletShown = S.money; return; }
+  const cur = LANG === 'hk' ? '$' : '¥', from = walletShown, dur = Math.min(520, 160 + Math.abs(S.money - from) * 30); walletShown = S.money;
+  el.textContent = cur + from; countUp(el, from, S.money, dur, cur, 'coin'); setTimeout(() => juice(el, .6), dur);
 }
 // Cash-out plays like Balatro's: each reward line slides in and counts up with coin clinks, the total counts up and
 // rings a register, then your money counts from the old amount to the new one. Once per cash-out; about 1.5 s.
@@ -3172,7 +3179,7 @@ function renderDebug() {
   <select id="dbgScr"><option value="">Add scroll…</option>${SCROLLS.map(t => `<option value="${t.key}">${t.name}</option>`).join('')}</select>
   <select id="dbgFlw"><option value="">Add flower…</option>${FLOWERS.map(t => `<option value="${t.key}">${t.name}</option>`).join('')}</select>
   <select id="dbgEd"><option value="">Edition for selected Talisman…</option>${Object.entries(EDITIONS).map(([k, e]) => `<option value="${k}">${e.name}</option>`).join('')}<option value="none">None</option></select>
-  <button data-dbg="demo" title="Stage a complete hand with Red Fives, engravings and Talismans, then press Play to watch it score">Demo hand</button>
+  <button data-dbg="demo" title="Stage a complete hand full of retriggers (Red Seals, Hakutaku, Nekomata, Shikigami), then press Play to watch and listen">Demo hand</button>
   <button data-dbg="reset" class="ghost">Wipe save</button>`;
   bar.querySelectorAll('[data-dbg]').forEach(b => b.onclick = () => {
     const a = b.dataset.dbg;
@@ -3196,18 +3203,22 @@ function stageDemoHand() {
   if (S.phase !== 'blind') { setMsg('Start a blind first, then stage the demo hand.', true); return render(); }
   S.wall.push(...S.hand); S.hand = []; S.open = []; S.pendingDiscard = 0; S.selected = []; S.river = [];
   const mk = (suit, rank, red, eng) => { const t = mkTile(suit, rank, !!red); t.eng = eng || null; t.d = ++S.drawSeq; return t; };
-  // 234 Man, 234 Pin, 234 Sou (Sanshoku) + 678 Sou + pair of 5 Pin: Tanyao, Pinfu, Sanshoku Doujun
-  const tiles = [mk('m', 2, false, 'obsidian'), mk('m', 3, false, 'redseal'), mk('m', 4), mk('p', 2), mk('p', 3), mk('p', 4, false, 'jade'), mk('s', 2), mk('s', 3), mk('s', 4), mk('s', 6, false, 'dragonmark'), mk('s', 7, false, 'gold'), mk('s', 8, false, 'glass'), mk('p', 5, true), mk('p', 5), mk('z', 1), mk('z', 7), mk('m', 9)];
+  // 345 in all three suits with a Red Five in each (Sanshoku) + 678 Sou + a pair of 2 Pin: Tanyao, Pinfu, Sanshoku Doujun.
+  // Built to show retriggers: Red Seals score twice, Hakutaku repeats every engraved tile, Nekomata every Red Five and
+  // Shikigami the leftmost tile, so tiles score 2-4 times (the Red Seal 3 Man on the left scores four times).
+  const tiles = [mk('m', 3, false, 'redseal'), mk('m', 4, false, 'obsidian'), mk('m', 5, true, 'gold'), mk('p', 3, false, 'jade'), mk('p', 4, false, 'dragonmark'), mk('p', 5, true, 'redseal'),
+    mk('s', 3, false, 'obsidian'), mk('s', 4), mk('s', 5, true), mk('s', 6, false, 'gold'), mk('s', 7), mk('s', 8, false, 'redseal'), mk('p', 2, false, 'jade'), mk('p', 2), mk('z', 1), mk('z', 7), mk('m', 9)];
   S.hand = tiles; S.sortHand = false;
   S.selected = tiles.slice(0, 14).map(t => t.id);
-  for (let i = 0; i < 5; i++) S.river.push(mk('z', 2 + (i % 3)));                 // five River tiles feed Daruma
-  const ind = mk('s', 1); S.indicators = [ind]; S.dora = [nextDora(idx(ind))];       // indicator 1 Sou makes every 2 Sou a Dora
-  S.talismans = ['daruma', 'tengu', 'kitsune', 'kasaobake', 'hannya']; S.editions = { hannya: 'poly' }; S.talState.kasaobake = 6;
+  for (let i = 0; i < 5; i++) S.river.push(mk('z', 2 + (i % 3)));
+  const ind = mk('p', 1); S.indicators = [ind]; S.dora = [nextDora(idx(ind))];       // indicator 1 Pin makes the 2 Pin pair Dora
+  S.talismans = ['hakutaku', 'nekomata', 'shikigami', 'kitsune', 'hannya']; S.editions = { hannya: 'poly' }; S.talState = {};
   S.scrolls.meld.chi = Math.max(S.scrolls.meld.chi || 0, 2); S.scrolls.meld.hand = Math.max(S.scrolls.meld.hand || 0, 1);
   if (S.target < 5000) S.target = 5000;
-  setMsg('Demo hand staged: 14 tiles selected. Press Play to watch chips, Han and Mult build up.'); render();
+  setMsg('Demo hand staged with retriggers: Red Seals, Hakutaku, Nekomata and Shikigami make tiles score 2–4 times. Press Play to watch and listen.'); render();
 }
-function buyFree(it) { const m = S.money; S.money = 999; buy(it); S.money = m; }
+// Free picks (Tags) buy with a stand-in balance; 'quiet' keeps that from sounding or counting on the wallet.
+function buyFree(it) { const m = S.money; S.money = 999; S.quiet = true; buy(it); S.quiet = false; S.money = m; render(); }
 
 // ===================== BOOT & EVENTS =====================
 function copySeed(btn) {
