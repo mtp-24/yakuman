@@ -820,4 +820,7 @@ button.pulse{animation:btnpulse2 2.6s ease-out infinite}
 /* Balatro's quick pop: snap bigger, settle back, stay lifted; no tilt */
 @keyframes hitpop{0%{transform:translateY(0) scale(1)}35%{transform:translateY(-14px) scale(1.26)}65%{transform:translateY(-12px) scale(1.06)}100%{transform:translateY(-12px) scale(1.12)}}
 .lrow{display:flex;justify-content:space-between;gap:10px;padding:2px 0} .lrow.yaku{color:var(--accent);font-weight:600} .lrow.tal{color:var(--info)} .lrow.bad{color:var(--bad)} .lrow.convert{color:var(--accent);border-top:1px dashed var(--line);margin-top:2px;padding-top:4px}
+/* Embers behind the Chips and Mult boxes (they sit at z-index 2), clipped to the scoring box */
+.emberlayer{position:absolute;inset:0;overflow:hidden;border-radius:inherit;pointer-events:none;z-index:1}
+.emberlayer .ember{z-index:auto}
 </style>

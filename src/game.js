@@ -1161,6 +1161,9 @@ async function animateScore(ctx) {
   const heat = () => {
     const tot = Math.max(0, chips) * curMult(), q = S.target ? tot / S.target : 0, lvl = q >= 10 ? 3 : q >= 3 ? 2 : q >= 1 ? 1 : 0;
     if (lvl <= fire) return; const prev = fire; fire = lvl; box.dataset.fire = lvl; box.classList.toggle('hot', lvl >= 1);
+    // The original fire: embers rising behind the Chips and Mult boxes (8 at 1x the target, 6 more at 3x and at 10x).
+    let embers = box.querySelector('.emberlayer'); if (!embers) { embers = document.createElement('div'); embers.className = 'emberlayer'; embers.setAttribute('aria-hidden', 'true'); box.insertBefore(embers, box.firstChild); }
+    const addN = [0, 8, 14, 20][lvl] - [0, 8, 14, 20][prev]; for (let i = 0; i < addN; i++) { const em = document.createElement('i'); em.className = 'ember'; em.style.left = (8 + Math.random() * 84) + '%'; em.style.animationDelay = (Math.random() * 1.2) + 's'; em.style.animationDuration = (1 + Math.random()) + 's'; embers.appendChild(em); }
     const n = [0, 1, 3, 6][lvl] - [0, 1, 3, 6][prev]; for (let k = 0; k < n; k++) setTimeout(launch, k * 170);
     if (lvl === 3 && !fwTimer) fwTimer = setInterval(launch, 700);
   };
