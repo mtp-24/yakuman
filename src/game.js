@@ -778,11 +778,12 @@ function cashoutHTML() {
   h += `<div style="margin-top:14px"><button id="mCashOut" class="primary" style="font-size:16px;padding:10px 20px">Cash Out →</button></div></div>`;
   return h;
 }
+const walletHTML = () => `<span class="wallet"><span class="cur">YEN</span><span class="v num">¥${S.money}</span></span>`;
 function shopHTML() {
   const r = S.reward; const items = [...S.shop.cards, S.shop.scroll, S.shop.flower, S.shop.pack].filter(Boolean);
   const next = ({ small: 'Small Blind', big: 'Big Blind', boss: 'Boss Blind' })[blindKind()];
   const nextBoss = blindKind() === 'boss' ? BOSSES[S.bossOrder[S.ante - 1]] : null;
-  let h = `<div class="shophead"><h2>Shop</h2><span class="wallet"><span class="cur">YEN</span><span class="v num">¥${S.money}</span></span></div>`;
+  let h = `<div class="shophead"><h2>Shop</h2>${walletHTML()}</div>`;
   if (false) h += `<div class="label">Blind Defeated · Reward</div><div class="reward-list num"><span>${({ small: 'Small Blind', big: 'Big Blind', boss: 'Boss Blind' })[r.kind]} defeated</span><span>¥${r.base}</span><span>Unused Plays</span><span>¥${r.left}</span><span>Interest (¥1 per ¥5)</span><span>¥${r.interest}</span>${r.tal ? `<span>Talismans</span><span>¥${r.tal}</span>` : ''}${r.summer ? `<span>Summer</span><span>¥${r.summer}</span>` : ''}${r.invest ? `<span>Investment Tag</span><span>¥${r.invest}</span>` : ''}<span><b>Total</b></span><span><b>¥${r.total}</b></span></div>`;
   if (S.shop.coupon) h += `<div class="msg">Coupon Tag: Talismans and consumables are free in this shop.</div>`;
   // Like Balatro: the rerollable cards sit together, the run perk (Flower, like a Voucher) and the Booster Pack have fixed spots below.
@@ -809,12 +810,13 @@ function packButtons(it, i) {
 }
 function packHTML() {
   const pk = PACKS[S.pack.key];
-  let h = `<h2>${pk.name}</h2><p class="muted" style="margin:0 0 8px">${pk.desc} Choose ${S.pack.left} more.${S.pack.free ? ' (Free, from a Tag.)' : ''}</p>`;
+  let h = `<div class="shophead"><h2>${pk.name}</h2>${walletHTML()}</div><p class="muted" style="margin:2px 0 8px">${pk.desc}${S.pack.free ? ' Free, from a Tag.' : ''}</p>`;
   if (S.pack.hand) h += `<div class="packhandwrap"><div class="label">Your Tiles · ${packTiles().length} random tiles from your Wall</div><div class="muted" style="font-size:12px;margin:2px 0 6px">Select tiles, then press Use on a card. The change stays in your Wall for the rest of the run. Keep puts the card in your consumable slots instead.</div><div class="packhand" id="packHand"></div></div>`;
+  h += `<div class="shopsec secrow"><span class="label">Cards · choose ${S.pack.left} more</span></div>`;
   h += `<div class="shop-grid">${S.pack.choices.map((it, i) => { const d = itemDef(it); const ed = it.edition ? EDITIONS[it.edition] : null; return `<div class="shopcard ${it.kind}${it.sold ? ' sold' : ''}${ed ? ' ed-' + it.edition : ''}"><div class="kind">${{ talisman: 'Talisman', omikuji: 'Omikuji', kami: 'Kami Spirit', scroll: 'Scroll of Mastery' }[it.kind]}${ed ? ` · <span class="edtag ed-${it.edition}">${ed.name}</span>` : ''}</div><div class="n">${d.name}</div><div class="d">${d.desc}${ed ? ` <b>${ed.name}: ${ed.desc}.</b>` : ''}</div>${it.kind === 'scroll' && !it.sold ? scrollLevelHTML(it.key) : it.kind === 'talisman' && !it.sold ? talPreview(it.key) : ''}<div class="buy"><span></span>${it.sold ? `<span class="muted">${it.used ? 'Used' : 'Taken'}</span>` : packButtons(it, i)}</div></div>`; }).join('')}</div>`;
-  h += `<div class="msg${S.msgErr ? ' err' : ''}" style="margin:6px 0">${S.msg || ''}</div>`;
+  h += `<div class="msg${S.msgErr ? ' err' : ''}" style="min-height:18px;margin:2px 0 6px">${S.msg || ''}</div>`;
   h += ownedHTML();
-  h += `<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"><button id="mDeck" class="ghost">View Wall</button><button id="mPackDone" class="ghost">Skip the Rest</button></div>`;
+  h += `<div class="shopfoot"><button id="mDeck" class="ghost">View Wall</button><span style="flex:1"></span><button id="mPackDone" class="ghost">Skip the Rest</button></div>`;
   return h;
 }
 function overHTML(won) {
