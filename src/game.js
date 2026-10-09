@@ -254,7 +254,7 @@ function useConsumable(i) {
   setMsg(`${def.name} used.`); render();
 }
 function talValue(k) { return TAL[k].cost + (S.editions[k] ? EDITIONS[S.editions[k]].price : 0); }
-function sellTalisman(k) { const i = S.talismans.indexOf(k); if (i < 0) return; S.talismans.splice(i, 1); S.money += Math.max(1, Math.floor(talValue(k) / 2)); delete S.editions[k]; S.selTal = null; for (const t of S.talismans) if (TAL[t].onSell) TAL[t].onSell(S); setMsg(`Sold ${TAL[k].name}.`); render(); }
+function sellTalisman(k) { const i = S.talismans.indexOf(k); if (i < 0) return; const v = Math.max(1, Math.floor(talValue(k) / 2)); S.talismans.splice(i, 1); S.money += v; delete S.editions[k]; S.selTal = null; for (const t of S.talismans) if (TAL[t].onSell) TAL[t].onSell(S); setMsg(`Sold ${TAL[k].name} for ¥${v}.`); render(); }
 function sellConsumable(i) { const c = S.consumables[i]; if (!c) return; const v = Math.max(1, Math.floor(CONS[c.key].cost / 2)); S.consumables.splice(i, 1); S.money += v; setMsg(`Sold ${CONS[c.key].name} for ¥${v}.`); render(); }
 
 // ===================== SHOP =====================
@@ -307,11 +307,12 @@ function usePackCard(i) {
   if (def.blindOnly) { setMsg(`${def.name} only works during a Blind. Keep it for later.`, true); return render(); }
   const dealt = packTiles(); const sel = S.pack.sel.map(id => dealt.find(t => t.id === id)).filter(Boolean);
   if (sel.length < def.sel[0] || sel.length > def.sel[1]) { setMsg(def.sel[0] === def.sel[1] ? (def.sel[0] === 0 ? 'Clear your tile selection first.' : `Select exactly ${def.sel[0]} tile${def.sel[0] > 1 ? 's' : ''} above.`) : `Select ${def.sel[0]}–${def.sel[1]} tiles above.`, true); return render(); }
-  const after = useOnWallTiles(def, dealt, sel);
+  const m0 = S.money; const after = useOnWallTiles(def, dealt, sel);
   if (!after) { setMsg('That cannot be used right now.', true); return render(); }
   S.pack.hand = after.map(t => t.id); S.pack.sel = [];
   it.sold = true; it.used = true; S.pack.left--;
-  setMsg(`${def.name} used. The change stays in your Wall.`);
+  const gained = S.money - m0, changedTiles = after.length !== dealt.length || sel.length > 0;
+  setMsg(`${def.name} used.${changedTiles ? ' The change stays in your Wall.' : ''}${gained ? ` +¥${gained}.` : ''}`);
   if (S.pack.left <= 0) S.pack = null;
   render();
 }
@@ -810,7 +811,7 @@ function packButtons(it, i) {
 }
 function packHTML() {
   const pk = PACKS[S.pack.key];
-  let h = `<div class="shophead"><h2>${pk.name}</h2>${walletHTML()}</div><p class="muted" style="margin:2px 0 8px">${pk.desc}${S.pack.free ? ' Free, from a Tag.' : ''}</p>`;
+  let h = `<div class="shophead"><h2>${pk.name}</h2></div><p class="muted" style="margin:2px 0 8px">${pk.desc}${S.pack.free ? ' Free, from a Tag.' : ''}</p>`;
   if (S.pack.hand) h += `<div class="packhandwrap"><div class="label">Your Tiles · ${packTiles().length} random tiles from your Wall</div><div class="muted" style="font-size:12px;margin:2px 0 6px">Select tiles, then press Use on a card. The change stays in your Wall for the rest of the run. Keep puts the card in your consumable slots instead.</div><div class="packhand" id="packHand"></div></div>`;
   h += `<div class="shopsec secrow"><span class="label">Cards · choose ${S.pack.left} more</span></div>`;
   h += `<div class="shop-grid">${S.pack.choices.map((it, i) => { const d = itemDef(it); const ed = it.edition ? EDITIONS[it.edition] : null; return `<div class="shopcard ${it.kind}${it.sold ? ' sold' : ''}${ed ? ' ed-' + it.edition : ''}"><div class="kind">${{ talisman: 'Talisman', omikuji: 'Omikuji', kami: 'Kami Spirit', scroll: 'Scroll of Mastery' }[it.kind]}${ed ? ` · <span class="edtag ed-${it.edition}">${ed.name}</span>` : ''}</div><div class="n">${d.name}</div><div class="d">${d.desc}${ed ? ` <b>${ed.name}: ${ed.desc}.</b>` : ''}</div>${it.kind === 'scroll' && !it.sold ? scrollLevelHTML(it.key) : it.kind === 'talisman' && !it.sold ? talPreview(it.key) : ''}<div class="buy"><span></span>${it.sold ? `<span class="muted">${it.used ? 'Used' : 'Taken'}</span>` : packButtons(it, i)}</div></div>`; }).join('')}</div>`;
