@@ -44,6 +44,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 30: run setup uses Balatro-style carousels (one Wall and one Stake visible, arrows to browse, defaults first); consistent empty states for Open Melds and River; optional pair ladder (Three to Six Pair) behind `CFG.pairLadder`, off by default; simulator prints plays by rung.
 - Build 32: seed shown in the side panel, Run Info and the end-of-run screen with a Copy button; setup carousels stacked and the setup modal sized to content.
 - Build 33: Blind Select screen between the shop and each blind (Small, Big and Boss cards with targets, rewards, Plays/Discards, the Boss rule, and the skip Tag shown in advance); runs start on it; skip rewards are pre-rolled per Ante.
+- Build 34: live Chips × Mult hand box in the side panel above Plays and Discards (play name, Han, tier, Furiten), replacing the readout under the actions.
 - Build 7: multi-meld play ladder (Two Melds ... Four Melds), targets 300...45000, retrigger and scaling Talismans, Wall-Builder rewording, scoring animation.
 
 ## Simulators (in `sim/`)

@@ -367,8 +367,16 @@ function render() {
   translateDOM($('#app'));
   save();
 }
+let PREVIEW = null;
+function computePreview() {
+  PREVIEW = null; if (S.phase !== 'blind' || S.busy) return;
+  const opt = playOption(); if (!opt.type) { PREVIEW = { err: opt.err }; return; }
+  const sel = S.hand.filter(t => S.selected.includes(t.id));
+  const ctx = opt.type === 'hand' ? scoreCtx(S, 'hand', sel.concat(openTiles()), { yaku: opt.best.yaku, dec: opt.best.dec, preview: true }) : scoreCtx(S, 'meld', sel, { part: opt.part, preview: true });
+  PREVIEW = { ctx, label: opt.type === 'hand' ? (ctx.yaku.length ? ctx.yaku.map(y => y.name).join(', ') : 'Complete Hand') : ctx.rungName, kind: opt.type };
+}
 function renderBlind() {
-  const kind = blindKind(); const inBlind = S.phase === 'blind'; if (!inBlind && S.phase !== 'win' && S.phase !== 'gameover') { /* preview */ }
+  const kind = blindKind(); const inBlind = S.phase === 'blind'; computePreview(); if (!inBlind && S.phase !== 'win' && S.phase !== 'gameover') { /* preview */ }
   const name = inBlind && S.boss ? BOSSES[S.boss].name : ({ small: 'Small Blind', big: 'Big Blind', boss: 'Boss Blind' })[kind];
   const pct = S.target ? Math.min(100, 100 * S.score / S.target) : 0;
   let h = `<div class="label">Ante ${Math.min(S.ante, CFG.antes)} · ${inBlind ? 'Current Blind' : 'Next Up'}</div><div class="blind-name${S.boss && inBlind ? ' boss' : ''}">${name}</div>`;
@@ -376,6 +384,11 @@ function renderBlind() {
   if (S.tags && S.tags.length) h += `<div class="label" style="margin-top:8px">Tags</div><div class="flowers">${S.tags.map(t => `<span class="flowerchip" title="${TAGS[t].desc}">${TAGS[t].name}</span>`).join('')}</div>`;
   h += `<div class="label" style="margin-top:8px">Score at Least</div><div class="target num">${inBlind ? S.target.toLocaleString() : Math.floor(CFG.anteBase[Math.min(S.ante, CFG.antes) - 1] * CFG.blindMult[kind]).toLocaleString()}</div>`;
   if (inBlind) h += `<div class="bar"><i style="width:${pct}%"></i></div><div class="num" style="font-size:13px">Scored <b style="color:var(--accent)">${S.score.toLocaleString()}</b></div>`;
+  if (inBlind) {
+    const pv = PREVIEW;
+    if (pv && pv.ctx) { const c = pv.ctx; const hot = S.target && c.total >= S.target; h += `<div class="handbox"><div class="hb-name">${pv.label}<span class="muted"> · ${c.han} Han · ${c.tier}${c.furiten ? ' · Furiten' : ''}</span></div><div class="hb-math num"><span class="pchips">${c.chips}</span><span class="px">×</span><span class="pmult">${fmtMult(c.mult)}</span><span class="px">=</span><span class="ptot${hot ? ' hot' : ''}">${c.total.toLocaleString()}</span></div></div>`; }
+    else h += `<div class="handbox empty"><div class="hb-name muted">${S.selected.length ? (pv && pv.err ? pv.err : 'Not a valid play') : 'Select tiles to see the score'}</div><div class="hb-math num muted"><span>0</span><span class="px">×</span><span>0</span></div></div>`;
+  }
   h += `<div class="stats"><div class="stat plays"><div class="label">Plays</div><div class="v num">${S.plays}</div></div><div class="stat discards"><div class="label">Discards</div><div class="v num">${S.discards}</div></div><div class="stat money"><div class="label">YEN</div><div class="v num">¥${S.money}</div></div><div class="stat"><div class="label">Wall</div><div class="v num">${S.wall.length}</div></div></div>`;
   if (S.indicators.length) { h += `<div class="label" style="margin-top:8px">Dora Indicators</div><div class="dora-ind" id="doraRow"></div>`; }
   h += `<div class="seedline muted">Seed <code class="seed">${S.seed}</code> <button class="ghost tiny-btn" data-copyseed title="Copy the seed to reuse this run">Copy</button></div>`;
@@ -475,13 +488,7 @@ function renderActions() {
   const bp = $('#btnPlay'); bp.disabled = !inBlind || !!opt.err || S.busy; bp.textContent = opt.type ? opt.label : 'Play'; bp.title = opt.err || '';
   const bd = $('#btnDiscard'); bd.disabled = !inBlind || S.busy || (!S.pendingDiscard && S.discards <= 0); bd.textContent = S.pendingDiscard ? `Discard ${S.pendingDiscard} to settle the Call` : `Discard (${S.discards})`;
   const dk = $('#btnKan'); const dko = declareOption(); dk.disabled = !dko.ok; dk.title = dko.err || 'Set these 4 tiles aside as a closed Kan and draw a replacement tile';
-  const pv = $('#preview');
-  if (inBlind && opt.type && !S.busy) {
-    const sel = S.hand.filter(t => S.selected.includes(t.id));
-    const ctx = opt.type === 'hand' ? scoreCtx(S, 'hand', sel.concat(openTiles()), { yaku: opt.best.yaku, dec: opt.best.dec }) : scoreCtx(S, 'meld', sel, { part: opt.part });
-    const pct = S.target ? ctx.total / S.target : 0;
-    pv.innerHTML = `<span class="pchips num">${ctx.chips}</span><span class="px">×</span><span class="pmult num">${fmtMult(ctx.mult)}</span><span class="px">=</span><span class="ptot num${pct >= 1 ? ' hot' : ''}">${ctx.total.toLocaleString()}</span><span class="muted">${ctx.han} Han · ${ctx.tier}${ctx.furiten ? ' · Furiten' : ''}</span>`;
-  } else pv.innerHTML = '';
+  $('#preview').innerHTML = '';
   $('#btnCall').disabled = !inBlind || S.busy || !S.selRiver || S.selected.length < 2;
   $('#btnClear').disabled = !inBlind || S.busy;
 }
