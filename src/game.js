@@ -39,14 +39,17 @@ function translateDOM(root) {
 function setLang(l) { LANG = l; try { localStorage.setItem('yakuman.lang', l); } catch (e) { } if (modalPinned) hideModal(); render(); }
 function settingsHTML() {
   const dbgOn = !$('#debugBar').hidden;
-  return `<h2>Settings</h2>
-  <div class="setrow"><div><b>Terminology</b><div class="muted" data-notr>Riichi uses Japanese names (Chi, Pon, Kan, Han, Yaku, ¥). Hong Kong uses English names (Chow, Pung, Kong, Faan, $).</div></div><div class="setbtns"><button class="${LANG === 'ja' ? 'primary' : ''}" data-setlang="ja">Riichi</button><button class="${LANG === 'hk' ? 'primary' : ''}" data-setlang="hk">Hong Kong</button></div></div>
+  return `<div class="shophead"><h2>Settings</h2></div>
+  <div class="setsec">Gameplay</div>
   <div class="setrow"><div><b>Helper hints</b><div class="muted">Shown under your hand. Tiles Away (on by default) says how many tiles you are from a complete hand. Waiting On lists the tiles you need, and Without These says whether the tiles you select can go without setting you back.</div></div><div class="setbtns">${[['away', 'Tiles Away'], ['waits', 'Waiting On'], ['without', 'Without These']].map(([k, n]) => `<button class="${HINTS[k] ? 'primary' : ''}" data-sethint="${k}">${n}</button>`).join('')}</div></div>
-  <div class="setrow"><div><b>Tile numbers</b><div class="muted">The small number or letter in a tile's corner. Characters and Winds is the default: Dots and Bamboo are counted by their pips. With All Tiles, some numbers sit over the Dots and Bamboo art.</div></div><div class="setbtns">${[['all', 'All Tiles'], ['some', 'Characters and Winds'], ['none', 'None']].map(([k, n]) => `<button class="${TILE_NUMS === k ? 'primary' : ''}" data-settilenums="${k}">${n}</button>`).join('')}</div></div>
   <div class="setrow"><div><b>Dead-tile dots (assist)</b><div class="muted">Off by default. When on, green dots mark tiles you can discard without losing progress toward a complete hand. A sizeable help: it solves the discard choice for you.</div></div><div class="setbtns"><button class="${SHOW_DOTS ? 'primary' : ''}" data-setdots="on">On</button><button class="${!SHOW_DOTS ? 'primary' : ''}" data-setdots="off">Off</button></div></div>
+  <div class="setsec">Display</div>
+  <div class="setrow"><div><b>Terminology</b><div class="muted" data-notr>Riichi uses Japanese names (Chi, Pon, Kan, Han, Yaku, ¥). Hong Kong uses English names (Chow, Pung, Kong, Faan, $).</div></div><div class="setbtns"><button class="${LANG === 'ja' ? 'primary' : ''}" data-setlang="ja">Riichi</button><button class="${LANG === 'hk' ? 'primary' : ''}" data-setlang="hk">Hong Kong</button></div></div>
+  <div class="setrow"><div><b>Tile numbers</b><div class="muted">The small number or letter in a tile's corner. Characters and Winds is the default: Dots and Bamboo are counted by their pips. With All Tiles, some numbers sit over the Dots and Bamboo art.</div></div><div class="setbtns">${[['all', 'All Tiles'], ['some', 'Characters and Winds'], ['none', 'None']].map(([k, n]) => `<button class="${TILE_NUMS === k ? 'primary' : ''}" data-settilenums="${k}">${n}</button>`).join('')}</div></div>
   <div class="setrow"><div><b>Scoring animation speed</b><div class="muted">How fast tiles and Talismans score. Instant shows the result at once. Clicking anywhere during scoring also skips.</div></div><div class="setbtns">${Object.keys(SPEEDS).map(k => `<button class="${ANIM_SPEED === k ? 'primary' : ''}" data-setspeed="${k}">${k[0].toUpperCase() + k.slice(1)}</button>`).join('')}</div></div>
+  <div class="setsec">Advanced</div>
   <div class="setrow"><div><b>Debug tools</b><div class="muted">A bar under the board with money, plays, items, bosses and editions for playtesting.</div></div><div class="setbtns"><button class="${dbgOn ? 'primary' : ''}" data-setdbg="on">Show</button><button class="${!dbgOn ? 'primary' : ''}" data-setdbg="off">Hide</button></div></div>
-  <div class="setrow"><div><b>Saved run</b><div class="muted">The current run is saved in this browser automatically.</div></div><div class="setbtns"><button class="danger" data-wipe>Wipe save and reload</button></div></div>
+  <div class="setrow"><div><b>Saved run</b><div class="muted">The current run is saved in this browser automatically.</div></div><div class="setbtns solo"><button class="danger" data-wipe>Wipe save and reload</button></div></div>
   <button id="mClose" hidden>Close</button>`;
 }
 // ===================== STATE =====================
@@ -896,14 +899,18 @@ function overHTML(won) {
   return h;
 }
 function deckHTML() {
-  const all = S.phase === 'blind' ? [...S.hand, ...S.wall, ...S.river, ...openTiles(), ...S.played, ...S.indicators] : S.deck;
+  const inBlind = S.phase === 'blind';
+  const all = inBlind ? [...S.hand, ...S.wall, ...S.river, ...openTiles(), ...S.played, ...S.indicators] : S.deck;
   const counts = new Array(34).fill(0), inWall = new Array(34).fill(0), reds = new Array(34).fill(0);
   for (const t of all) { counts[idx(t)]++; if (t.red) reds[idx(t)]++; } for (const t of S.wall) inWall[idx(t)]++;
-  let h = `<div class="deckwrap"></div><h2>The Wall</h2><p class="muted" style="margin:0 0 10px">${all.length} tiles in your deck${S.phase === 'blind' ? ` · ${S.wall.length} still face down in the Wall` : ''}. Each cell: total copies${S.phase === 'blind' ? ' (left in Wall)' : ''}.</p>`;
-  for (const [label, from, to] of [['Manzu', 0, 9], ['Pinzu', 9, 18], ['Souzu', 18, 27], ['Honors', 27, 34]]) h += `<div class="label" style="margin:8px 0 4px">${label}</div><div class="deckrow" data-from="${from}" data-to="${to}"></div>`;
-  const eng = all.filter(t => t.eng); if (eng.length) h += `<p style="margin-top:10px;font-size:12px">Engraved: ${eng.map(t => tileName(t) + ' [' + ENG[t.eng].name + ']').join(', ')}</p>`;
+  const eng = all.filter(t => t.eng), redTotal = all.filter(t => t.red).length;
+  const stat = (label, v) => `<div class="stat"><div class="label">${label}</div><div class="v num">${v}</div></div>`;
+  let h = `<div class="shophead"><h2>The Wall</h2></div><p class="muted" style="margin:2px 0 10px">${inBlind ? 'Each badge shows copies still face down in the Wall, out of copies in your deck.' : 'Each badge shows how many copies are in your deck.'}</p>`;
+  h += `<div class="overstats wallstats">${stat('Tiles', all.length)}${inBlind ? stat('Still in the Wall', S.wall.length) : ''}${stat('Red Fives', redTotal)}${stat('Engraved', eng.length)}</div>`;
+  for (const [label, from, to] of [['Manzu', 0, 9], ['Pinzu', 9, 18], ['Souzu', 18, 27], ['Honors', 27, 34]]) h += `<div class="label" style="margin:12px 0 6px">${label}</div><div class="wallrow" data-from="${from}" data-to="${to}"></div>`;
+  if (eng.length) { const byEng = {}; for (const t of eng) byEng[t.eng] = (byEng[t.eng] || 0) + 1; h += `<div class="label" style="margin:12px 0 6px">Engravings</div><div class="overtals">${Object.entries(byEng).map(([k, n]) => `<span class="tagchip" title="${eng.filter(t => t.eng === k).map(tileName).join(', ')}">${ENG[k].name} ×${n}</span>`).join('')}</div>`; }
   h += `<button id="mClose" hidden>Close</button>`;
-  setTimeout(() => { document.querySelectorAll('#modal .deckrow').forEach(g => { for (let i = +g.dataset.from; i < +g.dataset.to; i++) { const c = document.createElement('div'); c.className = 'deckcell'; const t = tileFromIdx(i); c.appendChild(tileEl(t, { small: true })); c.innerHTML += `<b>${counts[i]}</b>${S.phase === 'blind' ? ` (${inWall[i]})` : ''}${reds[i] ? `<br><span style="color:var(--redfive)">${reds[i]} red</span>` : ''}`; g.appendChild(c); } translateDOM(g); }); }, 0);
+  setTimeout(() => { document.querySelectorAll('#modal .wallrow').forEach(g => { for (let i = +g.dataset.from; i < +g.dataset.to; i++) { const c = document.createElement('div'); c.className = 'wallcell' + (counts[i] === 0 || (inBlind && inWall[i] === 0) ? ' out' : ''); const t = tileFromIdx(i); c.appendChild(tileEl(t, { small: true })); const b = document.createElement('span'); b.className = 'wbadge num' + (reds[i] ? ' hasred' : ''); b.textContent = inBlind ? `${inWall[i]}/${counts[i]}` : `×${counts[i]}`; if (reds[i]) b.title = `${reds[i]} Red Five${reds[i] > 1 ? 's' : ''}`; c.appendChild(b); g.appendChild(c); } translateDOM(g); }); }, 0);
   return h;
 }
 function hanTableText() {
@@ -1012,9 +1019,15 @@ function yakuHTML() {
 }
 let setupSel = { deck: 0, stake: 0 };
 function setupHTML() {
-  const car = (name, obj, label) => { const keys = Object.keys(obj); const i = ((setupSel[name] % keys.length) + keys.length) % keys.length; const v = obj[keys[i]]; return `<div class="setlabel"><span class="label">${label}</span><span class="muted num">${i + 1} / ${keys.length}</span></div><div class="carousel" data-car="${name}"><button class="ghost arrow" data-nav="${name}:-1" title="Previous" aria-label="Previous"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M10.5 2.5 5 8l5.5 5.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="carcard"><input type="hidden" name="${name}" value="${keys[i]}"><b class="cn">${v.name}</b><span class="muted">${v.desc}</span><span class="dots">${keys.map((k, j) => `<i class="${j === i ? 'on' : ''}"></i>`).join('')}</span></div><button class="ghost arrow" data-nav="${name}:1" title="Next" aria-label="Next"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M5.5 2.5 11 8l-5.5 5.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>`; };
-  return `<div class="shophead"><h2>New Run</h2></div><p class="muted" style="margin:2px 0 12px">Pick a Wall and a Stake. Enter a seed to replay someone else's run.</p><div class="setup stacked">${car('deck', DECKS, 'Wall')}<div style="height:12px"></div>${car('stake', STAKES, 'Stake')}</div>
-  <div class="setlabel" style="margin-top:14px"><span class="label">Seed</span><span class="muted">optional</span></div><input id="seedInput" placeholder="Random" maxlength="24" autocomplete="off"><div class="muted" style="font-size:11px;margin-top:4px">The same seed gives the same Wall, shops and bosses. Leave blank for a random run.</div>
+  const pickIdx = (name, obj) => { const n = Object.keys(obj).length; return ((setupSel[name] % n) + n) % n; };
+  const di = pickIdx('deck', DECKS), si = pickIdx('stake', STAKES), dk = Object.keys(DECKS), sk = Object.keys(STAKES);
+  const walls = dk.map((k, i) => `<button class="optcard${i === di ? ' on' : ''}" data-pick="deck:${i}"><span class="on-mark" aria-hidden="true"></span><b>${DECKS[k].name}</b><span class="muted">${DECKS[k].desc}</span></button>`).join('');
+  const stakes = sk.map((k, i) => `<button class="stakechip${i === si ? ' on' : ''}" data-pick="stake:${i}"><i class="sw sw-${k}" aria-hidden="true"></i>${STAKES[k].name.replace(' Stake', '')}</button>`).join('');
+  return `<div class="shophead"><h2>New Run</h2></div><p class="muted" style="margin:2px 0 14px">Pick a Wall and a Stake. Enter a seed to replay someone else's run.</p>
+  <input type="hidden" name="deck" value="${dk[di]}"><input type="hidden" name="stake" value="${sk[si]}">
+  <div class="setlabel"><span class="label">Wall</span><span class="muted">${DECKS[dk[di]].name}</span></div><div class="optgrid">${walls}</div>
+  <div class="setlabel" style="margin-top:16px"><span class="label">Stake</span><span class="muted">difficulty</span></div><div class="stakerow">${stakes}</div><div class="stakedesc muted">${STAKES[sk[si]].desc}</div>
+  <div class="setlabel" style="margin-top:16px"><span class="label">Seed</span><span class="muted">optional</span></div><input id="seedInput" placeholder="Random" maxlength="24" autocomplete="off"><div class="muted" style="font-size:11px;margin-top:4px">The same seed gives the same Wall, shops and bosses. Leave blank for a random run.</div>
   <div class="shopfoot"><button id="mClose" class="ghost">Cancel</button><span style="flex:1"></span><button id="mStartRun" class="primary">Start Run</button></div>`;
 }
 function menuHTML(hasSave) {
@@ -1109,6 +1122,7 @@ function bindEvents() {
     if (t.dataset.wipe != null) { clearSave(); location.reload(); return; }
     if (t.id === 'mClose') { hideModal(); render(); }
     else if (t.id === 'mNewRun' || t.id === 'mStart') { showModal(setupHTML(), true, 'setupmodal'); }
+    else if (t.dataset.pick) { const [name, i] = t.dataset.pick.split(':'); const seed = ($('#seedInput') || {}).value || ''; setupSel[name] = +i; showModal(setupHTML(), true, 'setupmodal'); $('#seedInput').value = seed; }
     else if (t.dataset.nav) { const [name, d] = t.dataset.nav.split(':'); const seed = ($('#seedInput') || {}).value || ''; setupSel[name] += +d; showModal(setupHTML(), true, 'setupmodal'); $('#seedInput').value = seed; }
     else if (t.id === 'mStartRun') { const deck = ($('#modal input[name=deck]') || {}).value, stake = ($('#modal input[name=stake]') || {}).value, seed = ($('#seedInput') || {}).value; hideModal(); newRun({ deck, stake, seed }); }
     else if (t.id === 'mContinue') { hideModal(); render(); }

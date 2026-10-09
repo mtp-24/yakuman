@@ -119,6 +119,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 108: The Purist, option B: a selection with face-down tiles always plays; if it is not a valid play, its best-scoring valid part scores and the other selected tiles go to the River (costs the Play). New intro screen (fanned honor tiles, large title, 役満 in Riichi mode, Continue Run showing where the run stands) and a celebratory win screen (tile fan, gold frame, Stake and Wall line).
 - Build 109: cash-out redesigned as a compact receipt: the score you beat, each payout line with a short explanation, a large gold total, the wallet chip and a full-width Cash Out button.
 - Build 110: the intro shows the title characters in Hong Kong mode too (役滿, traditional script; Riichi keeps 役満).
+- Build 111: New Run shows every Wall as a selectable card grid and Stakes as coloured chips with the chosen Stake explained; Settings grouped into Gameplay, Display and Advanced with segmented controls; the Wall view gains summary cards and a count badge on every tile (left in the Wall out of owned during a Blind), dimming tiles with none left.
 - Build 7: multi-meld play ladder (Two Melds ... Four Melds), targets 300...45000, retrigger and scaling Talismans, Wall-Builder rewording, scoring animation.
 
 ## Simulators (in `sim/`)
