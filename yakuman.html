@@ -289,7 +289,9 @@ button.pulse{animation:btnpulse 1s ease-in-out infinite;box-shadow:0 0 0 0 rgba(
 .chipbox.bump,.multbox.bump{animation:boxshake .32s cubic-bezier(.36,.07,.19,.97)}
 @keyframes boxshake{0%{transform:translate(0,0) scale(1)}20%{transform:translate(-3px,1px) scale(1.12)}40%{transform:translate(3px,-1px) scale(1.12)}60%{transform:translate(-2px,1px) scale(1.06)}80%{transform:translate(2px,0) scale(1.03)}100%{transform:translate(0,0) scale(1)}}
 @media (prefers-reduced-motion:reduce){.chipbox.bump,.multbox.bump{animation:none}}
-.roundscore{margin-top:6px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:6px 10px}
+.roundscore{margin-top:6px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:6px 10px 8px;position:relative;overflow:hidden}
+.rsbar{position:absolute;left:0;right:0;bottom:0;height:3px;background:rgba(255,255,255,.06)} .rsbar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),#f1cf7a);width:0;transition:width .3s}
+.roundscore .rs.met ~ .rsbar i{background:var(--good)}
 .roundscore .rs{font-family:var(--display);font-size:26px;color:var(--fg);line-height:1.1} .roundscore .rs.met{color:var(--good)}
 .roundscore .rs.bump{animation:boxshake .32s cubic-bezier(.36,.07,.19,.97)}
 .handbox .hb-total .tot{font-size:30px;display:block;text-align:center;width:100%}
@@ -1488,7 +1490,7 @@ function renderBlind() {
   if (inBlind && S.boss) h += `<div class="boss-desc">${BOSSES[S.boss].desc}${S.boss === 'collector' && S.bossSuit ? ` <b>This Blind: ${SUIT_EN[S.bossSuit]}.</b>` : ''}${S.boss === 'gatekeeper' ? (S.firstPlayDone ? ' <b>First Play done.</b>' : ' <b>Your next Play scores 0.</b>') : ''}</div>`;
   if (S.tags && S.tags.length) h += `<div class="label" style="margin-top:8px">Tags</div><div class="flowers">${S.tags.map(t => `<span class="flowerchip" title="${TAGS[t].desc}">${TAGS[t].name}</span>`).join('')}</div>`;
   h += `<div class="label" style="margin-top:8px">Score at Least</div><div class="target num">${inBlind ? S.target.toLocaleString() : Math.floor(CFG.anteBase[Math.min(S.ante, CFG.antes) - 1] * CFG.blindMult[kind]).toLocaleString()}</div>`;
-  if (inBlind) h += `<div class="roundscore"><div class="label">Round Score</div><div class="rs num${S.score >= S.target ? ' met' : ''}" id="roundScore">${S.score.toLocaleString()}</div></div>`;
+  if (inBlind) h += `<div class="roundscore"><div class="label">Round Score</div><div class="rs num${S.score >= S.target ? ' met' : ''}" id="roundScore">${S.score.toLocaleString()}</div><div class="rsbar"><i id="roundBar" style="width:${pct}%"></i></div></div>`;
   if (inBlind) {
     const pv = PREVIEW;
     if (S.busy) h += `<div class="handbox scoring" id="scorebox"></div>`;
@@ -1716,7 +1718,7 @@ async function animateScore(ctx) {
   nameEl.hidden = true; totWrap.hidden = false; totEl.textContent = ctx.total.toLocaleString(); totEl.classList.add('final');
   await wait(ctx.kind === 'hand' ? 700 : 450);
   const rsEl = $('#roundScore'); const from = S.score, to = S.score + ctx.total; const dur = (motionOK && !skipAnim) ? Math.round(650 * SPEEDS[ANIM_SPEED]) : 0;
-  if (dur > 0) { const t0 = performance.now(); await new Promise(res => { const step = now => { const k = Math.min(1, (now - t0) / dur); const e = 1 - Math.pow(1 - k, 3); totEl.textContent = Math.round(ctx.total * (1 - e)).toLocaleString(); if (rsEl) { rsEl.textContent = Math.round(from + (to - from) * e).toLocaleString(); rsEl.classList.toggle('met', from + (to - from) * e >= S.target); } if (k < 1) requestAnimationFrame(step); else res(); }; requestAnimationFrame(step); }); }
+  if (dur > 0) { const t0 = performance.now(); await new Promise(res => { const step = now => { const k = Math.min(1, (now - t0) / dur); const e = 1 - Math.pow(1 - k, 3); totEl.textContent = Math.round(ctx.total * (1 - e)).toLocaleString(); if (rsEl) { const v = from + (to - from) * e; rsEl.textContent = Math.round(v).toLocaleString(); rsEl.classList.toggle('met', v >= S.target); const bar = $('#roundBar'); if (bar) bar.style.width = Math.min(100, 100 * v / S.target) + '%'; } if (k < 1) requestAnimationFrame(step); else res(); }; requestAnimationFrame(step); }); }
   if (rsEl) { rsEl.textContent = to.toLocaleString(); rsEl.classList.remove('bump'); void rsEl.offsetWidth; rsEl.classList.add('bump'); }
   await wait(250);
   skipAnim = false;

@@ -72,6 +72,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 61: the breakdown streams into the Last Play panel again (the temporary Scoring section is gone).
 - Build 62: demo hand reworked to exercise chips, Han and Mult separately (Obsidian, Red Seal, Jade, Dragon Mark, Gold, Glass tiles; Red Five and Dora; Tanyao, Pinfu, Sanshoku; Daruma, Tengu, Kitsune, Kasa-obake, Polychrome Hannya).
 - Build 63: fixed tile id collisions after a reload (tiles created mid-run could share an id with saved tiles, making several tiles select together); existing duplicates are repaired on load.
+- Build 64: a thin progress bar along the bottom edge of the Round Score box (gold, turning green at the target), updating live during the count-up.
 - Build 7: multi-meld play ladder (Two Melds ... Four Melds), targets 300...45000, retrigger and scaling Talismans, Wall-Builder rewording, scoring animation.
 
 ## Simulators (in `sim/`)

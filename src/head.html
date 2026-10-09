@@ -288,7 +288,9 @@ button.pulse{animation:btnpulse 1s ease-in-out infinite;box-shadow:0 0 0 0 rgba(
 .chipbox.bump,.multbox.bump{animation:boxshake .32s cubic-bezier(.36,.07,.19,.97)}
 @keyframes boxshake{0%{transform:translate(0,0) scale(1)}20%{transform:translate(-3px,1px) scale(1.12)}40%{transform:translate(3px,-1px) scale(1.12)}60%{transform:translate(-2px,1px) scale(1.06)}80%{transform:translate(2px,0) scale(1.03)}100%{transform:translate(0,0) scale(1)}}
 @media (prefers-reduced-motion:reduce){.chipbox.bump,.multbox.bump{animation:none}}
-.roundscore{margin-top:6px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:6px 10px}
+.roundscore{margin-top:6px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:6px 10px 8px;position:relative;overflow:hidden}
+.rsbar{position:absolute;left:0;right:0;bottom:0;height:3px;background:rgba(255,255,255,.06)} .rsbar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),#f1cf7a);width:0;transition:width .3s}
+.roundscore .rs.met ~ .rsbar i{background:var(--good)}
 .roundscore .rs{font-family:var(--display);font-size:26px;color:var(--fg);line-height:1.1} .roundscore .rs.met{color:var(--good)}
 .roundscore .rs.bump{animation:boxshake .32s cubic-bezier(.36,.07,.19,.97)}
 .handbox .hb-total .tot{font-size:30px;display:block;text-align:center;width:100%}
