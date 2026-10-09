@@ -86,6 +86,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 75: shop Buy and pack Take/Keep buttons disable with a "Slots Full" label when Talisman or consumable slots are full; Scroll cards in the shop and in packs show the current and next level (like Planet cards); View Wall button in the shop and in packs; pack tiles fill the space (one row of 8 on desktop, two rows of 4 on phones).
 - Build 76: Talisman cards in the shop and in packs show an "If bought" preview of their live value (growing Talismans from zero, Hoshi, Hatsumōde and Oshi from the run so far, Kagami and Utsushi say what they would copy); Hoshi, Hatsumōde and Oshi also show live values once owned. Fix: a Talisman gained again after selling starts fresh instead of keeping its old progress. Duplicate View Wall button in the shop removed. Gashadokuro text says it counts hands played while you own it.
 - Build 77: on screens 1100px and wider, Talismans and Consumables sit side by side in one row (columns sized by slot count), saving about 100px of height; narrower screens keep the stacked layout.
+- Build 78: header buttons reordered to Wall, Run Info, Rules, Settings, New Run.
 - Build 7: multi-meld play ladder (Two Melds ... Four Melds), targets 300...45000, retrigger and scaling Talismans, Wall-Builder rewording, scoring animation.
 
 ## Simulators (in `sim/`)
