@@ -314,15 +314,25 @@ aside{display:flex;flex-direction:column;gap:10px;min-width:0}
 .colfoot{margin-top:auto;padding-top:10px}
 .coltile{margin-top:8px} .shopcard.bosscol{background:linear-gradient(180deg,rgba(201,69,58,.14),rgba(201,69,58,.04)),var(--panel2);border-color:rgba(201,69,58,.4)} .shopcard.bosscol .n{color:var(--accent2)}
 .colnone{padding:12px 0}
-.optgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:8px}
-.optcard{position:relative;text-align:left;display:flex;flex-direction:column;gap:3px;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--fg);font-family:var(--body);cursor:pointer;min-height:74px}
-.optcard b{font-family:var(--display);font-size:16px;font-weight:500;color:var(--fg)} .optcard .muted{font-size:11px;line-height:1.35}
-.optcard:hover{border-color:rgba(217,164,65,.5)} .optcard.on{border-color:var(--accent);background:linear-gradient(180deg,rgba(217,164,65,.14),rgba(217,164,65,.05)),var(--panel2);box-shadow:0 0 0 1px var(--accent)} .optcard.on b{color:var(--accent)}
-.optcard .on-mark{position:absolute;top:9px;right:10px;width:14px;height:14px;border-radius:50%;border:1px solid var(--line)} .optcard.on .on-mark{border-color:var(--accent);background:var(--accent);box-shadow:inset 0 0 0 3px var(--panel2)}
-.stakerow{display:grid;grid-template-columns:repeat(4,1fr);gap:8px} .stakechip{display:flex;align-items:center;justify-content:center;gap:8px;padding:9px 10px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--fg);font-size:13px;cursor:pointer} .stakechip.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent);background:rgba(217,164,65,.1)}
-.stakechip .sw{width:14px;height:14px;border-radius:50%;display:inline-block;box-shadow:inset 0 -2px 0 rgba(0,0,0,.25)} .sw-white{background:#ece4cf} .sw-red{background:#c9453a} .sw-green{background:#4f9d69} .sw-black{background:#111;outline:1px solid #555}
-.stakedesc{font-size:12px;margin-top:6px;min-height:16px}
-@media (max-width:520px){.stakerow{grid-template-columns:repeat(2,1fr)}}
+.sw{width:14px;height:14px;border-radius:50%;display:inline-block;flex:0 0 auto;box-shadow:inset 0 -2px 0 rgba(0,0,0,.25)} .sw-white{background:#ece4cf} .sw-red{background:#c9453a} .sw-green{background:#4f9d69} .sw-black{background:#111;outline:1px solid #555}
+.setupmodal .carousel .arrow{min-width:40px;padding:0 10px}
+.setupmodal .carcard{min-height:112px;padding:12px 14px;background:linear-gradient(180deg,rgba(217,164,65,.12),rgba(217,164,65,.04)),var(--panel2)}
+.setupmodal .carcard .muted{font-size:12px;line-height:1.4}
+.carhead{display:flex;align-items:center;gap:8px;min-width:0} .carhead .cn{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.carcard.locked{border-color:var(--line);background:var(--panel2)} .carcard.locked .cn{color:var(--muted)} .carcard.locked .sw{opacity:.45}
+.carcard .dots i.lk{background:transparent;box-shadow:inset 0 0 0 1px var(--line)} .carcard .dots i.lk.on{box-shadow:none;background:var(--muted)}
+.lockmark{color:var(--muted);border-color:var(--line);background:rgba(255,255,255,.03)}
+.lockgoal{display:flex;align-items:flex-start;gap:7px;font-size:12px;line-height:1.4;color:var(--fg);margin-top:2px}
+.lockico{flex:0 0 auto;width:10px;height:12px;margin-top:2px;position:relative;border-radius:2px;background:var(--muted)} .lockico::before{content:'';position:absolute;left:2px;top:-5px;width:6px;height:6px;border:1.5px solid var(--muted);border-bottom:0;border-radius:4px 4px 0 0;box-sizing:border-box}
+.lockbar{height:4px;border-radius:2px;background:var(--line);overflow:hidden;margin-top:7px} .lockbar i{display:block;height:100%;background:var(--accent);border-radius:2px}
+.lockcount{font-size:11px;margin-top:3px}
+.colcard.locked{background:var(--panel);border-style:dashed} .colcard.locked .n{color:var(--muted)} .colcard.locked .kind{opacity:.7}
+.locklist{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px} .lockrow{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px}
+.overtal.newunlock{border-color:rgba(111,207,151,.55)}
+#toasts{position:fixed;right:16px;bottom:16px;z-index:200;display:flex;flex-direction:column;gap:8px;pointer-events:none;max-width:calc(100vw - 32px)}
+.toast{background:var(--panel2);border:1px solid var(--accent);border-radius:10px;padding:9px 14px;box-shadow:0 8px 24px rgba(0,0,0,.45);min-width:200px;animation:toastin .25s ease-out;transition:opacity .4s,transform .4s}
+.toast b{font-family:var(--display);font-size:17px;font-weight:500;color:var(--accent)} .toast .label{font-size:10px;color:var(--good)} .toast.out{opacity:0;transform:translateY(8px)}
+@keyframes toastin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 /* Settings */
 .setsec{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:16px 0 0;padding-bottom:4px;border-bottom:1px solid rgba(217,164,65,.3)}
 .setbtns:not(.solo){display:inline-flex;gap:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--panel2);flex-wrap:nowrap}
@@ -464,6 +474,36 @@ button.pulse{animation:btnpulse 1s ease-in-out infinite;box-shadow:0 0 0 0 rgba(
   .preview{font-size:18px}
   .lastplay{font-size:11px}
 }
+
+/* New Run carousels */
+.car2{position:relative;display:grid;grid-template-columns:40px minmax(0,1fr) 40px;grid-template-rows:auto auto;align-items:center;column-gap:8px;margin-bottom:14px}
+.car2 .carnav{grid-row:1;width:40px;height:40px;border-radius:50%;padding:0;display:flex;align-items:center;justify-content:center;background:var(--panel2);border:1px solid var(--line);color:var(--fg);transition:border-color .15s,color .15s,transform .15s}
+.car2 .carnav:hover{border-color:var(--accent);color:var(--accent)} .car2 .carnav:active{transform:scale(.94)}
+.car2 .carnav.prev{grid-column:1} .car2 .carnav.next{grid-column:3}
+.carcard2{grid-column:2;grid-row:1;position:relative;overflow:hidden;display:flex;align-items:center;gap:16px;min-height:150px;padding:16px 18px;border-radius:14px;border:1px solid rgba(217,164,65,.55);
+  background:radial-gradient(120% 140% at 0% 0%,rgba(217,164,65,.16),transparent 55%),linear-gradient(160deg,var(--felt2),var(--felt) 70%);box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 10px 24px rgba(0,0,0,.35)}
+.carcard2::after{content:'';position:absolute;inset:5px;border-radius:10px;border:1px solid rgba(217,164,65,.18);pointer-events:none}
+.carcard2.fromright{animation:carin-r .28s cubic-bezier(.2,.8,.2,1)} .carcard2.fromleft{animation:carin-l .28s cubic-bezier(.2,.8,.2,1)}
+@keyframes carin-r{from{opacity:0;transform:translateX(26px)}to{opacity:1;transform:none}} @keyframes carin-l{from{opacity:0;transform:translateX(-26px)}to{opacity:1;transform:none}}
+.carart{flex:0 0 auto;width:150px;display:flex;align-items:center;justify-content:center}
+.tilesart{height:96px;align-items:flex-end;padding-bottom:6px} .tilesart .tile{--tw:40px;--th:calc(40px * 1.36);margin:0 -4px;transform-origin:50% 130%;box-shadow:0 3px 0 #8f815f,0 8px 14px rgba(0,0,0,.4)}
+.chipart{flex-direction:column;gap:8px} .stakechipart{width:76px;height:76px;filter:drop-shadow(0 6px 10px rgba(0,0,0,.45))}
+.diffpips{display:flex;gap:4px} .diffpips i{width:14px;height:4px;border-radius:2px;background:rgba(255,255,255,.12)} .diffpips i.on{background:var(--bad)}
+.carbody{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
+.carkicker{display:flex;justify-content:space-between;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.cartitle{display:flex;align-items:center;gap:8px;font-family:var(--display);font-size:24px;line-height:1.15;color:var(--accent)} .cartitle>span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cardesc{margin:0;font-size:12.5px;line-height:1.45;color:var(--fg);opacity:.85}
+.carfacts{display:flex;flex-wrap:wrap;gap:5px;margin-top:3px} .fact{font-size:11px;font-weight:600;padding:2px 9px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid var(--line);color:var(--fg)}
+.fact.good{color:var(--good);border-color:rgba(111,207,151,.45);background:rgba(111,207,151,.08)} .fact.bad{color:var(--bad);border-color:rgba(232,107,95,.45);background:rgba(232,107,95,.08)}
+.carpager{grid-column:2;grid-row:2;display:flex;justify-content:center;gap:6px;padding-top:9px}
+.carpager .pg{width:8px;height:8px;padding:0;border-radius:4px;border:0;background:var(--line);cursor:pointer;transition:width .2s,background .2s} .carpager .pg.on{width:22px;background:var(--accent)}
+.carpager .pg.lk{background:transparent;box-shadow:inset 0 0 0 1.5px var(--line)} .carpager .pg.lk.on{background:var(--muted);box-shadow:none}
+.car2.locked .carcard2{border-color:var(--line);background:linear-gradient(160deg,var(--panel2),var(--panel))} .car2.locked .carcard2::after{border-color:rgba(255,255,255,.05)}
+.car2.locked .carart{filter:grayscale(1) brightness(.6);opacity:.7} .car2.locked .cartitle{color:var(--muted)}
+.lockpill{display:inline-flex;align-items:center;gap:6px;font-family:var(--body);font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:2px 9px 2px 8px;flex:0 0 auto}
+.lockpill .lockico{transform:scale(.8);margin-top:3px}
+.seedrow{display:flex;align-items:center;gap:12px;margin-top:4px} .seedrow input{flex:1} .seedhelp{font-size:11px;margin-top:5px}
+@media (max-width:560px){.car2{grid-template-columns:34px minmax(0,1fr) 34px;column-gap:6px} .car2 .carnav{width:34px;height:34px} .carcard2{flex-direction:column;text-align:center;gap:10px;padding:14px 12px} .carart{width:auto} .carfacts,.cartitle{justify-content:center} .carkicker{justify-content:center;gap:10px} .lockgoal{justify-content:center}}
 </style>
 <div id="app">
 <header>
@@ -598,7 +638,7 @@ const DECKS = {
   lean: { name: 'Lean Wall', desc: 'No Souzu. 100 tiles across two suits and honors, so hands come faster. Sanshoku is impossible.' },
   monk: { name: "Monk's Wall", desc: 'No Honor tiles. 108 tiles, flushes come easily, honor Yaku are impossible.' },
   gambler: { name: "Gambler's Wall", desc: '+1 Play and −1 Discard every Blind.' },
-  merchant: { name: "Merchant's Wall", desc: 'Start with ¥20 and +1 consumable slot, but shop prices are +25%.' },
+  merchant: { name: "Merchant's Wall", desc: `Start with ¥${CFG.startMoney + 16} and +1 consumable slot, but shop prices are +25%.` },
   abundant: { name: 'Abundant Wall', desc: '+2 hand size, −1 Play every Blind.' },
 };
 const STAKES = {
@@ -1287,11 +1327,12 @@ function settingsHTML() {
   <div class="setrow"><div><b>Tile numbers</b><div class="muted">The small number or letter in a tile's corner. Characters and Winds is the default: Dots and Bamboo are counted by their pips. With All Tiles, some numbers sit over the Dots and Bamboo art.</div></div><div class="setbtns">${[['all', 'All Tiles'], ['some', 'Characters and Winds'], ['none', 'None']].map(([k, n]) => `<button class="${TILE_NUMS === k ? 'primary' : ''}" data-settilenums="${k}">${n}</button>`).join('')}</div></div>
   <div class="setrow"><div><b>Scoring animation speed</b><div class="muted">How fast tiles and Talismans score. Instant shows the result at once. Clicking anywhere during scoring also skips.</div></div><div class="setbtns">${Object.keys(SPEEDS).map(k => `<button class="${ANIM_SPEED === k ? 'primary' : ''}" data-setspeed="${k}">${k[0].toUpperCase() + k.slice(1)}</button>`).join('')}</div></div>
   <div class="setsec">Your data</div>
-  <div class="setrow"><div><b>Profile</b><div class="muted">${PROFILE.runs} runs · ${PROFILE.wins} wins · best Ante ${PROFILE.bestAnte || '—'}. Saved in this browser. Export to move it, with your settings and current run, to another device.</div></div><div class="setbtns solo"><button class="ghost" id="mExport">Export</button><button class="ghost" id="mImport">Import</button></div></div>
-  <div class="setrow"><div><b>Reset profile</b><div class="muted">Clears lifetime stats. Your current run and settings stay.</div></div><div class="setbtns solo"><button class="danger" id="mResetProfile">Reset Profile</button></div></div>
+  <div class="setrow"><div><b>Profile</b><div class="muted">${PROFILE.runs} runs · ${PROFILE.wins} wins · best Ante ${PROFILE.bestAnte || '—'} · ${unlockedCount()} of ${UNLOCKS.length} unlocks. Saved in this browser. Export to move it, with your settings and current run, to another device.</div></div><div class="setbtns solo"><button class="ghost" id="mExport">Export</button><button class="ghost" id="mImport">Import</button></div></div>
+  <div class="setrow"><div><b>Delete current run</b><div class="muted">Ends the run in progress so it can't be continued. Your profile, unlocks and settings stay.</div></div><div class="setbtns solo"><button class="danger" id="mDeleteRun"${hasRunSave() ? '' : ' disabled'}>Delete Run</button></div></div>
+  <div class="setrow"><div><b>Reset profile</b><div class="muted">Clears lifetime stats and locks everything you have unlocked again. Your current run and settings stay.</div></div><div class="setbtns solo"><button class="danger" id="mResetProfile">Reset Profile</button></div></div>
   <div class="setsec">Advanced</div>
   <div class="setrow"><div><b>Debug tools</b><div class="muted">A bar under the board with money, plays, items, bosses and editions for playtesting.</div></div><div class="setbtns"><button class="${dbgOn ? 'primary' : ''}" data-setdbg="on">Show</button><button class="${!dbgOn ? 'primary' : ''}" data-setdbg="off">Hide</button></div></div>
-  <div class="setrow"><div><b>Saved run</b><div class="muted">The current run is saved in this browser automatically.</div></div><div class="setbtns solo"><button class="danger" data-wipe>Wipe save and reload</button></div></div>
+  <div class="setrow"><div><b>Unlock everything</b><div class="muted">For playtesting. Every Talisman, Wall and Stake is available whatever your profile says. Progress toward unlocks keeps counting.</div></div><div class="setbtns"><button class="${UNLOCK_ALL ? 'primary' : ''}" data-setunlock="on">On</button><button class="${!UNLOCK_ALL ? 'primary' : ''}" data-setunlock="off">Off</button></div></div>
   <button id="mClose" hidden>Close</button>`;
 }
 // ===================== STATE =====================
@@ -1332,13 +1373,71 @@ function openTiles() { return S.open.flatMap(m => m.tiles); }
 function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) { } }
 function load() { try { const s = localStorage.getItem(SAVE_KEY); return s ? JSON.parse(s) : null; } catch (e) { return null; } }
 function clearSave() { try { localStorage.removeItem(SAVE_KEY); } catch (e) { } }
+function hasRunSave() { try { return !!localStorage.getItem(SAVE_KEY) && !!S && !['gameover', 'win'].includes(S.phase); } catch (e) { return false; } }
 // ===================== PLAYER PROFILE =====================
 // Lifetime progress that outlives runs (New Run and Wipe save leave it alone). Unlocks will build on this.
 const PROFILE_KEY = 'yakuman.profile.v1';
-function blankProfile() { return { v: 1, created: Date.now(), runs: 0, wins: 0, bestAnte: 0, bestPlay: 0, bestPlayDesc: '', hands: 0, blinds: 0, stakesWon: {}, wallsWon: {}, bosses: {}, yaku: {}, unlocked: [] }; }
+function blankProfile() { return { v: 1, created: Date.now(), runs: 0, wins: 0, bestAnte: 0, bestPlay: 0, bestPlayDesc: '', hands: 0, blinds: 0, stakesWon: {}, wallsWon: {}, bosses: {}, yaku: {}, unlocked: [], calls: 0, sold: 0, scrollsUsed: 0, furitenHands: 0, openHands3: 0, mostMoney: 0 }; }
 let PROFILE = (() => { try { return Object.assign(blankProfile(), JSON.parse(localStorage.getItem(PROFILE_KEY) || '{}')); } catch (e) { return blankProfile(); } })();
 function saveProfile() { try { localStorage.setItem(PROFILE_KEY, JSON.stringify(PROFILE)); } catch (e) { } }
 const bump = (obj, k, n = 1) => { obj[k] = (obj[k] || 0) + n; };
+
+// ===================== UNLOCKS =====================
+// Everything not listed here is open from the first run. Each row is one lock: what it locks, the goal, and progress
+// read from the lifetime profile as [have, need]. Change a goal by editing its row.
+const yakuN = (P, ...ks) => ks.reduce((n, k) => n + (P.yaku[k] || 0), 0);
+const UNLOCKS = [
+  { kind: 'wall', key: 'lean', goal: 'Reach Ante 4', prog: P => [P.bestAnte, 4] },
+  { kind: 'wall', key: 'monk', goal: () => `Beat ${BOSSES.monk.name}`, prog: P => [P.bosses.monk || 0, 1] },
+  { kind: 'wall', key: 'merchant', goal: 'Hold ¥40 at once', prog: P => [P.mostMoney, 40] },
+  { kind: 'wall', key: 'abundant', goal: 'Win a run', prog: P => [P.wins, 1] },
+  { kind: 'stake', key: 'red', goal: 'Win a run on White Stake', prog: P => [P.stakesWon.white || 0, 1] },
+  { kind: 'stake', key: 'green', goal: 'Win a run on Red Stake', prog: P => [P.stakesWon.red || 0, 1] },
+  { kind: 'stake', key: 'black', goal: 'Win a run on Green Stake', prog: P => [P.stakesWon.green || 0, 1] },
+  { kind: 'tal', key: 'nue', goal: 'Score Honitsu or Chinitsu', prog: P => [yakuN(P, 'honitsu', 'chinitsu'), 1] },
+  { kind: 'tal', key: 'hashi', goal: 'Score Ittsu', prog: P => [yakuN(P, 'ittsu'), 1] },
+  { kind: 'tal', key: 'ryu', goal: 'Score Yakuhai 10 times', prog: P => [yakuN(P, 'yakuhai'), 10] },
+  { kind: 'tal', key: 'takibi', goal: 'Sell 10 Talismans', prog: P => [P.sold, 10] },
+  { kind: 'tal', key: 'hoshizora', goal: 'Use 15 Scrolls of Mastery', prog: P => [P.scrollsUsed, 15] },
+  { kind: 'tal', key: 'ryujin', goal: 'Make 25 Calls', prog: P => [P.calls, 25] },
+  { kind: 'tal', key: 'rokurokubi', goal: 'Score a Complete Hand with 3 open melds', prog: P => [P.openHands3, 1] },
+  { kind: 'tal', key: 'kawauso', goal: 'Score 3 Complete Hands in Furiten', prog: P => [P.furitenHands, 3] },
+  { kind: 'tal', key: 'gashadokuro', goal: 'Play 25 Complete Hands', prog: P => [P.hands, 25] },
+  { kind: 'tal', key: 'kirin', goal: 'Beat 5 different Bosses', prog: P => [Object.keys(P.bosses).length, 5] },
+  { kind: 'tal', key: 'hannya', goal: 'Reach Ante 6', prog: P => [P.bestAnte, 6] },
+  { kind: 'tal', key: 'utsushi', goal: 'Win a run', prog: P => [P.wins, 1] },
+  { kind: 'tal', key: 'kagami', goal: 'Win a run on Red Stake or higher', prog: P => [(P.stakesWon.red || 0) + (P.stakesWon.green || 0) + (P.stakesWon.black || 0), 1] },
+];
+const LOCKS = {}; UNLOCKS.forEach(u => LOCKS[`${u.kind}:${u.key}`] = u);
+const UNLOCK_ALL_KEY = 'yakuman.unlockall';
+let UNLOCK_ALL = (() => { try { return localStorage.getItem(UNLOCK_ALL_KEY) === 'on'; } catch (e) { return false; } })();
+function lockOf(kind, key) { const u = LOCKS[`${kind}:${key}`]; return u && !UNLOCK_ALL && !PROFILE.unlocked.includes(`${kind}:${key}`) ? u : null; }
+const isUnlocked = (kind, key) => !lockOf(kind, key);
+function goalText(u) { return typeof u.goal === 'function' ? u.goal() : u.goal; }
+function unlockProg(u) { const [have, need] = u.prog(PROFILE); return { have: Math.min(have || 0, need), need }; }
+function unlockName(u) { return u.kind === 'wall' ? DECKS[u.key].name : u.kind === 'stake' ? STAKES[u.key].name : TAL[u.key].name; }
+const UNLOCK_KIND = { wall: 'Wall', stake: 'Stake', tal: 'Talisman' };
+// The goal plus a progress bar, for locked cards in the Collection, New Run and Profile.
+function lockHTML(u) { const p = unlockProg(u); return `<div class="lockgoal"><span class="lockico" aria-hidden="true"></span><span>${goalText(u)}</span></div>${p.need > 1 ? `<div class="lockbar"><i style="width:${100 * p.have / p.need}%"></i></div><div class="lockcount num muted">${p.have} / ${p.need}</div>` : ''}`; }
+// Earned unlocks are stored, so they stay earned even if a stat later drops (for example after an import).
+function checkUnlocks() {
+  let dirty = false;
+  if (S && S.money > (PROFILE.mostMoney || 0)) { PROFILE.mostMoney = S.money; dirty = true; }
+  const fresh = [];
+  for (const u of UNLOCKS) { const id = `${u.kind}:${u.key}`; if (PROFILE.unlocked.includes(id)) continue; const p = unlockProg(u); if (p.have >= p.need) { PROFILE.unlocked.push(id); fresh.push(u); } }
+  if (fresh.length || dirty) saveProfile();
+  if (fresh.length && S) S.newUnlocks = (S.newUnlocks || []).concat(fresh.map(u => `${u.kind}:${u.key}`));
+  fresh.forEach((u, i) => setTimeout(() => toast(`<div class="label">Unlocked · ${UNLOCK_KIND[u.kind]}</div><b>${unlockName(u)}</b>`), i * 350));
+  return fresh;
+}
+// Small non-blocking notices in the corner.
+function toast(html) {
+  let box = document.getElementById('toasts'); if (!box) { box = document.createElement('div'); box.id = 'toasts'; document.body.appendChild(box); }
+  const el = document.createElement('div'); el.className = 'toast'; el.innerHTML = html; translateDOM(el); box.appendChild(el);
+  setTimeout(() => el.classList.add('out'), 4200); setTimeout(() => el.remove(), 4700);
+}
+const unlockedCount = () => UNLOCKS.filter(u => PROFILE.unlocked.includes(`${u.kind}:${u.key}`)).length;
+const talPool = () => TALISMANS.filter(t => !S.talismans.includes(t.key) && isUnlocked('tal', t.key));
 
 // ===================== BLIND FLOW =====================
 function startBlind() {
@@ -1445,7 +1544,7 @@ async function doPlay() {
   S.plays--; S.score += ctx.total; S.money += ctx.money; S.lastPlay = ctx; S.firstPlayDone = true;
   S.stats.rungs[ctx.meldType] = (S.stats.rungs[ctx.meldType] || 0) + 1; for (const yk of ctx.yaku) S.stats.yaku[yk.key] = (S.stats.yaku[yk.key] || 0) + 1;
   if (ctx.total > S.stats.best) { S.stats.best = ctx.total; S.stats.bestDesc = ctx.desc; }
-  if (ctx.kind === 'hand') PROFILE.hands++; for (const yk of ctx.yaku) bump(PROFILE.yaku, yk.key); if (ctx.total > PROFILE.bestPlay) { PROFILE.bestPlay = ctx.total; PROFILE.bestPlayDesc = ctx.desc; } saveProfile();
+  if (ctx.kind === 'hand') { PROFILE.hands++; if (ctx.furiten) PROFILE.furitenHands++; if (S.open.length >= 3) PROFILE.openHands3++; } for (const yk of ctx.yaku) bump(PROFILE.yaku, yk.key); if (ctx.total > PROFILE.bestPlay) { PROFILE.bestPlay = ctx.total; PROFILE.bestPlayDesc = ctx.desc; } saveProfile();
   const keep = t => !ctx.shatter.includes(t.id);
   S.played.push(...sel.filter(keep)); S.hand = S.hand.filter(t => !sel.includes(t));
   if (opt.type === 'hand') { S.played.push(...openTiles().filter(keep)); S.open = []; }
@@ -1490,7 +1589,7 @@ function doCall() {
   const type = meldType([rt, ...sel]); if (!type) { setMsg('That River tile and your selection do not form a Chi, Pon or Kan.', true); return render(); }
   if (freeCall) S.freeCallsUsed = (S.freeCallsUsed || 0) + 1; else S.plays--; S.river = S.river.filter(t => t !== rt); S.hand = S.hand.filter(t => !sel.includes(t));
   S.open.push({ type, tiles: sortTiles([rt, ...sel]), calledId: rt.id }); S.selected = []; S.selRiver = null;
-  for (const k of S.talismans) if (TAL[k].onCall) TAL[k].onCall(S); S.stats.calls++; if (type === 'kan') S.stats.kans++;
+  for (const k of S.talismans) if (TAL[k].onCall) TAL[k].onCall(S); S.stats.calls++; PROFILE.calls++; saveProfile(); if (type === 'kan') S.stats.kans++;
   const rep = type === 'kan' ? drawReplacement() : null;
   S.pendingDiscard = Math.max(0, S.hand.length - capacity());
   const note = `Called ${MELD_LABEL[type]} (open)${freeCall ? `, no Play spent (${freeMax - S.freeCallsUsed} free Call${freeMax - S.freeCallsUsed === 1 ? '' : 's'} left)` : ''}${rep ? `. Replacement tile drawn: ${tileName(rep)}` : ''}`;
@@ -1535,13 +1634,13 @@ function useConsumable(i) {
   setMsg(`${def.name} used.`); render();
 }
 function talValue(k) { return TAL[k].cost + (S.editions[k] ? EDITIONS[S.editions[k]].price : 0); }
-function sellTalisman(k) { const i = S.talismans.indexOf(k); if (i < 0) return; const v = Math.max(1, Math.floor(talValue(k) / 2)); S.talismans.splice(i, 1); S.money += v; delete S.editions[k]; S.selTal = null; for (const t of S.talismans) if (TAL[t].onSell) TAL[t].onSell(S); setMsg(`Sold ${TAL[k].name} for ¥${v}.`); render(); }
+function sellTalisman(k) { const i = S.talismans.indexOf(k); if (i < 0) return; const v = Math.max(1, Math.floor(talValue(k) / 2)); S.talismans.splice(i, 1); S.money += v; delete S.editions[k]; S.selTal = null; for (const t of S.talismans) if (TAL[t].onSell) TAL[t].onSell(S); PROFILE.sold++; saveProfile(); setMsg(`Sold ${TAL[k].name} for ¥${v}.`); render(); }
 function sellConsumable(i) { const c = S.consumables[i]; if (!c) return; const v = Math.max(1, Math.floor(CONS[c.key].cost / 2)); S.consumables.splice(i, 1); S.money += v; setMsg(`Sold ${CONS[c.key].name} for ¥${v}.`); render(); }
 
 // ===================== SHOP =====================
 function rollCard() {
   const r = rand(), w = CFG.shopWeights;   // seeded, so a shared seed replays the same shop cards
-  if (r < w.talisman) { const pool = TALISMANS.filter(t => !S.talismans.includes(t.key)); if (pool.length) return { kind: 'talisman', key: pick(pool).key, edition: rollEdition() }; }
+  if (r < w.talisman) { const pool = talPool(); if (pool.length) return { kind: 'talisman', key: pick(pool).key, edition: rollEdition() }; }
   if (r < w.talisman + w.omikuji) return { kind: 'omikuji', key: pick(OMIKUJI).key };
   return { kind: 'kami', key: pick(KAMI).key };
 }
@@ -1553,7 +1652,7 @@ function genShop() {
   const take = t => { const i = S.tags.indexOf(t); if (i >= 0) { S.tags.splice(i, 1); return true; } return false; };
   if (take('coupon')) S.shop.coupon = true;
   if (take('reroll')) S.shop.freeReroll = true;
-  for (const ed of ['foil', 'holo', 'poly', 'neg']) if (take(ed)) { const c = S.shop.cards.find(x => x.kind === 'talisman'); if (c) c.edition = ed; else S.shop.cards[0] = { kind: 'talisman', key: pick(TALISMANS.filter(t => !S.talismans.includes(t.key))).key, edition: ed }; }
+  for (const ed of ['foil', 'holo', 'poly', 'neg']) if (take(ed)) { const c = S.shop.cards.find(x => x.kind === 'talisman'), pool = talPool(); if (c) c.edition = ed; else if (pool.length) S.shop.cards[0] = { kind: 'talisman', key: pick(pool).key, edition: ed }; }
   for (const pk of ['omikuji', 'scroll', 'talisman', 'kami']) while (take(pk)) S.shop.freePacks.push(pk);
 }
 function openPack(key, free) {
@@ -1561,7 +1660,7 @@ function openPack(key, free) {
   if (key === 'omikuji' || key === 'mega') pool = OMIKUJI.map(o => ({ kind: 'omikuji', key: o.key }));
   else if (key === 'scroll') pool = SCROLLS.map(o => ({ kind: 'scroll', key: o.key }));
   else if (key === 'kami') pool = KAMI.map(o => ({ kind: 'kami', key: o.key }));
-  else pool = TALISMANS.filter(t => !S.talismans.includes(t.key)).map(t => ({ kind: 'talisman', key: t.key, edition: rollEdition() }));
+  else pool = talPool().map(t => ({ kind: 'talisman', key: t.key, edition: rollEdition() }));
   const choices = shuffle(pool.slice()).slice(0, def.show);
   S.pack = { key, choices, left: def.keep, free: !!free }; S.msg = ''; S.msgErr = false;   // a fresh pack starts without the last shop message
   // Like Balatro's Arcana packs: Omikuji and Kami packs deal tiles from your Wall so a pick can be used on them right away.
@@ -1631,7 +1730,7 @@ function fillPackHand() {
 function takeFromPack(i) {
   const it = S.pack.choices[i]; if (!it || it.sold) return;
   if (it.kind === 'talisman') { if (S.talismans.length >= talSlots()) { setMsg('Talisman slots are full. Sell one from the list below first.', true); return render(); } gainTalisman(it.key); if (it.edition) S.editions[it.key] = it.edition; }
-  else if (it.kind === 'scroll') { const [t, k] = it.key.split(':'); S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] = (S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] || 0) + 1; for (const tk of S.talismans) if (TAL[tk].onScroll) TAL[tk].onScroll(S); }
+  else if (it.kind === 'scroll') { const [t, k] = it.key.split(':'); S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] = (S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] || 0) + 1; for (const tk of S.talismans) if (TAL[tk].onScroll) TAL[tk].onScroll(S); PROFILE.scrollsUsed++; saveProfile(); }
   else { if (S.consumables.length >= conSlots()) { setMsg('Consumable slots are full. Use or sell one first.', true); return render(); } S.consumables.push({ kind: it.kind, key: it.key }); }
   it.sold = true; S.pack.left--; setMsg(`Took ${itemDef(it).name}.`);
   if (S.pack.left <= 0) S.pack = null;
@@ -1644,7 +1743,7 @@ function buy(it) {
   if (it.kind === 'pack') { S.money -= p; it.sold = true; openPack(it.key, false); return render(); }
   if (it.kind === 'talisman') { if (S.talismans.length >= talSlots()) { setMsg(`All ${talSlots()} Talisman slots are full. Sell one first.`, true); return render(); } gainTalisman(it.key); if (it.edition) S.editions[it.key] = it.edition; }
   else if (it.kind === 'omikuji' || it.kind === 'kami') { if (S.consumables.length >= conSlots()) { setMsg('Consumable slots are full. Use one first.', true); return render(); } S.consumables.push({ kind: it.kind, key: it.key }); }
-  else if (it.kind === 'scroll') { const [t, k] = it.key.split(':'); S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] = (S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] || 0) + 1; for (const tk of S.talismans) if (TAL[tk].onScroll) TAL[tk].onScroll(S); }
+  else if (it.kind === 'scroll') { const [t, k] = it.key.split(':'); S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] = (S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] || 0) + 1; for (const tk of S.talismans) if (TAL[tk].onScroll) TAL[tk].onScroll(S); PROFILE.scrollsUsed++; saveProfile(); }
   else if (it.kind === 'flower') { S.flowers.push(it.key); }
   S.money -= p; it.sold = true; setMsg(`Bought ${def.name}.`); render();
 }
@@ -1744,7 +1843,7 @@ function tileSVG(t) {
   return `<svg viewBox="0 0 54 74" aria-hidden="true">${body}</svg>`;
 }
 function render() {
-  if (!S) return; setRules(S);
+  if (!S) return; setRules(S); checkUnlocks();
   $('#hdrMoney').innerHTML = `YEN <b class="num">¥${S.money}</b>`;
   $('#btnDeck').innerHTML = `Wall <span class="num wallcount">${S.phase === 'blind' ? S.wall.length : (S.deck || []).length}</span>`; $('#btnDeck').title = S.phase === 'blind' ? 'Tiles still face down in the Wall. Click to see every tile.' : 'Tiles in your Wall. Click to see every tile.';
   renderBlind(); renderTalismans(); renderConsumables(); renderOpen(); renderRiver(); renderHand(); renderActions(); renderLast();
@@ -2049,7 +2148,7 @@ const CLOSE_X = '<button class="modal-x ghost" id="mX" title="Close" aria-label=
 // A modal with a Close or Cancel button can also be closed with the corner X, a click outside it, or Esc. Game-flow screens (cash-out, shop, packs, blind select) have none, so they stay put.
 function modalClosable() { return !$('#overlay').hidden && !!$('#modal #mClose'); }
 function closeModal() { const c = $('#modal #mClose'); if (c) c.click(); }
-function showModal(html, pinned, cls) { modalPinned = !!pinned; $('#modal').className = 'modal' + (cls ? ' ' + cls : ''); $('#modal').innerHTML = html; if ($('#modal #mClose')) $('#modal').insertAdjacentHTML('afterbegin', CLOSE_X); fillHero($('#modal')); fillColTiles($('#modal')); $('#overlay').hidden = false; fillExamples($('#modal')); translateDOM($('#modal')); }
+function showModal(html, pinned, cls) { modalPinned = !!pinned; $('#modal').className = 'modal' + (cls ? ' ' + cls : ''); $('#modal').innerHTML = html; if ($('#modal #mClose')) $('#modal').insertAdjacentHTML('afterbegin', CLOSE_X); fillHero($('#modal')); fillColTiles($('#modal')); fillTileArt($('#modal')); $('#overlay').hidden = false; fillExamples($('#modal')); translateDOM($('#modal')); }
 function hideModal() { modalPinned = false; $('#overlay').hidden = true; }
 // A Talisman you gain starts fresh, like a Joker in Balatro: progress from an earlier copy you sold is gone.
 // Its state lives under its own key, or its key plus a capitalised suffix (kasaobake, shiroSuit).
@@ -2147,6 +2246,7 @@ function overHTML(won) {
   h += won ? `<p class="muted">All ${CFG.antes} Antes cleared on ${STAKES[S.stake].name} with the ${DECKS[S.deckKey].name}.</p>` : `<p class="muted">Out of Plays on Ante ${S.ante} against ${where}.</p><div class="overscore"><div class="row"><span class="label">Round Score</span><span class="num"><b>${S.score.toLocaleString()}</b> <span class="muted">of ${S.target.toLocaleString()}</span></span></div><div class="overbar"><i style="width:${pct}%"></i></div></div>`;
   h += `</div><div class="overstats">${stat('Ante reached', `${Math.min(S.ante, CFG.antes)} / ${CFG.antes}`)}${stat('Blinds won', st.blinds)}${stat('Complete Hands', st.hands)}${stat('Partial Plays', st.melds)}${stat('YEN', '¥' + S.money)}</div>`;
   h += `<div class="overbest"><div><div class="label">Best Play</div><div class="v num">${st.best.toLocaleString()}</div></div>${st.bestDesc ? `<div class="muted">${st.bestDesc}</div>` : ''}</div>`;
+  if (S.newUnlocks && S.newUnlocks.length) h += `<div class="label" style="margin:14px 0 6px">Unlocked this run</div><div class="overtals">${S.newUnlocks.map(id => LOCKS[id]).filter(Boolean).map(u => `<span class="overtal newunlock"><span class="muted" style="font-size:11px">${UNLOCK_KIND[u.kind]}</span>${unlockName(u)}</span>`).join('')}</div>`;
   h += `<div class="label" style="margin:14px 0 6px">Talismans</div><div class="overtals">${S.talismans.length ? S.talismans.map((k, i) => `<span class="overtal"><span class="order">${i + 1}</span>${TAL[k].name}</span>`).join('') : '<span class="muted">None</span>'}</div>`;
   h += `<div class="shopfoot"><span class="seedline muted" style="margin:0">Seed <code class="seed">${S.seed}</code> <button class="ghost tiny-btn" data-copyseed>Copy</button> · ${DECKS[S.deckKey].name} · ${STAKES[S.stake].name}</span><span style="flex:1"></span><button id="mNewRun" class="primary">New Run</button></div>`;
   return h;
@@ -2200,11 +2300,12 @@ function fullRulesHTML() {
   <p><b>Money.</b> Beating a Blind pays ¥${R.small} for a Small Blind, ¥${R.big} for a Big Blind and ¥${R.boss} for a Boss, plus ¥1 for each unused Play and ¥1 interest for every ¥${CFG.interestPer} you hold (at most ¥${CFG.interestCap}). Red and Black Stakes pay nothing for Small Blinds.</p>
   <p><b>Shop.</b> Spend money on Talismans (passive, ${CFG.talismanSlots} slots), Omikuji and Kami (consumables, ${CFG.consumableSlots} slots, used on selected hand tiles), Scrolls of Mastery (permanent upgrades), Flowers (run-long perks) and one booster pack (open it and keep one or two of what's inside). Omikuji Packs and Kami Packs also deal ${PACK_HAND} random tiles from your Wall: select some and press Use on a card to change them for the rest of the run, or Keep the card for a Blind. After your last pick the pack stays open with the changed tiles outlined; press Done to return to the shop. ${CONS.indicator.name} and ${CONS.amaterasu.name} only work during a Blind. ${CONS.wealth.name} and ${CONS.raijin.name} can also be used from your slots in the shop; there ${CONS.raijin.name} destroys 2 random tiles from your Wall. Every shop has two random cards (Talismans ${Math.round(CFG.shopWeights.talisman * 100)}%, Omikuji ${Math.round(CFG.shopWeights.omikuji * 100)}%, Kami ${Math.round(CFG.shopWeights.kami * 100)}% each), plus one Scroll, one Flower and one booster pack in fixed spots. A reroll changes only the two random cards and costs ¥${CFG.rerollCost}. Selling returns half the item's value: click a Talisman on the board and press Sell, or sell from inside the shop.</p>
   <p><b>Blind Select.</b> After the shop you see the Ante's three blinds with their targets, rewards and the Boss's rule. A Small or Big Blind can be skipped for the Tag on its card instead of its money: free packs, editions, coupons, money, a bigger hand or a different Boss. Tags you hold show in the side panel.</p>
-  <p><b>Setup.</b> A new run lets you choose a Wall (deck), a Stake (difficulty) and a seed. Sharing a seed replays the same Wall, shops and bosses.</p>
+  <p><b>Setup.</b> A new run lets you choose a Wall (deck), a Stake (difficulty) and a seed. Sharing a seed replays the same Wall, shops and bosses for players with the same unlocks. Winning on a Stake unlocks the next one.</p>
   <h3>Help and Controls</h3>
   <p><b>Helper.</b> Under your hand the game shows how many tiles you are from a complete hand. Settings can turn that off, and can turn on two more hints: which tiles you are waiting on, and whether the tiles you select can go without setting you back. Against The Purist they only count your visible tiles. Another assist marks dead tiles with green dots.</p>
   <p><b>Arranging.</b> Drag hand tiles to reorder them. Dragging turns off auto-sort; Sort Hand sorts again. Tiles score in the order they sit, which matters for Shikigami. Sorting also works against The Purist, so face-down tiles sit in their sorted place. A selection with face-down tiles always plays: if it isn't a valid play, its best part scores and the other selected tiles go to the River.</p>
   <p><b>Saving.</b> Your run saves automatically after every action. Run Info, Profile tab, keeps lifetime stats across runs. Settings, Your data, exports your profile, settings and current run as a code or file, so you can import them on another device or browser.</p>
+  <p><b>Unlocks.</b> Most of the game is open from your first run. ${UNLOCKS.filter(u => u.kind === 'tal').length} Talismans, ${UNLOCKS.filter(u => u.kind === 'wall').length} Walls and the higher Stakes unlock as you reach goals across runs, such as reaching Ante 6 or winning on a Stake. The Collection and Run Info, Profile tab, show each goal and your progress. Locked items never appear in shops or packs. Settings, Advanced, can unlock everything for playtesting.</p>
   <p><b>Tile numbers.</b> Characters show their number and Winds their letter in the corner. Dots and Bamboo have none by default, since you count their pips. Settings can show numbers on all tiles or on none.</p>
   <p><b>Keys.</b> Enter or P plays, D discards, C calls, K declares a Kan, Esc clears your selection. Click anywhere or press any key while a play scores to skip the animation. Esc or a click outside closes Rules, Wall, Run Info and Settings.</p>
   </div>`;
@@ -2232,13 +2333,16 @@ let infoTab = 'run';
 let colTab = 'tal';
 function collectionHTML() {
   const run = !!(S && S.talismans);
-  const card = (cls, kind, name, desc, extra = '', badge = '') => `<div class="shopcard ${cls} colcard"><div class="kind">${kind}</div><div class="n">${name}</div><div class="d">${desc}</div>${extra}${badge ? `<div class="colfoot"><span class="tag colmark">${badge}</span></div>` : ''}</div>`;   // badges sit at the bottom so names line up
+  const card = (cls, kind, name, desc, extra = '', badge = '', lock = null) => lock
+    ? `<div class="shopcard ${cls} colcard locked"><div class="kind">${kind}</div><div class="n">${name}</div>${lockHTML(lock)}<div class="colfoot"><span class="tag lockmark">Locked</span></div></div>`
+    : `<div class="shopcard ${cls} colcard"><div class="kind">${kind}</div><div class="n">${name}</div><div class="d">${desc}</div>${extra}${badge ? `<div class="colfoot"><span class="tag colmark">${badge}</span></div>` : ''}</div>`;   // badges sit at the bottom so names line up
+  const count = (kind, keys) => { const open = keys.filter(k => isUnlocked(kind, k)).length; return open === keys.length ? keys.length : `${open}/${keys.length}`; };
   const tabs = [
-    ['tal', 'Talismans', TALISMANS.length], ['omi', LANG === 'hk' ? 'Fortune Sticks' : 'Omikuji', OMIKUJI.length], ['kami', 'Kami Spirits', KAMI.length], ['scroll', 'Scrolls', SCROLLS.length], ['flower', 'Flowers', FLOWERS.length], ['pack', 'Packs', Object.keys(PACKS).length],
-    ['eng', 'Engravings', Object.keys(ENG).length], ['ed', 'Editions', Object.keys(EDITIONS).length], ['tag', 'Tags', Object.keys(TAGS).length], ['boss', 'Bosses', Object.keys(BOSSES).length], ['wall', 'Walls', Object.keys(DECKS).length], ['stake', 'Stakes', Object.keys(STAKES).length]];
+    ['tal', 'Talismans', count('tal', TALISMANS.map(t => t.key))], ['omi', LANG === 'hk' ? 'Fortune Sticks' : 'Omikuji', OMIKUJI.length], ['kami', 'Kami Spirits', KAMI.length], ['scroll', 'Scrolls', SCROLLS.length], ['flower', 'Flowers', FLOWERS.length], ['pack', 'Packs', Object.keys(PACKS).length],
+    ['eng', 'Engravings', Object.keys(ENG).length], ['ed', 'Editions', Object.keys(EDITIONS).length], ['tag', 'Tags', Object.keys(TAGS).length], ['boss', 'Bosses', Object.keys(BOSSES).length], ['wall', 'Walls', count('wall', Object.keys(DECKS))], ['stake', 'Stakes', count('stake', Object.keys(STAKES))]];
   const cons = (list, kind) => list.map(c => card(kind, `${kind === 'kami' ? 'Kami Spirit' : 'Omikuji'} · ¥${c.cost}`, c.name, c.desc, '', c.blindOnly ? 'Blind only' : c.anywhere ? 'Usable anytime' : '')).join('');
   let body = '';
-  if (colTab === 'tal') body = TALISMANS.map(t => card('talisman', `Talisman · ¥${t.cost}`, t.name, t.desc, '', run && S.talismans.includes(t.key) ? 'Owned' : '')).join('');
+  if (colTab === 'tal') body = TALISMANS.map(t => card('talisman', `Talisman · ¥${t.cost}`, t.name, t.desc, '', run && S.talismans.includes(t.key) ? 'Owned' : '', lockOf('tal', t.key))).join('');
   else if (colTab === 'omi') body = cons(OMIKUJI, 'omikuji');
   else if (colTab === 'kami') body = cons(KAMI, 'kami');
   else if (colTab === 'scroll') body = SCROLLS.map(sc => card('scroll', `Scroll of Mastery · ¥${sc.cost}`, sc.name, sc.desc, run ? scrollLevelHTML(sc.key) : '')).join('');
@@ -2248,9 +2352,9 @@ function collectionHTML() {
   else if (colTab === 'ed') body = Object.entries(EDITIONS).map(([k, e]) => card(`talisman ed-${k}`, `Edition · +¥${e.price}`, `<span class="edtag ed-${k}">${e.name}</span>`, `${e.desc}${k === 'neg' ? '' : ' on every play'}.`, `<div class="muted" style="font-size:11px;margin-top:4px">${Math.round(e.odds * 100)}% of shop Talismans</div>`)).join('');
   else if (colTab === 'tag') body = Object.entries(TAGS).map(([k, t]) => card('pack', 'Tag', t.name, t.desc, '', run && S.tags.includes(k) ? 'Held' : '')).join('');
   else if (colTab === 'boss') body = Object.entries(BOSSES).map(([k, b]) => card('bosscol', 'Boss Blind', b.name, b.desc, '', run && S.stats && S.stats.bosses.includes(k) ? 'Met this run' : '')).join('');
-  else if (colTab === 'wall') body = Object.entries(DECKS).map(([k, d]) => card('flower', 'Wall', d.name, d.desc, '', run && S.deckKey === k ? 'This run' : '')).join('');
-  else if (colTab === 'stake') body = Object.entries(STAKES).map(([k, st]) => card('flower', `<i class="sw sw-${k}" aria-hidden="true"></i> Stake`, st.name, st.desc, '', run && S.stake === k ? 'This run' : '')).join('');
-  return `<div class="shophead"><h2>Collection</h2><input id="colSearch" placeholder="Search" autocomplete="off"></div><p class="muted" style="margin:2px 0 10px">Everything that can turn up in a run. Yaku and the Play Ladder are in Run Info.</p>
+  else if (colTab === 'wall') body = Object.entries(DECKS).map(([k, d]) => card('flower', 'Wall', d.name, d.desc, '', run && S.deckKey === k ? 'This run' : '', lockOf('wall', k))).join('');
+  else if (colTab === 'stake') body = Object.entries(STAKES).map(([k, st]) => card('flower', `<i class="sw sw-${k}" aria-hidden="true"></i> Stake`, st.name, st.desc, '', run && S.stake === k ? 'This run' : '', lockOf('stake', k))).join('');
+  return `<div class="shophead"><h2>Collection</h2><input id="colSearch" placeholder="Search" autocomplete="off"></div><p class="muted" style="margin:2px 0 10px">Everything that can turn up in a run. Locked cards show their goal. Yaku and the Play Ladder are in Run Info.</p>
   <div class="tabs coltabs">${tabs.map(([k, n, c]) => `<button class="tab${colTab === k ? ' on' : ''}" data-ctab="${k}">${n} <span class="muted">${c}</span></button>`).join('')}</div>
   <div class="shop-grid colgrid">${body}</div><div class="muted colnone" hidden>Nothing matches.</div><button id="mClose" hidden>Close</button>`;
 }
@@ -2267,6 +2371,10 @@ function profileHTML() {
   let h = `<p class="muted" style="margin:8px 0">Your progress across every run in this browser. Export it from Settings to move it to another device.</p>`;
   h += `<div class="overstats">${stat('Runs', P.runs)}${stat('Wins', P.wins)}${stat('Best Ante', P.bestAnte ? `${Math.min(P.bestAnte, CFG.antes)} / ${CFG.antes}` : '—')}${stat('Blinds won', P.blinds)}${stat('Complete Hands', P.hands)}</div>`;
   h += `<div class="overbest"><div><div class="label">Best Play ever</div><div class="v num">${P.bestPlay ? P.bestPlay.toLocaleString() : '—'}</div></div>${P.bestPlayDesc ? `<div class="muted">${P.bestPlayDesc}</div>` : ''}</div>`;
+  const locked = UNLOCKS.filter(u => !P.unlocked.includes(`${u.kind}:${u.key}`)), earned = UNLOCKS.filter(u => P.unlocked.includes(`${u.kind}:${u.key}`));
+  h += `<div class="label" style="margin:12px 0 6px">Unlocks · ${earned.length} of ${UNLOCKS.length}${UNLOCK_ALL ? ' · Unlock everything is on in Settings' : ''}</div>`;
+  if (earned.length) h += `<div class="overtals" style="margin-bottom:8px">${earned.map(u => `<span class="tagchip">${unlockName(u)}</span>`).join('')}</div>`;
+  if (locked.length) h += `<div class="locklist">${locked.map(u => `<div class="lockrow"><div><span class="muted" style="font-size:11px">${UNLOCK_KIND[u.kind]}</span> <b>${unlockName(u)}</b></div>${lockHTML(u)}</div>`).join('')}</div>`;
   h += `<div class="label" style="margin:12px 0 6px">Bosses beaten · ${Object.keys(P.bosses).length} of ${Object.keys(BOSSES).length}</div><div class="overtals">${named(P.bosses, BOSSES, nm)}</div>`;
   h += `<div class="label" style="margin:12px 0 6px">Wins by Stake</div><div class="overtals">${named(P.stakesWon, STAKES, nm)}</div>`;
   h += `<div class="label" style="margin:12px 0 6px">Wins by Wall</div><div class="overtals">${named(P.wallsWon, DECKS, nm)}</div>`;
@@ -2275,7 +2383,7 @@ function profileHTML() {
 }
 // ===================== EXPORT / IMPORT =====================
 // One save = profile + settings + current run, as gzip + base64 text ("YKM1Z:...") or plain JSON.
-const SETTING_KEYS = ['yakuman.lang', 'yakuman.speed', 'yakuman.dots', 'yakuman.hints', 'yakuman.tilenums'];
+const SETTING_KEYS = ['yakuman.lang', 'yakuman.speed', 'yakuman.dots', 'yakuman.hints', 'yakuman.tilenums', 'yakuman.unlockall'];
 function exportPayload() { const settings = {}; for (const k of SETTING_KEYS) { try { const v = localStorage.getItem(k); if (v != null) settings[k] = v; } catch (e) { } } save(); let run = null; try { run = localStorage.getItem(SAVE_KEY); } catch (e) { } return { app: 'yakuman', v: 1, exported: new Date().toISOString(), profile: PROFILE, settings, run }; }
 async function toCode(obj) {
   const bytes = new TextEncoder().encode(JSON.stringify(obj)); let out = bytes, gz = false;
@@ -2365,19 +2473,39 @@ function yakuHTML() {
   h += `<button id="mClose" hidden>Close</button>`;
   return h;
 }
-let setupSel = { deck: 0, stake: 0 };
+let setupSel = { deck: 0, stake: 0 }, setupDir = { deck: 0, stake: 0 };
+// One Wall and one Stake at a time, with arrows, so the screen never shows every option at once.
+function setupKeys(name) { return Object.keys(name === 'deck' ? DECKS : STAKES); }
+function setupKey(name) { const keys = setupKeys(name), n = keys.length; return keys[((setupSel[name] % n) + n) % n]; }
+// Card art and rule chips for the carousels. Tiles are written like hands: digits then suit, 'r' marks a Red Five.
+const WALL_ART = { standard: '1m 5pr 9s 1z', red: '5mr 5pr 5sr', lean: '3m 7p 7z', monk: '2m 5p 8s', gambler: '7m 7p 7s', merchant: '8m 6z 8p', abundant: '2s 3s 4s 5s 6s' };
+const WALL_FACTS = () => ({ standard: [['136 tiles'], ['4 Red Fives']], red: [['136 tiles'], ['12 Red Fives', 'good']], lean: [['100 tiles'], ['No Souzu', 'bad']], monk: [['108 tiles'], ['No Honors', 'bad']], gambler: [['+1 Play', 'good'], ['−1 Discard', 'bad']], merchant: [[`Start ¥${CFG.startMoney + 16}`, 'good'], ['+1 consumable slot', 'good'], ['Prices +25%', 'bad']], abundant: [['+2 hand size', 'good'], ['−1 Play', 'bad']] });
+const STAKE_FACTS = { red: [['Small Blinds pay nothing', 'bad']], green: [['Targets ×1.3', 'bad']], black: [['Targets ×1.3', 'bad'], ['Small Blinds pay nothing', 'bad'], ['Talismans cost ¥2 more', 'bad']] };
+function stakeChipSVG(k) { const c = { white: '#ece4cf', red: '#c9453a', green: '#4f9d69', black: '#1a1a1a' }[k], ink = k === 'white' ? '#bfae82' : 'rgba(255,255,255,.85)'; return `<svg class="stakechipart" viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="40" r="36" fill="${c}" stroke="rgba(0,0,0,.35)" stroke-width="2"/>${[0, 45, 90, 135, 180, 225, 270, 315].map(a => `<rect x="36" y="4" width="8" height="12" rx="2" fill="${ink}" transform="rotate(${a} 40 40)"/>`).join('')}<circle cx="40" cy="40" r="22" fill="none" stroke="${ink}" stroke-width="2" stroke-dasharray="4 3"/><circle cx="40" cy="40" r="15" fill="rgba(0,0,0,.18)"/></svg>`; }
 function setupHTML() {
-  const pickIdx = (name, obj) => { const n = Object.keys(obj).length; return ((setupSel[name] % n) + n) % n; };
-  const di = pickIdx('deck', DECKS), si = pickIdx('stake', STAKES), dk = Object.keys(DECKS), sk = Object.keys(STAKES);
-  const walls = dk.map((k, i) => `<button class="optcard${i === di ? ' on' : ''}" data-pick="deck:${i}"><span class="on-mark" aria-hidden="true"></span><b>${DECKS[k].name}</b><span class="muted">${DECKS[k].desc}</span></button>`).join('');
-  const stakes = sk.map((k, i) => `<button class="stakechip${i === si ? ' on' : ''}" data-pick="stake:${i}"><i class="sw sw-${k}" aria-hidden="true"></i>${STAKES[k].name.replace(' Stake', '')}</button>`).join('');
-  return `<div class="shophead"><h2>New Run</h2></div><p class="muted" style="margin:2px 0 14px">Pick a Wall and a Stake. Enter a seed to replay someone else's run.</p>
-  <input type="hidden" name="deck" value="${dk[di]}"><input type="hidden" name="stake" value="${sk[si]}">
-  <div class="setlabel"><span class="label">Wall</span><span class="muted">${DECKS[dk[di]].name}</span></div><div class="optgrid">${walls}</div>
-  <div class="setlabel" style="margin-top:16px"><span class="label">Stake</span><span class="muted">difficulty</span></div><div class="stakerow">${stakes}</div><div class="stakedesc muted">${STAKES[sk[si]].desc}</div>
-  <div class="setlabel" style="margin-top:16px"><span class="label">Seed</span><span class="muted">optional</span></div><input id="seedInput" placeholder="Random" maxlength="24" autocomplete="off"><div class="muted" style="font-size:11px;margin-top:4px">The same seed gives the same Wall, shops and bosses. Leave blank for a random run.</div>
-  <div class="shopfoot"><button id="mClose" class="ghost">Cancel</button><span style="flex:1"></span><button id="mStartRun" class="primary">Start Run</button></div>`;
+  const chev = d => `<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="${d < 0 ? 'M10.5 2.5 5 8l5.5 5.5' : 'M5.5 2.5 11 8l-5.5 5.5'}" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  const facts = list => `<div class="carfacts">${list.map(([t, tone]) => `<span class="fact${tone ? ' ' + tone : ''}">${t}</span>`).join('')}</div>`;
+  const car = (name, kind) => {
+    const keys = setupKeys(name), cur = setupKey(name), isWall = name === 'deck', table = isWall ? DECKS : STAKES, v = table[cur], lock = lockOf(kind, cur), pos = keys.indexOf(cur);
+    const art = isWall ? `<div class="carart tilesart" data-tiles="${WALL_ART[cur]}"></div>` : `<div class="carart chipart">${stakeChipSVG(cur)}<div class="diffpips" title="Difficulty">${keys.map((k, j) => `<i class="${j <= pos ? 'on' : ''}"></i>`).join('')}</div></div>`;
+    const body = lock ? lockHTML(lock) : isWall ? `<p class="cardesc">${v.desc}</p>${facts(WALL_FACTS()[cur])}` : cur === 'white' ? `<p class="cardesc">${v.desc} No extra rules.</p>` : facts(STAKE_FACTS[cur]);
+    const pager = keys.map((k, j) => `<button class="pg${k === cur ? ' on' : ''}${lockOf(kind, k) ? ' lk' : ''}" data-goto="${name}:${j}" aria-label="${table[k].name}" title="${table[k].name}"></button>`).join('');
+    const slide = setupDir[name] > 0 ? ' fromright' : setupDir[name] < 0 ? ' fromleft' : '';
+    return `<div class="car2 ${isWall ? 'wallcar' : 'stakecar'}${lock ? ' locked' : ''}" data-car="${name}"><input type="hidden" name="${name}" value="${cur}">
+      <button class="carnav prev" data-nav="${name}:-1" aria-label="Previous">${chev(-1)}</button>
+      <div class="carcard2${slide}">${art}<div class="carbody"><div class="carkicker"><span>${isWall ? 'Wall' : 'Stake'}</span><span class="num">${pos + 1} / ${keys.length}</span></div><div class="cartitle"><span>${v.name}</span>${lock ? '<span class="lockpill"><span class="lockico" aria-hidden="true"></span>Locked</span>' : ''}</div>${body}</div></div>
+      <button class="carnav next" data-nav="${name}:1" aria-label="Next">${chev(1)}</button>
+      <div class="carpager">${pager}</div></div>`;
+  };
+  const blocked = lockOf('wall', setupKey('deck')) || lockOf('stake', setupKey('stake'));
+  const html = `<div class="shophead"><h2>New Run</h2></div><p class="muted" style="margin:2px 0 14px">Choose your Wall and Stake. Enter a seed to replay someone else's run.</p>
+  ${car('deck', 'wall')}${car('stake', 'stake')}
+  <div class="seedrow"><label class="label" for="seedInput">Seed</label><input id="seedInput" placeholder="Random" maxlength="24" autocomplete="off"></div><div class="muted seedhelp">Optional. The same seed gives the same Wall, shops and bosses, as long as both players have the same unlocks.</div>
+  <div class="shopfoot"><button id="mClose" class="ghost">Cancel</button><span style="flex:1"></span><button id="mStartRun" class="primary"${blocked ? ' disabled' : ''}>${blocked ? 'Locked' : 'Start Run'}</button></div>`;
+  setupDir = { deck: 0, stake: 0 };
+  return html;
 }
+function fillTileArt(root) { root && root.querySelectorAll('.tilesart').forEach(box => { if (box.children.length) return; const ts = []; for (const g of box.dataset.tiles.split(' ')) { const m = g.match(/^(\d+)([mpsz])(r?)$/); if (m) for (const d of m[1]) ts.push({ id: 0, suit: m[2], rank: +d, red: !!m[3], eng: null }); } ts.forEach((t, i) => { const e = tileEl(t, { small: true }); const k = i - (ts.length - 1) / 2; e.style.transform = `rotate(${k * 8}deg) translateY(${Math.abs(k) * 4}px)`; e.style.cursor = 'default'; box.appendChild(e); }); }); }
 function menuHTML(hasSave) {
   const where = hasSave && S ? `Ante ${Math.min(S.ante, CFG.antes)} · ${S.phase === 'blind' ? ({ small: 'Small Blind', big: 'Big Blind', boss: S.boss ? BOSSES[S.boss].name : 'Boss Blind' })[blindKind()] : S.phase === 'shop' ? 'Shop' : 'Blind Select'} · ¥${S.money}` : '';
   return `<div class="hero"><div class="herotiles" id="heroTiles"></div>
@@ -2472,20 +2600,21 @@ function bindEvents() {
     if (t.dataset.setdots) { SHOW_DOTS = t.dataset.setdots === 'on'; try { localStorage.setItem('yakuman.dots', SHOW_DOTS ? 'on' : 'off'); } catch (e) { } render(); showModal(settingsHTML(), true); return; }
     if (t.dataset.setspeed) { ANIM_SPEED = t.dataset.setspeed; try { localStorage.setItem('yakuman.speed', ANIM_SPEED); } catch (e) { } showModal(settingsHTML(), true); return; }
     if (t.dataset.setdbg) { const b = $('#debugBar'); b.hidden = t.dataset.setdbg !== 'on'; if (!b.hidden) renderDebug(); showModal(settingsHTML(), true); return; }
-    if (t.dataset.wipe != null) { clearSave(); location.reload(); return; }
+    if (t.dataset.setunlock) { UNLOCK_ALL = t.dataset.setunlock === 'on'; try { localStorage.setItem(UNLOCK_ALL_KEY, UNLOCK_ALL ? 'on' : 'off'); } catch (e) { } render(); showModal(settingsHTML(), true); return; }
+    if (t.id === 'mDeleteRun') { showModal(`<div class="shophead"><h2>Delete Run?</h2></div><p class="muted" style="margin:4px 0 0">The run in progress ends and can't be continued. Your profile, unlocks and settings stay.</p><div class="shopfoot"><button id="mClose" class="ghost">Cancel</button><span style="flex:1"></span><button id="mConfirmDeleteRun" class="danger">Delete Run</button></div>`, true, 'confirmmodal'); backToSettings(); return; }
+    if (t.id === 'mConfirmDeleteRun') { clearSave(); S = null; location.reload(); return; }
     if (t.id === 'mExport') { (async () => { EXPORT_CODE = await toCode(exportPayload()); showModal(exportHTML(), true, 'datamodal'); backToSettings(); })(); return; }
     if (t.id === 'mImport') { PENDING_IMPORT = null; showModal(importHTML(), true, 'datamodal'); backToSettings(); return; }
     if (t.id === 'mCopyCode') { const ta = $('#saveCode'); const done = () => { t.textContent = 'Copied'; setTimeout(() => { t.textContent = 'Copy Code'; }, 1400); }; const fallback = () => { ta.focus(); ta.select(); try { document.execCommand('copy'); done(); } catch (e) { t.textContent = 'Selected: press Copy'; } }; try { navigator.clipboard.writeText(EXPORT_CODE).then(done, fallback); } catch (e) { fallback(); } return; }
     if (t.id === 'mDownloadCode') { saveCodeFile(t); return; }
     if (t.id === 'mLoadSave') { (async () => { try { PENDING_IMPORT = checkSave(await fromCode(($('#importCode') || {}).value)); showModal(importHTML(), true, 'datamodal'); backToSettings(); } catch (e) { const code = ($('#importCode') || {}).value || ''; showModal(importHTML(e.message || 'That save could not be read.'), true, 'datamodal'); backToSettings(); $('#importCode').value = code; } })(); return; }
     if (t.id === 'mConfirmImport') { const o = PENDING_IMPORT; if (!o) return; try { localStorage.setItem(PROFILE_KEY, JSON.stringify(Object.assign(blankProfile(), o.profile))); for (const [k, v] of Object.entries(o.settings || {})) if (SETTING_KEYS.includes(k)) localStorage.setItem(k, v); if (o.run) localStorage.setItem(SAVE_KEY, o.run); else localStorage.removeItem(SAVE_KEY); } catch (e) { } location.reload(); return; }
-    if (t.id === 'mResetProfile') { showModal(`<div class="shophead"><h2>Reset Profile?</h2></div><p class="muted" style="margin:4px 0 0">Lifetime stats in this browser will be cleared. Export first if you want a copy.</p><div class="shopfoot"><button id="mClose" class="ghost">Cancel</button><span style="flex:1"></span><button id="mConfirmReset" class="danger">Reset Profile</button></div>`, true, 'confirmmodal'); backToSettings(); return; }
+    if (t.id === 'mResetProfile') { showModal(`<div class="shophead"><h2>Reset Profile?</h2></div><p class="muted" style="margin:4px 0 0">Lifetime stats in this browser will be cleared and every unlock will lock again (${unlockedCount()} of ${UNLOCKS.length} unlocked). Your current run and settings stay. Export first if you want a copy.</p><div class="shopfoot"><button id="mClose" class="ghost">Cancel</button><span style="flex:1"></span><button id="mConfirmReset" class="danger">Reset Profile</button></div>`, true, 'confirmmodal'); backToSettings(); return; }
     if (t.id === 'mConfirmReset') { PROFILE = blankProfile(); saveProfile(); showModal(settingsHTML(), true); return; }
     if (t.id === 'mClose') { if (!t.onclick) { hideModal(); render(); } }   // a custom back action (to the menu or Settings) has already run
     else if (t.id === 'mNewRun' || t.id === 'mStart') { showModal(setupHTML(), true, 'setupmodal'); }
-    else if (t.dataset.pick) { const [name, i] = t.dataset.pick.split(':'); const seed = ($('#seedInput') || {}).value || ''; setupSel[name] = +i; showModal(setupHTML(), true, 'setupmodal'); $('#seedInput').value = seed; }
-    else if (t.dataset.nav) { const [name, d] = t.dataset.nav.split(':'); const seed = ($('#seedInput') || {}).value || ''; setupSel[name] += +d; showModal(setupHTML(), true, 'setupmodal'); $('#seedInput').value = seed; }
-    else if (t.id === 'mStartRun') { const deck = ($('#modal input[name=deck]') || {}).value, stake = ($('#modal input[name=stake]') || {}).value, seed = ($('#seedInput') || {}).value; hideModal(); newRun({ deck, stake, seed }); }
+    else if (t.dataset.nav || t.dataset.goto) { const [name, d] = (t.dataset.nav || t.dataset.goto).split(':'); const seed = ($('#seedInput') || {}).value || ''; const before = setupKeys(name).indexOf(setupKey(name)); if (t.dataset.nav) setupSel[name] += +d; else setupSel[name] = +d; setupDir[name] = t.dataset.nav ? +d : Math.sign(+d - before); showModal(setupHTML(), true, 'setupmodal'); $('#seedInput').value = seed; }
+    else if (t.id === 'mStartRun') { if (lockOf('wall', setupKey('deck')) || lockOf('stake', setupKey('stake'))) return; const deck = ($('#modal input[name=deck]') || {}).value, stake = ($('#modal input[name=stake]') || {}).value, seed = ($('#seedInput') || {}).value; hideModal(); newRun({ deck, stake, seed }); }
     else if (t.id === 'mContinue') { hideModal(); render(); }
     else if (t.id === 'mCollection') { showModal(collectionHTML(), true, 'colmodal'); $('#mClose').onclick = () => { showModal(menuHTML(!!load()), true, 'menumodal'); }; }
     else if (t.id === 'mRules') { showModal(rulesHTML() + '', true); $('#mClose').onclick = () => { showModal(menuHTML(!!load()), true, 'menumodal'); }; }

@@ -66,7 +66,7 @@ const DECKS = {
   lean: { name: 'Lean Wall', desc: 'No Souzu. 100 tiles across two suits and honors, so hands come faster. Sanshoku is impossible.' },
   monk: { name: "Monk's Wall", desc: 'No Honor tiles. 108 tiles, flushes come easily, honor Yaku are impossible.' },
   gambler: { name: "Gambler's Wall", desc: '+1 Play and −1 Discard every Blind.' },
-  merchant: { name: "Merchant's Wall", desc: 'Start with ¥20 and +1 consumable slot, but shop prices are +25%.' },
+  merchant: { name: "Merchant's Wall", desc: `Start with ¥${CFG.startMoney + 16} and +1 consumable slot, but shop prices are +25%.` },
   abundant: { name: 'Abundant Wall', desc: '+2 hand size, −1 Play every Blind.' },
 };
 const STAKES = {
