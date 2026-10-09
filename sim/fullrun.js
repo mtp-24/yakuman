@@ -5,6 +5,7 @@ const TAL_PRI={hashi:8,utsushi:7,kagami:7,nopperabo:6,sekito:7,aobozu:5,shiro:4,
 const SCR_PRI={'m:hand':6,'m:chi':5,'m:pon':3,'m:pair':2,'m:kan':1,'y:tanyao':4,'y:pinfu':3,'y:yakuhai':3,'y:honitsu':2,'y:toitoi':2,'y:chinitsu':1,'y:chiitoitsu':1,'y:sanshoku':1,'y:ittsu':1,'y:chanta':1};
 const FLW_PRI={bamboo:8,plum:7,orchid:6,chrysanthemum:4,winter:4,summer:4,spring:1,autumn:1};
 const RESERVE=+process.argv[4]||0; const ORDERED=process.argv[6]==='ordered'; const VARIANT=process.argv[5]||'base'; CFG.sharkPerAction=true;
+if(VARIANT==='pairs') CFG.pairLadder=true;
 if(VARIANT==='plays5') CFG.playsPerBlind=5;
 if(VARIANT==='gentle') { CFG.anteBase[0]=250; CFG.anteBase[1]=700; }
 if(VARIANT==='money8') CFG.startMoney=8;
@@ -17,10 +18,10 @@ const talMod=(S,f)=>S.talismans.reduce((a,k)=>a+(TAL[k][f]||0),0);
 const asT=t=>t; const tiles=h=>h;
 function draw(S){ while(S.hand.length<cap(S)&&S.wall.length){ const t=S.wall.pop(); t.d=++S.drawSeq; S.hand.push(t);} }
 function bestStructure(hand,capM){ const counts=new Array(34).fill(0); for(const t of hand) counts[idx(t)]++; let best={m:0,p:0,key:-1,sets:[]};
-  function rec(i,m,p,sets){ while(i<34&&counts[i]===0)i++; if(i>=34){ if(p===2&&m>0) return; const k=m*10+p; if(k>best.key) best={m,p,key:k,sets:sets.slice()}; return; }
+  function rec(i,m,p,sets){ while(i<34&&counts[i]===0)i++; if(i>=34){ if(p>=2&&m>0) return; const k=m*10+p; if(k>best.key) best={m,p,key:k,sets:sets.slice()}; return; }
     if(m<capM&&counts[i]>=3){counts[i]-=3;sets.push({type:'pon',i});rec(i,m+1,p,sets);sets.pop();counts[i]+=3;}
     if(m<capM&&i<27&&i%9<=6&&counts[i+1]&&counts[i+2]){counts[i]--;counts[i+1]--;counts[i+2]--;sets.push({type:'chi',i});rec(i,m+1,p,sets);sets.pop();counts[i]++;counts[i+1]++;counts[i+2]++;}
-    if(p<2&&counts[i]>=2){counts[i]-=2;sets.push({type:'pair',i});rec(i,m,p+1,sets);sets.pop();counts[i]+=2;}
+    if(p<(CFG.pairLadder?6:2)&&counts[i]>=2){counts[i]-=2;sets.push({type:'pair',i});rec(i,m,p+1,sets);sets.pop();counts[i]+=2;}
     counts[i]--;rec(i,m,p,sets);counts[i]++; }
   rec(0,0,0,[]); return best; }
 function takeTiles(S,sets){ const used=[]; for(const s of sets){ const needI=s.type==='chi'?[s.i,s.i+1,s.i+2]:s.type==='pon'?[s.i,s.i,s.i]:[s.i,s.i]; for(const n of needI){ let k=S.hand.findIndex(t=>idx(t)===n&&t.red); if(k<0) k=S.hand.findIndex(t=>idx(t)===n); used.push(S.hand[k]); S.hand.splice(k,1);} } return used; }
@@ -30,7 +31,7 @@ function findCall(S){ const hand=S.hand,o=S.open.length; const cur=handShanten(h
     if(ri<27){ const rk=ri%9; const f=d=>hand.find(t=>idx(t)===ri+d); for(const [d1,d2] of [[-2,-1],[-1,1],[1,2]]){ if(rk+d1<0||rk+d2>8) continue; const a=f(d1),b=f(d2); if(a&&b) cands.push([a,b,'chi']); } }
     for(const [a,b,type,c3] of cands){ const rest=hand.filter(t=>t!==a&&t!==b&&t!==c3); const sh=handShanten(rest,o+1); if(sh<cur&&(!best||sh<best.sh)) best={r,a,b,c3,type,sh}; } }
   return best; }
-function playCtx(S,kind,sel,info){ const ctx=scoreCtx(S,kind,sel,info); S.firstPlayDone=true; S.stats.rungs[ctx.meldType]=(S.stats.rungs[ctx.meldType]||0)+1; for(const y of ctx.yaku) S.stats.yaku[y.key]=(S.stats.yaku[y.key]||0)+1; if(kind==='hand'&&ctx.yaku.some(y=>y.key==='rinshan')) STATS.rinshan++; for(const k of S.talismans) if(TAL[k].afterScore) TAL[k].afterScore(ctx,S); S.plays--; S.score+=ctx.total; S.money+=ctx.money; return ctx; }
+function playCtx(S,kind,sel,info){ const ctx=scoreCtx(S,kind,sel,info); S.firstPlayDone=true; S.stats.rungs[ctx.meldType]=(S.stats.rungs[ctx.meldType]||0)+1; RUNGTOT[ctx.meldType]=(RUNGTOT[ctx.meldType]||0)+1; for(const y of ctx.yaku) S.stats.yaku[y.key]=(S.stats.yaku[y.key]||0)+1; if(kind==='hand'&&ctx.yaku.some(y=>y.key==='rinshan')) STATS.rinshan++; for(const k of S.talismans) if(TAL[k].afterScore) TAL[k].afterScore(ctx,S); S.plays--; S.score+=ctx.total; S.money+=ctx.money; return ctx; }
 function playBlind(S,stats){
   const kind=['small','big','boss'][S.blindIndex]; S.boss=kind==='boss'?S.bossOrder[S.ante-1]:null; S.target=Math.floor(CFG.anteBase[S.ante-1]*CFG.blindMult[kind]);
   S.plays=Math.max(1,CFG.playsPerBlind+S.bonusPlays+talMod(S,'plays')+(hasF(S,'bamboo')?1:0)); S.discards=CFG.discardsPerBlind+talMod(S,'discards')+(hasF(S,'orchid')?1:0);
@@ -67,7 +68,7 @@ function shop(S){
   const XM=new Set(['oni','ryu','nue','hannya','gashadokuro','rokurokubi','ushioni','nurarihyon','mizuchi','sekito','takibi','hoshizora','mabo','chochin','oshi','daimyo']);
   if(ORDERED) S.talismans.sort((a,b)=>(XM.has(a)?1:0)-(XM.has(b)?1:0));
 }
-const reach=new Array(9).fill(0); const dieAt={}; let wins=0; const moneyAt={}; const talAt={}; const stats={hands:0,partials:0,calls:0,kans:0,blinds:0}; const STATS={rinshan:0};
+const reach=new Array(9).fill(0); const dieAt={}; let wins=0; const moneyAt={}; const talAt={}; const stats={hands:0,partials:0,calls:0,kans:0,blinds:0}; const STATS={rinshan:0}; const RUNGTOT={};
 for(let r=0;r<RUNS;r++){
   const S=newS(); globalThis.S=S; let alive=true;
   while(alive){
@@ -82,4 +83,5 @@ console.log(`[${VARIANT}${ORDERED?', Talismans ordered +Mult before xMult':', Ta
 console.log('Reached Ante:', [2,3,4,5,6,7,8].map(a=>`A${a} ${(100*reach[a-1]/RUNS).toFixed(0)}%`).join('  '), ` | WON ${(100*wins/RUNS).toFixed(1)}%`);
 console.log('Avg money / Talismans entering Ante:', [2,3,4,5,6,7,8].filter(a=>reach[a-1]).map(a=>`A${a} $${(moneyAt[a]/reach[a-1]).toFixed(0)} / ${(talAt[a]/reach[a-1]).toFixed(1)}`).join('  '));
 console.log('Deaths:', Object.entries(dieAt).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([k,v])=>`${k} ${(100*v/RUNS).toFixed(0)}%`).join(' | '));
+const rt=Object.values(RUNGTOT).reduce((a,b)=>a+b,0); console.log('Plays by rung: '+Object.entries(RUNGTOT).sort((a,b)=>b[1]-a[1]).map(([k,v])=>k+' '+(100*v/rt).toFixed(0)+'%').join(', '));
 console.log(`Per blind: ${(stats.hands/stats.blinds).toFixed(2)} complete hands, ${(stats.partials/stats.blinds).toFixed(2)} partials, ${(stats.calls/stats.blinds).toFixed(2)} calls, ${(stats.kans/stats.blinds).toFixed(3)} Kans | Rinshan Kaihou wins: ${STATS.rinshan} (${(100*STATS.rinshan/Math.max(1,stats.hands)).toFixed(2)}% of complete hands)`);

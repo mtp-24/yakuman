@@ -25,13 +25,13 @@ function partitionPlay(tiles) {
   let best = null;
   function rec(i, melds, pairs) {
     while (i < 34 && counts[i] === 0) i++;
-    if (i >= 34) { if (pairs.length === 2 && melds.length) return; const sc = melds.length * 10 + pairs.length + melds.filter(m => m.type === 'kan').length * 0.1; if (!best || sc > best.sc) best = { melds: melds.slice(), pairs: pairs.slice(), sc }; return; }
+    if (i >= 34) { if (pairs.length >= 2 && melds.length) return; const sc = melds.length * 10 + pairs.length + melds.filter(m => m.type === 'kan').length * 0.1; if (!best || sc > best.sc) best = { melds: melds.slice(), pairs: pairs.slice(), sc }; return; }
     if (melds.length < 4) {
       if (counts[i] >= 4) { counts[i] -= 4; melds.push({ type: 'kan', i }); rec(i, melds, pairs); melds.pop(); counts[i] += 4; }
       if (counts[i] >= 3) { counts[i] -= 3; melds.push({ type: 'pon', i }); rec(i, melds, pairs); melds.pop(); counts[i] += 3; }
       if (i < 27) for (const sh of CHI_SHAPES()) { const a = i + sh[1], b = i + sh[2]; if ((i % 9) + sh[2] > 8 || !counts[a] || !counts[b]) continue; counts[i]--; counts[a]--; counts[b]--; melds.push({ type: 'chi', i, shape: sh }); rec(i, melds, pairs); melds.pop(); counts[i]++; counts[a]++; counts[b]++; }
     }
-    if (pairs.length < 2 && counts[i] >= 2) { counts[i] -= 2; pairs.push(i); rec(i, melds, pairs); pairs.pop(); counts[i] += 2; }
+    if (pairs.length < (CFG.pairLadder ? 6 : 2) && counts[i] >= 2) { counts[i] -= 2; pairs.push(i); rec(i, melds, pairs); pairs.pop(); counts[i] += 2; }
   }
   rec(0, [], []);
   if (!best) return null;
@@ -41,7 +41,7 @@ function partitionPlay(tiles) {
 function rungInfo(part) {
   if (part.single) return { key: 'single', name: MELD_LABEL.single, ...CFG.meldBase.single };
   const m = part.melds.length, p = part.pairs.length ? 1 : 0;
-  if (m === 0) return part.pairs.length === 2 ? { key: 'twopair', name: MELD_LABEL.twopair, ...CFG.meldBase.twopair } : { key: 'pair', name: MELD_LABEL.pair, ...CFG.meldBase.pair };
+  if (m === 0) { const np = part.pairs.length; if (np >= 3 && CFG.pairRungs[np]) { const r = CFG.pairRungs[np]; return { key: 'pairs' + np, name: r.name, chips: r.chips, han: r.han }; } return np === 2 ? { key: 'twopair', name: MELD_LABEL.twopair, ...CFG.meldBase.twopair } : { key: 'pair', name: MELD_LABEL.pair, ...CFG.meldBase.pair }; }
   if (m === 1) { const t = part.melds[0].type, b = CFG.meldBase[t]; return { key: t, name: MELD_LABEL[t] + (p ? ' + Pair' : ''), chips: b.chips + (p ? 10 : 0), han: b.han }; }
   const r = CFG.rungs[m + ',' + p]; return { key: 'rung' + m + p, name: r.name, chips: r.chips, han: r.han };
 }

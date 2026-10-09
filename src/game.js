@@ -673,9 +673,11 @@ function yakuHTML() {
   h += `<div style="margin-top:12px"><button id="mClose" class="primary">Close</button></div>`;
   return h;
 }
+let setupSel = { deck: 0, stake: 0 };
 function setupHTML() {
-  const radio = (name, obj, cur) => Object.entries(obj).map(([k, v]) => `<label class="opt"><input type="radio" name="${name}" value="${k}" ${k === cur ? 'checked' : ''}><b>${v.name}</b><span class="muted">${v.desc}</span></label>`).join('');
-  return `<h2>New Run</h2><div class="setup"><div><div class="label">Wall</div>${radio('deck', DECKS, 'standard')}</div><div><div class="label">Stake</div>${radio('stake', STAKES, 'white')}<div class="label" style="margin-top:12px">Seed</div><input id="seedInput" placeholder="random" maxlength="24" autocomplete="off"><div class="muted" style="font-size:11px;margin-top:4px">Share a seed and the same Wall, shops and bosses come up for everyone. Leave blank for a random run.</div></div></div>
+  const car = (name, obj) => { const keys = Object.keys(obj); const i = ((setupSel[name] % keys.length) + keys.length) % keys.length; const v = obj[keys[i]]; return `<div class="carousel" data-car="${name}"><button class="ghost arrow" data-nav="${name}:-1" title="Previous">&#9664;</button><div class="carcard"><input type="hidden" name="${name}" value="${keys[i]}"><b>${v.name}</b><span class="muted">${v.desc}</span><span class="dots">${keys.map((k, j) => `<i class="${j === i ? 'on' : ''}"></i>`).join('')}</span></div><button class="ghost arrow" data-nav="${name}:1" title="Next">&#9654;</button></div>`; };
+  return `<h2>New Run</h2><div class="setup"><div><div class="label">Wall</div>${car('deck', DECKS)}</div><div><div class="label">Stake</div>${car('stake', STAKES)}</div></div>
+  <div class="label" style="margin-top:12px">Seed</div><input id="seedInput" placeholder="random" maxlength="24" autocomplete="off" style="max-width:320px"><div class="muted" style="font-size:11px;margin-top:4px">Share a seed and the same Wall, shops and bosses come up for everyone. Leave blank for a random run.</div>
   <div style="display:flex;gap:8px;margin-top:14px"><button id="mStartRun" class="primary">Start Run</button><button id="mClose">Cancel</button></div>`;
 }
 function menuHTML(hasSave) {
@@ -728,7 +730,8 @@ function bindEvents() {
     if (t.dataset.tab) { infoTab = t.dataset.tab; showModal(yakuHTML(), true); return; }
     if (t.id === 'mClose') { hideModal(); render(); }
     else if (t.id === 'mNewRun' || t.id === 'mStart') { showModal(setupHTML(), true); }
-    else if (t.id === 'mStartRun') { const deck = ($('#modal input[name=deck]:checked') || {}).value, stake = ($('#modal input[name=stake]:checked') || {}).value, seed = ($('#seedInput') || {}).value; hideModal(); newRun({ deck, stake, seed }); }
+    else if (t.dataset.nav) { const [name, d] = t.dataset.nav.split(':'); const seed = ($('#seedInput') || {}).value || ''; setupSel[name] += +d; showModal(setupHTML(), true); $('#seedInput').value = seed; }
+    else if (t.id === 'mStartRun') { const deck = ($('#modal input[name=deck]') || {}).value, stake = ($('#modal input[name=stake]') || {}).value, seed = ($('#seedInput') || {}).value; hideModal(); newRun({ deck, stake, seed }); }
     else if (t.id === 'mContinue') { hideModal(); render(); }
     else if (t.id === 'mRules') { showModal(rulesHTML() + '', true); $('#mClose').onclick = () => { showModal(menuHTML(!!load()), true); }; }
     else if (t.id === 'mNext') { S.shop = null; S.msg = ''; startBlind(); render(); }

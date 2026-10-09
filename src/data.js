@@ -19,6 +19,9 @@ const CFG = {
   // Multi-meld plays ("ladder B"). Key = melds,pair. A single meld + pair uses the meld's base +10 chips.
   rungs: { '2,0': { name: 'Two Melds', chips: 30, han: 1 }, '2,1': { name: 'Two Melds + Pair', chips: 40, han: 1 }, '3,0': { name: 'Three Melds', chips: 60, han: 2 }, '3,1': { name: 'Ready Hand', chips: 80, han: 2 }, '4,0': { name: 'Four Melds', chips: 100, han: 2 }, '4,1': { name: 'Four Melds + Pair', chips: 110, han: 2 } },
   kanBonus: { chips: 20, han: 1 },   // per Kan inside a multi-meld play
+  // Optional pair ladder (experiment): plays of 3-6 different pairs with no melds. Off by default.
+  pairLadder: false,
+  pairRungs: { 3: { name: 'Three Pair', chips: 25, han: 1 }, 4: { name: 'Four Pair', chips: 40, han: 1 }, 5: { name: 'Five Pair', chips: 55, han: 2 }, 6: { name: 'Six Pair', chips: 70, han: 2 } },
   scrollChips: 10, scrollHan: 1,
   // Han -> multiplier. Index = Han. 13+ = x100.
   // Playtest 2: hand 17 (was 14), 5 discards (was 3), up to 7 tiles per discard (was 5).
