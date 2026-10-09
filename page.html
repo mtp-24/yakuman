@@ -751,6 +751,19 @@ button.pulse{animation:btnpulse2 2.6s ease-out infinite}
 .slot.ed-poly::before,.shopcard.ed-poly::before{opacity:.4;animation:edpoly 20s linear infinite}
 .slot.ed-poly::after,.shopcard.ed-poly::after{animation:edpoly 20s linear infinite}
 @media (prefers-reduced-motion:reduce){.slot.ed-holo::before,.shopcard.ed-holo::before,.slot.ed-holo::after,.shopcard.ed-holo::after,.slot.ed-poly::before,.shopcard.ed-poly::before,.slot.ed-poly::after,.shopcard.ed-poly::after{animation:none}}
+
+/* All edition effects share one 15 s cycle. --edd is a negative delay set from a shared clock when a card is drawn
+   (syncEditions in game.js), so redraws continue the cycle instead of restarting it and every card stays in step. */
+.slot.ed-holo::before,.shopcard.ed-holo::before{opacity:.5;
+  background:radial-gradient(circle,rgba(255,255,255,.22) 0 .7px,transparent 1.2px) 0 0/15px 15px,radial-gradient(circle,rgba(255,255,255,.12) 0 .6px,transparent 1.1px) 7px 8px/15px 15px,
+    linear-gradient(125deg,rgba(255,90,170,.2),rgba(120,220,255,.2) 28%,rgba(190,140,255,.18) 52%,rgba(255,230,140,.16) 76%,rgba(255,90,170,.2)) 0 0/260% 260%;
+  animation:holoslide15 15s ease-in-out infinite;animation-delay:var(--edd,0s)}
+@keyframes holoslide15{0%,100%{background-position:0 0,7px 8px,0% 0%}50%{background-position:0 0,7px 8px,100% 100%}}
+.slot.ed-holo::after,.shopcard.ed-holo::after{animation:holoring15 15s ease-in-out infinite;animation-delay:var(--edd,0s)}
+@keyframes holoring15{0%,100%{background-position:0% 0%}50%{background-position:100% 100%}}
+.slot.ed-poly::before,.shopcard.ed-poly::before,.slot.ed-poly::after,.shopcard.ed-poly::after{animation:edpoly 15s linear infinite;animation-delay:var(--edd,0s)}
+.slot.ed-foil::before,.shopcard.ed-foil::before,.slot.ed-neg::before,.shopcard.ed-neg::before{animation:edsheen3 15s ease-in-out infinite;animation-delay:var(--edd,0s)}
+@media (prefers-reduced-motion:reduce){.slot[class*="ed-"]::before,.shopcard[class*="ed-"]::before,.slot[class*="ed-"]::after,.shopcard[class*="ed-"]::after{animation:none}}
 </style>
 <div id="app">
 <header>
@@ -2150,9 +2163,12 @@ function render() {
   $('#btnYaku').textContent = 'Run Info';
   document.querySelectorAll('.zhead > .muted').forEach(e => { e.title = e.textContent; });   // full text on hover when a header is truncated
   translateDOM($('#app')); fitNumbers();
-  tileMotion(motionBefore, freshTiles);
+  tileMotion(motionBefore, freshTiles); syncEditions();
   save();
 }
+// Edition effects run on one shared 15 s clock: each newly drawn edition card gets a negative delay matching the
+// clock, so a redraw picks up mid-cycle and all cards stay in step.
+function syncEditions() { const d = `${-(performance.now() % 15000).toFixed(0)}ms`; document.querySelectorAll('.slot[class*="ed-"], .shopcard[class*="ed-"]').forEach(e => { if (!e.style.getPropertyValue('--edd')) e.style.setProperty('--edd', d); }); }
 // ===================== TILE MOTION =====================
 // The board is rebuilt on every render, so tiles would otherwise jump. Before a render we note where each tile was;
 // afterwards each tile animates from there (FLIP). Selecting lifts with a small spring, discards fly into the River
@@ -2618,7 +2634,7 @@ function decorateBanner(cls) {
   const tone = (cls || '').split(' ').map(c => BANNER_TONES[c]).filter(Boolean).pop() || 'teal';
   head.classList.add('banner', 'bn-' + tone); head.insertAdjacentHTML('beforeend', '<div class="bannerflaps" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>'); m.classList.add('hasbanner');
 }
-function showModal(html, pinned, cls) { modalPinned = !!pinned; $('#modal').className = 'modal' + (cls ? ' ' + cls : ''); $('#modal').innerHTML = html; if ($('#modal #mClose')) $('#modal').insertAdjacentHTML('afterbegin', CLOSE_X); decorateBanner(cls); fillHero($('#modal')); fillColTiles($('#modal')); fillTileArt($('#modal')); $('#overlay').hidden = false; fillExamples($('#modal')); translateDOM($('#modal')); }
+function showModal(html, pinned, cls) { modalPinned = !!pinned; $('#modal').className = 'modal' + (cls ? ' ' + cls : ''); $('#modal').innerHTML = html; if ($('#modal #mClose')) $('#modal').insertAdjacentHTML('afterbegin', CLOSE_X); decorateBanner(cls); syncEditions(); fillHero($('#modal')); fillColTiles($('#modal')); fillTileArt($('#modal')); $('#overlay').hidden = false; fillExamples($('#modal')); translateDOM($('#modal')); }
 function hideModal() { modalPinned = false; $('#overlay').hidden = true; }
 // A Talisman you gain starts fresh, like a Joker in Balatro: progress from an earlier copy you sold is gone.
 // Its state lives under its own key, or its key plus a capitalised suffix (kasaobake, shiroSuit).

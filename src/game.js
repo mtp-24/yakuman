@@ -626,9 +626,12 @@ function render() {
   $('#btnYaku').textContent = 'Run Info';
   document.querySelectorAll('.zhead > .muted').forEach(e => { e.title = e.textContent; });   // full text on hover when a header is truncated
   translateDOM($('#app')); fitNumbers();
-  tileMotion(motionBefore, freshTiles);
+  tileMotion(motionBefore, freshTiles); syncEditions();
   save();
 }
+// Edition effects run on one shared 15 s clock: each newly drawn edition card gets a negative delay matching the
+// clock, so a redraw picks up mid-cycle and all cards stay in step.
+function syncEditions() { const d = `${-(performance.now() % 15000).toFixed(0)}ms`; document.querySelectorAll('.slot[class*="ed-"], .shopcard[class*="ed-"]').forEach(e => { if (!e.style.getPropertyValue('--edd')) e.style.setProperty('--edd', d); }); }
 // ===================== TILE MOTION =====================
 // The board is rebuilt on every render, so tiles would otherwise jump. Before a render we note where each tile was;
 // afterwards each tile animates from there (FLIP). Selecting lifts with a small spring, discards fly into the River
@@ -1094,7 +1097,7 @@ function decorateBanner(cls) {
   const tone = (cls || '').split(' ').map(c => BANNER_TONES[c]).filter(Boolean).pop() || 'teal';
   head.classList.add('banner', 'bn-' + tone); head.insertAdjacentHTML('beforeend', '<div class="bannerflaps" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>'); m.classList.add('hasbanner');
 }
-function showModal(html, pinned, cls) { modalPinned = !!pinned; $('#modal').className = 'modal' + (cls ? ' ' + cls : ''); $('#modal').innerHTML = html; if ($('#modal #mClose')) $('#modal').insertAdjacentHTML('afterbegin', CLOSE_X); decorateBanner(cls); fillHero($('#modal')); fillColTiles($('#modal')); fillTileArt($('#modal')); $('#overlay').hidden = false; fillExamples($('#modal')); translateDOM($('#modal')); }
+function showModal(html, pinned, cls) { modalPinned = !!pinned; $('#modal').className = 'modal' + (cls ? ' ' + cls : ''); $('#modal').innerHTML = html; if ($('#modal #mClose')) $('#modal').insertAdjacentHTML('afterbegin', CLOSE_X); decorateBanner(cls); syncEditions(); fillHero($('#modal')); fillColTiles($('#modal')); fillTileArt($('#modal')); $('#overlay').hidden = false; fillExamples($('#modal')); translateDOM($('#modal')); }
 function hideModal() { modalPinned = false; $('#overlay').hidden = true; }
 // A Talisman you gain starts fresh, like a Joker in Balatro: progress from an earlier copy you sold is gone.
 // Its state lives under its own key, or its key plus a capitalised suffix (kasaobake, shiroSuit).
