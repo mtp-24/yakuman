@@ -455,10 +455,10 @@ const BOSSES = {
 const TALISMANS = [
   { key: 'kappa', name: 'Kappa', cost: 6, desc: 'Furiten no longer halves your score. Instead, +100 Chips for each copy of the winning tile sitting in your River.' },
   { key: 'kitsune', name: 'Kitsune', cost: 6, desc: '+8 Mult on every Complete Hand.', onScore: c => c.kind === 'hand' ? { mult: 8 } : null },
-  { key: 'tanuki', name: 'Tanuki', cost: 4, desc: '+30 Chips on every partial play.', onScore: c => c.kind === 'meld' ? { chips: 30 } : null },
+  { key: 'tanuki', name: 'Tanuki', cost: 4, desc: '+30 Chips on every play.', onScore: () => ({ chips: 30 }) },
   { key: 'maneki', name: 'Maneki-neko', cost: 5, desc: 'Earn ¥3 extra when a Blind is defeated.', onBlindEnd: () => 3 },
-  { key: 'tengu', name: 'Tengu', cost: 6, desc: '+4 Mult for every Chi in a partial play.', onScore: c => c.kind === 'meld' && c.nChi ? { mult: 4 * c.nChi } : null },
-  { key: 'oni', name: 'Oni', cost: 6, desc: 'Partial plays containing a Pon or Kan score x1.5 Mult.', onScore: c => c.kind === 'meld' && (c.nPon || c.nKan) ? { xmult: 1.5 } : null },
+  { key: 'tengu', name: 'Tengu', cost: 6, desc: '+4 Mult for every Chi in the play, complete hands included.', onScore: c => c.nChi ? { mult: 4 * c.nChi } : null },
+  { key: 'oni', name: 'Oni', cost: 6, desc: 'x1.5 Mult if the play contains a Pon or Kan, complete hands included.', onScore: c => (c.nPon || c.nKan) ? { xmult: 1.5 } : null },
   { key: 'hitotsume', name: 'Hitotsume-kozō', cost: 4, desc: 'Lone Tile plays gain +40 Chips and +1 Han.', onScore: c => c.kind === 'meld' && c.meldType === 'single' ? { chips: 40, han: 1 } : null },
   { key: 'daruma', name: 'Daruma', cost: 5, desc: '+4 Chips for every tile in the River when you score.', onScore: (c, S) => S.river.length ? { chips: 4 * S.river.length } : null },
   { key: 'tsuru', name: 'Tsuru', cost: 5, desc: 'Honor tiles give +10 Chips.', onTile: t => isHonor(t) ? { chips: 10 } : null },
