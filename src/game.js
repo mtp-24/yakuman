@@ -1159,7 +1159,8 @@ function cashoutHTML() {
   h += `<div class="cashfoot"><span class="muted" style="font-size:12px">You now have</span>${walletHTML()}</div><button id="mCashOut" class="primary cashbtn">Cash Out →</button>`;
   return h;
 }
-const walletHTML = () => `<span class="wallet"><span class="cur">YEN</span><span class="v num">¥${S.money}</span></span>`;
+// Same look as the play area's purse: the coin, the amount, and JPY or HKD underneath.
+const walletHTML = () => `<span class="wallet purse"><span class="coin" aria-hidden="true">${coinSVG()}</span><span class="wtx"><span class="pv num">¥${S.money}</span><span class="wl" data-notr>${LANG === 'hk' ? 'HKD' : 'JPY'}</span></span></span>`;
 function shopHTML() {
   const r = S.reward; const items = [...S.shop.cards, S.shop.scroll, S.shop.flower, S.shop.pack].filter(Boolean);
   const next = ({ small: 'Small Blind', big: 'Big Blind', boss: 'Boss Blind' })[blindKind()];
@@ -1171,8 +1172,8 @@ function shopHTML() {
   const canReroll = S.shop.freeReroll || rerollCost() <= S.money;
   h += `<div class="shoplayout"><aside class="shoprail">
     <button id="mNext" class="primary nextbtn"><span class="nb-main">Next Blind <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M3 8h9M8.5 3.5 13 8l-4.5 4.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><small>Ante ${S.ante} · ${nextBoss ? nextBoss.name : next}</small></button>
-    <button id="mReroll" class="ghost railbtn rerollbtn" ${canReroll ? '' : 'disabled title="Not enough money to reroll"'}><span>Reroll Cards</span><b class="num">${S.shop.freeReroll ? 'Free' : '¥' + rerollCost()}</b></button>
-    <button id="mDeck" class="ghost railbtn"><span>View Wall</span><b class="num">${(S.deck || []).length}</b></button></aside>
+    <button id="mReroll" class="ghost railbtn rerollbtn" ${canReroll ? '' : 'disabled title="Not enough money to reroll"'}><span class="rbl"><svg class="rbico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8M4 4v4h4M4 13a8 8 0 0 0 14.3 4.9L20 16M20 20v-4h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Reroll Cards</span><b class="num">${S.shop.freeReroll ? 'Free' : '¥' + rerollCost()}</b></button>
+    <button id="mDeck" class="ghost railbtn"><span class="rbl"><span class="wallico" aria-hidden="true"><i></i><i></i><i></i></span>View Wall</span><b class="num">${(S.deck || []).length}</b></button></aside>
     <div class="shopmain"><div class="shelf"><div class="shelflabel">Cards</div><div class="shelfrow">${[...S.shop.cards, S.shop.scroll].map(it => cardHTML(it, at(it))).join('')}</div></div>
     <div class="shelf"><div class="shelflabel">${S.shop.flower ? 'Flower and Booster Pack' : 'Booster Pack'}</div><div class="shelfrow">${[S.shop.flower, S.shop.pack].filter(Boolean).map(it => cardHTML(it, at(it))).join('')}</div></div>
     ${S.shop.freePacks.length ? `<div class="freepacks">${S.shop.freePacks.map((pk, i) => `<button class="primary" data-freepack="${i}">Open Free ${PACKS[pk].name}</button>`).join('')}</div>` : ''}</div></div>`;
