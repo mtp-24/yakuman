@@ -103,6 +103,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 92: Tiles Away helper hint on by default (Waiting On and Without These stay off); Settings and Rules text updated.
 - Build 93: scoring box keeps one height (145px) from empty to preview to scoring to total. Fixed 36px title row: the play name fits itself (22px down to 12px, up to two lines, never cut off) and the total takes the same row at the end, with ink-balanced spacing; preview and scoring now show the same title; "click to skip" line removed (clicking anywhere still skips); the Han caption is always two lines. Board slots show their kind (Talisman, Omikuji, Kami Spirit, edition) on a small line above the name, like owned cards in the shop, so the label never wraps differently.
 - Build 94: the scoring box title stays blank until a play is selected (no "Select a play" text); height unchanged.
+- Build 95: more space between the shop footer's "Next: Ante …" text and the Continue button.
 - Build 7: multi-meld play ladder (Two Melds ... Four Melds), targets 300...45000, retrigger and scaling Talismans, Wall-Builder rewording, scoring animation.
 
 ## Simulators (in `sim/`)

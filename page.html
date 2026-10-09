@@ -1960,7 +1960,7 @@ function shopHTML() {
   if (S.shop.freePacks.length) h += `<div style="display:flex;gap:8px;flex-wrap:wrap;margin:6px 0">${S.shop.freePacks.map((pk, i) => `<button class="primary" data-freepack="${i}">Open Free ${PACKS[pk].name}</button>`).join('')}</div>`;
   h += `<div class="msg${S.msgErr ? ' err' : ''}" style="min-height:18px;margin:2px 0 6px">${S.msg || ''}</div>`;
   h += ownedHTML();
-  h += `<div class="shopfoot"><button id="mDeck" class="ghost">View Wall</button><span style="flex:1"></span><span class="muted">Next: Ante ${S.ante} ${next}${nextBoss ? ' · ' + nextBoss.name : ''}</span><button id="mNext" class="primary">Continue →</button></div>`;
+  h += `<div class="shopfoot"><button id="mDeck" class="ghost">View Wall</button><span style="flex:1"></span><span class="muted" style="margin-right:8px">Next: Ante ${S.ante} ${next}${nextBoss ? ' · ' + nextBoss.name : ''}</span><button id="mNext" class="primary">Continue →</button></div>`;
   return h;
 }
 function ownedHTML() {
