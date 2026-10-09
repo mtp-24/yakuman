@@ -288,6 +288,10 @@ button.pulse{animation:btnpulse 1s ease-in-out infinite;box-shadow:0 0 0 0 rgba(
 .chipbox.bump,.multbox.bump{animation:boxshake .32s cubic-bezier(.36,.07,.19,.97)}
 @keyframes boxshake{0%{transform:translate(0,0) scale(1)}20%{transform:translate(-3px,1px) scale(1.12)}40%{transform:translate(3px,-1px) scale(1.12)}60%{transform:translate(-2px,1px) scale(1.06)}80%{transform:translate(2px,0) scale(1.03)}100%{transform:translate(0,0) scale(1)}}
 @media (prefers-reduced-motion:reduce){.chipbox.bump,.multbox.bump{animation:none}}
+.roundscore{margin-top:6px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:6px 10px}
+.roundscore .rs{font-family:var(--display);font-size:26px;color:var(--fg);line-height:1.1} .roundscore .rs.met{color:var(--good)}
+.roundscore .rs.bump{animation:boxshake .32s cubic-bezier(.36,.07,.19,.97)}
+.handbox .hb-total .tot{font-size:30px;display:block;text-align:center;width:100%}
 .tag{display:inline-block;font-size:10px;padding:1px 6px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);color:var(--muted);margin-left:4px}
 .flowers{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}
 .flowerchip{font-size:11px;background:rgba(240,163,184,.12);border:1px solid rgba(240,163,184,.4);border-radius:10px;padding:1px 7px;color:#f0a3b8}

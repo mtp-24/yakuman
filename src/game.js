@@ -155,7 +155,7 @@ async function doPlay() {
   S.played.push(...sel.filter(keep)); S.hand = S.hand.filter(t => !sel.includes(t));
   if (opt.type === 'hand') { S.played.push(...openTiles().filter(keep)); S.open = []; }
   S.selected = []; S.selRiver = null;
-  popScore(ctx.total);
+
   setMsg(`${ctx.desc}: ${ctx.chips} × ${fmtMult(ctx.mult)} = ${ctx.total}${ctx.furiten ? ' (Furiten!)' : ''}${ctx.shatter.length ? ` · ${ctx.shatter.length} Glass tile${ctx.shatter.length > 1 ? 's' : ''} shattered` : ''}`);
   if (S.score >= S.target) { winBlind(); return render(); }
   draw();
@@ -399,7 +399,7 @@ function renderBlind() {
   if (inBlind && S.boss) h += `<div class="boss-desc">${BOSSES[S.boss].desc}${S.boss === 'collector' && S.bossSuit ? ` <b>This Blind: ${SUIT_EN[S.bossSuit]}.</b>` : ''}${S.boss === 'gatekeeper' ? (S.firstPlayDone ? ' <b>First Play done.</b>' : ' <b>Your next Play scores 0.</b>') : ''}</div>`;
   if (S.tags && S.tags.length) h += `<div class="label" style="margin-top:8px">Tags</div><div class="flowers">${S.tags.map(t => `<span class="flowerchip" title="${TAGS[t].desc}">${TAGS[t].name}</span>`).join('')}</div>`;
   h += `<div class="label" style="margin-top:8px">Score at Least</div><div class="target num">${inBlind ? S.target.toLocaleString() : Math.floor(CFG.anteBase[Math.min(S.ante, CFG.antes) - 1] * CFG.blindMult[kind]).toLocaleString()}</div>`;
-  if (inBlind) h += `<div class="bar"><i style="width:${pct}%"></i></div><div class="num" style="font-size:13px">Scored <b style="color:var(--accent)">${S.score.toLocaleString()}</b></div>`;
+  if (inBlind) h += `<div class="roundscore"><div class="label">Round Score</div><div class="rs num${S.score >= S.target ? ' met' : ''}" id="roundScore">${S.score.toLocaleString()}</div></div>`;
   if (inBlind) {
     const pv = PREVIEW;
     if (S.busy) h += `<div class="handbox scoring" id="scorebox"></div>`;
@@ -588,10 +588,10 @@ function wait(ms) { return new Promise(r => setTimeout(r, (motionOK && !skipAnim
 async function animateScore(ctx) {
   skipAnim = false; skipArmed = false; setTimeout(() => { skipArmed = true; }, 250);
   const box = $('#scorebox'); if (!box) return;
-  box.innerHTML = `<div class="hb-name">${tr(ctx.rungName || '')}${ctx.kind === 'hand' ? ' <span class="muted">· ' + tr(ctx.desc) + '</span>' : ''}</div><div class="hb-math num"><span class="chipbox">0</span><span class="px">×</span><span class="multbox">1</span></div><div class="hb-total num"><span class="eq">=</span><span class="tot">0</span></div><div class="muted" style="font-size:10px;margin-top:4px">click to skip</div>`;
+  box.innerHTML = `<div class="hb-name">${tr(ctx.rungName || '')}${ctx.kind === 'hand' ? ' <span class="muted">· ' + tr(ctx.desc) + '</span>' : ''}</div><div class="hb-math num"><span class="chipbox">0</span><span class="px">×</span><span class="multbox">1</span></div><div class="hb-total num" hidden><span class="tot">0</span></div><div class="muted" style="font-size:10px;margin-top:4px">click to skip</div>`;
   // the breakdown streams into the Last Play panel as it happens
   const lp = $('#lastPlay'); lp.innerHTML = `<div class="label">Last Play</div><div style="font-family:var(--display);font-size:15px;margin:2px 0 6px">${tr(ctx.desc)}</div><div class="lp-lines"></div>`;
-  const chipsEl = box.querySelector('.chipbox'), multEl = box.querySelector('.multbox'), totEl = box.querySelector('.tot'), linesBox = lp.querySelector('.lp-lines'), mathEl = box.querySelector('.hb-math');
+  const chipsEl = box.querySelector('.chipbox'), multEl = box.querySelector('.multbox'), totEl = box.querySelector('.tot'), totWrap = box.querySelector('.hb-total'), nameEl = box.querySelector('.hb-name'), linesBox = lp.querySelector('.lp-lines'), mathEl = box.querySelector('.hb-math');
   const tileEls = new Map(); document.querySelectorAll('#hand .tile[data-id], #open .tile[data-id]').forEach(e => tileEls.set(+e.dataset.id, e));
   let chips = 0, han = 0, tileX = 1, mult = null;
   const curMult = () => mult === null ? hanMult(han) * tileX : mult;
@@ -599,7 +599,7 @@ async function animateScore(ctx) {
   const bump = (el, cls) => { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); };
   const setMath = () => {
     const c = Math.max(0, Math.round(chips)), m = fmtMult(curMult());
-    chipsEl.textContent = c; multEl.textContent = m; totEl.textContent = Math.floor(Math.max(0, chips) * curMult()).toLocaleString();
+    chipsEl.textContent = c; multEl.textContent = m;
     if (lastChips !== null && c !== lastChips) bump(chipsEl, 'bump'); if (lastMult !== null && m !== lastMult) bump(multEl, 'bump');
     lastChips = c; lastMult = m;
   };
@@ -619,8 +619,15 @@ async function animateScore(ctx) {
     if (e) e.classList.remove('hit');
   }
   for (const l of ctx.lines) { if (l.base || l.tiles) continue; showLine(l); if (!l.info) applyLine(l); heat(); await wait(l.yaku ? 260 : 180); }
-  chips = ctx.chips; han = ctx.han; mult = ctx.mult; setMath(); heat(); totEl.textContent = ctx.total.toLocaleString();
-  totEl.classList.add('final'); await wait(ctx.kind === 'hand' ? 900 : 550);
+  chips = ctx.chips; han = ctx.han; mult = ctx.mult; setMath(); heat();
+  await wait(350);
+  // the total replaces the play name, then counts down into the round score
+  nameEl.hidden = true; mathEl.hidden = true; totWrap.hidden = false; totEl.textContent = ctx.total.toLocaleString(); totEl.classList.add('final');
+  await wait(ctx.kind === 'hand' ? 700 : 450);
+  const rsEl = $('#roundScore'); const from = S.score, to = S.score + ctx.total; const dur = (motionOK && !skipAnim) ? Math.round(650 * SPEEDS[ANIM_SPEED]) : 0;
+  if (dur > 0) { const t0 = performance.now(); await new Promise(res => { const step = now => { const k = Math.min(1, (now - t0) / dur); const e = 1 - Math.pow(1 - k, 3); totEl.textContent = Math.round(ctx.total * (1 - e)).toLocaleString(); if (rsEl) { rsEl.textContent = Math.round(from + (to - from) * e).toLocaleString(); rsEl.classList.toggle('met', from + (to - from) * e >= S.target); } if (k < 1) requestAnimationFrame(step); else res(); }; requestAnimationFrame(step); }); }
+  if (rsEl) { rsEl.textContent = to.toLocaleString(); rsEl.classList.remove('bump'); void rsEl.offsetWidth; rsEl.classList.add('bump'); }
+  await wait(250);
   skipAnim = false;
 }
 // ===================== MODALS =====================
