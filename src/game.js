@@ -318,10 +318,10 @@ function usePackCard(i) {
   const marks = {}, changed = [], added = [], gone = [];
   for (const t of after) {
     const s = snap.get(t.id);
-    if (!s) { marks[t.id] = 'New'; added.push(tileName(t)); continue; }
-    // Conversions show on the tile itself, so they get only the outline; engravings also get their name.
+    if (!s) { marks[t.id] = true; added.push(tileName(t)); continue; }
+    // Changed tiles get a gold outline; the new face shows what changed, and the message names the tiles.
     const converted = s.suit !== t.suit || s.rank !== t.rank || s.red !== t.red, engraved = s.eng !== t.eng && t.eng;
-    if (engraved) marks[t.id] = ENG[t.eng].name; else if (converted) marks[t.id] = ' ';
+    if (converted || engraved) marks[t.id] = true;
     if (converted || engraved) changed.push(s.name);
   }
   for (const id of order) if (!after.some(t => t.id === id)) gone.push(snap.get(id));
@@ -329,7 +329,7 @@ function usePackCard(i) {
   S.pack.view = order.map(id => after.some(t => t.id === id) ? { id } : { id, gone: snap.get(id) }).concat(after.filter(t => !snap.has(t.id)).map(t => ({ id: t.id })));
   S.pack.marks = marks; S.pack.hand = after.map(t => t.id); S.pack.sel = [];
   it.sold = true; it.used = true; S.pack.left--;
-  const gained = S.money - m0, list = a => a.length > 1 ? a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1] : a[0];
+  const gained = S.money - m0, list = a0 => { const c = {}; for (const n of a0) c[n] = (c[n] || 0) + 1; const a = Object.entries(c).map(([n, k]) => k > 1 ? `${n} ×${k}` : n); return a.length > 1 ? a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1] : a[0]; };
   const parts = []; if (changed.length) parts.push(`used on ${list(changed)}`); if (added.length) parts.push(`added ${list(added)}`); if (gone.length) parts.push(`removed ${list(gone.map(g => g.name))}`); if (gained) parts.push(`+¥${gained}`);
   setMsg(`${def.name}${parts.length ? ': ' + parts.join('; ') : (sel.length ? ' used: no tiles changed' : ' used')}.`);
   // After the last pick the pack stays open so the result can be checked; Done returns to the shop.
@@ -346,8 +346,7 @@ function fillPackHand() {
     const e = tileEl(t, { sel: !v.gone && S.pack.sel.includes(t.id) });
     if (v.gone) e.classList.add('gone'); else if (marks[t.id]) e.classList.add('marked');
     if (!v.gone && !S.pack.done) e.onclick = () => { const s = S.pack.sel, j = s.indexOf(t.id); if (j >= 0) s.splice(j, 1); else s.push(t.id); S.msg = ''; S.pack.marks = {}; S.pack.view = null; render(); };
-    const cap = document.createElement('div'); cap.className = 'pmark'; cap.textContent = v.gone ? '' : (marks[t.id] || '').trim();   // removed tiles are struck through, no caption needed
-    w.appendChild(e); w.appendChild(cap); box.appendChild(w);
+    w.appendChild(e); box.appendChild(w);
   }
   translateDOM($('#modal'));
 }

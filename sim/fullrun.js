@@ -5,6 +5,8 @@ const TAL_PRI={hashi:8,utsushi:7,kagami:7,nopperabo:6,sekito:7,aobozu:5,shiro:4,
 TAL_PRI.kawauso=6;
 const SCR_PRI={'m:hand':6,'m:chi':5,'m:pon':3,'m:pair':2,'m:kan':1,'y:tanyao':4,'y:pinfu':3,'y:yakuhai':3,'y:honitsu':2,'y:toitoi':2,'y:chinitsu':1,'y:chiitoitsu':1,'y:sanshoku':1,'y:ittsu':1,'y:chanta':1};
 const FLW_PRI={bamboo:8,plum:7,orchid:6,chrysanthemum:4,winter:4,summer:4,spring:1,autumn:1};
+// argv[7] 'ryu1': Ryūjin makes only the first Call of each Blind free
+const RYU1=process.argv[7]==='ryu1';
 const RESERVE=+process.argv[4]||0; const ORDERED=process.argv[6]==='ordered'; const VARIANT=process.argv[5]||'base'; CFG.sharkPerAction=true;
 if(VARIANT==='pairs') CFG.pairLadder=true;
 // 'p4d3' style variants set Plays and Discards per Blind (Balatro's defaults are 4 hands and 3 discards)
@@ -70,14 +72,14 @@ function playBlind(S,stats){
   S.wall=shuffle(S.deck.slice()); S.deck=[]; S.hand=[]; S.river=[]; S.lastDiscard=[]; S.open=[]; S.played=[]; S.dora=[]; S.indicators=[]; S.score=0; S.firstPlayDone=false; S.bossSuit=S.boss==='collector'?pick(['m','p','s']):null; setRules(S); draw(S);
   for(const k of S.talismans) if(TAL[k].onBlindStart) TAL[k].onBlindStart(S);
   USE.p0=S.plays; USE.d0=S.discards;
-  const freeCall=S.talismans.some(k=>TAL[k].freeCall); if(S.talismans.includes('kawauso')){ stats.ownedBlinds++; S.everKawauso=true; } const claims0=stats.claims;
+  const freeCall=S.talismans.some(k=>TAL[k].freeCall); let freeLeft=freeCall?(RYU1?1:1e9):0; if(S.talismans.includes('kawauso')){ stats.ownedBlinds++; S.everKawauso=true; } const claims0=stats.claims;
   while(S.plays>0&&S.score<S.target){
     const mNeed=4-S.open.length; const st=bestStructure(S.hand,mNeed);
     if(st.m===mNeed&&st.p===1){ const sel=sortTiles(takeTiles(S,st.sets)); const b=bestHand(sel,S.open,S); if(b){ playCtx(S,'hand',sel.concat(S.open.flatMap(m=>m.tiles)),{yaku:b.yaku,dec:b.dec}); S.played.push(...sel,...S.open.flatMap(m=>m.tiles)); S.open=[]; stats.hands++; draw(S); continue; } else { S.hand.push(...sel); } }
     if(claimOn(S)&&S.river.length){ const c=findClaim(S,mNeed); if(c&&S.score+c.total>=S.target){ doClaim(S,c,stats); continue; } }
     // declare a closed Kan whenever four identical tiles are held
     { const counts={}; for(const t of S.hand) counts[idx(t)]=(counts[idx(t)]||0)+1; const ki=Object.keys(counts).find(k=>counts[k]>=4); if(ki!==undefined&&S.open.length<4){ const four=S.hand.filter(t=>idx(t)===+ki).slice(0,4); S.hand=S.hand.filter(t=>!four.includes(t)); S.open.push({type:'kan',tiles:sortTiles(four),calledId:null,closed:true}); const rp=S.wall.pop(); if(rp){ rp.d=++S.drawSeq; rp.rinshan=true; S.hand.push(rp); } stats.kans++; draw(S); continue; } }
-    if(S.boss!=='fisherman'&&S.river.length&&S.open.length<4&&(freeCall||S.plays>1)){ const c=findCall(S); if(c){ S.hand=S.hand.filter(t=>t!==c.a&&t!==c.b&&t!==c.c3); S.river=S.river.filter(t=>t!==c.r); S.open.push({type:c.type,tiles:sortTiles([c.r,c.a,c.b].concat(c.c3?[c.c3]:[])),calledId:c.r.id}); if(!freeCall)S.plays--; for(const k of S.talismans) if(TAL[k].onCall) TAL[k].onCall(S); stats.calls++; if(c.type==='kan'){ const rp=S.wall.pop(); if(rp){ rp.d=++S.drawSeq; rp.rinshan=true; S.hand.push(rp); } stats.kans++; } if(S.hand.length>cap(S)){ const d=safeDiscards(S,1); if(d.length) S.river.push(d[0]); else S.river.push(S.hand.pop()); } draw(S); continue; } }
+    if(S.boss!=='fisherman'&&S.river.length&&S.open.length<4&&(freeLeft>0||S.plays>1)){ const c=findCall(S); if(c){ S.hand=S.hand.filter(t=>t!==c.a&&t!==c.b&&t!==c.c3); S.river=S.river.filter(t=>t!==c.r); S.open.push({type:c.type,tiles:sortTiles([c.r,c.a,c.b].concat(c.c3?[c.c3]:[])),calledId:c.r.id}); if(freeLeft>0)freeLeft--; else S.plays--; for(const k of S.talismans) if(TAL[k].onCall) TAL[k].onCall(S); stats.calls++; if(c.type==='kan'){ const rp=S.wall.pop(); if(rp){ rp.d=++S.drawSeq; rp.rinshan=true; S.hand.push(rp); } stats.kans++; } if(S.hand.length>cap(S)){ const d=safeDiscards(S,1); if(d.length) S.river.push(d[0]); else S.river.push(S.hand.pop()); } draw(S); continue; } }
     if(S.discards>0){ let max=S.boss==='monk'?3:CFG.maxDiscardTiles; if(S.boss==='loanshark') max=CFG.sharkPerAction?(S.money>=1?max:0):Math.min(max,S.money); if(max>0){ const dead=safeDiscards(S,max); if(dead.length){ S.river.push(...dead); S.lastDiscard=dead.slice(); S.discards--; if(S.boss==='loanshark') S.money-=CFG.sharkPerAction?1:dead.length; for(const k of S.talismans) if(TAL[k].onDiscard) TAL[k].onDiscard(S,dead); draw(S); continue; } } }
     if(claimOn(S)&&S.river.length){ const c=findClaim(S,mNeed); if(c&&c.total>estimatePartial(S,st)){ doClaim(S,c,stats); continue; } }
     // cash a partial (avoid tiny ones under the Wall-Builder if we still have plays to spare)

@@ -110,6 +110,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 99: removed pack tiles show only the red strike (no "Removed" caption; hover says it); the Your Tiles label counts every tile shown, removed ones included.
 - Build 100: converted pack tiles (suit, rank or Red Five changes) show only the gold outline, since the new face is visible; engravings keep their name and duplicates keep "New".
 - Build 101: Tile numbers setting (All Tiles, Characters and Winds by default, or None) controls the corner number or letter on tiles. Blind plate no longer repeats "Small Blind"/"Big Blind" above the name (bosses keep the "Boss Blind" label). The Gatekeeper shows no status until its first Play is done.
+- Build 102: pack results drop all captions (engraving names and "New"): changed and added tiles get only the gold outline, removed tiles only the strike, and the message names the tiles, grouping repeats ("2 Man ×2"). Simulator: argv[7] ryu1 tests a Ryūjin that makes only the first Call each Blind free.
 - Build 7: multi-meld play ladder (Two Melds ... Four Melds), targets 300...45000, retrigger and scaling Talismans, Wall-Builder rewording, scoring animation.
 
 ## Simulators (in `sim/`)
