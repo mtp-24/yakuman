@@ -2889,7 +2889,12 @@ function placeOverlay(boardOnly) {
   const tz = board.querySelector('.talzone'), cut = tz ? Math.max(0, tz.getBoundingClientRect().bottom + 4 - b.top) : 0;
   board.classList.add('cashdim'); board.style.setProperty('--cut', cut + 'px');
   ov.classList.add('boardonly'); Object.assign(ov.style, { left: b.left + 'px', top: top + 'px', width: b.width + 'px', height: (bottom - top) + 'px' });
-  const ac = board.querySelector('.actions'); ov.style.setProperty('--reach', (ac ? Math.max(0, ac.getBoundingClientRect().top - 14 - top) : 0) + 'px');   // on tall screens the tray still reaches up over the action bar
+  // The tray grows up from the screen's bottom edge until its contents sit around the middle of the screen
+  // (and always far enough to cover the action bar).
+  const m = $('#modal'), kids = [...m.children], ac = board.querySelector('.actions');
+  const contentH = kids.length ? kids[kids.length - 1].getBoundingClientRect().bottom - kids[0].getBoundingClientRect().top + 42 : 0;
+  let trayTop = innerHeight / 2 - contentH / 2; if (ac) trayTop = Math.min(trayTop, ac.getBoundingClientRect().top - 14);
+  ov.style.setProperty('--reach', Math.max(0, trayTop - top) + 'px');
 }
 ['resize', 'scroll'].forEach(ev => window.addEventListener(ev, () => { if ($('#overlay').classList.contains('boardonly')) placeOverlay(true); }));
 // Any leftover animation is cancelled first: the cash-out drawer's slide-down holds its end position, and the next modal must not inherit it.
