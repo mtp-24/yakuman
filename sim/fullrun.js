@@ -4,7 +4,9 @@ require('vm').runInThisContext(fs.readFileSync(SRC+'/data.js','utf8')+fs.readFil
 const TAL_PRI={hashi:8,utsushi:7,kagami:7,nopperabo:6,sekito:7,aobozu:5,shiro:4,takibi:3,hoshizora:4,mabo:2,chochin:6,hoshi:6,hatsumode:4,oshi:5,daimyo:3,kasaobake:7,ittanmomen:5,hannya:10,gashadokuro:9,ryujin:8,nureonna:8,ushioni:8,rokurokubi:7,daruma:7,nurarihyon:7,oni:6,ryu:6,kitsune:6,sazaeoni:6,tengu:6,komainu:6,maneki:5,nekomata:5,shikigami:5,yatagarasu:5,amanojaku:5,tsukumogami:5,kodama:4,namazu:4,jorogumo:4,koi:4,baku:4,nue:4,jizo:4,kappa:4,tsuru:3,yukionna:3,tanuki:3,mizuchi:3,nurikabe:3,funayurei:3,zashiki:2,amabie:2,hakutaku:2,hitotsume:2};
 TAL_PRI.kawauso=6;
 const SCR_PRI={'m:hand':6,'m:chi':5,'m:pon':3,'m:pair':2,'m:kan':1,'y:tanyao':4,'y:pinfu':3,'y:yakuhai':3,'y:honitsu':2,'y:toitoi':2,'y:chinitsu':1,'y:chiitoitsu':1,'y:sanshoku':1,'y:ittsu':1,'y:chanta':1};
-const FLW_PRI={bamboo:8,plum:7,orchid:6,chrysanthemum:4,winter:4,summer:4,spring:1,autumn:1};
+const FLW_PRI={bamboo:8,plum:7,orchid:6,chrysanthemum:4,winter:4,summer:4,spring:1,autumn:1,bamboo2:8,plum2:7,orchid2:6,winter2:3,camellia2:7};
+// Flowers the sim does not model are never bought, so they cannot skew the win rate.
+for(const k of ['lotus','lotus2','peony','peony2','wisteria','wisteria2','sakura','sakura2','camellia','spring2','autumn2','chrys2','summer2']) FLW_PRI[k]=-99;
 // argv[7] 'ryuN' (ryu1, ryu2, ...): Ryūjin makes only the first N Calls of each Blind free
 // WALL=<deck key> and STAKE=<stake key> environment variables play a different Wall or Stake (default standard, white)
 const WALL=process.env.WALL||'standard', STAKE=process.env.STAKE||'white';
@@ -27,7 +29,7 @@ if(VARIANT==='starter'){ const LOCKED=['nue','hashi','ryu','takibi','hoshizora',
 if(VARIANT==='combo') { CFG.playsPerBlind=5; CFG.anteBase[0]=250; CFG.anteBase[1]=700; CFG.sharkPerAction=true; }
 function newS(){ S={rngState:hashSeed(String(Math.random()))}; const bosses=[]; for(let a=1;a<=8;a++) bosses.push(rollBoss(a,bosses)); return {rngState:S.rngState,seed:'sim',deckKey:WALL,stake:STAKE,tags:[],editions:{},deck:buildDeck(WALL),wall:[],hand:[],river:[],open:[],played:[],ante:1,blindIndex:0,boss:null,bossOrder:bosses,target:0,score:0,plays:0,discards:0,money:CFG.startMoney+(WALL==='merchant'?16:0),talismans:[],consumables:[],scrolls:{meld:{},yaku:{}},flowers:[],dora:[],indicators:[],talState:{},bonusPlays:0,drawSeq:0,bought:[],stats:{rungs:{},yaku:{},bosses:[]}}; }
 const talSlots=S=>CFG.talismanSlots+WSLOT+S.talismans.filter(k=>S.editions[k]==='neg').length;
-const hasF=(S,k)=>S.flowers.includes(k); const handSize=S=>CFG.handSize+(WALL==='abundant'?2:0)+(hasF(S,'plum')?1:0)-(S.boss==='miser'?3:0); const cap=S=>handSize(S)-3*S.open.length; const need=S=>14-3*S.open.length;
+const hasF=(S,k)=>S.flowers.includes(k); const handSize=S=>CFG.handSize+(WALL==='abundant'?2:0)+(hasF(S,'plum')?1:0)+(hasF(S,'plum2')?1:0)-(S.boss==='miser'?3:0); const cap=S=>handSize(S)-3*S.open.length; const need=S=>14-3*S.open.length;
 const talMod=(S,f)=>S.talismans.reduce((a,k)=>a+(TAL[k][f]||0),0);
 const asT=t=>t; const tiles=h=>h;
 function draw(S){ while(S.hand.length<cap(S)&&S.wall.length){ const t=S.wall.pop(); t.d=++S.drawSeq; S.hand.push(t);} }
@@ -74,7 +76,7 @@ function estimatePartial(S,st){ const save=S.hand.slice(); let tiles;
   S.hand=save; const part=partitionPlay(tiles); if(!part) return 0; return scoreCtx(S,'meld',tiles,{part,preview:true}).total; }
 function playBlind(S,stats){
   const kind=['small','big','boss'][S.blindIndex]; S.boss=kind==='boss'?S.bossOrder[S.ante-1]:null; S.target=Math.floor(CFG.anteBase[S.ante-1]*CFG.blindMult[kind]*((STAKE==='green'||STAKE==='black')?1.3:1)*WTGT*(WALL==='monk'?2:1)*(kind==='boss'?bossTarget(S.boss):1) /* Stakes stack */);
-  S.plays=Math.max(1,CFG.playsPerBlind+WPLAY+(WALL==='gambler'?1:0)-(WALL==='abundant'||WALL==='lean'?1:0)+S.bonusPlays+talMod(S,'plays')+(hasF(S,'bamboo')?1:0)); S.discards=CFG.discardsPerBlind+WDISC-(WALL==='gambler'?1:0)+talMod(S,'discards')+(hasF(S,'orchid')?1:0);
+  S.plays=Math.max(1,CFG.playsPerBlind+WPLAY+(WALL==='gambler'?1:0)-(WALL==='abundant'||WALL==='lean'?1:0)+S.bonusPlays+talMod(S,'plays')+(hasF(S,'bamboo')?1:0)+(hasF(S,'bamboo2')?1:0)-(hasF(S,'wisteria')?1:0)); S.discards=CFG.discardsPerBlind+WDISC-(WALL==='gambler'?1:0)+talMod(S,'discards')+(hasF(S,'orchid')?1:0)+(hasF(S,'orchid2')?1:0);
   if(S.boss==='needle') S.plays=1; if(S.boss==='drought') S.discards=0; S.leafCut=false; S.crimsonOff=S.boss==='crimson'&&S.talismans.length?pick(S.talismans):null;
   if(S.boss==='verdant'&&S.talismans.length){ S.talismans.pop(); S.leafCut=true; }   // a player sells one Talisman to wake the Leaf
   S.wall=shuffle(S.deck.slice()); S.deck=[]; S.hand=[]; S.river=[]; S.lastDiscard=[]; S.open=[]; S.played=[]; S.dora=[]; S.indicators=[]; S.score=0; S.firstPlayDone=false; S.bossSuit=S.boss==='collector'?pick(['m','p','s']):null; setRules(S); draw(S);
@@ -97,16 +99,16 @@ function playBlind(S,stats){
   }
   const won=S.score>=S.target; USE.blinds++; USE.playsUsed+=USE.p0-S.plays; USE.discUsed+=USE.d0-S.discards; if(won){ USE.won++; USE.playsLeft+=S.plays; USE.discLeft+=S.discards; if(USE.p0-S.plays===1) USE.onePlay++; } if(S.talismans.includes('kawauso')&&stats.claims>claims0) stats.blindsWithClaim++;
   S.discardsUsed=USE.d0-S.discards; S.playsMade=USE.p0-S.plays;   // for Binbogami and Kamaitachi
-  if(won){ const base=(kind==='small'&&STAKE!=='white')?0:CFG.blindReward[kind], left=S.plays, interest=Math.min(hasF(S,'winter')?10:CFG.interestCap,Math.floor(S.money/CFG.interestPer)); let tal=0; for(const k of S.talismans) if(TAL[k].onBlindEnd) tal+=TAL[k].onBlindEnd(S); S.money+=base+left+interest+tal+(hasF(S,'summer')?2:0); }
+  if(won){ const base=(kind==='small'&&STAKE!=='white')?0:CFG.blindReward[kind], left=S.plays, interest=Math.min(hasF(S,'winter2')?20:hasF(S,'winter')?10:CFG.interestCap,Math.floor(S.money/CFG.interestPer)); let tal=0; for(const k of S.talismans) if(TAL[k].onBlindEnd) tal+=TAL[k].onBlindEnd(S); S.money+=base+left+interest+tal+(hasF(S,'summer')?2:0); }
   S.deck=[...S.hand,...S.wall,...S.river,...S.open.flatMap(m=>m.tiles),...S.played,...S.indicators]; for(const t of S.deck) delete t.rinshan; S.hand=[];S.wall=[];S.river=[];S.open=[];S.played=[];
   return won;
 }
 function shop(S){
   const price=c=>{ let p=c; if(WALL==='merchant') p=Math.ceil(p*1.25); if(hasF(S,'chrysanthemum')) p=Math.ceil(p*0.8); return Math.max(1,p); };
   const roll=()=>{ const r=Math.random(),w=CFG.shopWeights; if(r<w.talisman){ const pool=TALISMANS.filter(t=>!S.talismans.includes(t.key)&&talRarity(t.key)!=='legendary'); if(pool.length) return {kind:'talisman',def:pickTalisman(pool),edition:rollEdition()}; } if(r<w.talisman+w.omikuji) return {kind:'omikuji',def:pick(OMIKUJI)}; return {kind:'kami',def:pick(KAMI)}; };
-  const cards=[roll(),roll()]; const scroll={kind:'scroll',def:pick(SCROLLS)}; const fl=FLOWERS.filter(f=>!S.flowers.includes(f.key)); const flower=fl.length?{kind:'flower',def:pick(fl)}:null;
+  const cards=[roll(),roll()]; const scroll={kind:'scroll',def:pick(SCROLLS)}; const fl=flowerPool(S.flowers); const flower=fl.length?{kind:'flower',def:pick(fl)}:null;
   const items=[...cards,scroll,flower].filter(Boolean).map(it=>{ let v=0; if(it.kind==='talisman') v=(TAL_PRI[it.def.key]||3)+(S.talismans.length<talSlots(S)?0:-99); else if(it.kind==='scroll') v=SCR_PRI[it.def.key]||1; else if(it.kind==='flower') v=FLW_PRI[it.def.key]||1; else v=-1; return {it,v:v+(it.edition?2:0),p:price(it.def.cost+(it.edition?EDITIONS[it.edition].price:0)+(it.kind==='talisman'&&STAKE==='black'?2:0))}; }).filter(x=>x.v>0).sort((a,b)=>b.v/b.p-a.v/a.p);
-  for(const x of items){ if(S.money-x.p<RESERVE) continue; const it=x.it; if(it.kind==='talisman'){ if(S.talismans.length>=talSlots(S)) continue; S.talismans.push(it.def.key); if(it.edition) S.editions[it.def.key]=it.edition; } else if(it.kind==='scroll'){ const [t,k]=it.def.key.split(':'); const b=t==='m'?'meld':'yaku'; S.scrolls[b][k]=(S.scrolls[b][k]||0)+1; } else if(it.kind==='flower'){ S.flowers.push(it.def.key); } S.money-=x.p; S.bought.push(it.def.key); }
+  for(const x of items){ if(S.money-x.p<RESERVE||x.v<=-50) continue; const it=x.it; if(it.kind==='talisman'){ if(S.talismans.length>=talSlots(S)) continue; S.talismans.push(it.def.key); if(it.edition) S.editions[it.def.key]=it.edition; } else if(it.kind==='scroll'){ const [t,k]=it.def.key.split(':'); const b=t==='m'?'meld':'yaku'; S.scrolls[b][k]=(S.scrolls[b][k]||0)+1; } else if(it.kind==='flower'){ S.flowers.push(it.def.key); } S.money-=x.p; S.bought.push(it.def.key); }
   // open a Talisman or Scroll pack when affordable and useful
   const pk=pick(['omikuji','omikuji','scroll','scroll','talisman','kami','mega']);
   if((pk==='talisman'||pk==='scroll')&&S.money-price(PACKS[pk].cost)>=RESERVE){ S.money-=price(PACKS[pk].cost); if(pk==='talisman'&&S.talismans.length<talSlots(S)){ const pool=TALISMANS.filter(t=>!S.talismans.includes(t.key)&&talRarity(t.key)!=='legendary'); const ch=shuffle(pool.slice()).slice(0,2).map(t=>({key:t.key,edition:rollEdition(),v:(TAL_PRI[t.key]||3)})).sort((a,b)=>b.v-a.v); if(ch.length){ S.talismans.push(ch[0].key); if(ch[0].edition) S.editions[ch[0].key]=ch[0].edition; } } else if(pk==='scroll'){ const ch=shuffle(SCROLLS.slice()).slice(0,3).sort((a,b)=>(SCR_PRI[b.key]||1)-(SCR_PRI[a.key]||1)); const [t,k]=ch[0].key.split(':'); const b=t==='m'?'meld':'yaku'; S.scrolls[b][k]=(S.scrolls[b][k]||0)+1; } }

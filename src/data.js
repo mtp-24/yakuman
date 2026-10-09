@@ -127,7 +127,7 @@ const EDITIONS = {
   poly: { name: 'Polychrome', xmult: 1.5, price: 5, odds: 0.03, desc: 'x1.5 Mult' },
   neg: { name: 'Negative', slots: 1, price: 4, odds: 0.02, desc: '+1 Talisman slot' },
 };
-function rollEdition() { const r = rand(); let acc = 0; for (const [k, e] of Object.entries(EDITIONS)) { acc += e.odds; if (r < acc) return k; } return null; }
+function rollEdition(mult = 1) { const r = rand(); let acc = 0; for (const [k, e] of Object.entries(EDITIONS)) { acc += e.odds * mult; if (r < acc) return k; } return null; }
 
 // ===================== BOSSES =====================
 const BOSSES = {
@@ -351,7 +351,7 @@ const SCR = {}; SCROLLS.forEach(s => SCR[s.key] = s);
 
 // ===================== FLOWERS / SEASONS (Vouchers) =====================
 const FLOWERS = [
-  { key: 'plum', name: 'Plum Blossom', cost: 10, desc: '+1 hand size (hold 15 tiles).' },
+  { key: 'plum', name: 'Plum Blossom', cost: 10, desc: '+1 hand size.' },
   { key: 'orchid', name: 'Orchid', cost: 10, desc: '+1 Discard every Blind.' },
   { key: 'bamboo', name: 'Bamboo', cost: 10, desc: '+1 Play every Blind.' },
   { key: 'chrysanthemum', name: 'Chrysanthemum', cost: 10, desc: 'Shop prices reduced by 20%.' },
@@ -359,7 +359,29 @@ const FLOWERS = [
   { key: 'autumn', name: 'Autumn', cost: 10, desc: 'Rerolls cost ¥2 instead of ¥5.' },
   { key: 'winter', name: 'Winter', cost: 10, desc: 'Interest cap raised from ¥5 to ¥10 per Blind.' },
   { key: 'summer', name: 'Summer', cost: 10, desc: '+¥2 reward for every Blind defeated.' },
+  // New Flowers (Balatro's Overstock, Director's Cut, Hieroglyph, Hone and Blank).
+  { key: 'lotus', name: 'Lotus', cost: 10, desc: '+1 card slot in the shop.' },
+  { key: 'peony', name: 'Peony', cost: 10, desc: 'Once per Ante, reroll the Boss for ¥10 (on the Blind select screen).' },
+  { key: 'wisteria', name: 'Wisteria', cost: 10, desc: 'Go back 1 Ante right away, but −1 Play every Blind.' },
+  { key: 'sakura', name: 'Cherry Blossom', cost: 10, desc: 'Foil, Holographic, Polychrome and Negative Talismans turn up twice as often.' },
+  { key: 'camellia', name: 'Camellia', cost: 10, desc: 'Talismans sell for ¥1 more.' },
+  // Upgrades: each needs its Flower first, like Balatro's second-tier Vouchers.
+  { key: 'plum2', name: 'Winter Plum', cost: 10, needs: 'plum', desc: '+1 more hand size.' },
+  { key: 'orchid2', name: 'Wild Orchid', cost: 10, needs: 'orchid', desc: '+1 more Discard every Blind.' },
+  { key: 'bamboo2', name: 'Bamboo Grove', cost: 10, needs: 'bamboo', desc: '+1 more Play every Blind.' },
+  { key: 'chrys2', name: 'Golden Chrysanthemum', cost: 10, needs: 'chrysanthemum', desc: 'Shop prices reduced by 40% in total.' },
+  { key: 'spring2', name: 'Late Spring', cost: 10, needs: 'spring', desc: '+1 more consumable slot.' },
+  { key: 'autumn2', name: 'Harvest Moon', cost: 10, needs: 'autumn', desc: 'The first reroll in every shop is free.' },
+  { key: 'winter2', name: 'Deep Winter', cost: 10, needs: 'winter', desc: 'Interest cap raised to ¥20 per Blind.' },
+  { key: 'summer2', name: 'Midsummer', cost: 10, needs: 'summer', desc: '+¥2 more reward for every Blind defeated (¥4 in all).' },
+  { key: 'lotus2', name: 'Sacred Lotus', cost: 10, needs: 'lotus', desc: '+1 more card slot in the shop.' },
+  { key: 'peony2', name: 'Tree Peony', cost: 10, needs: 'peony', desc: 'Reroll the Boss as often as you like, ¥10 each time.' },
+  { key: 'wisteria2', name: 'Ancient Wisteria', cost: 10, needs: 'wisteria', desc: 'Go back 1 more Ante right away, but −1 Discard every Blind.' },
+  { key: 'sakura2', name: 'Night Sakura', cost: 10, needs: 'sakura', desc: 'Editions turn up four times as often.' },
+  { key: 'camellia2', name: 'Snow Camellia', cost: 10, needs: 'camellia', desc: '+1 Talisman slot.' },
 ];
+// Flowers the shop can offer: not owned yet, and an upgrade only once you own the Flower it builds on.
+const flowerPool = owned => FLOWERS.filter(f => !owned.includes(f.key) && (!f.needs || owned.includes(f.needs)));
 const FLW = {}; FLOWERS.forEach(f => FLW[f.key] = f);
 
 // ===================== TAGS (rewards for skipping a Small or Big Blind) =====================
