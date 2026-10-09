@@ -303,6 +303,13 @@ aside{display:flex;flex-direction:column;gap:10px;min-width:0}
 .blindcard .tagnote{font-size:11px;line-height:1.5}
 /* New Run and confirmations */
 .modal.setupmodal{max-width:640px}
+/* Collection */
+.modal.colmodal{max-width:980px} #colSearch{max-width:220px;padding:6px 10px;font-size:13px}
+.coltabs{flex-wrap:wrap} .coltabs .tab .muted{font-size:11px}
+.colgrid{grid-template-columns:repeat(auto-fill,minmax(200px,1fr))} .colcard[hidden]{display:none!important}
+.colcard .kind{display:flex;align-items:center;gap:6px;flex-wrap:wrap} .colmark{color:var(--good);border-color:rgba(111,207,151,.5)}
+.coltile{margin-top:8px} .shopcard.bosscol{background:linear-gradient(180deg,rgba(201,69,58,.14),rgba(201,69,58,.04)),var(--panel2);border-color:rgba(201,69,58,.4)} .shopcard.bosscol .n{color:var(--accent2)}
+.colnone{padding:12px 0}
 .optgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:8px}
 .optcard{position:relative;text-align:left;display:flex;flex-direction:column;gap:3px;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--fg);font-family:var(--body);cursor:pointer;min-height:74px}
 .optcard b{font-family:var(--display);font-size:16px;font-weight:500;color:var(--fg)} .optcard .muted{font-size:11px;line-height:1.35}
@@ -462,6 +469,7 @@ button.pulse{animation:btnpulse 1s ease-in-out infinite;box-shadow:0 0 0 0 rgba(
   <nav class="hdr-nav">
     <button id="btnDeck">Wall</button>
     <button id="btnYaku" data-notr>Run Info</button>
+    <button id="btnCollection">Collection</button>
     <button id="btnRules">Rules</button>
     <button id="btnSettings" class="ghost" title="Terminology, helper, debug tools">Settings</button>
     <button id="btnNewRun" class="ghost">New Run</button>
@@ -2023,7 +2031,7 @@ const CLOSE_X = '<button class="modal-x ghost" id="mX" title="Close" aria-label=
 // A modal with a Close or Cancel button can also be closed with the corner X, a click outside it, or Esc. Game-flow screens (cash-out, shop, packs, blind select) have none, so they stay put.
 function modalClosable() { return !$('#overlay').hidden && !!$('#modal #mClose'); }
 function closeModal() { const c = $('#modal #mClose'); if (c) c.click(); }
-function showModal(html, pinned, cls) { modalPinned = !!pinned; $('#modal').className = 'modal' + (cls ? ' ' + cls : ''); $('#modal').innerHTML = html; if ($('#modal #mClose')) $('#modal').insertAdjacentHTML('afterbegin', CLOSE_X); fillHero($('#modal')); $('#overlay').hidden = false; fillExamples($('#modal')); translateDOM($('#modal')); }
+function showModal(html, pinned, cls) { modalPinned = !!pinned; $('#modal').className = 'modal' + (cls ? ' ' + cls : ''); $('#modal').innerHTML = html; if ($('#modal #mClose')) $('#modal').insertAdjacentHTML('afterbegin', CLOSE_X); fillHero($('#modal')); fillColTiles($('#modal')); $('#overlay').hidden = false; fillExamples($('#modal')); translateDOM($('#modal')); }
 function hideModal() { modalPinned = false; $('#overlay').hidden = true; }
 // A Talisman you gain starts fresh, like a Joker in Balatro: progress from an earlier copy you sold is gone.
 // Its state lives under its own key, or its key plus a capitalised suffix (kasaobake, shiroSuit).
@@ -2192,7 +2200,7 @@ function quickRulesHTML() {
   <li><b>Talismans.</b> They fire left to right after each play. Put +Mult before ×Mult, and drag them to reorder.</li>
   <li><b>Between Blinds.</b> Spend money on Talismans, tile-changing Omikuji and Kami, Scrolls that level up your plays, and Flowers for the rest of the run.</li>
   <li><b>Bosses.</b> Each Ante ends with a Boss that bends one rule. Read its red box.</li>
-  </ol><p class="muted" style="font-size:12px;margin:10px 0 0">Run Info lists every Yaku with example hands and the full Play Ladder. Full Rules has everything else.</p>`;
+  </ol><p class="muted" style="font-size:12px;margin:10px 0 0">Run Info lists every Yaku with example hands and the full Play Ladder. Collection shows every Talisman, consumable, pack, Tag and Boss. Full Rules has everything else.</p>`;
 }
 function rulesHTML() {
   const tabs = [['quick', 'Quick Start'], ['full', 'Full Rules']];
@@ -2201,6 +2209,33 @@ function rulesHTML() {
 function mostPlayedRung() { let best = null, n = 0; for (const [k, v] of Object.entries(S.stats.rungs || {})) if (v > n) { n = v; best = k; } return best; }
 function mostScoredYaku() { let best = null, n = 0; for (const [k, v] of Object.entries(S.stats.yaku || {})) if (v > n) { n = v; best = k; } return best; }
 let infoTab = 'run';
+// Collection: every item in the game, Balatro-style, as read-only cards.
+let colTab = 'tal';
+function collectionHTML() {
+  const run = !!(S && S.talismans);
+  const card = (cls, kind, name, desc, extra = '', badge = '') => `<div class="shopcard ${cls} colcard"><div class="kind">${kind}${badge ? ` <span class="tag colmark">${badge}</span>` : ''}</div><div class="n">${name}</div><div class="d">${desc}</div>${extra}</div>`;
+  const tabs = [
+    ['tal', 'Talismans', TALISMANS.length], ['omi', LANG === 'hk' ? 'Fortune Sticks' : 'Omikuji', OMIKUJI.length], ['kami', 'Kami Spirits', KAMI.length], ['scroll', 'Scrolls', SCROLLS.length], ['flower', 'Flowers', FLOWERS.length], ['pack', 'Packs', Object.keys(PACKS).length],
+    ['eng', 'Engravings', Object.keys(ENG).length], ['ed', 'Editions', Object.keys(EDITIONS).length], ['tag', 'Tags', Object.keys(TAGS).length], ['boss', 'Bosses', Object.keys(BOSSES).length], ['wall', 'Walls', Object.keys(DECKS).length], ['stake', 'Stakes', Object.keys(STAKES).length]];
+  const cons = (list, kind) => list.map(c => card(kind, `${kind === 'kami' ? 'Kami Spirit' : 'Omikuji'} · ¥${c.cost}`, c.name, c.desc, '', c.blindOnly ? 'Blind only' : c.anywhere ? 'Usable anytime' : '')).join('');
+  let body = '';
+  if (colTab === 'tal') body = TALISMANS.map(t => card('talisman', `Talisman · ¥${t.cost}`, t.name, t.desc, '', run && S.talismans.includes(t.key) ? 'Owned' : '')).join('');
+  else if (colTab === 'omi') body = cons(OMIKUJI, 'omikuji');
+  else if (colTab === 'kami') body = cons(KAMI, 'kami');
+  else if (colTab === 'scroll') body = SCROLLS.map(sc => card('scroll', `Scroll of Mastery · ¥${sc.cost}`, sc.name, sc.desc, run ? scrollLevelHTML(sc.key) : '')).join('');
+  else if (colTab === 'flower') body = FLOWERS.map(f => card('flower', `Flower · ¥${f.cost}`, f.name, f.desc, '', run && S.flowers.includes(f.key) ? 'Owned' : '')).join('');
+  else if (colTab === 'pack') body = Object.values(PACKS).map(p => card('pack', `Booster pack · ¥${p.cost}`, p.name, p.desc)).join('');
+  else if (colTab === 'eng') body = Object.entries(ENG).map(([k, e]) => card('omikuji', 'Engraving', e.name, e.desc, `<div class="coltile" data-eng="${k}"></div>`)).join('');
+  else if (colTab === 'ed') body = Object.entries(EDITIONS).map(([k, e]) => card(`talisman ed-${k}`, `Edition · +¥${e.price}`, `<span class="edtag ed-${k}">${e.name}</span>`, `${e.desc}${k === 'neg' ? '' : ' on every play'}.`, `<div class="muted" style="font-size:11px;margin-top:4px">${Math.round(e.odds * 100)}% of shop Talismans</div>`)).join('');
+  else if (colTab === 'tag') body = Object.entries(TAGS).map(([k, t]) => card('pack', 'Tag', t.name, t.desc, '', run && S.tags.includes(k) ? 'Held' : '')).join('');
+  else if (colTab === 'boss') body = Object.entries(BOSSES).map(([k, b]) => card('bosscol', 'Boss Blind', b.name, b.desc, '', run && S.stats && S.stats.bosses.includes(k) ? 'Met this run' : '')).join('');
+  else if (colTab === 'wall') body = Object.entries(DECKS).map(([k, d]) => card('flower', 'Wall', d.name, d.desc, '', run && S.deckKey === k ? 'This run' : '')).join('');
+  else if (colTab === 'stake') body = Object.entries(STAKES).map(([k, st]) => card('flower', `<i class="sw sw-${k}" aria-hidden="true"></i> Stake`, st.name, st.desc, '', run && S.stake === k ? 'This run' : '')).join('');
+  return `<div class="shophead"><h2>Collection</h2><input id="colSearch" placeholder="Search" autocomplete="off"></div><p class="muted" style="margin:2px 0 10px">Everything that can turn up in a run. Yaku and the Play Ladder are in Run Info.</p>
+  <div class="tabs coltabs">${tabs.map(([k, n, c]) => `<button class="tab${colTab === k ? ' on' : ''}" data-ctab="${k}">${n} <span class="muted">${c}</span></button>`).join('')}</div>
+  <div class="shop-grid colgrid">${body}</div><div class="muted colnone" hidden>Nothing matches.</div><button id="mClose" hidden>Close</button>`;
+}
+function fillColTiles(root) { root && root.querySelectorAll('.coltile').forEach(b => { if (!b.children.length) b.appendChild(tileEl({ id: 0, suit: 'p', rank: 5, red: false, eng: b.dataset.eng }, { small: true })); }); }
 let rulesTab = 'quick';
 function parseHand(str) { const out = []; for (const grp of str.split(' ')) { const m = grp.match(/^(\d+)([mpsz])$/); if (!m) continue; const tiles = [...m[1]].map(d => ({ id: 0, suit: m[2], rank: +d, red: false, eng: null })); out.push(tiles); } return out; }
 function exampleHTML(ex) { return `<div class="exrow" data-ex="${ex}"></div>`; }
@@ -2262,7 +2297,7 @@ function menuHTML(hasSave) {
   return `<div class="hero"><div class="herotiles" id="heroTiles"></div>
   <h1 class="herotitle" data-notr>Yakuman</h1><div class="herokanji" data-notr>${LANG === 'hk' ? '役滿' : '役満'}</div>
   <p class="herotag">A Mahjong roguelite in the Balatro mould. Build hands, chase Yaku, stack Talismans, and outscore eight Antes of Yakuza bosses.</p>
-  <div class="heroacts">${hasSave ? `<button id="mContinue" class="primary herobtn">Continue Run<span>${where}</span></button>` : ''}<button id="mStart" class="${hasSave ? 'ghost' : 'primary herobtn'}">New Run</button><button id="mRules" class="ghost">How to Play</button></div>
+  <div class="heroacts">${hasSave ? `<button id="mContinue" class="primary herobtn">Continue Run<span>${where}</span></button>` : ''}<button id="mStart" class="${hasSave ? 'ghost' : 'primary herobtn'}">New Run</button><button id="mRules" class="ghost">How to Play</button><button id="mCollection" class="ghost">Collection</button></div>
   <div class="herofoot muted">Playtest build · Riichi or Hong Kong terms in Settings</div></div>`;
 }
 // The intro screen's fan of honor tiles.
@@ -2328,6 +2363,9 @@ function bindEvents() {
 
   $('#btnDeck').onclick = () => showModal(deckHTML(), true);
   $('#btnRules').onclick = () => showModal(rulesHTML(), true);
+  $('#btnCollection').onclick = () => showModal(collectionHTML(), true, 'colmodal');
+  // Collection search filters the current tab by the cards' visible text (works in both terminologies).
+  document.addEventListener('input', e => { if (e.target.id !== 'colSearch') return; const q = e.target.value.trim().toLowerCase(); let shown = 0; document.querySelectorAll('#modal .colcard').forEach(c => { const ok = !q || c.innerText.toLowerCase().includes(q); c.hidden = !ok; if (ok) shown++; }); const none = document.querySelector('#modal .colnone'); if (none) none.hidden = shown > 0; });
   $('#btnYaku').onclick = () => showModal(yakuHTML(), true);
 
   $('#btnSettings').onclick = () => showModal(settingsHTML(), true);
@@ -2339,6 +2377,7 @@ function bindEvents() {
     if (t.id === 'mX') { closeModal(); return; }
     if (t.dataset.copyseed != null) return;
     if (t.dataset.tab) { infoTab = t.dataset.tab; showModal(yakuHTML(), true); return; }
+    if (t.dataset.ctab) { const prev = $('#mClose') && $('#mClose').onclick; colTab = t.dataset.ctab; showModal(collectionHTML(), true, 'colmodal'); if (prev) $('#mClose').onclick = prev; return; }
     if (t.dataset.rtab) { const prev = $('#mClose') && $('#mClose').onclick; rulesTab = t.dataset.rtab; showModal(rulesHTML(), true); if (prev) $('#mClose').onclick = prev; return; }
     if (t.dataset.setlang) { setLang(t.dataset.setlang); showModal(settingsHTML(), true); return; }
     if (t.dataset.settilenums) { TILE_NUMS = t.dataset.settilenums; try { localStorage.setItem('yakuman.tilenums', TILE_NUMS); } catch (e) { } render(); showModal(settingsHTML(), true); return; }
@@ -2353,6 +2392,7 @@ function bindEvents() {
     else if (t.dataset.nav) { const [name, d] = t.dataset.nav.split(':'); const seed = ($('#seedInput') || {}).value || ''; setupSel[name] += +d; showModal(setupHTML(), true, 'setupmodal'); $('#seedInput').value = seed; }
     else if (t.id === 'mStartRun') { const deck = ($('#modal input[name=deck]') || {}).value, stake = ($('#modal input[name=stake]') || {}).value, seed = ($('#seedInput') || {}).value; hideModal(); newRun({ deck, stake, seed }); }
     else if (t.id === 'mContinue') { hideModal(); render(); }
+    else if (t.id === 'mCollection') { showModal(collectionHTML(), true, 'colmodal'); $('#mClose').onclick = () => { showModal(menuHTML(!!load()), true, 'menumodal'); }; }
     else if (t.id === 'mRules') { showModal(rulesHTML() + '', true); $('#mClose').onclick = () => { showModal(menuHTML(!!load()), true, 'menumodal'); }; }
     else if (t.id === 'mCashOut') { S.phase = 'shop'; S.msg = ''; render(); }
     else if (t.id === 'mNext') { S.shop = null; S.pack = null; S.msg = ''; S.phase = 'select'; render(); }
