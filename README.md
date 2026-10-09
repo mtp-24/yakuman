@@ -48,6 +48,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 35: Scroll levels for Chi, Pon, Kan and Pair (and the Kan bonus) now apply inside complete hands as well as partial plays, so a complete hand always outscores the ready hand inside it.
 - Build 36: monotonicity audit (`sim/monotonic.js`): no sub-play of a complete hand may outscore it. Tengu, Oni and Tanuki no longer apply to partial plays only. Remaining flips come only from deliberate conditions (Nurarihyon's no-honors rule, Daimyō's held Red Fives, Furiten).
 - Build 37: Scroll Han applies once per play per component type (chips still per component), so a Chow scroll no longer gives +4 Han in a four-Chi hand. Scroll descriptions and Run Info text updated.
+- Build 38: shop cards tinted by kind (Talisman gold, Omikuji blue, Kami purple, Scroll green, Flower pink, Pack orange); firing-order badge styled and labelled ("fires first") on owned Talisman cards.
 - Build 7: multi-meld play ladder (Two Melds ... Four Melds), targets 300...45000, retrigger and scaling Talismans, Wall-Builder rewording, scoring animation.
 
 ## Simulators (in `sim/`)
