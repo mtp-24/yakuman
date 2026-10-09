@@ -798,7 +798,7 @@ button.pulse{animation:btnpulse2 2.6s ease-out infinite}
 .rtotal b,.cashfoot .pv{display:inline-block;transform-origin:50% 60%}
 .norenbar .wallet .pv{display:inline-block;transform-origin:50% 60%}
 /* ===== Scoring presentation like Balatro: the scoring tile lifts and wiggles, values pop as coloured badges ===== */
-#hand .tile.hit,#open .tile.hit{z-index:20;animation:hitwiggle .32s cubic-bezier(.3,1.5,.5,1) forwards;box-shadow:var(--bev),var(--body),0 0 0 2px #f3c768,0 0 22px rgba(243,199,104,.75)}
+#hand .tile.hit,#open .tile.hit{z-index:20;animation:hitpop .22s cubic-bezier(.25,.8,.35,1) forwards;box-shadow:var(--bev),var(--body),0 0 0 2px #f3c768,0 0 22px rgba(243,199,104,.75)}
 @keyframes hitwiggle{0%{transform:translateY(0) scale(1)}40%{transform:translateY(-18px) scale(1.2) rotate(-4deg)}70%{transform:translateY(-15px) scale(1.15) rotate(3deg)}100%{transform:translateY(-16px) scale(1.16) rotate(0)}}
 .hitpop,.talpop{position:absolute;left:50%;display:flex;flex-direction:column;align-items:center;gap:3px;pointer-events:none;z-index:40}
 .hitpop{top:-6px;transform:translate(-50%,-100%)} .talpop{top:calc(100% - 6px);transform:translateX(-50%)}
@@ -816,6 +816,8 @@ button.pulse{animation:btnpulse2 2.6s ease-out infinite}
 .tt-n{font-family:var(--display);font-size:17px;color:#f0cf7f;margin-bottom:6px;line-height:1.1}
 .tt-r{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--fg);margin-top:4px} .tt-r .hp{animation:none;font-size:12.5px;padding:3px 7px 4px;min-width:30px;text-align:center}
 .tt-e{font-size:11.5px;line-height:1.4;color:var(--fg);opacity:.92;margin-top:7px;padding-top:6px;border-top:1px dashed rgba(255,230,180,.18)} .tt-e b{color:#f0cf7f;margin-right:3px}
+/* Balatro's quick pop: snap bigger, settle back, stay lifted; no tilt */
+@keyframes hitpop{0%{transform:translateY(0) scale(1)}35%{transform:translateY(-14px) scale(1.26)}65%{transform:translateY(-12px) scale(1.06)}100%{transform:translateY(-12px) scale(1.12)}}
 </style>
 <div id="app">
 <header>
@@ -1464,7 +1466,7 @@ function scoreCtx(S, kind, tiles, info) {
   tiles.forEach((t, ti) => {
     let extra = 0; const who = [];
     if (t.eng === 'redseal') { extra += 1; who.push('Red Seal'); agg.retrig['Red Seal'] = (agg.retrig['Red Seal'] || 0) + 1; }
-    for (const k of S.talismans) { const d = talTarget(S, k); if (d && d.retrigger) { const n = d.retrigger(t, ctx, S, ti); if (n) { extra += n; who.push(TAL[k].name); agg.retrig[TAL[k].name] = (agg.retrig[TAL[k].name] || 0) + n; } } }
+    for (const k of S.talismans) { const d = talTarget(S, k); if (d && d.retrigger) { const n = d.retrigger(t, ctx, S, ti); if (n) { extra += n; for (let q = 0; q < n; q++) who.push(TAL[k].name); agg.retrig[TAL[k].name] = (agg.retrig[TAL[k].name] || 0) + n; } } }
     const times = 1 + extra; let c = 0, h = 0, x = 1, money = 0;
     for (let r = 0; r < times; r++) {
       const tc = tileChips(t, S); c += tc; agg.chips += tc;
@@ -2714,7 +2716,7 @@ async function animateScore(ctx) {
   };
   const showLine = l => { const d = document.createElement('div'); d.className = 'row sline' + (l.zero ? ' bad' : '') + (l.yaku ? ' yaku' : '') + (l.tal ? ' tal' : '') + (l.convert ? ' convert' : ''); d.innerHTML = `<span>${tr(l.label)}</span><span class="num">${tr(l.val)}</span>`; linesBox.appendChild(d); if (l.tal) { const slot = document.querySelector(`.slot[data-tal="${l.tal}"]`); if (slot) { slot.classList.remove('bounce'); void slot.offsetWidth; slot.classList.add('bounce');
       // the Talisman's effect pops under its slot, coloured like the tile badges
-      const v = tr(l.val || ''); if (v) { const kind = /×|^x/i.test(v) ? 'x' : /Mult/.test(v) ? 'mult' : /Chip/.test(v) ? 'chips' : /Han|Faan/.test(v) ? 'han' : /[¥$]/.test(v) ? 'money' : 'info'; const f = document.createElement('div'); f.className = 'talpop num'; f.innerHTML = `<span class="hp ${kind}">${v}</span>`; slot.appendChild(f); setTimeout(() => f.remove(), 1100); } } } };
+      const v = /retrigger/.test(l.label) ? '' : tr(l.val || ''); if (v) { const kind = /×|^x/i.test(v) ? 'x' : /Mult/.test(v) ? 'mult' : /Chip/.test(v) ? 'chips' : /Han|Faan/.test(v) ? 'han' : /[¥$]/.test(v) ? 'money' : 'info'; const f = document.createElement('div'); f.className = 'talpop num'; f.innerHTML = `<span class="hp ${kind}">${v}</span>`; slot.appendChild(f); setTimeout(() => f.remove(), 1100); } } } };
   const applyLine = l => { if (l.zero) chips = 0; else { chips += l.chips || 0; han += l.han || 0; if (l.convert) mult = hanMult(han) * tileX; if (l.mult) mult = (mult === null ? hanMult(han) * tileX : mult) + l.mult; if (l.xmult && mult !== null) mult *= l.xmult; } setMath(); };
   let fire = 0;
   // Hanabi: once a play beats the target, rockets shoot up from below the Chips and Mult boxes and burst above them.
@@ -2757,6 +2759,7 @@ async function animateScore(ctx) {
     const e = tileEls.get(h.id); const per = { chips: h.chips / h.times, han: h.han / h.times, x: Math.pow(h.xmult, 1 / h.times) };
     for (let r = 0; r < h.times; r++) {
       // Balatro-style: the tile lifts and wiggles, and each value pops above it as its own coloured badge.
+      if (r && h.who && h.who[r - 1]) { const slot = document.querySelector(`.slot[data-tal="${h.who[r - 1]}"]`); if (slot) { slot.classList.remove('bounce'); void slot.offsetWidth; slot.classList.add('bounce'); const g = document.createElement('div'); g.className = 'talpop num'; g.innerHTML = '<span class="hp again">Again!</span>'; slot.appendChild(g); setTimeout(() => g.remove(), 900); } }
       if (e) { e.classList.remove('hit'); void e.offsetWidth; e.classList.add('hit');
         const pills = [r ? ['again', 'Again!'] : null, per.chips ? ['chips', `+${Math.round(per.chips)}`] : null, per.han ? ['han', tr(`+${per.han} Han`)] : null, per.x !== 1 ? ['x', `×${fmtMult(per.x)}`] : null].filter(Boolean);
         const f = document.createElement('div'); f.className = 'hitpop num'; f.innerHTML = pills.map(([c, t]) => `<span class="hp ${c}">${t}</span>`).join(''); e.appendChild(f); setTimeout(() => f.remove(), 950); }
