@@ -74,6 +74,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 63: fixed tile id collisions after a reload (tiles created mid-run could share an id with saved tiles, making several tiles select together); existing duplicates are repaired on load.
 - Build 64: a thin progress bar along the bottom edge of the Round Score box (gold, turning green at the target), updating live during the count-up.
 - Build 65: Han counter is part of the hand box at all times (tier shown, dims after conversion; no "converted" label); more space between the target and Round Score; a Cash Out screen with the reward breakdown appears after a won blind, before the shop.
+- Build 66: side panel blind plate groups Ante, blind type, name, boss rule, target and reward in one card; seed and Mastery lines removed from the side panel (both live in Run Info).
 - Build 7: multi-meld play ladder (Two Melds ... Four Melds), targets 300...45000, retrigger and scaling Talismans, Wall-Builder rewording, scoring animation.
 
 ## Simulators (in `sim/`)
