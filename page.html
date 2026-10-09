@@ -563,6 +563,7 @@ button.pulse{animation:btnpulse 1s ease-in-out infinite;box-shadow:0 0 0 0 rgba(
 .packmodal .shop-grid:not(.owned-grid){grid-template-columns:repeat(auto-fill,minmax(178px,1fr));gap:16px}
 @media (max-width:560px){.packhead{flex-wrap:wrap} .packart{width:52px;height:52px}}
 .packshelf{margin-top:18px} .packshelf .shop-grid{margin:0}
+.endlessbadge{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--bad);border:1px solid rgba(232,107,95,.5);background:rgba(232,107,95,.1);border-radius:999px;padding:3px 12px}
 </style>
 <div id="app">
 <header>
@@ -1535,7 +1536,7 @@ function startBlind() {
   S.phase = 'blind';
   const kind = blindKind();
   S.boss = kind === 'boss' ? S.bossOrder[S.ante - 1] : null; if (S.boss && !S.stats.bosses.includes(S.boss)) S.stats.bosses.push(S.boss);
-  S.target = Math.floor(CFG.anteBase[S.ante - 1] * CFG.blindMult[kind] * stakeTargets());
+  ensureBosses(); S.target = Math.floor(anteBase(S.ante) * CFG.blindMult[kind] * stakeTargets());
   S.plays = Math.max(1, CFG.playsPerBlind + S.bonusPlays + talMod('plays') + (hasF('bamboo') ? 1 : 0) + (S.deckKey === 'gambler' ? 1 : 0) - (S.deckKey === 'abundant' ? 1 : 0));
   S.discards = Math.max(0, CFG.discardsPerBlind + S.bonusDiscards + talMod('discards') + (hasF('orchid') ? 1 : 0) - (S.deckKey === 'gambler' ? 1 : 0));
   S.wall = shuffle(S.deck.slice()); S.deck = []; S.hand = []; S.river = []; S.open = []; S.played = [];
@@ -1563,10 +1564,10 @@ function winBlind() {
   S.money += total; S.stats.blinds++; S.msg = ''; S.msgErr = false;
   S.reward = { kind, base, left, interest, tal, summer, invest, total };
   collectDeck();
-  const finished = S.ante === CFG.antes && S.blindIndex === 2;
-  S.blindIndex++; if (S.blindIndex > 2) { S.blindIndex = 0; S.ante++; rollAnteTags(); }
+  const finished = S.ante === CFG.antes && S.blindIndex === 2 && !S.endless;
+  S.blindIndex++; if (S.blindIndex > 2) { S.blindIndex = 0; S.ante++; rollAnteTags(); ensureBosses(); if (!finished) PROFILE.bestAnte = Math.max(PROFILE.bestAnte, S.ante); }
   PROFILE.blinds++; if (kind === 'boss' && S.boss) bump(PROFILE.bosses, S.boss);
-  if (finished) { PROFILE.wins++; bump(PROFILE.stakesWon, S.stake); bump(PROFILE.wallsWon, S.deckKey); PROFILE.bestAnte = CFG.antes;
+  if (finished) { PROFILE.wins++; bump(PROFILE.stakesWon, S.stake); bump(PROFILE.wallsWon, S.deckKey); PROFILE.bestAnte = Math.max(PROFILE.bestAnte, CFG.antes);
     const lv = stakeLevel(S.stake), next = STAKE_KEYS[lv + 1];
     if (lv > wallBest(S.deckKey)) { PROFILE.wallStakes[S.deckKey] = lv;
       if (next) { S.newUnlocks = (S.newUnlocks || []).concat([`stake:${next}:${S.deckKey}`]); setTimeout(() => toast(`<div class="label">Unlocked · Stake</div><b>${STAKES[next].name}</b><div class="muted" style="font-size:11px">for the ${DECKS[S.deckKey].name}</div>`), 200); } } }
@@ -1576,7 +1577,7 @@ function winBlind() {
 }
 function loseRun() { S.phase = 'gameover'; PROFILE.bestAnte = Math.max(PROFILE.bestAnte, S.ante); saveProfile(); }
 function rollAnteTags() { S.skipTags = { small: pick(Object.keys(TAGS)), big: pick(Object.keys(TAGS)) }; }
-function blindTarget(kind) { return Math.floor(CFG.anteBase[Math.min(S.ante, CFG.antes) - 1] * CFG.blindMult[kind] * stakeTargets()); }
+function blindTarget(kind) { return Math.floor(anteBase(S.ante) * CFG.blindMult[kind] * stakeTargets()); }
 function newRun(opts) { S = newState(opts || {}); PROFILE.runs++; saveProfile(); rollAnteTags(); S.phase = 'select'; render(); }
 
 // ===================== ACTIONS =====================
@@ -1860,14 +1861,14 @@ function selectHTML() {
   const plays = Math.max(1, CFG.playsPerBlind + S.bonusPlays + talMod('plays') + (hasF('bamboo') ? 1 : 0) + (S.deckKey === 'gambler' ? 1 : 0) - (S.deckKey === 'abundant' ? 1 : 0));
   const discards = Math.max(0, CFG.discardsPerBlind + S.bonusDiscards + talMod('discards') + (hasF('orchid') ? 1 : 0) - (S.deckKey === 'gambler' ? 1 : 0));
   // Ante progress: one pip per Ante, filled for cleared Antes, ringed for this one.
-  const pips = Array.from({ length: CFG.antes }, (_, i) => `<i class="${i + 1 < S.ante ? 'done' : i + 1 === S.ante ? 'now' : ''}"></i>`).join('');
-  let h = `<div class="shophead"><h2>Ante ${S.ante} <span class="muted sub">of ${CFG.antes}</span></h2><span class="antepips" title="Ante ${S.ante} of ${CFG.antes}">${pips}</span></div><p class="muted" style="margin:2px 0 12px">${DECKS[S.deckKey].name} · ${STAKES[S.stake].name}</p><div class="blindsel">`;
+  const pips = S.ante > CFG.antes ? '<span class="endlessbadge">Endless</span>' : Array.from({ length: CFG.antes }, (_, i) => `<i class="${i + 1 < S.ante ? 'done' : i + 1 === S.ante ? 'now' : ''}"></i>`).join('');
+  let h = `<div class="shophead"><h2>Ante ${S.ante}${S.ante > CFG.antes ? '' : ` <span class="muted sub">of ${CFG.antes}</span>`}</h2><span class="antepips" title="${anteLabel()}">${pips}</span></div><p class="muted" style="margin:2px 0 12px">${DECKS[S.deckKey].name} · ${STAKES[S.stake].name}</p><div class="blindsel">`;
   kinds.forEach((k, i) => {
     const state = i < S.blindIndex ? 'done' : i === S.blindIndex ? 'current' : 'next';
     const reward = (k === 'small' && smallPaysNothing()) ? 0 : CFG.blindReward[k];
     const tag = k !== 'boss' && S.skipTags ? TAGS[S.skipTags[k]] : null;
     h += `<div class="blindcard ${state}${k === 'boss' ? ' bosscard' : ''}"><div class="kind">${state === 'done' ? 'Defeated' : state === 'current' ? 'Up next' : 'After that'}</div><div class="n">${k === 'boss' ? BOSSES[boss].name : names[k]}</div>${k === 'boss' ? `<div class="d bossfx">${BOSSES[boss].desc}</div>` : ''}`;
-    h += `<div class="bc-plate"><div><div class="label">Score at least</div><div class="target num">${blindTarget(k).toLocaleString()}</div></div><div class="bp-reward" title="Plus ¥1 per unused Play and ¥1 interest per ¥5 held (max ¥5)"><div class="label">Reward</div><div class="num">¥${reward}<span class="muted" style="font-size:11px;font-family:var(--body)"> +extras</span></div></div></div>`;
+    h += `<div class="bc-plate"><div><div class="label">Score at least</div><div class="target num">${fmtN(blindTarget(k))}</div></div><div class="bp-reward" title="Plus ¥1 per unused Play and ¥1 interest per ¥5 held (max ¥5)"><div class="label">Reward</div><div class="num">¥${reward}<span class="muted" style="font-size:11px;font-family:var(--body)"> +extras</span></div></div></div>`;
     h += `<div class="bc-meta muted"><b class="num">${plays}</b> Plays · <b class="num">${discards}</b> Discards${S.nextBlindMods && S.nextBlindMods.handSize && state === 'current' ? ` · hand +${S.nextBlindMods.handSize}` : ''}</div>`;
     const skipBox = tag && state !== 'done' ? `<div class="skipbox"><div class="skiphead"><span class="label">Skip reward</span><span class="tagchip">${tag.name}</span></div><div class="skipdesc">${tag.desc}</div></div>` : '';
     if (state === 'current') h += `<div class="buy"><button id="mPlayBlind" class="primary">Play</button>${tag ? `<button id="mSkip" class="ghost" title="${tag.desc} No cash for this blind.">Skip for Tag</button>` : ''}</div>${skipBox}`;
@@ -1882,6 +1883,20 @@ function selectHTML() {
 
 // ===================== RENDER =====================
 const $ = s => document.querySelector(s);
+// ===================== ENDLESS MODE =====================
+// Past the last Ante the targets grow like Balatro's endless mode: last base × (1.6 + (0.75c)^(1 + 0.2c))^c, c Antes past the end,
+// rounded down to two significant figures.
+function anteBase(ante) {
+  if (ante <= CFG.antes) return CFG.anteBase[ante - 1];
+  const c = ante - CFG.antes, a = CFG.anteBase[CFG.antes - 1] * Math.pow(1.6 + Math.pow(0.75 * c, 1 + 0.2 * c), c);
+  if (!isFinite(a)) return Infinity;
+  const k = Math.pow(10, Math.floor(Math.log10(a)) - 1); return Math.floor(a / k) * k;
+}
+// Big numbers switch to scientific notation (1.23e15) so they still fit, as in Balatro.
+function fmtN(n) { return !isFinite(n) ? '∞' : Math.abs(n) < 1e11 ? Math.round(n).toLocaleString() : n.toExponential(2).replace('e+', 'e'); }
+const anteLabel = () => S.ante > CFG.antes ? `Ante ${S.ante} · Endless` : `Ante ${S.ante} of ${CFG.antes}`;
+// Endless Antes draw a fresh Boss each time, never one of the last three.
+function ensureBosses() { while (S.bossOrder.length < S.ante) { const recent = S.bossOrder.slice(-3); S.bossOrder.push(pick(Object.keys(BOSSES).filter(b => !recent.includes(b)))); } }
 function fmtMult(m) { return Number.isInteger(m) ? m : (+m.toFixed(2)); }
 function tileEl(t, o = {}) {
   const el = document.createElement('div');
@@ -1938,7 +1953,7 @@ function tileSVG(t) {
   return `<svg viewBox="0 0 54 74" aria-hidden="true">${body}</svg>`;
 }
 function render() {
-  if (!S) return; setRules(S); checkUnlocks();
+  if (!S) return; if (S.bossOrder) ensureBosses(); setRules(S); checkUnlocks();
   $('#hdrMoney').innerHTML = `YEN <b class="num">¥${S.money}</b>`;
   $('#btnDeck').innerHTML = `Wall <span class="num wallcount">${S.phase === 'blind' ? S.wall.length : (S.deck || []).length}</span>`; $('#btnDeck').title = S.phase === 'blind' ? 'Tiles still face down in the Wall. Click to see every tile.' : 'Tiles in your Wall. Click to see every tile.';
   renderBlind(); renderTalismans(); renderConsumables(); renderOpen(); renderRiver(); renderHand(); renderActions(); renderLast();
@@ -1978,12 +1993,12 @@ function renderBlind() {
   const name = inBlind && S.boss ? BOSSES[S.boss].name : ({ small: 'Small Blind', big: 'Big Blind', boss: 'Boss Blind' })[kind];
   const pct = S.target ? Math.min(100, 100 * S.score / S.target) : 0;
   const reward = (kind === 'small' && smallPaysNothing()) ? 0 : CFG.blindReward[kind];
-  const targetVal = inBlind ? S.target : Math.floor(CFG.anteBase[Math.min(S.ante, CFG.antes) - 1] * CFG.blindMult[kind] * stakeTargets());
-  let h = `<div class="blindplate${S.boss && inBlind ? ' bossplate' : ''}"><div class="bp-top"><span class="label">Ante ${Math.min(S.ante, CFG.antes)} of ${CFG.antes}</span><span class="label">${inBlind ? (kind === 'boss' ? 'Boss Blind' : '') : 'Next up'}</span></div><div class="blind-name${S.boss && inBlind ? ' boss' : ''}">${name}</div>`;
+  const targetVal = inBlind ? S.target : blindTarget(kind);
+  let h = `<div class="blindplate${S.boss && inBlind ? ' bossplate' : ''}"><div class="bp-top"><span class="label">${anteLabel()}</span><span class="label">${inBlind ? (kind === 'boss' ? 'Boss Blind' : '') : 'Next up'}</span></div><div class="blind-name${S.boss && inBlind ? ' boss' : ''}">${name}</div>`;
   if (inBlind && S.boss) h += `<div class="boss-desc">${BOSSES[S.boss].desc}${S.boss === 'collector' && S.bossSuit ? ` <b>This Blind: ${SUIT_EN[S.bossSuit]}.</b>` : ''}${S.boss === 'gatekeeper' ? (S.firstPlayDone ? ' <b>First Play done.</b>' : '') : ''}</div>`;
-  h += `<div class="bp-row"><div><div class="label">Score at least</div><div class="target num">${targetVal.toLocaleString()}</div></div><div class="bp-reward" title="Plus ¥1 per unused Play and ¥1 interest per ¥5 held (max ¥5)"><div class="label">Reward</div><div class="num">¥${reward}<span class="muted" style="font-size:11px;font-family:var(--body)"> +extras</span></div></div></div></div>`;
+  h += `<div class="bp-row"><div><div class="label">Score at least</div><div class="target num">${fmtN(targetVal)}</div></div><div class="bp-reward" title="Plus ¥1 per unused Play and ¥1 interest per ¥5 held (max ¥5)"><div class="label">Reward</div><div class="num">¥${reward}<span class="muted" style="font-size:11px;font-family:var(--body)"> +extras</span></div></div></div></div>`;
   if (S.tags && S.tags.length) h += `<div class="label" style="margin-top:8px">Tags</div><div class="flowers">${S.tags.map(t => `<span class="flowerchip" title="${TAGS[t].desc}">${TAGS[t].name}</span>`).join('')}</div>`;
-  if (inBlind) h += `<div class="roundscore"><div class="label">Round Score</div><div class="rs num${S.score >= S.target ? ' met' : ''}" id="roundScore">${S.score.toLocaleString()}</div><div class="rsbar"><i id="roundBar" style="width:${pct}%"></i></div></div>`;
+  if (inBlind) h += `<div class="roundscore"><div class="label">Round Score</div><div class="rs num${S.score >= S.target ? ' met' : ''}" id="roundScore">${fmtN(S.score)}</div><div class="rsbar"><i id="roundBar" style="width:${pct}%"></i></div></div>`;
   if (inBlind) {
     const pv = PREVIEW;
     if (S.busy) h += `<div class="handbox scoring" id="scorebox"></div>`;
@@ -2127,15 +2142,15 @@ function renderActions() {
 }
 function renderLast() {
   const c = S.lastPlay; const box = $('#lastPlay');
-  if (!c) { box.innerHTML = `<div class="label">Last Play</div><div class="muted" style="font-size:12px;margin-top:4px">Nothing scored yet. Best this run: ${S.stats.best.toLocaleString()}${S.stats.bestDesc ? ' (' + S.stats.bestDesc + ')' : ''}</div>`; return; }
+  if (!c) { box.innerHTML = `<div class="label">Last Play</div><div class="muted" style="font-size:12px;margin-top:4px">Nothing scored yet. Best this run: ${fmtN(S.stats.best)}${S.stats.bestDesc ? ' (' + S.stats.bestDesc + ')' : ''}</div>`; return; }
   let h = `<div class="label">Last Play</div><div style="font-family:var(--display);font-size:15px;margin:2px 0 6px">${c.desc}</div>`;
   if (c.kind === 'meld' && c.nMelds >= 2) h += `<div class="muted" style="font-size:11px;margin:-4px 0 6px">${c.nChi ? c.nChi + ' Chi ' : ''}${c.nPon ? c.nPon + ' Pon ' : ''}${c.nKan ? c.nKan + ' Kan ' : ''}${c.hasPair ? '+ pair' : ''}</div>`;
   for (const l of c.lines) h += `<div class="row"><span>${l.label}</span><span class="num">${l.val}</span></div>`;
   h += `<div class="formula num" style="margin-top:6px">${c.han} Han → ${c.tier} ×${c.baseMult}${c.xmult !== 1 ? ` · tiles ×${fmtMult(c.xmult)}` : ''}${c.mult !== c.baseMult * c.xmult ? ` → ×${fmtMult(c.mult)} after Talismans${c.furiten ? ' and Furiten' : ''}` : ''}</div>`;
-  h += `<div class="total num">${c.chips} × ${fmtMult(c.mult)} = ${c.total.toLocaleString()}</div>`;
+  h += `<div class="total num">${c.chips} × ${fmtMult(c.mult)} = ${fmtN(c.total)}</div>`;
   box.innerHTML = h;
 }
-function popScore(n) { const p = document.createElement('div'); p.className = 'score-pop num'; p.textContent = '+' + n.toLocaleString(); $('#pop').appendChild(p); setTimeout(() => p.remove(), 1500); }
+function popScore(n) { const p = document.createElement('div'); p.className = 'score-pop num'; p.textContent = '+' + fmtN(n); $('#pop').appendChild(p); setTimeout(() => p.remove(), 1500); }
 
 // ===================== HAND DRAG & DROP =====================
 let drag = null;
@@ -2228,12 +2243,12 @@ async function animateScore(ctx) {
   chips = ctx.chips; han = ctx.han; mult = ctx.mult; setMath(); heat();
   await wait(350);
   // the total replaces the play name, then counts down into the round score
-  nameEl.hidden = true; totWrap.hidden = false; totEl.textContent = ctx.total.toLocaleString(); totEl.classList.add('final'); fitText(totEl);
+  nameEl.hidden = true; totWrap.hidden = false; totEl.textContent = fmtN(ctx.total); totEl.classList.add('final'); fitText(totEl);
   await wait(ctx.kind === 'hand' ? 700 : 450);
   const rsEl = $('#roundScore'); const from = S.score, to = S.score + ctx.total; const dur = (motionOK && !skipAnim) ? Math.round(650 * SPEEDS[ANIM_SPEED]) : 0;
-  if (rsEl) { rsEl.textContent = to.toLocaleString(); fitText(rsEl); rsEl.textContent = from.toLocaleString(); }
-  if (dur > 0) { const t0 = performance.now(); await new Promise(res => { const step = now => { const k = Math.min(1, (now - t0) / dur); const e = 1 - Math.pow(1 - k, 3); totEl.textContent = Math.round(ctx.total * (1 - e)).toLocaleString(); if (rsEl) { const v = from + (to - from) * e; rsEl.textContent = Math.round(v).toLocaleString(); rsEl.classList.toggle('met', v >= S.target); const bar = $('#roundBar'); if (bar) bar.style.width = Math.min(100, 100 * v / S.target) + '%'; } if (k < 1) requestAnimationFrame(step); else res(); }; requestAnimationFrame(step); }); }
-  if (rsEl) { rsEl.textContent = to.toLocaleString(); fitText(rsEl); rsEl.classList.remove('bump'); void rsEl.offsetWidth; rsEl.classList.add('bump'); }
+  if (rsEl) { rsEl.textContent = fmtN(to); fitText(rsEl); rsEl.textContent = fmtN(from); }
+  if (dur > 0) { const t0 = performance.now(); await new Promise(res => { const step = now => { const k = Math.min(1, (now - t0) / dur); const e = 1 - Math.pow(1 - k, 3); totEl.textContent = fmtN(Math.round(ctx.total * (1 - e))); if (rsEl) { const v = from + (to - from) * e; rsEl.textContent = fmtN(Math.round(v)); rsEl.classList.toggle('met', v >= S.target); const bar = $('#roundBar'); if (bar) bar.style.width = Math.min(100, 100 * v / S.target) + '%'; } if (k < 1) requestAnimationFrame(step); else res(); }; requestAnimationFrame(step); }); }
+  if (rsEl) { rsEl.textContent = fmtN(to); fitText(rsEl); rsEl.classList.remove('bump'); void rsEl.offsetWidth; rsEl.classList.add('bump'); }
   await wait(250);
   skipAnim = false;
 }
@@ -2300,7 +2315,7 @@ function cashoutHTML() {
   const cap = hasF('winter') ? 10 : CFG.interestCap;
   const rows = [['Blind reward', names[r.kind], r.base], ['Unused Plays', `${r.left} × ¥1`, r.left], ['Interest', `¥1 per ¥${CFG.interestPer} held, up to ¥${cap}`, r.interest], r.tal ? ['Talismans', 'end-of-Blind payouts', r.tal] : null, r.summer ? ['Summer', 'Flower', r.summer] : null, r.invest ? ['Investment Tag', 'Boss bonus', r.invest] : null].filter(Boolean);
   let h = `<div class="cashhead"><div class="label">${names[r.kind]} defeated</div><h2>${bossName ? bossName + ' beaten' : 'Blind cleared'}</h2>`;
-  if (S.target) h += `<div class="cashscore num"><b>${S.score.toLocaleString()}</b> <span class="muted">of ${S.target.toLocaleString()}</span></div>`;
+  if (S.target) h += `<div class="cashscore num"><b>${fmtN(S.score)}</b> <span class="muted">of ${fmtN(S.target)}</span></div>`;
   h += `</div><div class="receipt">${rows.map(([k, d, v]) => `<div class="rrow"><div><div class="rl">${k}</div><div class="rd muted">${d}</div></div><b class="num">¥${v}</b></div>`).join('')}<div class="rtotal"><span>Total</span><b class="num">¥${r.total}</b></div></div>`;
   h += `<div class="cashfoot"><span class="muted" style="font-size:12px">You now have</span>${walletHTML()}</div><button id="mCashOut" class="primary cashbtn">Cash Out →</button>`;
   return h;
@@ -2354,13 +2369,13 @@ function overHTML(won) {
   const st = S.stats; const pct = S.target ? Math.min(100, 100 * S.score / S.target) : 100;
   const where = S.boss ? BOSSES[S.boss].name : ({ small: 'the Small Blind', big: 'the Big Blind', boss: 'the Boss Blind' })[blindKind()];
   const stat = (label, v) => `<div class="stat"><div class="label">${label}</div><div class="v num">${v}</div></div>`;
-  let h = `${won ? '<div class="herotiles small" id="heroTiles"></div>' : ''}<div class="overhead"><div class="label">${won ? 'Run complete' : 'Run over'}</div><h2 class="${won ? '' : 'lost'}">${won ? 'You broke the bank!' : 'The syndicate collects.'}</h2>`;
-  h += won ? `<p class="muted">All ${CFG.antes} Antes cleared on ${STAKES[S.stake].name} with the ${DECKS[S.deckKey].name}.</p>` : `<p class="muted">Out of Plays on Ante ${S.ante} against ${where}.</p><div class="overscore"><div class="row"><span class="label">Round Score</span><span class="num"><b>${S.score.toLocaleString()}</b> <span class="muted">of ${S.target.toLocaleString()}</span></span></div><div class="overbar"><i style="width:${pct}%"></i></div></div>`;
-  h += `</div><div class="overstats">${stat('Ante reached', `${Math.min(S.ante, CFG.antes)} / ${CFG.antes}`)}${stat('Blinds won', st.blinds)}${stat('Complete Hands', st.hands)}${stat('Partial Plays', st.melds)}${stat('YEN', '¥' + S.money)}</div>`;
-  h += `<div class="overbest"><div><div class="label">Best Play</div><div class="v num">${st.best.toLocaleString()}</div></div>${st.bestDesc ? `<div class="muted">${st.bestDesc}</div>` : ''}</div>`;
+  let h = `${won ? '<div class="herotiles small" id="heroTiles"></div>' : ''}<div class="overhead"><div class="label">${won ? 'Run complete' : S.endless ? 'Endless run over' : 'Run over'}</div><h2 class="${won ? '' : 'lost'}">${won ? 'You broke the bank!' : 'The syndicate collects.'}</h2>`;
+  h += won ? `<p class="muted">All ${CFG.antes} Antes cleared on ${STAKES[S.stake].name} with the ${DECKS[S.deckKey].name}.</p>` : `<p class="muted">${S.endless ? `You won the run, then reached Ante ${S.ante} in Endless Mode. Out of Plays against ${where}.` : `Out of Plays on Ante ${S.ante} against ${where}.`}</p><div class="overscore"><div class="row"><span class="label">Round Score</span><span class="num"><b>${fmtN(S.score)}</b> <span class="muted">of ${fmtN(S.target)}</span></span></div><div class="overbar"><i style="width:${pct}%"></i></div></div>`;
+  h += `</div><div class="overstats">${stat('Ante reached', S.endless ? `${S.ante}` : `${Math.min(S.ante, CFG.antes)} / ${CFG.antes}`)}${stat('Blinds won', st.blinds)}${stat('Complete Hands', st.hands)}${stat('Partial Plays', st.melds)}${stat('YEN', '¥' + S.money)}</div>`;
+  h += `<div class="overbest"><div><div class="label">Best Play</div><div class="v num">${fmtN(st.best)}</div></div>${st.bestDesc ? `<div class="muted">${st.bestDesc}</div>` : ''}</div>`;
   if (S.newUnlocks && S.newUnlocks.length) h += `<div class="label" style="margin:14px 0 6px">Unlocked this run</div><div class="overtals">${S.newUnlocks.map(unlockLabel).filter(Boolean).map(l => `<span class="overtal newunlock"><span class="muted" style="font-size:11px">${l.kind}</span>${l.name}</span>`).join('')}</div>`;
   h += `<div class="label" style="margin:14px 0 6px">Talismans</div><div class="overtals">${S.talismans.length ? S.talismans.map((k, i) => `<span class="overtal"><span class="order">${i + 1}</span>${TAL[k].name}</span>`).join('') : '<span class="muted">None</span>'}</div>`;
-  h += `<div class="shopfoot"><span class="seedline muted" style="margin:0">Seed <code class="seed">${S.seed}</code> <button class="ghost tiny-btn" data-copyseed>Copy</button> · ${DECKS[S.deckKey].name} · ${STAKES[S.stake].name}</span><span style="flex:1"></span><button id="mNewRun" class="primary">New Run</button></div>`;
+  h += `<div class="shopfoot"><span class="seedline muted" style="margin:0">Seed <code class="seed">${S.seed}</code> <button class="ghost tiny-btn" data-copyseed>Copy</button> · ${DECKS[S.deckKey].name} · ${STAKES[S.stake].name}</span><span style="flex:1"></span>${won ? '<button id="mEndless" class="ghost" title="Keep playing past Ante 8. Targets climb steeply.">Endless Mode</button>' : ''}<button id="mNewRun" class="primary">New Run</button></div>`;
   return h;
 }
 function deckHTML() {
@@ -2392,6 +2407,7 @@ function fullRulesHTML() {
   return `<div class="menu-rules">
   <h3>Playing a Blind</h3>
   <p><b>Goal.</b> Score at least the Blind's target before you run out of Plays. Each Ante has a Small Blind, a Big Blind and a Boss Blind. Beat all ${CFG.antes} Antes to win.</p>
+  <p><b>Endless Mode.</b> After you win, you can keep the same run going past Ante ${CFG.antes}, as in Balatro. Each new Ante draws a fresh Boss and its targets climb steeply: Ante ${CFG.antes + 1} starts at ${fmtN(anteBase(CFG.antes + 1))}, Ante ${CFG.antes + 2} at ${fmtN(anteBase(CFG.antes + 2))} and Ante ${CFG.antes + 3} at ${fmtN(anteBase(CFG.antes + 3))} on White Stake. Your win is already counted, and your Profile keeps your best Ante.</p>
   <p><b>Hand.</b> You hold ${CFG.handSize} tiles drawn from the Wall (136 tiles in the Standard Wall: four of every tile, four of them Red Fives). You refill after every action. A complete hand uses 14 tiles, so you always have spares. If the Wall runs dry you simply stop drawing.</p>
   <p><b>Plays and Discards.</b> You get ${CFG.playsPerBlind} Plays and ${CFG.discardsPerBlind} Discards per Blind, before Talismans, Flowers and Wall effects. A Discard throws up to ${CFG.maxDiscardTiles} tiles into the River, which stays visible for the whole Blind.</p>
   <p><b>Partial plays.</b> Select tiles that split into melds (Chi runs, Pon triplets, Kan quads) plus at most one pair, or two pairs on their own, and press Play. The box in the side panel names the rung it makes: Lone Tile, Pair, Two Pair, one meld, Two Melds, Three Melds, Ready Hand (three melds and a pair) or Four Melds. Bigger rungs score far more, so a hand one tile short is still worth cashing in. Each costs 1 Play. Run Info, Play Ladder tab, lists every rung's Chips and Han.</p>
@@ -2483,8 +2499,8 @@ function profileHTML() {
   const named = (obj, table, nameOf) => { const e = Object.entries(obj).sort((a, b) => b[1] - a[1]); return e.length ? e.map(([k, n]) => `<span class="tagchip">${nameOf(table, k)} ×${n}</span>`).join('') : '<span class="muted">None yet</span>'; };
   const nm = (t, k) => (t[k] && t[k].name) || k, yn = (t, k) => ((YAKU_SHEET.find(y => y.k === k) || YAKUMAN_SHEET.find(y => y.k === k) || {}).n) || k;
   let h = `<p class="muted" style="margin:8px 0">Your progress across every run in this browser. Export it from Settings to move it to another device.</p>`;
-  h += `<div class="overstats">${stat('Runs', P.runs)}${stat('Wins', P.wins)}${stat('Best Ante', P.bestAnte ? `${Math.min(P.bestAnte, CFG.antes)} / ${CFG.antes}` : '—')}${stat('Blinds won', P.blinds)}${stat('Complete Hands', P.hands)}</div>`;
-  h += `<div class="overbest"><div><div class="label">Best Play ever</div><div class="v num">${P.bestPlay ? P.bestPlay.toLocaleString() : '—'}</div></div>${P.bestPlayDesc ? `<div class="muted">${P.bestPlayDesc}</div>` : ''}</div>`;
+  h += `<div class="overstats">${stat('Runs', P.runs)}${stat('Wins', P.wins)}${stat('Best Ante', P.bestAnte ? (P.bestAnte > CFG.antes ? `${P.bestAnte} · Endless` : `${P.bestAnte} / ${CFG.antes}`) : '—')}${stat('Blinds won', P.blinds)}${stat('Complete Hands', P.hands)}</div>`;
+  h += `<div class="overbest"><div><div class="label">Best Play ever</div><div class="v num">${P.bestPlay ? fmtN(P.bestPlay) : '—'}</div></div>${P.bestPlayDesc ? `<div class="muted">${P.bestPlayDesc}</div>` : ''}</div>`;
   const locked = UNLOCKS.filter(u => !P.unlocked.includes(`${u.kind}:${u.key}`)), earned = UNLOCKS.filter(u => P.unlocked.includes(`${u.kind}:${u.key}`));
   h += `<div class="label" style="margin:12px 0 6px">Unlocks · ${earned.length} of ${UNLOCKS.length}${UNLOCK_ALL ? ' · Unlock everything is on in Settings' : ''}</div>`;
   if (earned.length) h += `<div class="overtals" style="margin-bottom:8px">${earned.map(u => `<span class="tagchip">${unlockName(u)}</span>`).join('')}</div>`;
@@ -2557,7 +2573,7 @@ function yakuHTML() {
   if (infoTab === 'run') {
     const kv = (k, v) => `<div class="kv"><span>${k}</span><b>${v}</b></div>`;
     h += `<div class="infogrid">`;
-    h += `<div class="infocard"><div class="label">Run</div>${kv('Seed', `<code class="seed">${S.seed}</code> <button class="ghost tiny-btn" data-copyseed>Copy</button>`)}${kv('Wall', DECKS[S.deckKey].name)}${kv('Stake', STAKES[S.stake].name)}${kv('Ante', `${Math.min(S.ante, CFG.antes)} / ${CFG.antes}`)}${kv('Blinds won', st.blinds)}${kv('Skipped blinds', st.skipped)}${kv('Best play', `${st.best.toLocaleString()}${st.bestDesc ? ' <span class="muted">' + st.bestDesc + '</span>' : ''}`)}</div>`;
+    h += `<div class="infocard"><div class="label">Run</div>${kv('Seed', `<code class="seed">${S.seed}</code> <button class="ghost tiny-btn" data-copyseed>Copy</button>`)}${kv('Wall', DECKS[S.deckKey].name)}${kv('Stake', STAKES[S.stake].name)}${kv('Ante', `${Math.min(S.ante, CFG.antes)} / ${CFG.antes}`)}${kv('Blinds won', st.blinds)}${kv('Skipped blinds', st.skipped)}${kv('Best play', `${fmtN(st.best)}${st.bestDesc ? ' <span class="muted">' + st.bestDesc + '</span>' : ''}`)}</div>`;
     h += `<div class="infocard"><div class="label">Plays this run</div>${kv('Complete hands', st.hands)}${kv('Partial plays', st.melds)}${kv('Calls from the River', st.calls)}${kv('Kans', st.kans)}${kv('Discards', st.discards)}${kv('Most-played rung', most ? (MELD_LABEL[most] || (CFG.rungs[most.replace('rung', '').split('').join(',')] || {}).name || most) : '—')}</div>`;
     const talRows = S.talismans.map((k, i) => { const ed = S.editions[k]; return `<div class="kv"><span><span class="order">${i + 1}</span>${TAL[k].name}${ed ? ` <span class="edtag ed-${ed}">${EDITIONS[ed].name}</span>` : ''}</span><b class="muted" style="font-weight:400;text-align:right;max-width:60%">${TAL[k].status ? TAL[k].status(S) : ''}</b></div>`; }).join('');
     h += `<div class="infocard"><div class="label">Talismans · ${S.talismans.length}/${talSlots()} · fire in this order</div>${talRows || '<div class="muted">None</div>'}</div>`;
@@ -2566,7 +2582,7 @@ function yakuHTML() {
     h += `<div class="infocard"><div class="label">Flowers &amp; Seasons</div>${S.flowers.map(f => kv(FLW[f].name, `<span class="muted" style="font-weight:400">${FLW[f].desc}</span>`)).join('') || '<div class="muted">None</div>'}</div>`;
     h += `<div class="infocard"><div class="label">Tags held</div>${(S.tags || []).map(t => kv(TAGS[t].name, `<span class="muted" style="font-weight:400">${TAGS[t].desc}</span>`)).join('') || '<div class="muted">None</div>'}</div>`;
     h += `</div>`;
-    h += `<div class="infocard" style="margin-top:10px"><div class="label">Bosses</div><div class="bossline">${S.bossOrder.slice(0, CFG.antes).map((b, i) => { const known = i <= S.ante - 1 || st.bosses.includes(b); const beaten = i < S.ante - 1; return `<div class="bossstep${beaten ? ' beaten' : i === S.ante - 1 ? ' now' : ''}"><span class="order">A${i + 1}</span><b>${known ? BOSSES[b].name : '?'}</b>${known ? `<span class="muted">${BOSSES[b].desc}</span>` : ''}</div>`; }).join('')}</div></div>`;
+    h += `<div class="infocard" style="margin-top:10px"><div class="label">Bosses</div><div class="bossline">${S.bossOrder.slice(0, Math.max(CFG.antes, S.ante)).map((b, i) => { const known = i <= S.ante - 1 || st.bosses.includes(b); const beaten = i < S.ante - 1; return `<div class="bossstep${beaten ? ' beaten' : i === S.ante - 1 ? ' now' : ''}"><span class="order">A${i + 1}</span><b>${known ? BOSSES[b].name : '?'}</b>${known ? `<span class="muted">${BOSSES[b].desc}</span>` : ''}</div>`; }).join('')}</div></div>`;
   } else if (infoTab === 'profile') { h += profileHTML();
   } else if (infoTab === 'ladder') {
     const lv = k => (S && S.scrolls.meld[k]) || 0; const lvTag = k => lv(k) ? ` <span class="tag">Lv.${lv(k) + 1}</span>` : '';
@@ -2626,7 +2642,7 @@ function setupHTML() {
 }
 function fillTileArt(root) { root && root.querySelectorAll('.tilesart').forEach(box => { if (box.children.length) return; const ts = []; for (const g of box.dataset.tiles.split(' ')) { const m = g.match(/^(\d+)([mpsz])(r?)$/); if (m) for (const d of m[1]) ts.push({ id: 0, suit: m[2], rank: +d, red: !!m[3], eng: null }); } ts.forEach((t, i) => { const e = tileEl(t, { small: true }); const k = i - (ts.length - 1) / 2; e.style.transform = `rotate(${k * 8}deg) translateY(${Math.abs(k) * 4}px)`; e.style.cursor = 'default'; box.appendChild(e); }); }); }
 function menuHTML(hasSave) {
-  const where = hasSave && S ? `Ante ${Math.min(S.ante, CFG.antes)} · ${S.phase === 'blind' ? ({ small: 'Small Blind', big: 'Big Blind', boss: S.boss ? BOSSES[S.boss].name : 'Boss Blind' })[blindKind()] : S.phase === 'shop' ? 'Shop' : 'Blind Select'} · ¥${S.money}` : '';
+  const where = hasSave && S ? `${S.ante > CFG.antes ? `Endless Ante ${S.ante}` : `Ante ${S.ante}`} · ${S.phase === 'blind' ? ({ small: 'Small Blind', big: 'Big Blind', boss: S.boss ? BOSSES[S.boss].name : 'Boss Blind' })[blindKind()] : S.phase === 'shop' ? 'Shop' : 'Blind Select'} · ¥${S.money}` : '';
   return `<div class="hero"><div class="herotiles" id="heroTiles"></div>
   <h1 class="herotitle" data-notr>Yakuman</h1><div class="herokanji" data-notr>${LANG === 'hk' ? '役滿' : '役満'}</div>
   <p class="herotag">A Mahjong roguelite in the Balatro mould. Build hands, chase Yaku, stack Talismans, and outscore eight Antes of Yakuza bosses.</p>
@@ -2731,6 +2747,7 @@ function bindEvents() {
     if (t.id === 'mResetProfile') { showModal(`<div class="shophead"><h2>Reset Profile?</h2></div><p class="muted" style="margin:4px 0 0">Lifetime stats in this browser will be cleared and every unlock will lock again (${unlockedCount()} of ${UNLOCKS.length} unlocked). Your current run and settings stay. Export first if you want a copy.</p><div class="shopfoot"><button id="mClose" class="ghost">Cancel</button><span style="flex:1"></span><button id="mConfirmReset" class="danger">Reset Profile</button></div>`, true, 'confirmmodal'); backToSettings(); return; }
     if (t.id === 'mConfirmReset') { PROFILE = blankProfile(); saveProfile(); showModal(settingsHTML(), true); return; }
     if (t.id === 'mClose') { if (!t.onclick) { hideModal(); render(); } }   // a custom back action (to the menu or Settings) has already run
+    else if (t.id === 'mEndless') { S.endless = true; ensureBosses(); genShop(); S.phase = 'cashout'; setMsg(''); render(); }
     else if (t.id === 'mNewRun' || t.id === 'mStart') { showModal(setupHTML(), true, 'setupmodal'); }
     else if (t.dataset.nav || t.dataset.goto) { const [name, d] = (t.dataset.nav || t.dataset.goto).split(':'); const seed = ($('#seedInput') || {}).value || ''; const before = setupKeys(name).indexOf(setupKey(name)); if (t.dataset.nav) setupSel[name] += +d; else setupSel[name] = +d; setupDir[name] = t.dataset.nav ? +d : Math.sign(+d - before); showModal(setupHTML(), true, 'setupmodal'); $('#seedInput').value = seed; }
     else if (t.id === 'mStartRun') { if (lockOf('wall', setupKey('deck')) || stakeLock(setupKey('deck'), setupKey('stake'))) return; const deck = ($('#modal input[name=deck]') || {}).value, stake = ($('#modal input[name=stake]') || {}).value, seed = ($('#seedInput') || {}).value; hideModal(); newRun({ deck, stake, seed }); }
