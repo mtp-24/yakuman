@@ -1,10 +1,10 @@
 // Full-run simulator: drives the real game engine (scoreCtx, bestHand, partitionPlay) with a scripted player and a shop policy.
 const fs=require('fs'); const SRC=process.argv[2]; const RUNS=+process.argv[3]||200;
 require('vm').runInThisContext(fs.readFileSync(SRC+'/data.js','utf8')+fs.readFileSync(SRC+'/engine.js','utf8'));
-const TAL_PRI={hannya:10,gashadokuro:9,ryujin:8,nureonna:8,ushioni:8,rokurokubi:7,daruma:7,nurarihyon:7,oni:6,ryu:6,kitsune:6,sazaeoni:6,tengu:6,komainu:6,maneki:5,nekomata:5,shikigami:5,yatagarasu:5,amanojaku:5,tsukumogami:5,kodama:4,namazu:4,jorogumo:4,koi:4,baku:4,nue:4,jizo:4,kappa:4,tsuru:3,yukionna:3,tanuki:3,mizuchi:3,nurikabe:3,funayurei:3,zashiki:2,amabie:2,hakutaku:2,hitotsume:2};
+const TAL_PRI={kasaobake:7,ittanmomen:5,hannya:10,gashadokuro:9,ryujin:8,nureonna:8,ushioni:8,rokurokubi:7,daruma:7,nurarihyon:7,oni:6,ryu:6,kitsune:6,sazaeoni:6,tengu:6,komainu:6,maneki:5,nekomata:5,shikigami:5,yatagarasu:5,amanojaku:5,tsukumogami:5,kodama:4,namazu:4,jorogumo:4,koi:4,baku:4,nue:4,jizo:4,kappa:4,tsuru:3,yukionna:3,tanuki:3,mizuchi:3,nurikabe:3,funayurei:3,zashiki:2,amabie:2,hakutaku:2,hitotsume:2};
 const SCR_PRI={'m:hand':6,'m:chi':5,'m:pon':3,'m:pair':2,'m:kan':1,'y:tanyao':4,'y:pinfu':3,'y:yakuhai':3,'y:honitsu':2,'y:toitoi':2,'y:chinitsu':1,'y:chiitoitsu':1,'y:sanshoku':1,'y:ittsu':1,'y:chanta':1};
 const FLW_PRI={bamboo:8,plum:7,orchid:6,chrysanthemum:4,winter:4,summer:4,spring:1,autumn:1};
-const RESERVE=+process.argv[4]||0; const VARIANT=process.argv[5]||'base'; CFG.sharkPerAction=true;
+const RESERVE=+process.argv[4]||0; const ORDERED=process.argv[6]==='ordered'; const VARIANT=process.argv[5]||'base'; CFG.sharkPerAction=true;
 if(VARIANT==='plays5') CFG.playsPerBlind=5;
 if(VARIANT==='gentle') { CFG.anteBase[0]=250; CFG.anteBase[1]=700; }
 if(VARIANT==='money8') CFG.startMoney=8;
@@ -59,6 +59,9 @@ function shop(S){
   const cards=[roll(),roll()]; const scroll={kind:'scroll',def:pick(SCROLLS)}; const fl=FLOWERS.filter(f=>!S.flowers.includes(f.key)); const flower=fl.length?{kind:'flower',def:pick(fl)}:null;
   const items=[...cards,scroll,flower].filter(Boolean).map(it=>{ let v=0; if(it.kind==='talisman') v=(TAL_PRI[it.def.key]||3)+(S.talismans.length<5?0:-99); else if(it.kind==='scroll') v=SCR_PRI[it.def.key]||1; else if(it.kind==='flower') v=FLW_PRI[it.def.key]||1; else v=-1; return {it,v:v+(it.edition?2:0),p:price(it.def.cost+(it.edition?EDITIONS[it.edition].price:0))}; }).filter(x=>x.v>0).sort((a,b)=>b.v/b.p-a.v/a.p);
   for(const x of items){ if(S.money-x.p<RESERVE) continue; const it=x.it; if(it.kind==='talisman'){ if(S.talismans.length>=CFG.talismanSlots) continue; S.talismans.push(it.def.key); if(it.edition) S.editions[it.def.key]=it.edition; } else if(it.kind==='scroll'){ const [t,k]=it.def.key.split(':'); const b=t==='m'?'meld':'yaku'; S.scrolls[b][k]=(S.scrolls[b][k]||0)+1; } else if(it.kind==='flower'){ S.flowers.push(it.def.key); } S.money-=x.p; S.bought.push(it.def.key); }
+  // arrange Talismans the way a player would: +Chips and +Mult first, xMult last
+  const XM=new Set(['oni','ryu','nue','hannya','gashadokuro','rokurokubi','ushioni','nurarihyon','mizuchi']);
+  if(ORDERED) S.talismans.sort((a,b)=>(XM.has(a)?1:0)-(XM.has(b)?1:0));
 }
 const reach=new Array(9).fill(0); const dieAt={}; let wins=0; const moneyAt={}; const talAt={}; const stats={hands:0,partials:0,calls:0,kans:0,blinds:0}; const STATS={rinshan:0};
 for(let r=0;r<RUNS;r++){
@@ -71,7 +74,7 @@ for(let r=0;r<RUNS;r++){
     shop(S);
   }
 }
-console.log(`[${VARIANT}] Full runs: ${RUNS}, shop policy: spend down to $${RESERVE} on Talismans/Scrolls/Flowers by value per dollar, never buys consumables.`);
+console.log(`[${VARIANT}${ORDERED?', Talismans ordered +Mult before xMult':', Talismans in purchase order'}] Full runs: ${RUNS}, shop policy: spend down to $${RESERVE} on Talismans/Scrolls/Flowers by value per dollar, never buys consumables.`);
 console.log('Reached Ante:', [2,3,4,5,6,7,8].map(a=>`A${a} ${(100*reach[a-1]/RUNS).toFixed(0)}%`).join('  '), ` | WON ${(100*wins/RUNS).toFixed(1)}%`);
 console.log('Avg money / Talismans entering Ante:', [2,3,4,5,6,7,8].filter(a=>reach[a-1]).map(a=>`A${a} $${(moneyAt[a]/reach[a-1]).toFixed(0)} / ${(talAt[a]/reach[a-1]).toFixed(1)}`).join('  '));
 console.log('Deaths:', Object.entries(dieAt).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([k,v])=>`${k} ${(100*v/RUNS).toFixed(0)}%`).join(' | '));

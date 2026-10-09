@@ -27,6 +27,7 @@ const CFG = {
   // Playtest 15: 5 Plays (was 4), start ¥8 (was ¥4), Ante 1-2 targets 250/700 (were 300/800), Loan Shark charges per Discard action.
   // Playtest 16: Declare Kan (closed), replacement draw after any Kan, Rinshan Kaihou.
   // Playtest 17: Talisman editions (Foil / Holographic / Polychrome), Red Seal and Glass engravings, live score preview.
+  // Playtest 23: Talismans fire in slot order after the Han table; flat +Mult class; drag to reorder Talismans.
   hanTable: [1, 2, 4, 8, 15, 15, 25, 25, 40, 40, 40, 60, 60, 100],
   tierNames: ['None', 'Standard', 'Advanced', 'Master', 'Mangan', 'Mangan', 'Haneman', 'Haneman', 'Baiman', 'Baiman', 'Baiman', 'Sanbaiman', 'Sanbaiman', 'Yakuman'],
   shopWeights: { talisman: 0.5, omikuji: 0.35, kami: 0.15 },
@@ -100,10 +101,10 @@ const BOSSES = {
 // ===================== TALISMANS (Jokers) =====================
 const TALISMANS = [
   { key: 'kappa', name: 'Kappa', cost: 6, desc: 'Furiten no longer halves your score. Instead, +100 Chips for each copy of the winning tile sitting in your River.' },
-  { key: 'kitsune', name: 'Kitsune', cost: 6, desc: '+1 Han on every Complete Hand.', onScore: c => c.kind === 'hand' ? { han: 1 } : null },
+  { key: 'kitsune', name: 'Kitsune', cost: 6, desc: '+8 Mult on every Complete Hand.', onScore: c => c.kind === 'hand' ? { mult: 8 } : null },
   { key: 'tanuki', name: 'Tanuki', cost: 4, desc: '+30 Chips on every partial play.', onScore: c => c.kind === 'meld' ? { chips: 30 } : null },
   { key: 'maneki', name: 'Maneki-neko', cost: 5, desc: 'Earn ¥3 extra when a Blind is defeated.', onBlindEnd: () => 3 },
-  { key: 'tengu', name: 'Tengu', cost: 6, desc: '+1 Han for every Chi in a partial play.', onScore: c => c.kind === 'meld' && c.nChi ? { han: c.nChi } : null },
+  { key: 'tengu', name: 'Tengu', cost: 6, desc: '+4 Mult for every Chi in a partial play.', onScore: c => c.kind === 'meld' && c.nChi ? { mult: 4 * c.nChi } : null },
   { key: 'oni', name: 'Oni', cost: 6, desc: 'Partial plays containing a Pon or Kan score x1.5 Mult.', onScore: c => c.kind === 'meld' && (c.nPon || c.nKan) ? { xmult: 1.5 } : null },
   { key: 'hitotsume', name: 'Hitotsume-kozō', cost: 4, desc: 'Lone Tile plays gain +40 Chips and +1 Han.', onScore: c => c.kind === 'meld' && c.meldType === 'single' ? { chips: 40, han: 1 } : null },
   { key: 'daruma', name: 'Daruma', cost: 5, desc: '+4 Chips for every tile in the River when you score.', onScore: (c, S) => S.river.length ? { chips: 4 * S.river.length } : null },
@@ -119,7 +120,7 @@ const TALISMANS = [
   { key: 'hannya', name: 'Hannya', cost: 8, desc: 'x3 Mult on every play, but -1 Play each Blind.', onScore: () => ({ xmult: 3 }), plays: -1 },
   { key: 'tsukumogami', name: 'Tsukumogami', cost: 5, desc: '+1 Chip for every tile left in the Wall when you score.', onScore: (c, S) => ({ chips: S.wall.length }) },
   { key: 'nurikabe', name: 'Nurikabe', cost: 5, desc: '+50 Chips if the play contains no Red Fives.', onScore: c => c.redCount === 0 ? { chips: 50 } : null },
-  { key: 'tengoku', name: 'Amanojaku', cost: 6, desc: 'Open-meld Complete Hands gain +2 Han. Closed ones gain nothing.', onScore: (c, S) => c.kind === 'hand' && S.open.length ? { han: 2 } : null },
+  { key: 'tengoku', name: 'Amanojaku', cost: 6, desc: '+10 Mult on Complete Hands that use open melds. Closed ones gain nothing.', onScore: (c, S) => c.kind === 'hand' && S.open.length ? { mult: 10 } : null },
   // --- Retriggers: a tile scores again (its chips, Red Five Han, Dora and engravings all repeat)
   { key: 'nekomata', name: 'Nekomata', cost: 6, desc: 'Red Fives score a second time.', retrigger: t => t.red ? 1 : 0 },
   { key: 'shikigami', name: 'Shikigami', cost: 5, desc: 'The leftmost tile of every play scores a second time. Drag tiles to choose which.', retrigger: (t, c, S, i) => i === 0 ? 1 : 0 },
@@ -133,12 +134,15 @@ const TALISMANS = [
   { key: 'ushioni', name: 'Ushi-oni', cost: 7, desc: 'x2 Mult on the last Play of each Blind.', onScore: (c, S) => S.plays === 1 ? { xmult: 2 } : null },
   { key: 'nurarihyon', name: 'Nurarihyon', cost: 6, desc: 'x1.5 Mult if the play contains no Honor tiles.', onScore: c => c.tiles.some(isHonor) ? null : { xmult: 1.5 } },
   { key: 'zashiki', name: 'Zashiki-warashi', cost: 4, desc: 'Earn ¥1 every time a Red Five scores.', onScore: c => c.redCount ? { money: c.redCount } : null },
+  // --- Flat Mult, scaling
+  { key: 'kasaobake', name: 'Kasa-obake', cost: 5, desc: 'Gains +2 Mult for every Blind you defeat.', onBlindEnd: S => { S.talState.kasaobake = (S.talState.kasaobake || 0) + 2; return 0; }, onScore: (c, S) => S.talState.kasaobake ? { mult: S.talState.kasaobake } : null, status: S => `now +${S.talState.kasaobake || 0} Mult` },
+  { key: 'ittanmomen', name: 'Ittan-momen', cost: 4, desc: '+12 Mult on every play, but −30 Chips.', onScore: c => ({ mult: 12, chips: -30 }) },
   // --- River play
-  { key: 'nureonna', name: 'Nure-onna', cost: 6, desc: '+1 Han for every 10 tiles in the River when you score (max +3).', onScore: (c, S) => Math.min(3, Math.floor(S.river.length / 10)) ? { han: Math.min(3, Math.floor(S.river.length / 10)) } : null },
+  { key: 'nureonna', name: 'Nure-onna', cost: 6, desc: '+1 Mult for every tile in the River when you score (max +20).', onScore: (c, S) => S.river.length ? { mult: Math.min(20, S.river.length) } : null },
   { key: 'ryujin', name: 'Ryūjin', cost: 8, desc: 'Calling from the River no longer costs a Play.', freeCall: true },
   { key: 'namazu', name: 'Namazu', cost: 5, desc: 'Tiles you Called from the River give +30 Chips.', onTile: (t, S) => S.open.some(m => m.calledId === t.id) ? { chips: 30 } : null },
   { key: 'funayurei', name: 'Funayūrei', cost: 5, desc: 'Each Blind begins with 3 tiles from the Wall already in the River.', onBlindStart: S => { for (let i = 0; i < 3 && S.wall.length; i++) S.river.push(S.wall.pop()); } },
-  { key: 'sazaeoni', name: 'Sazae-oni', cost: 6, desc: 'Each Call adds +1 Han to your next Complete Hand.', onCall: S => { S.talState.sazaeoni = (S.talState.sazaeoni || 0) + 1; }, onScore: (c, S) => c.kind === 'hand' && S.talState.sazaeoni ? { han: S.talState.sazaeoni } : null, afterScore: (c, S) => { if (c.kind === 'hand') S.talState.sazaeoni = 0; }, status: S => `stored +${S.talState.sazaeoni || 0} Han` },
+  { key: 'sazaeoni', name: 'Sazae-oni', cost: 6, desc: 'Each Call stores +3 Mult for your next Complete Hand.', onCall: S => { S.talState.sazaeoni = (S.talState.sazaeoni || 0) + 1; }, onScore: (c, S) => c.kind === 'hand' && S.talState.sazaeoni ? { mult: 3 * S.talState.sazaeoni } : null, afterScore: (c, S) => { if (c.kind === 'hand') S.talState.sazaeoni = 0; }, status: S => `stored +${3 * (S.talState.sazaeoni || 0)} Mult` },
   { key: 'amabie', name: 'Amabie', cost: 4, desc: 'Earn ¥1 whenever you discard 5 or more tiles at once.', onDiscard: (S, tiles) => { if (tiles.length >= 5) S.money += 1; } },
   { key: 'mizuchi', name: 'Mizuchi', cost: 6, desc: 'x1.5 Mult while your River holds fewer than 8 tiles.', onScore: (c, S) => S.river.length < 8 ? { xmult: 1.5 } : null },
 ];
@@ -259,7 +263,7 @@ const YAKUMAN_SHEET = [
 
 // ===================== TERMINOLOGY: Riichi (default) vs Hong Kong =====================
 // Display strings are translated at render time by whole-word replacement. Logic and saves never change.
-const HK_TALISMAN = { kappa: '水鬼 Water Ghost', kitsune: '狐仙 Fox Spirit', tanuki: '貔貅 Pixiu', maneki: '招財貓 Lucky Cat', tengu: '雷震子 Leizhenzi', oni: '牛魔王 Bull Demon King', daruma: '達摩 Bodhidharma', tsuru: '仙鶴 Crane', koi: '錦鯉 Golden Carp', ryu: '龍王 Dragon King', jizo: '地藏 Dizang', komainu: '石獅 Stone Lion', yukionna: '雪妖 Snow Demon', baku: '貘 Mo', nue: '四不像 Sibuxiang', kodama: '樹精 Tree Spirit', hannya: '夜叉 Yaksha', tsukumogami: '器靈 Object Spirit', nurikabe: '門神 Door God', tengoku: '馬騮精 Monkey Spirit', hitotsume: '獨眼鬼 One-eyed Ghost', nekomata: '貓妖 Cat Demon', shikigami: '紙人 Paper Effigy', kirin: '麒麟 Qilin', hakutaku: '白澤 Bai Ze', yatagarasu: '金烏 Golden Crow', gashadokuro: '骷髏精 Skeleton Spirit', jorogumo: '蜘蛛精 Spider Spirit', rokurokubi: '長頸鬼 Long-neck Ghost', ushioni: '牛頭 Ox-Head', nurarihyon: '無常 Wuchang', zashiki: '福童 Fortune Child', nureonna: '白蛇 White Snake', ryujin: '龍母 Dragon Mother', namazu: '鯉魚精 Carp Spirit', funayurei: '鬼船 Ghost Ship', sazaeoni: '螺精 Conch Spirit', amabie: '人魚 Mermaid', mizuchi: '蛟 Flood Dragon' };
+const HK_TALISMAN = { kasaobake: '傘妖 Umbrella Ghost', ittanmomen: '布妖 Cloth Ghost', kappa: '水鬼 Water Ghost', kitsune: '狐仙 Fox Spirit', tanuki: '貔貅 Pixiu', maneki: '招財貓 Lucky Cat', tengu: '雷震子 Leizhenzi', oni: '牛魔王 Bull Demon King', daruma: '達摩 Bodhidharma', tsuru: '仙鶴 Crane', koi: '錦鯉 Golden Carp', ryu: '龍王 Dragon King', jizo: '地藏 Dizang', komainu: '石獅 Stone Lion', yukionna: '雪妖 Snow Demon', baku: '貘 Mo', nue: '四不像 Sibuxiang', kodama: '樹精 Tree Spirit', hannya: '夜叉 Yaksha', tsukumogami: '器靈 Object Spirit', nurikabe: '門神 Door God', tengoku: '馬騮精 Monkey Spirit', hitotsume: '獨眼鬼 One-eyed Ghost', nekomata: '貓妖 Cat Demon', shikigami: '紙人 Paper Effigy', kirin: '麒麟 Qilin', hakutaku: '白澤 Bai Ze', yatagarasu: '金烏 Golden Crow', gashadokuro: '骷髏精 Skeleton Spirit', jorogumo: '蜘蛛精 Spider Spirit', rokurokubi: '長頸鬼 Long-neck Ghost', ushioni: '牛頭 Ox-Head', nurarihyon: '無常 Wuchang', zashiki: '福童 Fortune Child', nureonna: '白蛇 White Snake', ryujin: '龍母 Dragon Mother', namazu: '鯉魚精 Carp Spirit', funayurei: '鬼船 Ghost Ship', sazaeoni: '螺精 Conch Spirit', amabie: '人魚 Mermaid', mizuchi: '蛟 Flood Dragon' };
 const HK_CONS = { redseal: '紅印籤 Red Seal', glass: '玻璃籤 Glass', dup: '分身籤 Duplication', ascend: '升籤 Ascension', descend: '降籤 Descent', toman: '萬子籤 Characters', topin: '筒子籤 Dots', tosou: '索子籤 Bamboo', destroy: '化灰籤 Dust', dragon: '紅中籤 Red Dragon', redfive: '紅五籤 Red Five', indicator: '寶牌籤 Bonus Tile', wealth: '橫財籤 Windfall', gold: '金箔籤 Gold Foil', obsidian: '黑曜籤 Obsidian', dragonmark: '龍紋籤 Dragon Mark', jade: '翡翠籤 Jade', susanoo: '哪吒 Nezha', inari: '財神 God of Wealth', raijin: '雷公 Lei Gong', tsukuyomi: '嫦娥 Chang’e', amaterasu: '媽祖 Mazu' };
 const HK_SCROLL = { 'm:pair': '對子秘笈 Pairs Manual', 'm:chi': '上牌秘笈 Chow Manual', 'm:pon': '碰牌秘笈 Pung Manual', 'm:kan': '槓牌秘笈 Kong Manual', 'm:hand': '食糊秘笈 Winning Manual', 'y:tanyao': '斷幺九秘笈 All Simples Manual', 'y:pinfu': '平糊秘笈 All Chows Manual', 'y:yakuhai': '番牌秘笈 Honour Set Manual', 'y:honitsu': '混一色秘笈 Mixed Suit Manual', 'y:chinitsu': '清一色秘笈 Pure Suit Manual', 'y:toitoi': '對對糊秘笈 All Pungs Manual', 'y:chiitoitsu': '七對子秘笈 Seven Pairs Manual', 'y:sanshoku': '三色同順秘笈 Triple Chow Manual', 'y:ittsu': '一條龍秘笈 Straight Manual', 'y:chanta': '混全帶幺秘笈 Outside Hand Manual' };
 const HK_FLOWER = { plum: '梅 Plum', orchid: '蘭 Orchid', chrysanthemum: '菊 Chrysanthemum', bamboo: '竹 Bamboo', spring: '春 Spring', summer: '夏 Summer', autumn: '秋 Autumn', winter: '冬 Winter' };

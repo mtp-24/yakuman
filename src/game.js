@@ -310,10 +310,10 @@ function renderBlind() {
 }
 function renderTalismans() {
   const box = $('#talismans'); box.innerHTML = '';
-  $('#talCount').textContent = `${S.talismans.length} / ${CFG.talismanSlots}`;
+  $('#talCount').textContent = `${S.talismans.length} / ${CFG.talismanSlots} · fire left to right, drag to reorder`;
   for (let i = 0; i < CFG.talismanSlots; i++) {
     const k = S.talismans[i]; const el = document.createElement('div');
-    if (k) { const ed = S.editions[k]; el.className = 'slot filled' + (S.selTal === k ? ' sel' : '') + (ed ? ' ed-' + ed : ''); el.dataset.tal = TAL[k].name; el.innerHTML = `<div class="n">${TAL[k].name}${ed ? ` <span class="edtag ed-${ed}">${EDITIONS[ed].name}</span>` : ''}</div><div class="d">${TAL[k].desc}${ed ? ` <b>${EDITIONS[ed].desc}.</b>` : ''}${TAL[k].status ? ' <b>(' + TAL[k].status(S) + ')</b>' : ''}</div>`; el.onclick = () => { S.selTal = S.selTal === k ? null : k; render(); }; }
+    if (k) { const ed = S.editions[k]; el.className = 'slot filled' + (S.selTal === k ? ' sel' : '') + (ed ? ' ed-' + ed : ''); el.dataset.tal = TAL[k].name; el.innerHTML = `<div class="n"><span class="order">${i + 1}</span>${TAL[k].name}${ed ? ` <span class="edtag ed-${ed}">${EDITIONS[ed].name}</span>` : ''}</div><div class="d">${TAL[k].desc}${ed ? ` <b>${EDITIONS[ed].desc}.</b>` : ''}${TAL[k].status ? ' <b>(' + TAL[k].status(S) + ')</b>' : ''}</div>`; bindSlotDrag(el, k); }
     else { el.className = 'slot'; el.innerHTML = `<div class="d">Empty slot</div>`; }
     box.appendChild(el);
   }
@@ -413,7 +413,7 @@ function renderLast() {
   let h = `<div class="label">Last play</div><div style="font-family:var(--display);font-size:15px;margin:2px 0 6px">${c.desc}</div>`;
   if (c.kind === 'meld' && c.nMelds >= 2) h += `<div class="muted" style="font-size:11px;margin:-4px 0 6px">${c.nChi ? c.nChi + ' Chi ' : ''}${c.nPon ? c.nPon + ' Pon ' : ''}${c.nKan ? c.nKan + ' Kan ' : ''}${c.hasPair ? '+ pair' : ''}</div>`;
   for (const l of c.lines) h += `<div class="row"><span>${l.label}</span><span class="num">${l.val}</span></div>`;
-  h += `<div class="formula num" style="margin-top:6px">${c.han} Han → ${c.tier} ×${c.baseMult}${c.xmult !== 1 ? ` · ×${fmtMult(c.xmult)} Mult` : ''}${c.furiten ? ' · Furiten ×0.5' : ''}</div>`;
+  h += `<div class="formula num" style="margin-top:6px">${c.han} Han → ${c.tier} ×${c.baseMult}${c.xmult !== 1 ? ` · tiles ×${fmtMult(c.xmult)}` : ''}${c.mult !== c.baseMult * c.xmult ? ` → ×${fmtMult(c.mult)} after Talismans${c.furiten ? ' and Furiten' : ''}` : ''}</div>`;
   h += `<div class="total num">${c.chips} × ${fmtMult(c.mult)} = ${c.total.toLocaleString()}</div>`;
   box.innerHTML = h;
 }
@@ -441,6 +441,27 @@ function bindTileDrag(el, t) {
   };
   el.addEventListener('pointerup', finish); el.addEventListener('pointercancel', finish);
 }
+// Talisman slots: drag to reorder (they fire left to right), tap to select for selling.
+let slotDrag = null;
+function bindSlotDrag(el, k) {
+  el.addEventListener('pointerdown', e => { if (S.busy || e.button) return; slotDrag = { k, el, x: e.clientX, y: e.clientY, moved: false }; try { el.setPointerCapture(e.pointerId); } catch (err) { } });
+  el.addEventListener('pointermove', e => {
+    if (!slotDrag || slotDrag.el !== el) return; const dx = e.clientX - slotDrag.x, dy = e.clientY - slotDrag.y;
+    if (!slotDrag.moved && Math.hypot(dx, dy) > 8) { slotDrag.moved = true; el.classList.add('dragging'); }
+    if (slotDrag.moved) { el.style.transform = `translate(${dx}px,${dy}px)`; const others = [...$('#talismans').children].filter(x => x !== el && x.classList.contains('filled')); others.forEach(x => x.classList.remove('drop-before', 'drop-after')); const idx = slotDropIndex(e.clientX, e.clientY, el); if (idx < others.length) others[idx].classList.add('drop-before'); else if (others.length) others[others.length - 1].classList.add('drop-after'); }
+  });
+  const finish = e => {
+    if (!slotDrag || slotDrag.el !== el) return; const d = slotDrag; slotDrag = null; el.style.transform = ''; el.classList.remove('dragging'); [...$('#talismans').children].forEach(x => x.classList.remove('drop-before', 'drop-after'));
+    if (d.moved && e.type === 'pointerup') { const idx = slotDropIndex(e.clientX, e.clientY, el); const rest = S.talismans.filter(x => x !== d.k); rest.splice(idx, 0, d.k); S.talismans = rest; render(); }
+    else if (!d.moved && e.type === 'pointerup') { S.selTal = S.selTal === k ? null : k; render(); }
+  };
+  el.addEventListener('pointerup', finish); el.addEventListener('pointercancel', finish);
+}
+function slotDropIndex(x, y, skipEl) {
+  const els = [...$('#talismans').children].filter(e => e !== skipEl && e.classList.contains('filled'));
+  for (let i = 0; i < els.length; i++) { const r = els[i].getBoundingClientRect(); if (y < r.top - 6) return i; if (y <= r.bottom + 6 && x < r.left + r.width / 2) return i; }
+  return els.length;
+}
 // ===================== SCORING ANIMATION =====================
 const motionOK = !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 let skipAnim = false;
@@ -454,26 +475,27 @@ async function animateScore(ctx) {
   const chipsEl = stage.querySelector('.chips'), multEl = stage.querySelector('.mult'), totEl = stage.querySelector('.tot');
   const tileMap = new Map(ctx.tiles.map(t => [t.id, t])); const tileEls = new Map();
   for (const h of ctx.hits) { const e = tileEl(tileMap.get(h.id), { small: true }); tilesBox.appendChild(e); tileEls.set(h.id, e); }
-  let chips = 0, han = 0, xm = 1;
-  const setMath = () => { chipsEl.textContent = chips; multEl.textContent = fmtMult(hanMult(han) * xm); totEl.textContent = Math.floor(chips * hanMult(han) * xm).toLocaleString(); };
-  const showLine = l => { const d = document.createElement('div'); d.className = 'sline' + (l.zero ? ' bad' : '') + (l.yaku ? ' yaku' : '') + (l.tal ? ' tal' : ''); d.innerHTML = `<span>${tr(l.label)}</span><span class="num">${tr(l.val)}</span>`; linesBox.appendChild(d); linesBox.scrollTop = linesBox.scrollHeight; if (l.tal) { const slot = document.querySelector(`.slot[data-tal="${l.tal}"]`); if (slot) { slot.classList.remove('bounce'); void slot.offsetWidth; slot.classList.add('bounce'); } } };
-  const applyLine = l => { if (l.zero) chips = 0; else { chips += l.chips || 0; han += l.han || 0; xm *= l.xmult || 1; } setMath(); };
+  let chips = 0, han = 0, tileX = 1, mult = null;
+  const curMult = () => mult === null ? hanMult(han) * tileX : mult;
+  const setMath = () => { chipsEl.textContent = Math.max(0, Math.round(chips)); multEl.textContent = fmtMult(curMult()); totEl.textContent = Math.floor(Math.max(0, chips) * curMult()).toLocaleString(); };
+  const showLine = l => { const d = document.createElement('div'); d.className = 'sline' + (l.zero ? ' bad' : '') + (l.yaku ? ' yaku' : '') + (l.tal ? ' tal' : '') + (l.convert ? ' convert' : ''); d.innerHTML = `<span>${tr(l.label)}</span><span class="num">${tr(l.val)}</span>`; linesBox.appendChild(d); linesBox.scrollTop = linesBox.scrollHeight; if (l.tal) { const slot = document.querySelector(`.slot[data-tal="${l.tal}"]`); if (slot) { slot.classList.remove('bounce'); void slot.offsetWidth; slot.classList.add('bounce'); } } };
+  const applyLine = l => { if (l.zero) chips = 0; else { chips += l.chips || 0; han += l.han || 0; if (l.convert) mult = hanMult(han) * tileX; if (l.mult) mult = (mult === null ? hanMult(han) * tileX : mult) + l.mult; if (l.xmult && mult !== null) mult *= l.xmult; } setMath(); };
   setMath();
   const base = ctx.lines.find(l => l.base); if (base) { showLine(base); applyLine(base); await wait(260); }
   const mathEl = stage.querySelector('.stage-math'); let fire = 0;
-  const heat = () => { const tot = chips * hanMult(han) * xm; const lvl = S.target && tot >= 3 * S.target ? 2 : S.target && tot >= S.target ? 1 : 0; if (lvl !== fire) { fire = lvl; mathEl.classList.toggle('hot', lvl >= 1); mathEl.classList.toggle('blazing', lvl >= 2); if (lvl >= 1 && !stage.querySelector('.ember')) for (let i = 0; i < 10; i++) { const em = document.createElement('i'); em.className = 'ember'; em.style.left = (8 + Math.random() * 84) + '%'; em.style.animationDelay = (Math.random() * 1.2) + 's'; em.style.animationDuration = (1 + Math.random()) + 's'; stage.querySelector('.stage-inner').appendChild(em); } } };
+  const heat = () => { const tot = Math.max(0, chips) * curMult(); const lvl = S.target && tot >= 3 * S.target ? 2 : S.target && tot >= S.target ? 1 : 0; if (lvl !== fire) { fire = lvl; mathEl.classList.toggle('hot', lvl >= 1); mathEl.classList.toggle('blazing', lvl >= 2); if (lvl >= 1 && !stage.querySelector('.ember')) for (let i = 0; i < 10; i++) { const em = document.createElement('i'); em.className = 'ember'; em.style.left = (8 + Math.random() * 84) + '%'; em.style.animationDelay = (Math.random() * 1.2) + 's'; em.style.animationDuration = (1 + Math.random()) + 's'; stage.querySelector('.stage-inner').appendChild(em); } } };
   for (const h of ctx.hits) {
     const e = tileEls.get(h.id); const per = { chips: h.chips / h.times, han: h.han / h.times, x: Math.pow(h.xmult, 1 / h.times) };
     for (let r = 0; r < h.times; r++) {
       e.classList.remove('hit'); void e.offsetWidth; e.classList.add('hit');
       const f = document.createElement('div'); f.className = 'float num' + (r ? ' again' : ''); f.textContent = (r ? 'Again! ' : '') + `+${Math.round(per.chips)}` + (per.han ? tr(` · +${per.han} Han`) : '') + (per.x !== 1 ? ` · ×${fmtMult(per.x)}` : ''); e.appendChild(f);
-      chips += per.chips; han += per.han; xm *= per.x; setMath(); heat();
+      chips += per.chips; han += per.han; tileX *= per.x; setMath(); heat();
       await wait(r ? 200 : 95);
     }
     e.classList.remove('hit');
   }
   for (const l of ctx.lines) { if (l.base || l.tiles) continue; showLine(l); if (!l.info) applyLine(l); heat(); await wait(l.yaku ? 260 : 180); }
-  chips = ctx.chips; han = ctx.han; xm = ctx.xmult * (ctx.furiten ? 0.5 : 1); setMath(); heat(); totEl.textContent = ctx.total.toLocaleString();
+  chips = ctx.chips; han = ctx.han; mult = ctx.mult; setMath(); heat(); totEl.textContent = ctx.total.toLocaleString();
   totEl.classList.add('final'); await wait(ctx.kind === 'hand' ? 900 : 550);
   stage.hidden = true; stage.innerHTML = ''; skipAnim = false;
 }
@@ -523,7 +545,8 @@ function rulesHTML() {
   <p><b>Hand.</b> You hold ${CFG.handSize} tiles from a 136-tile Wall (4 of each tile; four of the 5s are Red Fives). You refill after every action. A complete hand uses 14 of them, so you always have spare tiles to work with.</p>
   <p><b>Partial play.</b> Select any tiles that split into melds (Chi runs, Pon triplets, Kan quads) plus at most one pair, and press Play. The button names the rung: Lone Tile, Pair, Two Pair, one meld, Two Melds, Three Melds, Ready Hand (3 melds + pair), Four Melds. Bigger rungs score far more, so a hand that falls one tile short is still worth cashing in. Costs 1 Play. See the Yaku button for the full ladder.</p>
   <p><b>Complete hand.</b> Select 14 tiles (4 melds + a pair, or Seven Pairs / Thirteen Orphans) and press Play. Yaku add Han, and Han sets the multiplier: 1 Han ×2, 2 ×4, 3 ×8, 4–5 ×15, 6–7 ×25, 8–10 ×40, 11–12 ×60, 13+ ×100.</p>
-  <p><b>Chips.</b> 2–8 are worth their face value, 1s, 9s and Honors are worth 10. Score = Chips × Multiplier.</p>
+  <p><b>Chips.</b> 2–8 are worth their face value, 1s, 9s and Honors are worth 10. Score = Chips × Mult.</p>
+  <p><b>How Mult is built.</b> Han from the play, Yaku, Red Fives, Dora and Scrolls is converted once through the Han table into a starting Mult. Then your Talismans fire left to right: some add Chips, some add flat Mult (+4 Mult), some multiply (×1.5 Mult). Because they fire in order, a +Mult Talisman placed before a ×Mult Talisman scores more than the reverse. Drag Talismans to arrange them; the number on each card is its firing order.</p>
   <p><b>Discard.</b> Throw up to ${CFG.maxDiscardTiles} tiles into the River. Costs 1 Discard. The River stays visible for the whole Blind. You get ${CFG.playsPerBlind} Plays and ${CFG.discardsPerBlind} Discards per Blind before Talismans and Flowers.</p>
   <p><b>Call.</b> Select one River tile and 2–3 hand tiles that form a meld with it, then press Call. Costs 1 Play, no score yet. The meld is set aside as Open and counts toward your complete hand. Open hands get reduced Han on some Yaku, and lose closed-only Yaku (Pinfu, Iipeikou...). After a call you discard 1 tile to settle it; this does not use a Discard.</p>
   <p><b>Arranging your hand.</b> Drag any hand tile to reorder it, with a mouse or a finger. Dragging switches off auto-sort; the Sort button sorts the hand again and keeps new tiles sorted in. Tiles score in the order they sit in your hand, which matters for Shikigami and for the scoring animation.</p>
@@ -550,7 +573,7 @@ function yakuHTML() {
   h += `<div style="overflow-x:auto;margin-top:10px"><table class="sheet"><thead><tr><th>Han</th><th>Mult</th><th>Tier</th></tr></thead><tbody>`;
   for (const [hh, m, t] of [[0, 1, '—'], [1, 2, 'Standard'], [2, 4, 'Advanced'], [3, 8, 'Master'], ['4–5', 15, 'Mangan'], ['6–7', 25, 'Haneman'], ['8–10', 40, 'Baiman'], ['11–12', 60, 'Sanbaiman'], ['13+', 100, 'Yakuman']]) h += `<tr><td class="num">${hh}</td><td class="num">×${m}</td><td>${t}</td></tr>`;
   h += `</tbody></table></div>`;
-  h += `<p style="margin:12px 0 6px"><b>Extra Han on any play:</b> each Red Five +1 (Koi: +2). Each tile matching a flipped Dora indicator +1. Dragon Mark engraving +1. Furiten (the newest-drawn tile of your complete hand has a copy in your River) halves the multiplier.</p>`;
+  h += `<p style="margin:12px 0 6px"><b>Extra Han on any play:</b> each Red Five +1 (Koi: +2). Each tile matching a flipped Dora indicator +1. Dragon Mark engraving +1. Han is converted through the table once; after that Talismans fire left to right, adding Chips, adding flat Mult or multiplying Mult, so put +Mult Talismans before ×Mult ones. Furiten (the newest-drawn tile of your complete hand has a copy in your River) halves the final Mult.</p>`;
   h += `<div style="overflow-x:auto"><table class="sheet"><thead><tr><th>Yaku</th><th>Han</th><th>Pattern</th></tr></thead><tbody>`;
   for (const y of YAKU_SHEET) h += row(y);
   h += `</tbody></table></div>`;

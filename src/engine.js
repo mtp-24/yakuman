@@ -236,25 +236,38 @@ function scoreCtx(S, kind, tiles, info) {
       else ctx.furiten = true;
     }
   }
-  // ---- Talismans
+  // ---- Talismans, pass 1: Han (feeds the Han table) in slot order
+  const results = [];
   for (const k of S.talismans) {
-    const d = TAL[k]; if (!d.onScore) continue; const r = d.onScore(ctx, S); if (!r) continue;
-    const parts = apply(r); if (parts.length) L(d.name, parts.join(', '), { chips: r.chips || 0, han: r.han || 0, xmult: r.xmult || 1, tal: d.name });
+    const d = TAL[k]; const r = d.onScore ? (d.onScore(ctx, S) || null) : null; const ed = S.editions && S.editions[k] && EDITIONS[S.editions[k]];
+    results.push({ k, d, r, ed });
+    if (r && r.han) { ctx.han += r.han; L(d.name, `+${r.han} Han`, { han: r.han, tal: d.name }); }
+    if (ed && ed.han) { ctx.han += ed.han; L(`${d.name} (${ed.name})`, `+${ed.han} Han`, { han: ed.han, tal: d.name }); }
   }
-  // ---- Talisman editions
-  for (const k of S.talismans) {
-    const ed = S.editions && S.editions[k]; if (!ed || !EDITIONS[ed]) continue; const e = EDITIONS[ed];
-    const r = { chips: e.chips || 0, han: e.han || 0, xmult: e.xmult || 0 }; const parts = apply(r);
-    L(`${TAL[k].name} (${e.name})`, parts.join(', '), { chips: r.chips, han: r.han, xmult: r.xmult || 1, tal: TAL[k].name });
+  // ---- Han table: Han becomes the starting Mult. Tile multipliers (Jade, Glass) apply here.
+  ctx.baseMult = hanMult(ctx.han); ctx.tier = tierName(ctx.han);
+  ctx.mult = ctx.baseMult * ctx.xmult;
+  L(`${ctx.han} Han → ×${ctx.baseMult}${ctx.xmult !== 1 ? ` · tiles ×${fmtX(ctx.xmult)}` : ''}`, `Mult ${fmtX(ctx.mult)}`, { convert: true });
+  // ---- Talismans, pass 2: Chips, +Mult and ×Mult in slot order. Order matters: +Mult before ×Mult scores more.
+  for (const { d, r, ed } of results) {
+    const parts = []; const line = { chips: 0, mult: 0, xmult: 1, tal: d.name };
+    if (r) {
+      if (r.chips) { ctx.chips += r.chips; line.chips += r.chips; parts.push(`+${r.chips} Chips`); }
+      if (r.mult) { ctx.mult += r.mult; line.mult += r.mult; parts.push(`+${r.mult} Mult`); }
+      if (r.xmult) { ctx.mult *= r.xmult; line.xmult *= r.xmult; parts.push(`×${r.xmult} Mult`); }
+      if (r.money) { ctx.money += r.money; parts.push(`+¥${r.money}`); }
+    }
+    if (parts.length) L(d.name, parts.join(', '), line);
+    if (ed && (ed.chips || ed.xmult)) { const l2 = { chips: ed.chips || 0, mult: 0, xmult: ed.xmult || 1, tal: d.name }; const p2 = []; if (ed.chips) { ctx.chips += ed.chips; p2.push(`+${ed.chips} Chips`); } if (ed.xmult) { ctx.mult *= ed.xmult; p2.push(`×${ed.xmult} Mult`); } L(`${d.name} (${ed.name})`, p2.join(', '), l2); }
   }
   // ---- Boss and Furiten
   if (S.boss === 'wallbuilder' && kind === 'meld' && ctx.nMelds < 2) { ctx.chips = 0; L('The Wall-Builder', 'fewer than 2 melds: 0 Chips', { zero: true }); }
-  ctx.baseMult = hanMult(ctx.han); ctx.tier = tierName(ctx.han);
-  ctx.mult = ctx.baseMult * ctx.xmult;
   if (ctx.furiten) { ctx.mult *= 0.5; L(`Furiten (${ctx.winningTile} is in your River)`, '×0.5 Mult', { xmult: 0.5 }); }
+  ctx.mult = Math.round(ctx.mult * 100) / 100; ctx.chips = Math.max(0, ctx.chips);
   ctx.total = Math.floor(ctx.chips * ctx.mult);
   return ctx;
 }
+function fmtX(m) { return Number.isInteger(m) ? m : +m.toFixed(2); }
 
 // ===================== SHANTEN (distance to a complete hand) =====================
 // Returns -1 when the tiles already contain a complete hand, 0 when one tile away (tenpai), 1 when two away, etc.

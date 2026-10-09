@@ -36,6 +36,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 20: drag-and-drop hand reordering (mouse and touch); tiles score in hand order; Shikigami uses the leftmost tile.
 - Build 21: header buttons grouped into an even grid on narrow screens; shop reward list names the blind properly; simulator shop rolls editions.
 - Build 22: The Wall-Builder zeroes only plays with fewer than two melds (was three).
+- Build 23: Talismans fire in slot order after the Han table; flat +Mult class (Kitsune, Tengu, Amanojaku, Nure-onna, Sazae-oni converted; Kasa-obake and Ittan-momen added); drag to reorder Talismans; running Mult in the animation and breakdown.
 - Build 7: multi-meld play ladder (Two Melds ... Four Melds), targets 300...45000, retrigger and scaling Talismans, Wall-Builder rewording, scoring animation.
 
 ## Simulators (in `sim/`)
