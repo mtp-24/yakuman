@@ -100,6 +100,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 89: pack screens match the shop: pack name with the wallet chip, a "Cards · choose N more" label above the cards, purchase messages under the cards, owned cards left-aligned, and the same footer with View Wall on the left and Skip the Rest on the right.
 - Build 90: pack cards left-aligned on the same grid as the shop; only the Your Tiles row stays centred in its box.
 - Build 91: money chip removed from pack screens (nothing in a pack costs money); selling a Talisman now says how much you got, and Slip of Wealth used in a pack reports +¥5.
+- Build 92: Tiles Away helper hint on by default (Waiting On and Without These stay off); Settings and Rules text updated.
 - Build 7: multi-meld play ladder (Two Melds ... Four Melds), targets 300...45000, retrigger and scaling Talismans, Wall-Builder rewording, scoring animation.
 
 ## Simulators (in `sim/`)
