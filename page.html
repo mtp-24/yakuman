@@ -65,7 +65,7 @@ aside{display:flex;flex-direction:column;gap:10px;min-width:0}
 .lastplay .formula{color:var(--muted)}
 
 .board{display:flex;flex-direction:column;gap:10px;min-width:0}
-.zone{background:var(--felt);border:1px solid var(--line);border-radius:10px;padding:8px 10px;min-width:0}
+.zone{background:var(--felt);border:1px solid var(--line);border-radius:10px;padding:8px 10px;min-width:0;overflow:visible}
 .zone .zhead{flex-wrap:wrap}
 .zone .zhead{display:flex;align-items:center;gap:10px;margin-bottom:6px}
 .zone .zhead .label{color:#bfd0c6}
@@ -275,6 +275,16 @@ button.pulse{animation:btnpulse 1s ease-in-out infinite;box-shadow:0 0 0 0 rgba(
 .stage-math .chipbox,.stage-math .multbox{font-size:24px;min-width:72px}
 .stage-math .x{color:var(--fg);font-size:20px}
 @media (max-width:820px){.chipbox,.multbox{min-width:54px;font-size:18px;padding:3px 10px}}
+.handbox.scoring{position:relative;overflow:hidden;border-color:var(--accent)}
+.handbox .hb-total{display:flex;align-items:baseline;gap:8px;font-family:var(--display);font-size:24px;margin-top:4px} .handbox .hb-total .eq{color:var(--muted);font-size:16px} .handbox .hb-total .tot{color:var(--accent);margin-left:auto}
+.handbox .hb-lines{max-height:150px;overflow:auto;font-size:11px;border-top:1px dashed var(--line);margin-top:6px;padding-top:4px}
+.handbox.hot .tot{color:#ff9f43;text-shadow:0 0 12px #ff6b1a,0 0 28px #ff3d00;animation:flame .5s ease-in-out infinite alternate}
+.handbox.blazing .hb-math{animation:shake .25s linear infinite}
+.handbox .tot.final{animation:pulse .5s ease-out}
+#hand .tile.hit,#open .tile.hit{transform:translateY(-8px) scale(1.1);box-shadow:0 3px 0 #8f815f,0 0 0 2px var(--accent),0 0 14px var(--accent);z-index:20}
+#hand .tile .float,#open .tile .float{position:absolute;left:50%;top:-6px;transform:translate(-50%,-100%);white-space:nowrap;font-size:11px;font-family:var(--body);font-weight:700;color:var(--accent);text-shadow:0 1px 3px #000;animation:floatup .9s ease-out forwards;pointer-events:none;z-index:25}
+#hand .tile .float.again,#open .tile .float.again{color:var(--bad)}
+@media (max-width:820px){.handbox .hb-lines{max-height:90px}}
 .tag{display:inline-block;font-size:10px;padding:1px 6px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);color:var(--muted);margin-left:4px}
 .flowers{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}
 .flowerchip{font-size:11px;background:rgba(240,163,184,.12);border:1px solid rgba(240,163,184,.4);border-radius:10px;padding:1px 7px;color:#f0a3b8}
@@ -1063,6 +1073,8 @@ function waitsOf(hand, openCount) {
 // ===================== TERMINOLOGY SWITCH =====================
 let LANG = 'ja'; try { LANG = localStorage.getItem('yakuman.lang') === 'hk' ? 'hk' : 'ja'; } catch (e) { }
 let SHOW_DOTS = true; try { SHOW_DOTS = localStorage.getItem('yakuman.dots') !== 'off'; } catch (e) { }
+const SPEEDS = { slow: 1.7, normal: 1, fast: 0.45, instant: 0 };
+let ANIM_SPEED = 'normal'; try { const v = localStorage.getItem('yakuman.speed'); if (SPEEDS[v] !== undefined) ANIM_SPEED = v; } catch (e) { }
 let HK_RE = null, HK_MAP = null;
 function buildHK() {
   HK_MAP = Object.assign({}, HK_TERMS);
@@ -1098,6 +1110,7 @@ function settingsHTML() {
   return `<h2>Settings</h2>
   <div class="setrow"><div><b>Terminology</b><div class="muted">Riichi uses Japanese names (Chi, Pon, Kan, Han, Yaku, ¥). Hong Kong uses English names (Chow, Pung, Kong, Faan, $).</div></div><div class="setbtns"><button class="${LANG === 'ja' ? 'primary' : ''}" data-setlang="ja">Riichi</button><button class="${LANG === 'hk' ? 'primary' : ''}" data-setlang="hk">Hong Kong</button></div></div>
   <div class="setrow"><div><b>Dead-tile dots</b><div class="muted">Green dots mark tiles you can discard without losing progress toward a complete hand.</div></div><div class="setbtns"><button class="${SHOW_DOTS ? 'primary' : ''}" data-setdots="on">On</button><button class="${!SHOW_DOTS ? 'primary' : ''}" data-setdots="off">Off</button></div></div>
+  <div class="setrow"><div><b>Scoring animation speed</b><div class="muted">How fast tiles and Talismans score. Instant shows the result at once. Clicking anywhere during scoring also skips.</div></div><div class="setbtns">${Object.keys(SPEEDS).map(k => `<button class="${ANIM_SPEED === k ? 'primary' : ''}" data-setspeed="${k}">${k[0].toUpperCase() + k.slice(1)}</button>`).join('')}</div></div>
   <div class="setrow"><div><b>Debug tools</b><div class="muted">A bar under the board with money, plays, items, bosses and editions for playtesting.</div></div><div class="setbtns"><button class="${dbgOn ? 'primary' : ''}" data-setdbg="on">Show</button><button class="${!dbgOn ? 'primary' : ''}" data-setdbg="off">Hide</button></div></div>
   <div class="setrow"><div><b>Saved run</b><div class="muted">The current run is saved in this browser automatically.</div></div><div class="setbtns"><button class="danger" data-wipe>Wipe save and reload</button></div></div>
   <div style="margin-top:12px"><button id="mClose" class="primary">Close</button></div>`;
@@ -1378,6 +1391,7 @@ const $ = s => document.querySelector(s);
 function fmtMult(m) { return Number.isInteger(m) ? m : (+m.toFixed(2)); }
 function tileEl(t, o = {}) {
   const el = document.createElement('div');
+  el.dataset.id = t.id;
   el.className = 'tile ' + t.suit + (t.red ? ' red' : '') + (t.eng ? ' eng-' + t.eng : '') + (o.sel ? ' sel' : '') + (o.small ? ' small' : '') + (o.back ? ' back' : '') + (o.called ? ' called' : '');
   if (!o.back) {
     el.innerHTML = tileSVG(t);
@@ -1460,7 +1474,8 @@ function renderBlind() {
   if (inBlind) h += `<div class="bar"><i style="width:${pct}%"></i></div><div class="num" style="font-size:13px">Scored <b style="color:var(--accent)">${S.score.toLocaleString()}</b></div>`;
   if (inBlind) {
     const pv = PREVIEW;
-    if (S.pendingDiscard) h += `<div class="handbox pend"><div class="hb-name">Settle your Call</div><div class="muted" style="font-size:12px">Discard ${S.pendingDiscard} tile, then you can Play.</div></div>`;
+    if (S.busy) h += `<div class="handbox scoring" id="scorebox"></div>`;
+    else if (S.pendingDiscard) h += `<div class="handbox pend"><div class="hb-name">Settle your Call</div><div class="muted" style="font-size:12px">Discard ${S.pendingDiscard} tile, then you can Play.</div></div>`;
     else if (pv && pv.ctx) {
       // Balatro-style: only the play's base values here; tiles, Yaku bonuses and Talismans are revealed when the play scores.
       const c = pv.ctx; const base = c.lines.find(l => l.base) || { chips: 0, han: 0 };
@@ -1641,39 +1656,35 @@ function slotDropIndex(x, y, skipEl) {
 // ===================== SCORING ANIMATION =====================
 const motionOK = !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 let skipAnim = false;
-function wait(ms) { return new Promise(r => setTimeout(r, (motionOK && !skipAnim) ? ms : 0)); }
+function wait(ms) { return new Promise(r => setTimeout(r, (motionOK && !skipAnim) ? Math.round(ms * SPEEDS[ANIM_SPEED]) : 0)); }
 async function animateScore(ctx) {
-  const stage = $('#stage'); skipAnim = false; stage.hidden = false;
-  stage.innerHTML = `<div class="stage-inner"><div class="stage-title">${ctx.rungName || ''}${ctx.kind === 'hand' ? ' · ' + ctx.desc : ''}</div><div class="stage-tiles"></div><div class="stage-lines"></div><div class="stage-math num"><span class="chips chipbox">0</span><span class="x">×</span><span class="mult multbox">1</span><span class="eq">=</span><span class="tot">0</span></div><div class="stage-skip muted">click to skip</div></div>`;
-  stage.onclick = () => { skipAnim = true; };
-  translateDOM(stage);
-  const tilesBox = stage.querySelector('.stage-tiles'), linesBox = stage.querySelector('.stage-lines');
-  const chipsEl = stage.querySelector('.chips'), multEl = stage.querySelector('.mult'), totEl = stage.querySelector('.tot');
-  const tileMap = new Map(ctx.tiles.map(t => [t.id, t])); const tileEls = new Map();
-  for (const h of ctx.hits) { const e = tileEl(tileMap.get(h.id), { small: true }); tilesBox.appendChild(e); tileEls.set(h.id, e); }
+  skipAnim = false;
+  const box = $('#scorebox'); if (!box) return;
+  box.innerHTML = `<div class="hb-name">${tr(ctx.rungName || '')}${ctx.kind === 'hand' ? ' <span class="muted">· ' + tr(ctx.desc) + '</span>' : ''}</div><div class="hb-math num"><span class="chipbox">0</span><span class="px">×</span><span class="multbox">1</span></div><div class="hb-total num"><span class="eq">=</span><span class="tot">0</span></div><div class="hb-lines"></div><div class="muted" style="font-size:10px;margin-top:4px">click to skip</div>`;
+  const chipsEl = box.querySelector('.chipbox'), multEl = box.querySelector('.multbox'), totEl = box.querySelector('.tot'), linesBox = box.querySelector('.hb-lines'), mathEl = box.querySelector('.hb-math');
+  const tileEls = new Map(); document.querySelectorAll('#hand .tile[data-id], #open .tile[data-id]').forEach(e => tileEls.set(+e.dataset.id, e));
   let chips = 0, han = 0, tileX = 1, mult = null;
   const curMult = () => mult === null ? hanMult(han) * tileX : mult;
   const setMath = () => { chipsEl.textContent = Math.max(0, Math.round(chips)); multEl.textContent = fmtMult(curMult()); totEl.textContent = Math.floor(Math.max(0, chips) * curMult()).toLocaleString(); };
   const showLine = l => { const d = document.createElement('div'); d.className = 'sline' + (l.zero ? ' bad' : '') + (l.yaku ? ' yaku' : '') + (l.tal ? ' tal' : '') + (l.convert ? ' convert' : ''); d.innerHTML = `<span>${tr(l.label)}</span><span class="num">${tr(l.val)}</span>`; linesBox.appendChild(d); linesBox.scrollTop = linesBox.scrollHeight; if (l.tal) { const slot = document.querySelector(`.slot[data-tal="${l.tal}"]`); if (slot) { slot.classList.remove('bounce'); void slot.offsetWidth; slot.classList.add('bounce'); } } };
   const applyLine = l => { if (l.zero) chips = 0; else { chips += l.chips || 0; han += l.han || 0; if (l.convert) mult = hanMult(han) * tileX; if (l.mult) mult = (mult === null ? hanMult(han) * tileX : mult) + l.mult; if (l.xmult && mult !== null) mult *= l.xmult; } setMath(); };
+  let fire = 0;
+  const heat = () => { const tot = Math.max(0, chips) * curMult(); const lvl = S.target && tot >= 3 * S.target ? 2 : S.target && tot >= S.target ? 1 : 0; if (lvl !== fire) { fire = lvl; box.classList.toggle('hot', lvl >= 1); box.classList.toggle('blazing', lvl >= 2); if (lvl >= 1 && !box.querySelector('.ember')) for (let i = 0; i < 8; i++) { const em = document.createElement('i'); em.className = 'ember'; em.style.left = (8 + Math.random() * 84) + '%'; em.style.animationDelay = (Math.random() * 1.2) + 's'; em.style.animationDuration = (1 + Math.random()) + 's'; box.appendChild(em); } } };
   setMath();
   const base = ctx.lines.find(l => l.base); if (base) { showLine(base); applyLine(base); await wait(260); }
-  const mathEl = stage.querySelector('.stage-math'); let fire = 0;
-  const heat = () => { const tot = Math.max(0, chips) * curMult(); const lvl = S.target && tot >= 3 * S.target ? 2 : S.target && tot >= S.target ? 1 : 0; if (lvl !== fire) { fire = lvl; mathEl.classList.toggle('hot', lvl >= 1); mathEl.classList.toggle('blazing', lvl >= 2); if (lvl >= 1 && !stage.querySelector('.ember')) for (let i = 0; i < 10; i++) { const em = document.createElement('i'); em.className = 'ember'; em.style.left = (8 + Math.random() * 84) + '%'; em.style.animationDelay = (Math.random() * 1.2) + 's'; em.style.animationDuration = (1 + Math.random()) + 's'; stage.querySelector('.stage-inner').appendChild(em); } } };
   for (const h of ctx.hits) {
     const e = tileEls.get(h.id); const per = { chips: h.chips / h.times, han: h.han / h.times, x: Math.pow(h.xmult, 1 / h.times) };
     for (let r = 0; r < h.times; r++) {
-      e.classList.remove('hit'); void e.offsetWidth; e.classList.add('hit');
-      const f = document.createElement('div'); f.className = 'float num' + (r ? ' again' : ''); f.textContent = (r ? 'Again! ' : '') + `+${Math.round(per.chips)}` + (per.han ? tr(` · +${per.han} Han`) : '') + (per.x !== 1 ? ` · ×${fmtMult(per.x)}` : ''); e.appendChild(f);
+      if (e) { e.classList.remove('hit'); void e.offsetWidth; e.classList.add('hit'); const f = document.createElement('div'); f.className = 'float num' + (r ? ' again' : ''); f.textContent = (r ? 'Again! ' : '') + `+${Math.round(per.chips)}` + (per.han ? tr(` · +${per.han} Han`) : '') + (per.x !== 1 ? ` · ×${fmtMult(per.x)}` : ''); e.appendChild(f); setTimeout(() => f.remove(), 1000); }
       chips += per.chips; han += per.han; tileX *= per.x; setMath(); heat();
       await wait(r ? 200 : 95);
     }
-    e.classList.remove('hit');
+    if (e) e.classList.remove('hit');
   }
   for (const l of ctx.lines) { if (l.base || l.tiles) continue; showLine(l); if (!l.info) applyLine(l); heat(); await wait(l.yaku ? 260 : 180); }
   chips = ctx.chips; han = ctx.han; mult = ctx.mult; setMath(); heat(); totEl.textContent = ctx.total.toLocaleString();
   totEl.classList.add('final'); await wait(ctx.kind === 'hand' ? 900 : 550);
-  stage.hidden = true; stage.innerHTML = ''; skipAnim = false;
+  skipAnim = false;
 }
 // ===================== MODALS =====================
 let modalPinned = false;
@@ -1857,13 +1868,14 @@ function bindEvents() {
 
   $('#btnSettings').onclick = () => showModal(settingsHTML(), true);
   $('#btnNewRun').onclick = () => showModal(`<h2>Start a New Run?</h2><p class="muted">Your current run will be lost.</p><div style="display:flex;gap:8px"><button id="mNewRun" class="danger">New Run</button><button id="mClose">Cancel</button></div>`, true);
-  document.addEventListener('click', e => { const b = e.target.closest('[data-copyseed]'); if (b) copySeed(b); });
+  document.addEventListener('click', e => { const b = e.target.closest('[data-copyseed]'); if (b) copySeed(b); if (S && S.busy) skipAnim = true; });
   $('#overlay').addEventListener('click', e => {
     const t = e.target.closest('button'); if (!t) return;
     if (t.dataset.copyseed != null) return;
     if (t.dataset.tab) { infoTab = t.dataset.tab; showModal(yakuHTML(), true); return; }
     if (t.dataset.setlang) { setLang(t.dataset.setlang); showModal(settingsHTML(), true); return; }
     if (t.dataset.setdots) { SHOW_DOTS = t.dataset.setdots === 'on'; try { localStorage.setItem('yakuman.dots', SHOW_DOTS ? 'on' : 'off'); } catch (e) { } render(); showModal(settingsHTML(), true); return; }
+    if (t.dataset.setspeed) { ANIM_SPEED = t.dataset.setspeed; try { localStorage.setItem('yakuman.speed', ANIM_SPEED); } catch (e) { } showModal(settingsHTML(), true); return; }
     if (t.dataset.setdbg) { const b = $('#debugBar'); b.hidden = t.dataset.setdbg !== 'on'; if (!b.hidden) renderDebug(); showModal(settingsHTML(), true); return; }
     if (t.dataset.wipe != null) { clearSave(); location.reload(); return; }
     if (t.id === 'mClose') { hideModal(); render(); }
