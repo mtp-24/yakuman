@@ -595,27 +595,18 @@ button.pulse{animation:btnpulse 1s ease-in-out infinite;box-shadow:0 0 0 0 rgba(
 .railbtn{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:50px;padding:10px 14px;border-radius:10px;border-color:var(--line)} .railbtn b{font-family:var(--display);font-size:17px;font-weight:500;color:var(--muted)}
 .rerollbtn.railbtn b{color:var(--accent)}
 
-/* ===== Balatro-style scoring: numbers pop, flames over the boxes ===== */
+/* ===== Balatro-style scoring: numbers pop and wobble; fireworks burst over the boxes ===== */
 .hb-math .nv,.hanline{display:inline-block;transform-origin:50% 60%}
 .nv.pop,.hanline.pop{animation:numpop .38s cubic-bezier(.3,1.5,.5,1)}
 @keyframes numpop{0%{transform:scale(1) rotate(0)}25%{transform:scale(1.34) rotate(-7deg)}55%{transform:scale(.94) rotate(4deg)}80%{transform:scale(1.05) rotate(-1deg)}100%{transform:scale(1) rotate(0)}}
 .boxwrap>.boxfoot{border-radius:0 0 8px 8px;position:relative;z-index:2} .capfoot .hantier{font-size:10px;opacity:.85;min-height:12px}
 .chipfoot .hanline{color:#cfe3f6}
 .handbox .hb-head{position:relative;z-index:3}
-.flames{position:absolute;left:6%;right:6%;bottom:calc(100% - 8px);height:0;z-index:1;pointer-events:none;transition:height .35s ease-out;filter:blur(.5px)}
-.flames i{position:absolute;bottom:0;width:36%;height:100%;border-radius:50% 50% 45% 45%/72% 72% 28% 28%;transform-origin:50% 100%;animation:flick .42s ease-in-out infinite alternate;mix-blend-mode:screen}
-.flames i:nth-child(1){left:0;height:70%;animation-delay:-.12s} .flames i:nth-child(2){left:16%;height:95%;animation-delay:-.3s;animation-duration:.5s} .flames i:nth-child(3){left:32%;height:100%;animation-delay:-.05s}
-.flames i:nth-child(4){left:48%;height:85%;animation-delay:-.22s;animation-duration:.38s} .flames i:nth-child(5){left:64%;height:72%;animation-delay:-.34s}
-.chipwrap .flames i{background:radial-gradient(ellipse 50% 100% at 50% 100%,#f0faff 0%,#9adcff 18%,#3d8ff0 45%,rgba(42,116,214,.55) 62%,transparent 78%)}
-.multwrap .flames i{background:radial-gradient(ellipse 50% 100% at 50% 100%,#fff6cf 0%,#ffd36b 18%,#ff7a1f 45%,rgba(230,50,20,.6) 62%,transparent 78%)}
-@keyframes flick{0%{transform:scaleY(.8) scaleX(1.06) skewX(-4deg);opacity:.85}100%{transform:scaleY(1.14) scaleX(.9) skewX(5deg);opacity:1}}
-.handbox[data-fire="1"] .flames{height:26px} .handbox[data-fire="2"] .flames{height:44px} .handbox[data-fire="3"] .flames{height:66px}
 .handbox[data-fire="1"] .chipwrap,.handbox[data-fire="2"] .chipwrap,.handbox[data-fire="3"] .chipwrap{box-shadow:0 0 16px rgba(108,196,255,.5),inset 0 -3px 0 rgba(0,0,0,.25)}
 .handbox[data-fire="1"] .multwrap,.handbox[data-fire="2"] .multwrap,.handbox[data-fire="3"] .multwrap{box-shadow:0 0 16px rgba(255,107,26,.55),inset 0 -3px 0 rgba(0,0,0,.25)}
 .handbox[data-fire="3"] .nv{animation:numsimmer .3s ease-in-out infinite alternate}
 @keyframes numsimmer{from{transform:rotate(-1.5deg) scale(1.02)}to{transform:rotate(1.5deg) scale(1)}}
-@media (prefers-reduced-motion:reduce){.nv.pop,.hanline.pop,.flames i,.handbox[data-fire="3"] .nv{animation:none}}
-
+@media (prefers-reduced-motion:reduce){.nv.pop,.hanline.pop,.handbox[data-fire="3"] .nv{animation:none}}
 /* ===== Next Blind: vermilion, glowing, with a light sweep so it never blends in with the gold Buy buttons ===== */
 .shoprail .nextbtn.primary{position:relative;overflow:hidden;background:linear-gradient(180deg,#e0533f,#a8322a);border:1px solid #ff9a85;color:#fff6ea;min-height:86px;padding:16px;box-shadow:0 0 0 1px rgba(0,0,0,.35),0 10px 24px rgba(201,69,58,.45),inset 0 1px 0 rgba(255,255,255,.35);animation:nbglow 2.4s ease-in-out infinite}
 .shoprail .nextbtn.primary:hover{filter:brightness(1.08);transform:translateY(-1px)}
@@ -644,4 +635,11 @@ button.pulse{animation:btnpulse 1s ease-in-out infinite;box-shadow:0 0 0 0 rgba(
 .tile.eng-gold{box-shadow:var(--bev),var(--body),0 0 12px rgba(226,192,94,.55)} .tile.eng-obsidian,.tile.eng-jade,.tile.eng-steel{box-shadow:var(--bev),var(--body)}
 .tile.eng-glass,.tile.glass{box-shadow:var(--bev),var(--body),inset 0 0 12px rgba(255,255,255,.7)}
 .tile.eng-obsidian::before{background:linear-gradient(180deg,rgba(255,255,255,.3),rgba(255,255,255,0))}
+
+/* Hanabi fireworks over the scoring box */
+.fxlayer{position:absolute;inset:0;pointer-events:none;z-index:4;overflow:visible}
+.fxlayer i{position:absolute;display:block;will-change:transform,opacity}
+.fwrocket{width:3px;height:18px;margin:-18px 0 0 -1.5px;border-radius:2px;background:linear-gradient(180deg,#fff 0%,var(--c) 25%,transparent 100%)}
+.fwspark{width:5px;height:5px;border-radius:50%}
+.fwflash{width:28px;height:28px;border-radius:50%;background:radial-gradient(circle,#fff 0%,var(--c) 35%,transparent 70%)}
 </style>

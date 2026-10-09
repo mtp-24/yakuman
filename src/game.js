@@ -889,12 +889,35 @@ async function animateScore(ctx) {
   const showLine = l => { const d = document.createElement('div'); d.className = 'row sline' + (l.zero ? ' bad' : '') + (l.yaku ? ' yaku' : '') + (l.tal ? ' tal' : '') + (l.convert ? ' convert' : ''); d.innerHTML = `<span>${tr(l.label)}</span><span class="num">${tr(l.val)}</span>`; linesBox.appendChild(d); if (l.tal) { const slot = document.querySelector(`.slot[data-tal="${l.tal}"]`); if (slot) { slot.classList.remove('bounce'); void slot.offsetWidth; slot.classList.add('bounce'); } } };
   const applyLine = l => { if (l.zero) chips = 0; else { chips += l.chips || 0; han += l.han || 0; if (l.convert) mult = hanMult(han) * tileX; if (l.mult) mult = (mult === null ? hanMult(han) * tileX : mult) + l.mult; if (l.xmult && mult !== null) mult *= l.xmult; } setMath(); };
   let fire = 0;
-  // Balatro-style flames over the Chips and Mult boxes once the play beats the target: bigger at 3× and 10× the target.
-  const flameHTML = '<span class="flames" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>';
+  // Hanabi: once a play beats the target, rockets shoot up from below the Chips and Mult boxes and burst above them.
+  // One rocket at 1x the target, two more at 3x, three more at 10x and then one every 0.7 s until scoring ends.
+  // Only transform and opacity animate, so it stays smooth.
+  const fx = document.createElement('div'); fx.className = 'fxlayer'; fx.setAttribute('aria-hidden', 'true'); box.appendChild(fx);
+  const FW = ['#ffd27a', '#7fd0ff', '#ff8a7a', '#f6b6c8', '#c9a7e8', '#bff3d1'];
+  let fwTimer = null;
+  const burst = (x, y, col) => {
+    if (!fx.isConnected) return;
+    const n = 16 + fire * 4, R = 24 + fire * 9;
+    const fl = document.createElement('i'); fl.className = 'fwflash'; fl.style.cssText = `left:${x}px;top:${y}px;--c:${col}`; fx.appendChild(fl);
+    fl.animate([{ transform: 'translate(-50%,-50%) scale(.2)', opacity: .95 }, { transform: 'translate(-50%,-50%) scale(1.7)', opacity: 0 }], { duration: 380, easing: 'ease-out', fill: 'both' }).onfinish = () => fl.remove();
+    for (let k = 0; k < n; k++) {
+      const a = k / n * Math.PI * 2 + Math.random() * .25, d = R * (.75 + Math.random() * .4), dx = Math.cos(a) * d, dy = Math.sin(a) * d;
+      const sp = document.createElement('i'); sp.className = 'fwspark'; sp.style.cssText = `left:${x}px;top:${y}px;background:${Math.random() < .25 ? '#fff8e6' : col}`; fx.appendChild(sp);
+      sp.animate([{ transform: 'translate(-50%,-50%) scale(1)', opacity: 1 }, { transform: `translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px)) scale(.85)`, opacity: 1, offset: .55 }, { transform: `translate(calc(-50% + ${dx * 1.1}px),calc(-50% + ${dy * 1.1 + 16}px)) scale(.3)`, opacity: 0 }],
+        { duration: 900 + Math.random() * 250, easing: 'cubic-bezier(.15,.7,.3,1)', fill: 'both' }).onfinish = () => sp.remove();
+    }
+  };
+  const launch = () => {
+    if (!motionOK || skipAnim || !fx.isConnected) return;
+    const W = box.clientWidth, top = mathEl.offsetTop, y0 = top + mathEl.offsetHeight - 4, x = W * (.12 + Math.random() * .76), y1 = top - 18 - Math.random() * 46, col = FW[Math.floor(Math.random() * FW.length)];
+    const r = document.createElement('i'); r.className = 'fwrocket'; r.style.cssText = `left:${x}px;top:${y0}px;--c:${col}`; fx.appendChild(r);
+    r.animate([{ transform: 'translateY(0)', opacity: 1 }, { transform: `translateY(${y1 - y0}px)`, opacity: 1 }], { duration: 420 + Math.random() * 140, easing: 'cubic-bezier(.25,.6,.45,1)', fill: 'both' }).onfinish = () => { r.remove(); burst(x, y1, col); };
+  };
   const heat = () => {
-    const tot = Math.max(0, chips) * curMult(), r = S.target ? tot / S.target : 0, lvl = r >= 10 ? 3 : r >= 3 ? 2 : r >= 1 ? 1 : 0;
-    if (lvl === fire) return; fire = lvl; box.dataset.fire = lvl; box.classList.toggle('hot', lvl >= 1);
-    if (lvl >= 1) box.querySelectorAll('.boxwrap').forEach(w => { if (!w.querySelector('.flames')) w.insertAdjacentHTML('afterbegin', flameHTML); });
+    const tot = Math.max(0, chips) * curMult(), q = S.target ? tot / S.target : 0, lvl = q >= 10 ? 3 : q >= 3 ? 2 : q >= 1 ? 1 : 0;
+    if (lvl <= fire) return; const prev = fire; fire = lvl; box.dataset.fire = lvl; box.classList.toggle('hot', lvl >= 1);
+    const n = [0, 1, 3, 6][lvl] - [0, 1, 3, 6][prev]; for (let k = 0; k < n; k++) setTimeout(launch, k * 170);
+    if (lvl === 3 && !fwTimer) fwTimer = setInterval(launch, 700);
   };
   setMath();
   // Start from exactly what the hand box previewed: the play's base, its Scroll levels and the Yaku that name the hand.
@@ -922,6 +945,7 @@ async function animateScore(ctx) {
   if (dur > 0) { const t0 = performance.now(); await new Promise(res => { const step = now => { const k = Math.min(1, (now - t0) / dur); const e = 1 - Math.pow(1 - k, 3); totEl.textContent = fmtN(Math.round(ctx.total * (1 - e))); if (rsEl) { const v = from + (to - from) * e; rsEl.textContent = fmtN(Math.round(v)); rsEl.classList.toggle('met', v >= S.target); const bar = $('#roundBar'); if (bar) bar.style.width = Math.min(100, 100 * v / S.target) + '%'; } if (k < 1) requestAnimationFrame(step); else res(); }; requestAnimationFrame(step); }); }
   if (rsEl) { rsEl.textContent = fmtN(to); fitText(rsEl); rsEl.classList.remove('bump'); void rsEl.offsetWidth; rsEl.classList.add('bump'); }
   await wait(250);
+  if (fwTimer) clearInterval(fwTimer);
   skipAnim = false;
 }
 // ===================== MODALS =====================

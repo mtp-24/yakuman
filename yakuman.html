@@ -596,27 +596,18 @@ button.pulse{animation:btnpulse 1s ease-in-out infinite;box-shadow:0 0 0 0 rgba(
 .railbtn{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:50px;padding:10px 14px;border-radius:10px;border-color:var(--line)} .railbtn b{font-family:var(--display);font-size:17px;font-weight:500;color:var(--muted)}
 .rerollbtn.railbtn b{color:var(--accent)}
 
-/* ===== Balatro-style scoring: numbers pop, flames over the boxes ===== */
+/* ===== Balatro-style scoring: numbers pop and wobble; fireworks burst over the boxes ===== */
 .hb-math .nv,.hanline{display:inline-block;transform-origin:50% 60%}
 .nv.pop,.hanline.pop{animation:numpop .38s cubic-bezier(.3,1.5,.5,1)}
 @keyframes numpop{0%{transform:scale(1) rotate(0)}25%{transform:scale(1.34) rotate(-7deg)}55%{transform:scale(.94) rotate(4deg)}80%{transform:scale(1.05) rotate(-1deg)}100%{transform:scale(1) rotate(0)}}
 .boxwrap>.boxfoot{border-radius:0 0 8px 8px;position:relative;z-index:2} .capfoot .hantier{font-size:10px;opacity:.85;min-height:12px}
 .chipfoot .hanline{color:#cfe3f6}
 .handbox .hb-head{position:relative;z-index:3}
-.flames{position:absolute;left:6%;right:6%;bottom:calc(100% - 8px);height:0;z-index:1;pointer-events:none;transition:height .35s ease-out;filter:blur(.5px)}
-.flames i{position:absolute;bottom:0;width:36%;height:100%;border-radius:50% 50% 45% 45%/72% 72% 28% 28%;transform-origin:50% 100%;animation:flick .42s ease-in-out infinite alternate;mix-blend-mode:screen}
-.flames i:nth-child(1){left:0;height:70%;animation-delay:-.12s} .flames i:nth-child(2){left:16%;height:95%;animation-delay:-.3s;animation-duration:.5s} .flames i:nth-child(3){left:32%;height:100%;animation-delay:-.05s}
-.flames i:nth-child(4){left:48%;height:85%;animation-delay:-.22s;animation-duration:.38s} .flames i:nth-child(5){left:64%;height:72%;animation-delay:-.34s}
-.chipwrap .flames i{background:radial-gradient(ellipse 50% 100% at 50% 100%,#f0faff 0%,#9adcff 18%,#3d8ff0 45%,rgba(42,116,214,.55) 62%,transparent 78%)}
-.multwrap .flames i{background:radial-gradient(ellipse 50% 100% at 50% 100%,#fff6cf 0%,#ffd36b 18%,#ff7a1f 45%,rgba(230,50,20,.6) 62%,transparent 78%)}
-@keyframes flick{0%{transform:scaleY(.8) scaleX(1.06) skewX(-4deg);opacity:.85}100%{transform:scaleY(1.14) scaleX(.9) skewX(5deg);opacity:1}}
-.handbox[data-fire="1"] .flames{height:26px} .handbox[data-fire="2"] .flames{height:44px} .handbox[data-fire="3"] .flames{height:66px}
 .handbox[data-fire="1"] .chipwrap,.handbox[data-fire="2"] .chipwrap,.handbox[data-fire="3"] .chipwrap{box-shadow:0 0 16px rgba(108,196,255,.5),inset 0 -3px 0 rgba(0,0,0,.25)}
 .handbox[data-fire="1"] .multwrap,.handbox[data-fire="2"] .multwrap,.handbox[data-fire="3"] .multwrap{box-shadow:0 0 16px rgba(255,107,26,.55),inset 0 -3px 0 rgba(0,0,0,.25)}
 .handbox[data-fire="3"] .nv{animation:numsimmer .3s ease-in-out infinite alternate}
 @keyframes numsimmer{from{transform:rotate(-1.5deg) scale(1.02)}to{transform:rotate(1.5deg) scale(1)}}
-@media (prefers-reduced-motion:reduce){.nv.pop,.hanline.pop,.flames i,.handbox[data-fire="3"] .nv{animation:none}}
-
+@media (prefers-reduced-motion:reduce){.nv.pop,.hanline.pop,.handbox[data-fire="3"] .nv{animation:none}}
 /* ===== Next Blind: vermilion, glowing, with a light sweep so it never blends in with the gold Buy buttons ===== */
 .shoprail .nextbtn.primary{position:relative;overflow:hidden;background:linear-gradient(180deg,#e0533f,#a8322a);border:1px solid #ff9a85;color:#fff6ea;min-height:86px;padding:16px;box-shadow:0 0 0 1px rgba(0,0,0,.35),0 10px 24px rgba(201,69,58,.45),inset 0 1px 0 rgba(255,255,255,.35);animation:nbglow 2.4s ease-in-out infinite}
 .shoprail .nextbtn.primary:hover{filter:brightness(1.08);transform:translateY(-1px)}
@@ -645,6 +636,13 @@ button.pulse{animation:btnpulse 1s ease-in-out infinite;box-shadow:0 0 0 0 rgba(
 .tile.eng-gold{box-shadow:var(--bev),var(--body),0 0 12px rgba(226,192,94,.55)} .tile.eng-obsidian,.tile.eng-jade,.tile.eng-steel{box-shadow:var(--bev),var(--body)}
 .tile.eng-glass,.tile.glass{box-shadow:var(--bev),var(--body),inset 0 0 12px rgba(255,255,255,.7)}
 .tile.eng-obsidian::before{background:linear-gradient(180deg,rgba(255,255,255,.3),rgba(255,255,255,0))}
+
+/* Hanabi fireworks over the scoring box */
+.fxlayer{position:absolute;inset:0;pointer-events:none;z-index:4;overflow:visible}
+.fxlayer i{position:absolute;display:block;will-change:transform,opacity}
+.fwrocket{width:3px;height:18px;margin:-18px 0 0 -1.5px;border-radius:2px;background:linear-gradient(180deg,#fff 0%,var(--c) 25%,transparent 100%)}
+.fwspark{width:5px;height:5px;border-radius:50%}
+.fwflash{width:28px;height:28px;border-radius:50%;background:radial-gradient(circle,#fff 0%,var(--c) 35%,transparent 70%)}
 </style>
 </head><body>
 <div id="app">
@@ -2310,12 +2308,35 @@ async function animateScore(ctx) {
   const showLine = l => { const d = document.createElement('div'); d.className = 'row sline' + (l.zero ? ' bad' : '') + (l.yaku ? ' yaku' : '') + (l.tal ? ' tal' : '') + (l.convert ? ' convert' : ''); d.innerHTML = `<span>${tr(l.label)}</span><span class="num">${tr(l.val)}</span>`; linesBox.appendChild(d); if (l.tal) { const slot = document.querySelector(`.slot[data-tal="${l.tal}"]`); if (slot) { slot.classList.remove('bounce'); void slot.offsetWidth; slot.classList.add('bounce'); } } };
   const applyLine = l => { if (l.zero) chips = 0; else { chips += l.chips || 0; han += l.han || 0; if (l.convert) mult = hanMult(han) * tileX; if (l.mult) mult = (mult === null ? hanMult(han) * tileX : mult) + l.mult; if (l.xmult && mult !== null) mult *= l.xmult; } setMath(); };
   let fire = 0;
-  // Balatro-style flames over the Chips and Mult boxes once the play beats the target: bigger at 3× and 10× the target.
-  const flameHTML = '<span class="flames" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>';
+  // Hanabi: once a play beats the target, rockets shoot up from below the Chips and Mult boxes and burst above them.
+  // One rocket at 1x the target, two more at 3x, three more at 10x and then one every 0.7 s until scoring ends.
+  // Only transform and opacity animate, so it stays smooth.
+  const fx = document.createElement('div'); fx.className = 'fxlayer'; fx.setAttribute('aria-hidden', 'true'); box.appendChild(fx);
+  const FW = ['#ffd27a', '#7fd0ff', '#ff8a7a', '#f6b6c8', '#c9a7e8', '#bff3d1'];
+  let fwTimer = null;
+  const burst = (x, y, col) => {
+    if (!fx.isConnected) return;
+    const n = 16 + fire * 4, R = 24 + fire * 9;
+    const fl = document.createElement('i'); fl.className = 'fwflash'; fl.style.cssText = `left:${x}px;top:${y}px;--c:${col}`; fx.appendChild(fl);
+    fl.animate([{ transform: 'translate(-50%,-50%) scale(.2)', opacity: .95 }, { transform: 'translate(-50%,-50%) scale(1.7)', opacity: 0 }], { duration: 380, easing: 'ease-out', fill: 'both' }).onfinish = () => fl.remove();
+    for (let k = 0; k < n; k++) {
+      const a = k / n * Math.PI * 2 + Math.random() * .25, d = R * (.75 + Math.random() * .4), dx = Math.cos(a) * d, dy = Math.sin(a) * d;
+      const sp = document.createElement('i'); sp.className = 'fwspark'; sp.style.cssText = `left:${x}px;top:${y}px;background:${Math.random() < .25 ? '#fff8e6' : col}`; fx.appendChild(sp);
+      sp.animate([{ transform: 'translate(-50%,-50%) scale(1)', opacity: 1 }, { transform: `translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px)) scale(.85)`, opacity: 1, offset: .55 }, { transform: `translate(calc(-50% + ${dx * 1.1}px),calc(-50% + ${dy * 1.1 + 16}px)) scale(.3)`, opacity: 0 }],
+        { duration: 900 + Math.random() * 250, easing: 'cubic-bezier(.15,.7,.3,1)', fill: 'both' }).onfinish = () => sp.remove();
+    }
+  };
+  const launch = () => {
+    if (!motionOK || skipAnim || !fx.isConnected) return;
+    const W = box.clientWidth, top = mathEl.offsetTop, y0 = top + mathEl.offsetHeight - 4, x = W * (.12 + Math.random() * .76), y1 = top - 18 - Math.random() * 46, col = FW[Math.floor(Math.random() * FW.length)];
+    const r = document.createElement('i'); r.className = 'fwrocket'; r.style.cssText = `left:${x}px;top:${y0}px;--c:${col}`; fx.appendChild(r);
+    r.animate([{ transform: 'translateY(0)', opacity: 1 }, { transform: `translateY(${y1 - y0}px)`, opacity: 1 }], { duration: 420 + Math.random() * 140, easing: 'cubic-bezier(.25,.6,.45,1)', fill: 'both' }).onfinish = () => { r.remove(); burst(x, y1, col); };
+  };
   const heat = () => {
-    const tot = Math.max(0, chips) * curMult(), r = S.target ? tot / S.target : 0, lvl = r >= 10 ? 3 : r >= 3 ? 2 : r >= 1 ? 1 : 0;
-    if (lvl === fire) return; fire = lvl; box.dataset.fire = lvl; box.classList.toggle('hot', lvl >= 1);
-    if (lvl >= 1) box.querySelectorAll('.boxwrap').forEach(w => { if (!w.querySelector('.flames')) w.insertAdjacentHTML('afterbegin', flameHTML); });
+    const tot = Math.max(0, chips) * curMult(), q = S.target ? tot / S.target : 0, lvl = q >= 10 ? 3 : q >= 3 ? 2 : q >= 1 ? 1 : 0;
+    if (lvl <= fire) return; const prev = fire; fire = lvl; box.dataset.fire = lvl; box.classList.toggle('hot', lvl >= 1);
+    const n = [0, 1, 3, 6][lvl] - [0, 1, 3, 6][prev]; for (let k = 0; k < n; k++) setTimeout(launch, k * 170);
+    if (lvl === 3 && !fwTimer) fwTimer = setInterval(launch, 700);
   };
   setMath();
   // Start from exactly what the hand box previewed: the play's base, its Scroll levels and the Yaku that name the hand.
@@ -2343,6 +2364,7 @@ async function animateScore(ctx) {
   if (dur > 0) { const t0 = performance.now(); await new Promise(res => { const step = now => { const k = Math.min(1, (now - t0) / dur); const e = 1 - Math.pow(1 - k, 3); totEl.textContent = fmtN(Math.round(ctx.total * (1 - e))); if (rsEl) { const v = from + (to - from) * e; rsEl.textContent = fmtN(Math.round(v)); rsEl.classList.toggle('met', v >= S.target); const bar = $('#roundBar'); if (bar) bar.style.width = Math.min(100, 100 * v / S.target) + '%'; } if (k < 1) requestAnimationFrame(step); else res(); }; requestAnimationFrame(step); }); }
   if (rsEl) { rsEl.textContent = fmtN(to); fitText(rsEl); rsEl.classList.remove('bump'); void rsEl.offsetWidth; rsEl.classList.add('bump'); }
   await wait(250);
+  if (fwTimer) clearInterval(fwTimer);
   skipAnim = false;
 }
 // ===================== MODALS =====================
