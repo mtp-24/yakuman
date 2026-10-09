@@ -2310,6 +2310,20 @@ function importHTML(err) {
   <div class="msg${err ? ' err' : ''}" style="min-height:18px;margin-top:6px">${err || ''}</div>
   <div class="shopfoot"><button id="mClose" class="ghost">Back</button><span style="flex:1"></span><button id="mLoadSave" class="primary">Load Save</button></div>`;
 }
+// Save the export code as a .txt file. On claude.ai the artifact viewer offers it through the downloads
+// capability (the viewer confirms); elsewhere (GitHub Pages, local) a normal browser download is used.
+async function saveCodeFile(btn) {
+  const filename = `yakuman-save-${new Date().toISOString().slice(0, 10)}.txt`;
+  const say = (txt) => { btn.textContent = txt; setTimeout(() => { btn.textContent = 'Save as File'; }, 1800); };
+  if (window.claude && typeof window.claude.use === 'function') {
+    const downloads = await window.claude.use('downloads');
+    if (!downloads) return say('Not available here: copy the code');
+    try { await downloads.save({ filename, data: EXPORT_CODE }); say('Saved'); }
+    catch (e) { if (e && e.code === 'declined') return; say(e && e.code === 'rate_limited' ? 'Try again in a moment' : 'Could not save: copy the code'); }
+    return;
+  }
+  try { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([EXPORT_CODE], { type: 'text/plain' })); a.download = filename; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); say('Saved'); } catch (e) { say('Could not save: copy the code'); }
+}
 function backToSettings() { $('#mClose').onclick = () => { PENDING_IMPORT = null; showModal(settingsHTML(), true); }; }
 function yakuHTML() {
   const st = S.stats; const most = mostPlayedRung(); const yc = k => (S && S.stats.yaku[k]) || 0;
@@ -2462,7 +2476,7 @@ function bindEvents() {
     if (t.id === 'mExport') { (async () => { EXPORT_CODE = await toCode(exportPayload()); showModal(exportHTML(), true, 'datamodal'); backToSettings(); })(); return; }
     if (t.id === 'mImport') { PENDING_IMPORT = null; showModal(importHTML(), true, 'datamodal'); backToSettings(); return; }
     if (t.id === 'mCopyCode') { const ta = $('#saveCode'); const done = () => { t.textContent = 'Copied'; setTimeout(() => { t.textContent = 'Copy Code'; }, 1400); }; const fallback = () => { ta.focus(); ta.select(); try { document.execCommand('copy'); done(); } catch (e) { t.textContent = 'Selected: press Copy'; } }; try { navigator.clipboard.writeText(EXPORT_CODE).then(done, fallback); } catch (e) { fallback(); } return; }
-    if (t.id === 'mDownloadCode') { try { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([EXPORT_CODE], { type: 'text/plain' })); a.download = `yakuman-save-${new Date().toISOString().slice(0, 10)}.txt`; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); } catch (e) { t.textContent = 'Not allowed here: copy the code'; } return; }
+    if (t.id === 'mDownloadCode') { saveCodeFile(t); return; }
     if (t.id === 'mLoadSave') { (async () => { try { PENDING_IMPORT = checkSave(await fromCode(($('#importCode') || {}).value)); showModal(importHTML(), true, 'datamodal'); backToSettings(); } catch (e) { const code = ($('#importCode') || {}).value || ''; showModal(importHTML(e.message || 'That save could not be read.'), true, 'datamodal'); backToSettings(); $('#importCode').value = code; } })(); return; }
     if (t.id === 'mConfirmImport') { const o = PENDING_IMPORT; if (!o) return; try { localStorage.setItem(PROFILE_KEY, JSON.stringify(Object.assign(blankProfile(), o.profile))); for (const [k, v] of Object.entries(o.settings || {})) if (SETTING_KEYS.includes(k)) localStorage.setItem(k, v); if (o.run) localStorage.setItem(SAVE_KEY, o.run); else localStorage.removeItem(SAVE_KEY); } catch (e) { } location.reload(); return; }
     if (t.id === 'mResetProfile') { showModal(`<div class="shophead"><h2>Reset Profile?</h2></div><p class="muted" style="margin:4px 0 0">Lifetime stats in this browser will be cleared. Export first if you want a copy.</p><div class="shopfoot"><button id="mClose" class="ghost">Cancel</button><span style="flex:1"></span><button id="mConfirmReset" class="danger">Reset Profile</button></div>`, true, 'confirmmodal'); backToSettings(); return; }

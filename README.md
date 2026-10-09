@@ -123,6 +123,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 112: Collection screen (header and intro buttons) listing everything in the game, Balatro-style: Talismans, Omikuji, Kami, Scrolls, Flowers, Packs, Engravings (with example tiles), Editions, Tags, Bosses, Walls and Stakes, with counts, a search box and Owned / Held / This run markers.
 - Build 113: Collection badges (Blind only, Usable anytime, Owned, Held, This run) moved to a footer row at the bottom of each card, so they never wrap and every name lines up.
 - Build 114: player profile (lifetime runs, wins, best Ante, best play, Blinds won, complete hands, bosses beaten, wins by Stake and Wall, Yaku scored) kept across runs and shown in a new Run Info Profile tab; Settings gains a Your data section with Export (copy code or save file), Import (paste code or choose file, with a confirmation that shows what will be loaded) and Reset profile. Fix: Back and close on screens with a custom return (Settings sub-screens, Rules or Collection opened from the intro) no longer close everything.
+- Build 115: Save as File works on claude.ai through the artifact downloads capability (the viewer confirms the save); GitHub Pages and local copies keep the normal browser download.
 - Build 7: multi-meld play ladder (Two Melds ... Four Melds), targets 300...45000, retrigger and scaling Talismans, Wall-Builder rewording, scoring animation.
 
 ## Simulators (in `sim/`)
