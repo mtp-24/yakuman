@@ -155,12 +155,9 @@ aside{display:flex;flex-direction:column;gap:10px;min-width:0}
 .wallcount{color:var(--muted);margin-left:4px}
 .modal h2{font-size:26px;color:var(--accent);margin-bottom:6px}
 .shop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;margin:12px 0;align-items:stretch}
-/* Pack screen: narrower and centred, so 8 tiles fit one row and the cards sit in the middle */
+/* Pack screen: narrower so 8 tiles fit one row; only the tile row is centred, cards line up like the shop */
 .modal.packmodal{max-width:760px}
 .packmodal .packhand{justify-content:center}
-.packmodal .shop-grid:not(.owned-grid){display:flex;flex-wrap:wrap;justify-content:center}
-.packmodal .shop-grid:not(.owned-grid) > .shopcard{flex:0 1 220px;min-width:0}
-@media (max-width:520px){.packmodal .shop-grid:not(.owned-grid) > .shopcard{flex:1 1 100%}}
 .shopcard{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:6px}
 .shopcard .kind{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
 .shopcard .n{font-family:var(--display);font-size:16px;color:var(--accent)}
