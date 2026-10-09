@@ -676,7 +676,7 @@ function yakuHTML() {
 let setupSel = { deck: 0, stake: 0 };
 function setupHTML() {
   const car = (name, obj) => { const keys = Object.keys(obj); const i = ((setupSel[name] % keys.length) + keys.length) % keys.length; const v = obj[keys[i]]; return `<div class="carousel" data-car="${name}"><button class="ghost arrow" data-nav="${name}:-1" title="Previous">&#9664;</button><div class="carcard"><input type="hidden" name="${name}" value="${keys[i]}"><b>${v.name}</b><span class="muted">${v.desc}</span><span class="dots">${keys.map((k, j) => `<i class="${j === i ? 'on' : ''}"></i>`).join('')}</span></div><button class="ghost arrow" data-nav="${name}:1" title="Next">&#9654;</button></div>`; };
-  return `<h2>New Run</h2><div class="setup"><div><div class="label">Wall</div>${car('deck', DECKS)}</div><div><div class="label">Stake</div>${car('stake', STAKES)}</div></div>
+  return `<h2>New Run</h2><div class="setup stacked"><div><div class="label">Wall</div>${car('deck', DECKS)}</div><div><div class="label" style="margin-top:10px">Stake</div>${car('stake', STAKES)}</div></div>
   <div class="label" style="margin-top:12px">Seed</div><input id="seedInput" placeholder="random" maxlength="24" autocomplete="off" style="max-width:320px"><div class="muted" style="font-size:11px;margin-top:4px">Share a seed and the same Wall, shops and bosses come up for everyone. Leave blank for a random run.</div>
   <div style="display:flex;gap:8px;margin-top:14px"><button id="mStartRun" class="primary">Start Run</button><button id="mClose">Cancel</button></div>`;
 }
