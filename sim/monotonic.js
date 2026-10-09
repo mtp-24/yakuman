@@ -16,7 +16,7 @@ function randState(){ const tal=[]; const k=R(5)+1; while(tal.length<k){ const t
   const S0={talismans:tal,editions:ed,boss,bossSuit:['m','p','s'][R(3)],firstPlayDone:Math.random()<0.7,river:[],dora:[],scrolls:{meld:sm,yaku:sy},wall:new Array(R(100)).fill(0),open:[],talState:ts,plays:1+R(5),stats:{rungs:{chi:R(5),hand:R(5),rung31:R(3)},yaku:{tanyao:R(3)}},hand:[]};
   for(let i=0;i<R(12);i++) S0.river.push(T(['m','p','s','z'][R(4)],1+R(7)));
   return S0; }
-const bad={}; let tested=0, viol=0; const examples=[];
+const bad={}; let tested=0, viol=0, unexplained=0; const examples=[];
 for(let i=0;i<N;i++){
   S=randState(); setRules(S);
   const melds=[randMeld(),randMeld(),randMeld(),randMeld()], pair=randPair();
@@ -39,9 +39,10 @@ for(let i=0;i<N;i++){
   for(const [name,tiles] of subs){
     const part=partitionPlay(tiles); if(!part) continue;
     const c=scoreCtx(S,'meld',tiles,{part,preview:true}); tested++;
-    if(c.total>fullC.total && !(fullC.furiten)){ viol++; const key=name; bad[key]=(bad[key]||0)+1; if(examples.length<12) examples.push({name, lesser:c.total, full:fullC.total, tal:S.talismans.join(','), boss:S.boss, scrolls:JSON.stringify(S.scrolls.meld), fullLines:fullC.lines.filter(l=>l.tal||l.zero).map(l=>l.label+'='+l.val).join('; '), lessLines:c.lines.filter(l=>l.tal||l.zero).map(l=>l.label+'='+l.val).join('; ')}); }
+    if(c.total>fullC.total && !(fullC.furiten)){ viol++; if(!S.talismans.some(k=>k==='daimyo'||k==='nurarihyon')) unexplained++; const key=name; bad[key]=(bad[key]||0)+1; if(examples.length<12) examples.push({name, lesser:c.total, full:fullC.total, tal:S.talismans.join(','), boss:S.boss, scrolls:JSON.stringify(S.scrolls.meld), fullLines:fullC.lines.filter(l=>l.tal||l.zero).map(l=>l.label+'='+l.val).join('; '), lessLines:c.lines.filter(l=>l.tal||l.zero).map(l=>l.label+'='+l.val).join('; ')}); }
   }
 }
 console.log(`tested ${tested} lesser-vs-complete comparisons over ${N} random situations; violations (lesser play scores MORE than the complete hand it sits inside, Furiten excluded): ${viol} (${(100*viol/tested).toFixed(2)}%)`);
 console.log('by lesser play:', JSON.stringify(bad));
+console.log(`violations without Daimyo or Nurarihyon (the two deliberate exceptions): ${unexplained}`);
 for(const e of examples) console.log(JSON.stringify(e));

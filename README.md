@@ -77,6 +77,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 66: side panel blind plate groups Ante, blind type, name, boss rule, target and reward in one card; seed and Mastery lines removed from the side panel (both live in Run Info).
 - Build 67: scoring animation now starts from exactly what the hand box previewed (base, Scroll levels and Yaku Han), so the Han count only climbs; target, chips, Mult, total and Round Score shrink to fit instead of wrapping; shop money shown as plain large text (currency label and value the same size).
 - Build 68: Hong Kong mode fix, the Han pill and tier text in the scoring box now read Faan while a play is scoring.
+- Build 69: Rules rewritten into four sections (Playing a Blind, Scoring, Between Blinds, Help and Controls) with every number read from the config; adds money, interest, reroll, selling, slots, Kan bonus, partial-play Yakuhai, Yakuman stacking, the Han table with tier names, the correct Dora rule, Negative edition and keyboard shortcuts. Hong Kong mode: English names for the Han tiers (Full Win, Jump Win, Double Win, Triple Win), "Complete hand(s)" and "Yakuza" translated, Settings terminology note no longer translated. `sim/monotonic.js` now counts violations outside the two deliberate exceptions.
 - Build 7: multi-meld play ladder (Two Melds ... Four Melds), targets 300...45000, retrigger and scaling Talismans, Wall-Builder rewording, scoring animation.
 
 ## Simulators (in `sim/`)
