@@ -334,7 +334,7 @@ const KAMI = [
   { key: 'fujin', name: 'Fūjin', cost: 4, sel: [1, 1], desc: 'Put a Purple Seal on 1 selected tile: discarding it gives you a random Omikuji.', use: (S, sel) => { sel[0].seal = 'purple'; } },
 ];
 KAMI.push({ key: 'hitodama', name: 'Hitodama', cost: 4, sel: [0, 0], anywhere: true, soul: true, desc: 'Create a Legendary Talisman. Needs a free Talisman slot.',
-  use: S => { const pool = TALISMANS.filter(t => talRarity(t.key) === 'legendary' && !S.talismans.includes(t.key)); const slots = typeof talSlots === 'function' ? talSlots(S) : CFG.talismanSlots; if (!pool.length || S.talismans.length >= slots) return false; const t = pick(pool); S.talState = Object.fromEntries(Object.entries(S.talState || {}).filter(([x]) => x !== t.key)); S.talismans.push(t.key); S.gotLegend = t.key; } });
+  use: S => { if (S.challenge === 'shrine') return false; const pool = TALISMANS.filter(t => talRarity(t.key) === 'legendary' && !S.talismans.includes(t.key)); const slots = typeof talSlots === 'function' ? talSlots(S) : CFG.talismanSlots; if (!pool.length || S.talismans.length >= slots) return false; const t = pick(pool); S.talState = Object.fromEntries(Object.entries(S.talState || {}).filter(([x]) => x !== t.key)); S.talismans.push(t.key); S.gotLegend = t.key; } });
 // A Kami roll: Hitodama is rare, like Balatro's The Soul.
 function pickKami() { return rand() < CFG.soulOdds ? KAMI.find(k => k.soul) : pick(KAMI.filter(k => !k.soul)); }
 const CONS = {}; OMIKUJI.forEach(o => CONS[o.key] = Object.assign({ kind: 'omikuji' }, o)); KAMI.forEach(k => CONS[k.key] = Object.assign({ kind: 'kami' }, k));
@@ -433,6 +433,22 @@ function packTile(deckKey) {
   if (rand() < 0.15) t.seal = pick(Object.keys(SEALS));
   return t;
 }
+// ===================== CHALLENGES =====================
+// Fixed runs with special rules, like Balatro's. Standard Wall, White Stake; winning one is recorded on its own.
+const CHALLENGES = [
+  { key: 'rich', name: 'Rich Get Richer', desc: 'Start with ¥50 and both Winter Flowers (interest up to ¥20), but Talismans can never be sold.', rules: { noSell: true },
+    setup: S => { S.money = 50; S.flowers.push('winter', 'winter2'); } },
+  { key: 'fragile', name: 'Fragile', desc: 'Every tile in your Wall is Glass: x2 Mult each, but each one can shatter.', setup: S => { for (const t of S.deck) t.eng = 'glass'; } },
+  { key: 'double', name: 'Double Vision', desc: 'Every tile in your Wall has a Red Seal, but every target is ×2.', rules: { target: 2 }, setup: S => { for (const t of S.deck) t.seal = 'red'; } },
+  { key: 'shrine', name: 'Empty Shrine', desc: 'No Talismans ever appear in shops or packs, and Hitodama does nothing.', rules: { noTalismans: true } },
+  { key: 'bound', name: 'Bound Spirits', desc: 'Start with Kitsune and Tanuki. Every Talisman you own is Eternal.', rules: { noSell: true },
+    setup: S => { S.talismans.push('kitsune', 'tanuki'); } },
+  { key: 'needle', name: 'Golden Needle', desc: 'Only 1 Play every Blind, but +6 Discards.', rules: { plays: 1, discards: 6 } },
+  { key: 'inflation', name: 'Inflation', desc: 'Every purchase raises all shop prices by ¥1 for the rest of the run.', rules: { inflation: true } },
+  { key: 'simple', name: 'Simple Life', desc: 'Your Wall has no 1s, 9s or Honors (Tanyao every time), but every target is ×1.5.', rules: { target: 1.5 },
+    setup: S => { S.deck = S.deck.filter(t => t.suit !== 'z' && t.rank !== 1 && t.rank !== 9); } },
+];
+const CHAL = {}; CHALLENGES.forEach(c => CHAL[c.key] = c);
 // ===================== YAKU CHEAT SHEET =====================
 const YAKU_SHEET = [
   { k: 'tanyao', ex: '234m 567p 345s 678s 88p', n: 'Tanyao', h: '1 / 1', d: 'All simples: only 2–8 suited tiles, no 1s, 9s or honors.' },
