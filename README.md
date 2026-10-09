@@ -93,6 +93,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 82: bigger scoring summary. Side panel widened from 230px to 290px and the Chips and Mult numbers raised from 22px to 32px (26px on phones), so the Han caption fits on one line in Riichi mode.
 - Build 83: pack tiles toned down from about 99px to 80px wide on desktop (68px cap on phones) so the pack screen feels balanced.
 - Build 84: pack screen narrowed to 760px and centred: title, tile row, cards (220px each, leftover cards centred, full width on phones) and the Skip and View Wall buttons, so 2- and 3-card packs no longer sit to the left.
+- Build 85: pack screen text (title, description, Your Tiles) back to left-aligned like every other screen, with only the tile row and cards centred; bottom buttons now read View Wall, then Skip the Rest.
 - Build 7: multi-meld play ladder (Two Melds ... Four Melds), targets 300...45000, retrigger and scaling Talismans, Wall-Builder rewording, scoring animation.
 
 ## Simulators (in `sim/`)

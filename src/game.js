@@ -813,7 +813,7 @@ function packHTML() {
   h += `<div class="shop-grid">${S.pack.choices.map((it, i) => { const d = itemDef(it); const ed = it.edition ? EDITIONS[it.edition] : null; return `<div class="shopcard ${it.kind}${it.sold ? ' sold' : ''}${ed ? ' ed-' + it.edition : ''}"><div class="kind">${{ talisman: 'Talisman', omikuji: 'Omikuji', kami: 'Kami Spirit', scroll: 'Scroll of Mastery' }[it.kind]}${ed ? ` · <span class="edtag ed-${it.edition}">${ed.name}</span>` : ''}</div><div class="n">${d.name}</div><div class="d">${d.desc}${ed ? ` <b>${ed.name}: ${ed.desc}.</b>` : ''}</div>${it.kind === 'scroll' && !it.sold ? scrollLevelHTML(it.key) : it.kind === 'talisman' && !it.sold ? talPreview(it.key) : ''}<div class="buy"><span></span>${it.sold ? `<span class="muted">${it.used ? 'Used' : 'Taken'}</span>` : packButtons(it, i)}</div></div>`; }).join('')}</div>`;
   h += `<div class="msg${S.msgErr ? ' err' : ''}" style="margin:6px 0">${S.msg || ''}</div>`;
   h += ownedHTML();
-  h += `<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center"><button id="mPackDone" class="ghost">Skip the Rest</button><button id="mDeck" class="ghost">View Wall</button></div>`;
+  h += `<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"><button id="mDeck" class="ghost">View Wall</button><button id="mPackDone" class="ghost">Skip the Rest</button></div>`;
   return h;
 }
 function overHTML(won) {
