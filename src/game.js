@@ -402,7 +402,7 @@ function renderBlind() {
   if (inBlind) h += `<div class="roundscore"><div class="label">Round Score</div><div class="rs num${S.score >= S.target ? ' met' : ''}" id="roundScore">${S.score.toLocaleString()}</div></div>`;
   if (inBlind) {
     const pv = PREVIEW;
-    if (S.busy) h += `<div class="handbox scoring" id="scorebox"></div>`;
+    if (S.busy) h += `<div class="handbox scoring" id="scorebox"></div><div class="scorelog" id="scorelog"><div class="label">Scoring</div><div class="lp-lines"></div></div>`;
     else if (S.pendingDiscard) h += `<div class="handbox pend"><div class="hb-name">Settle your Call</div><div class="muted" style="font-size:12px">Discard ${S.pendingDiscard} tile, then you can Play.</div></div>`;
     else if (pv && pv.ctx) {
       // Balatro-style: only the play's base values here; tiles, Yaku bonuses and Talismans are revealed when the play scores.
@@ -588,10 +588,9 @@ function wait(ms) { return new Promise(r => setTimeout(r, (motionOK && !skipAnim
 async function animateScore(ctx) {
   skipAnim = false; skipArmed = false; setTimeout(() => { skipArmed = true; }, 250);
   const box = $('#scorebox'); if (!box) return;
-  box.innerHTML = `<div class="hb-name">${tr(ctx.rungName || '')}${ctx.kind === 'hand' ? ' <span class="muted">· ' + tr(ctx.desc) + '</span>' : ''}</div><div class="hb-math num"><span class="chipbox">0</span><span class="px">×</span><span class="multbox">1</span></div><div class="hb-total num" hidden><span class="tot">0</span></div><div class="muted" style="font-size:10px;margin-top:4px">click to skip</div>`;
-  // the breakdown streams into the Last Play panel as it happens
-  const lp = $('#lastPlay'); lp.innerHTML = `<div class="label">Last Play</div><div style="font-family:var(--display);font-size:15px;margin:2px 0 6px">${tr(ctx.desc)}</div><div class="lp-lines"></div>`;
-  const chipsEl = box.querySelector('.chipbox'), multEl = box.querySelector('.multbox'), totEl = box.querySelector('.tot'), totWrap = box.querySelector('.hb-total'), nameEl = box.querySelector('.hb-name'), linesBox = lp.querySelector('.lp-lines'), mathEl = box.querySelector('.hb-math');
+  box.innerHTML = `<div class="hb-name">${tr(ctx.rungName || '')}${ctx.kind === 'hand' ? ' <span class="muted">· ' + tr(ctx.desc) + '</span>' : ''}</div><div class="hb-total num" hidden><span class="tot">0</span></div><div class="hb-math num"><span class="chipbox">0</span><span class="px">×</span><span class="multbox">1</span></div><div class="muted" style="font-size:10px;margin-top:4px">click to skip</div>`;
+  // the breakdown streams into its own Scoring section under the hand box; Last Play fills in once scoring ends
+  const chipsEl = box.querySelector('.chipbox'), multEl = box.querySelector('.multbox'), totEl = box.querySelector('.tot'), totWrap = box.querySelector('.hb-total'), nameEl = box.querySelector('.hb-name'), linesBox = $('#scorelog .lp-lines'), mathEl = box.querySelector('.hb-math');
   const tileEls = new Map(); document.querySelectorAll('#hand .tile[data-id], #open .tile[data-id]').forEach(e => tileEls.set(+e.dataset.id, e));
   let chips = 0, han = 0, tileX = 1, mult = null;
   const curMult = () => mult === null ? hanMult(han) * tileX : mult;
@@ -622,7 +621,7 @@ async function animateScore(ctx) {
   chips = ctx.chips; han = ctx.han; mult = ctx.mult; setMath(); heat();
   await wait(350);
   // the total replaces the play name, then counts down into the round score
-  nameEl.hidden = true; mathEl.hidden = true; totWrap.hidden = false; totEl.textContent = ctx.total.toLocaleString(); totEl.classList.add('final');
+  nameEl.hidden = true; totWrap.hidden = false; totEl.textContent = ctx.total.toLocaleString(); totEl.classList.add('final');
   await wait(ctx.kind === 'hand' ? 700 : 450);
   const rsEl = $('#roundScore'); const from = S.score, to = S.score + ctx.total; const dur = (motionOK && !skipAnim) ? Math.round(650 * SPEEDS[ANIM_SPEED]) : 0;
   if (dur > 0) { const t0 = performance.now(); await new Promise(res => { const step = now => { const k = Math.min(1, (now - t0) / dur); const e = 1 - Math.pow(1 - k, 3); totEl.textContent = Math.round(ctx.total * (1 - e)).toLocaleString(); if (rsEl) { rsEl.textContent = Math.round(from + (to - from) * e).toLocaleString(); rsEl.classList.toggle('met', from + (to - from) * e >= S.target); } if (k < 1) requestAnimationFrame(step); else res(); }; requestAnimationFrame(step); }); }
