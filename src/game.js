@@ -627,7 +627,7 @@ function render() {
   const motionBefore = tileSnapshot(), freshTiles = new Set(S.newIds || []);
   renderBlind(); renderTalismans(); renderConsumables(); renderOpen(); renderRiver(); renderHand(); renderActions(); renderLast();
   $('#msg').textContent = S.msg || ''; $('#msg').className = 'msg' + (S.msgErr ? ' err' : '');
-  if (S.phase === 'cashout') showModal(cashoutHTML(), false, 'cashmodal'); else if (S.phase === 'shop' && S.pack) { showModal(packHTML(), false, 'packmodal'); fillPackHand(); } else if (S.phase === 'shop') showModal(shopHTML(), false, 'shopmodal'); else if (S.phase === 'select') showModal(selectHTML(), false, 'selectmodal'); else if (S.phase === 'gameover') showModal(overHTML(false), false, 'overmodal'); else if (S.phase === 'win') showModal(overHTML(true), false, 'overmodal winmodal'); else if (!modalPinned) hideModal();
+  if (S.phase === 'cashout') { showModal(cashoutHTML(), false, 'cashmodal'); animateCashout(); } else if (S.phase === 'shop' && S.pack) { showModal(packHTML(), false, 'packmodal'); fillPackHand(); } else if (S.phase === 'shop') showModal(shopHTML(), false, 'shopmodal'); else if (S.phase === 'select') showModal(selectHTML(), false, 'selectmodal'); else if (S.phase === 'gameover') showModal(overHTML(false), false, 'overmodal'); else if (S.phase === 'win') showModal(overHTML(true), false, 'overmodal winmodal'); else if (!modalPinned) hideModal();
   $('#btnYaku').textContent = 'Run Info';
   document.querySelectorAll('.zhead > .muted').forEach(e => { e.title = e.textContent; });   // full text on hover when a header is truncated
   translateDOM($('#app')); fitNumbers();
@@ -670,7 +670,7 @@ function sWhoosh(t, dur = .2, g = .18, from = 500, to = 2400) {
   const env = AC.createGain(); env.gain.setValueAtTime(0, t); env.gain.linearRampToValueAtTime(g, t + dur * .4); env.gain.exponentialRampToValueAtTime(.0008, t + dur);
   src.connect(bp).connect(env).connect(MASTER); src.start(t); src.stop(t + dur + .02);
 }
-const SFX_GAP = { tick: .035, wall: .04, draw: .035, chip: .03, mult: .05, pop: .06, select: .02, deselect: .02 };
+const SFX_GAP = { coin: .045, tick: .035, wall: .04, draw: .035, chip: .03, mult: .05, pop: .06, select: .02, deselect: .02 };
 function sfx(name, n = 0) {
   const ac = audioCtx(); if (!ac || ac.state !== 'running') return;
   const now = ac.currentTime; if (SFX_LAST[name] && now - SFX_LAST[name] < (SFX_GAP[name] || .015)) return; SFX_LAST[name] = now;
@@ -689,6 +689,8 @@ function sfx(name, n = 0) {
     case 'mult': { const f = 330 * step(n); sTone(now, f, 'square', .14, .05, f * 1.25); sTone(now, f * 1.5, 'sine', .12, .08); break; }
     case 'xmult': sTone(now, 200, 'sawtooth', .3, .07, 620); sTone(now, 400, 'sine', .3, .1, 1240); break;
     case 'total': [523, 659, 784].forEach((f, k) => sTone(now + k * .05, f, 'triangle', .28, .14)); break;
+    case 'coin': { const f = 1900 + Math.random() * 300; sTone(now, f, 'triangle', .09, .1); sTone(now + .03, f * 1.33, 'sine', .1, .07); break; }
+    case 'kaching': sClack(now, 1800, .05, .35); [1318, 1760, 2637].forEach((f, k) => sTone(now + .04 + k * .025, f, 'triangle', .6, .1)); sTone(now + .04, 3520, 'sine', .35, .04); break;
     case 'pop': { const src = AC.createBufferSource(); src.buffer = NOISE; const lp = AC.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 900; const env = AC.createGain(); env.gain.setValueAtTime(.18, now); env.gain.exponentialRampToValueAtTime(.0008, now + .18); src.connect(lp).connect(env).connect(MASTER); src.start(now); src.stop(now + .2); break; }
   }
 }
@@ -1217,6 +1219,29 @@ function cardHTML(it, idx) {
   const full = slotsFullMsg(it), no = p > S.money ? `You have ¥${S.money}; this costs ¥${p}` : full;
   const action = it.sold ? '<span class="muted soldnote">Sold</span>' : `<button class="primary" data-buy="${idx}" ${no ? `disabled title="${no}"` : ''}>${it.kind === 'pack' ? 'Open' : full ? 'Slots Full' : 'Buy'}</button>`;
   return `<div class="shopcard ${it.kind}${it.sold ? ' sold' : ''}${ed ? ' ed-' + it.edition : ''}"><span class="pricetag num${p > S.money && !it.sold ? ' short' : ''}">${p === 0 ? 'Free' : '¥' + p}</span><div class="emblem">${emblem(it.kind)}</div><div class="kind">${kindLabel}${ed ? `<span class="edtag ed-${it.edition}">${ed.name}</span>` : ''}</div><div class="n">${d.name}</div><div class="d">${d.desc}${ed ? ` <b>${ed.name}: ${ed.desc}.</b>` : ''}</div>${it.kind === 'scroll' ? scrollLevelHTML(it.key) : it.kind === 'talisman' && !it.sold ? talPreview(it.key) : ''}<div class="buy">${action}</div></div>`;
+}
+// Cash-out plays like Balatro's: each reward line slides in and counts up with coin clinks, the total counts up and
+// rings a register, then your money counts from the old amount to the new one. Once per cash-out; about 1.5 s.
+function countUp(el, from, to, dur, prefix, sound) {
+  if (!el) return; const t0 = performance.now(); let last = from;
+  const step = now => { const k = Math.min(1, (now - t0) / dur), v = Math.round(from + (to - from) * (1 - Math.pow(1 - k, 2))); if (v !== last && sound) sfx(sound); last = v; el.textContent = prefix + v; if (k < 1) requestAnimationFrame(step); };
+  requestAnimationFrame(step); setTimeout(() => { el.textContent = prefix + to; }, dur + 400);   // final value even if frames are paused
+}
+function animateCashout() {
+  const r = S.reward; if (!r || r.shown) return; r.shown = true;
+  const m = $('#modal'), cur = LANG === 'hk' ? '$' : '¥';
+  const rows = [...m.querySelectorAll('.receipt .rrow')], tot = m.querySelector('.rtotal b'), wal = m.querySelector('.cashfoot .pv');
+  if (!motionOK) { sfx('kaching'); return; }
+  const vals = rows.map(x => +x.querySelector('b').textContent.replace(/[^\d]/g, ''));
+  rows.forEach(x => { x.style.opacity = '0'; x.querySelector('b').textContent = cur + 0; }); if (tot) tot.textContent = cur + 0; if (wal) wal.textContent = cur + (S.money - r.total);
+  rows.forEach((x, i) => setTimeout(() => {
+    x.style.opacity = ''; x.animate([{ opacity: 0, transform: 'translateX(-10px)' }, { opacity: 1, transform: 'none' }], { duration: 200, easing: 'ease-out' });
+    countUp(x.querySelector('b'), 0, vals[i], 220, cur, 'coin');
+  }, 120 + i * 260));
+  const tStart = 120 + rows.length * 260 + 80;
+  setTimeout(() => { countUp(tot, 0, r.total, 380, cur, 'coin'); }, tStart);
+  setTimeout(() => { sfx('kaching'); if (tot) juice(tot, .9); countUp(wal, S.money - r.total, S.money, 420, cur, 'coin'); }, tStart + 400);
+  setTimeout(() => { if (wal) juice(wal, .7); }, tStart + 850);
 }
 function cashoutHTML() {
   const r = S.reward; const names = { small: 'Small Blind', big: 'Big Blind', boss: 'Boss Blind' };
