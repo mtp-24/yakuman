@@ -173,6 +173,16 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 162: Collection engravings use wide cards: the sample tile sits on a felt pad at the left, the name and effect beside it, an accent edge in each engraving's colour, two or three cards per row.
 - Build 163: Engraving cards drop the coloured accent edge.
 - Build 164: Flowers in the side panel use the same hover card as tiles (a Flower label, the name and the effect) instead of the plain tooltip; the hover card now works for any element with data-hc-title.
+- Build 172: Balatro feature batch (first-draft names and numbers, open to playtest tuning).
+  - Seals get their own slot beside an engraving: Red, Gold (¥3 when scored), Blue (levels up your final play's Scroll if held at a win) and Purple (an Omikuji when discarded). New Kami Benzaiten, Hachiman and Fūjin add them. Old Red Seal engravings convert on load.
+  - Talisman rarity (Common / Uncommon / Rare, 70/25/5 in shops and packs), five money Talismans (Takarabune, Binbōgami, Fukusuke, Ebisu, Kamaitachi), four Legendaries (Yamata-no-Orochi, Shuten-dōji, Tamamo-no-Mae, Hō-ō) and the rare Kami Hitodama that creates them.
+  - Tile Packs, Mega Tile Packs and the Tile Tag add new tiles to your Wall, some engraved or sealed.
+  - Bosses have a minimum Ante; ten new Bosses (Needle, Drought, Mountain, Flint, Toll, Eye, Mouth, Pickpocket, Ascetic, Ox) and four Showdown Bosses on Ante 8 (Violet Dragon, Crimson Oni, Verdant Leaf, Golden Dragon).
+  - Flower upgrades (a second tier for each) and five new Flowers: Lotus (+1 shop slot), Peony (reroll the Boss), Wisteria (−1 Ante), Cherry Blossom (more editions), Camellia (sell value, then +1 Talisman slot).
+  - Blue, Purple, Orange and Gold Stakes; Eternal, Perishable and Rental Talisman stickers; Rental charges show as minus rows at cash-out.
+  - Eight Challenges from the title screen, recorded separately from Stakes and unlocks.
+  - Twenty Achievements on the Profile tab.
+  - Seeded runs from before this build will produce different shops (rarity and stickers use the run's random numbers). Sim: 6.3% wins at White Stake (was 7.3%).
 - Build 171: Cash-out puts the Cash Out button on top like Balatro, with the reward rows filling in beneath it; each paying Talisman gets its own row (e.g. Maneki-neko ¥3) instead of one Talismans total. No Next Up preview, so any number of rows fits.
 - Build 170: The cash-out tray grows up from the screen's bottom edge until its contents sit at the middle of the screen (still always covering the action bar), and re-centres on resize.
 - Build 169: Cash-out dimming sits on the board itself, so the page background below the board keeps the same colour as the sides.
