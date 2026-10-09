@@ -1263,14 +1263,15 @@ function decorateBanner(cls) {
   head.classList.add('banner', 'bn-' + tone); head.insertAdjacentHTML('beforeend', '<div class="bannerflaps" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>'); m.classList.add('hasbanner');
 }
 // Cash-out covers only the board area, like Balatro, so the left column (Blind, score and Last Play) stays in view.
-// The receipt rises from the bottom of the board like a drawer.
+// Like Balatro, the receipt rises from the bottom edge of the screen into the board's column, over the hand and action bar.
 // On narrow layouts, where the left column stacks above the board, it stays full screen.
 function placeOverlay(boardOnly) {
   const ov = $('#overlay'); ov.classList.remove('boardonly'); ['left', 'top', 'width', 'height'].forEach(k => ov.style[k] = '');
   const board = document.querySelector('.board'); if (!boardOnly || !board || innerWidth <= 900) return;
-  const b = board.getBoundingClientRect(), top = Math.max(b.top, 0), bottom = Math.min(b.bottom, innerHeight);
+  const b = board.getBoundingClientRect(), top = Math.max(b.top, 0), bottom = innerHeight;   // runs to the screen's bottom edge, where the receipt rises from
   const tz = board.querySelector('.talzone'), cut = tz ? Math.max(0, tz.getBoundingClientRect().bottom + 4 - top) : 0;   // the Talismans stay lightly dimmed; the rest is darker
   ov.classList.add('boardonly'); Object.assign(ov.style, { left: b.left + 'px', top: top + 'px', width: b.width + 'px', height: (bottom - top) + 'px' }); ov.style.setProperty('--cut', cut + 'px');
+  const ac = board.querySelector('.actions'); ov.style.setProperty('--reach', (ac ? Math.max(0, ac.getBoundingClientRect().top - 14 - top) : 0) + 'px');   // on tall screens the tray still reaches up over the action bar
 }
 ['resize', 'scroll'].forEach(ev => window.addEventListener(ev, () => { if ($('#overlay').classList.contains('boardonly')) placeOverlay(true); }));
 // Any leftover animation is cancelled first: the cash-out drawer's slide-down holds its end position, and the next modal must not inherit it.

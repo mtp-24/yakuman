@@ -829,7 +829,7 @@ button.pulse{animation:btnpulse2 2.6s ease-out infinite}
 .engcard > .kind{grid-column:2;grid-row:1} .engcard > .n{grid-column:2;grid-row:2;margin:0} .engcard > .d{grid-column:2;grid-row:3;margin-top:2px;line-height:1.45}
 .engcard > .coltile{grid-column:1;grid-row:1/4;align-self:center;margin:0;padding:8px 0;min-height:0;display:flex;align-items:center;justify-content:center;border-radius:10px;background:radial-gradient(circle at 50% 40%,#1f5a45,#123528);box-shadow:inset 0 2px 6px rgba(0,0,0,.45)}
 .tt-k{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#c9b48a;margin-bottom:2px} .tt-e.tt-body{border-top:0;padding-top:0;margin-top:2px}
-.overlay.boardonly{inset:auto;border-radius:16px;padding:12px 14px 8px;overflow-x:hidden;background:linear-gradient(180deg,rgba(5,10,9,.25) 0,rgba(5,10,9,.25) calc(var(--cut,0px) - 8px),rgba(5,10,9,.62) calc(var(--cut,0px) + 8px))}
-.overlay.boardonly .modal.cashmodal{margin-top:auto;border-radius:16px 16px 12px 12px}
+.overlay.boardonly{inset:auto;border-radius:16px 16px 0 0;padding:0 14px;overflow:hidden;background:linear-gradient(180deg,rgba(5,10,9,.25) 0,rgba(5,10,9,.25) calc(var(--cut,0px) - 8px),rgba(5,10,9,.62) calc(var(--cut,0px) + 8px))}
+.overlay.boardonly .modal.cashmodal{margin-top:auto;max-height:100%;min-height:min(100%,calc(100% - var(--reach,0px)));overflow-y:auto;border:6px solid #4e351c;border-bottom:0;border-radius:18px 18px 0 0;padding:16px 20px 20px;box-shadow:inset 0 0 0 1px rgba(217,164,65,.5),0 -2px 0 rgba(255,220,160,.25),0 -12px 34px rgba(0,0,0,.6)}
 .blindplate.cleared .bp-top .label:last-child{color:var(--good)}
 </style>
