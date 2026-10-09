@@ -126,7 +126,7 @@ function hasRunSave() { try { return !!localStorage.getItem(SAVE_KEY) && !!S && 
 // ===================== PLAYER PROFILE =====================
 // Lifetime progress that outlives runs (New Run and Wipe save leave it alone). Unlocks will build on this.
 const PROFILE_KEY = 'yakuman.profile.v1';
-function blankProfile() { return { v: 1, created: Date.now(), runs: 0, wins: 0, bestAnte: 0, bestPlay: 0, bestPlayDesc: '', hands: 0, blinds: 0, stakesWon: {}, wallsWon: {}, bosses: {}, yaku: {}, unlocked: [], calls: 0, sold: 0, scrollsUsed: 0, furitenHands: 0, openHands3: 0, mostMoney: 0, wallStakes: {}, seen: {} }; }
+function blankProfile() { return { v: 1, created: Date.now(), runs: 0, wins: 0, bestAnte: 0, bestPlay: 0, bestPlayDesc: '', hands: 0, blinds: 0, stakesWon: {}, wallsWon: {}, bosses: {}, yaku: {}, unlocked: [], calls: 0, sold: 0, scrollsUsed: 0, furitenHands: 0, openHands3: 0, mostMoney: 0, wallStakes: {}, seen: {}, achieved: [], challengesWon: {}, legendaries: 0, shattered: 0, tilesAdded: 0 }; }
 let PROFILE = (() => { try { return Object.assign(blankProfile(), JSON.parse(localStorage.getItem(PROFILE_KEY) || '{}')); } catch (e) { return blankProfile(); } })();
 function saveProfile() { try { localStorage.setItem(PROFILE_KEY, JSON.stringify(PROFILE)); } catch (e) { } }
 const bump = (obj, k, n = 1) => { obj[k] = (obj[k] || 0) + n; };
@@ -155,6 +155,31 @@ const UNLOCKS = [
   { kind: 'tal', key: 'kagami', goal: 'Win a run on Red Stake or higher', prog: P => [STAKE_KEYS.slice(1).reduce((n, k) => n + (P.stakesWon[k] || 0), 0), 1] },
 ];
 const LOCKS = {}; UNLOCKS.forEach(u => LOCKS[`${u.kind}:${u.key}`] = u);
+// ===================== ACHIEVEMENTS =====================
+// Long-term goals across runs, checked with the unlocks. Each row: name, goal, and progress from the profile as [have, need].
+const YAKUMAN_KEYS = ['kokushi', 'daisangen', 'tsuuiisou', 'suuankou', 'shousuushii', 'daisuushii', 'chinroutou', 'ryuuiisou', 'chuuren', 'suukantsu'];
+const ACHIEVEMENTS = [
+  { key: 'firstwin', name: 'First Win', goal: 'Win a run', prog: P => [P.wins, 1] },
+  { key: 'endless', name: 'Beyond the Wall', goal: 'Reach Ante 12', prog: P => [P.bestAnte, 12] },
+  { key: 'big', name: 'High Roller', goal: 'Score 100,000 in one Play', prog: P => [P.bestPlay, 100000] },
+  { key: 'huge', name: 'Astronomical', goal: 'Score 10,000,000 in one Play', prog: P => [P.bestPlay, 10000000] },
+  { key: 'limit', name: 'Limit Hand', goal: 'Score any Yakuman', prog: P => [yakuN(P, ...YAKUMAN_KEYS), 1] },
+  { key: 'orphans', name: 'Thirteen Orphans', goal: 'Score Kokushi Musou', prog: P => [yakuN(P, 'kokushi'), 1] },
+  { key: 'pairs', name: 'Seven Pairs, Ten Times', goal: 'Score Chiitoitsu 10 times', prog: P => [yakuN(P, 'chiitoitsu'), 10] },
+  { key: 'rinshan', name: 'Flower on the Kong', goal: 'Score Rinshan Kaihou', prog: P => [yakuN(P, 'rinshan'), 1] },
+  { key: 'furiten', name: 'Against the Odds', goal: 'Score 10 Complete Hands in Furiten', prog: P => [P.furitenHands, 10] },
+  { key: 'rich', name: 'Deep Pockets', goal: 'Hold ¥100 at once', prog: P => [P.mostMoney, 100] },
+  { key: 'showdown', name: 'Showdown', goal: 'Beat a Showdown Boss', prog: P => [Object.keys(P.bosses).filter(k => BOSSES[k] && BOSSES[k].showdown).length, 1] },
+  { key: 'hunter', name: 'Boss Hunter', goal: 'Beat 15 different Bosses', prog: P => [Object.keys(P.bosses).length, 15] },
+  { key: 'legend', name: 'Legendary', goal: 'Get a Legendary Talisman', prog: P => [P.legendaries || 0, 1] },
+  { key: 'glass', name: 'Glass Cannon', goal: 'Shatter 10 Glass tiles', prog: P => [P.shattered || 0, 10] },
+  { key: 'architect', name: 'Architect', goal: 'Add 25 tiles to your Wall from Tile Packs', prog: P => [P.tilesAdded || 0, 25] },
+  { key: 'collector', name: 'Collector', goal: 'Discover 100 cards for the Collection', prog: P => [Object.keys(P.seen).length, 100] },
+  { key: 'challenger', name: 'Challenger', goal: 'Complete a Challenge', prog: P => [Object.keys(P.challengesWon || {}).length, 1] },
+  { key: 'allchal', name: 'Master of Trials', goal: 'Complete every Challenge', prog: P => [Object.keys(P.challengesWon || {}).length, CHALLENGES.length] },
+  { key: 'everywall', name: 'Every Wall', goal: 'Win with every Wall', prog: P => [Object.keys(P.wallsWon).length, Object.keys(DECKS).length] },
+  { key: 'goldstake', name: 'Gold Standard', goal: 'Win on Gold Stake', prog: P => [P.stakesWon.gold || 0, 1] },
+];
 const UNLOCK_ALL_KEY = 'yakuman.unlockall';
 let UNLOCK_ALL = (() => { try { return localStorage.getItem(UNLOCK_ALL_KEY) === 'on'; } catch (e) { return false; } })();
 function lockOf(kind, key) { const u = LOCKS[`${kind}:${key}`]; return u && !UNLOCK_ALL && !PROFILE.unlocked.includes(`${kind}:${key}`) ? u : null; }
@@ -202,6 +227,9 @@ function checkUnlocks() {
   if (markSeen()) dirty = true;
   const fresh = [];
   for (const u of UNLOCKS) { const id = `${u.kind}:${u.key}`; if (PROFILE.unlocked.includes(id)) continue; const p = unlockProg(u); if (p.have >= p.need) { PROFILE.unlocked.push(id); fresh.push(u); } }
+  PROFILE.achieved = PROFILE.achieved || [];
+  const ach = ACHIEVEMENTS.filter(a => { if (PROFILE.achieved.includes(a.key)) return false; const [have, need] = a.prog(PROFILE); return (have || 0) >= need; });
+  if (ach.length) { PROFILE.achieved.push(...ach.map(a => a.key)); dirty = true; ach.forEach((a, i) => setTimeout(() => toast(`<div class="label">Achievement</div><b>${a.name}</b><div class="muted" style="font-size:11px">${a.goal}</div>`), 500 + i * 350)); }
   if (fresh.length || dirty) saveProfile();
   if (fresh.length && S) S.newUnlocks = (S.newUnlocks || []).concat(fresh.map(u => `${u.kind}:${u.key}`));
   fresh.forEach((u, i) => setTimeout(() => toast(`<div class="label">Unlocked · ${UNLOCK_KIND[u.kind]}</div><b>${unlockName(u)}</b>`), i * 350));
@@ -351,7 +379,7 @@ async function doPlay() {
   S.busy = false;
   for (const k of liveTals(S)) if (TAL[k].afterScore) TAL[k].afterScore(ctx, S);
   if (S.spent && S.spent.length) { S.spent.forEach(k => toast(`<div class="label">Used up</div><b>${TAL[k].name}</b><div class="muted" style="font-size:11px">left your board after its last play</div>`)); S.spent = []; }
-  S.plays--; S.playsMade = (S.playsMade || 0) + 1; tilesDestroyed(ctx.shatter.length); S.score += ctx.total; S.money += ctx.money; S.lastPlay = ctx;
+  S.plays--; S.playsMade = (S.playsMade || 0) + 1; tilesDestroyed(ctx.shatter.length); if (ctx.shatter.length) PROFILE.shattered = (PROFILE.shattered || 0) + ctx.shatter.length; S.score += ctx.total; S.money += ctx.money; S.lastPlay = ctx;
   if (S.boss === 'toll') S.money = Math.max(0, S.money - sel.length);
   if (S.boss === 'ox' && ctx.meldType === mostPlayedRung()) { S.money = 0; toast('<div class="label">The Ox</div><b>Your money is now ¥0</b><div class="muted" style="font-size:11px">you played your most-played play type</div>'); }
   S.usedTypes = (S.usedTypes || []).concat(ctx.meldType); if (!S.mouthType) S.mouthType = ctx.meldType; S.firstPlayDone = true;
@@ -568,7 +596,7 @@ function takeFromPack(i) {
   const it = S.pack.choices[i]; if (!it || it.sold) return;
   if (it.kind === 'talisman') { if (S.talismans.length >= talSlots()) { setMsg('Talisman slots are full. Sell one from the list below first.', true); return render(); } gainTalisman(it.key, it.sticker); if (it.edition) S.editions[it.key] = it.edition; }
   else if (it.kind === 'scroll') { const [t, k] = it.key.split(':'); S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] = (S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] || 0) + 1; for (const tk of liveTals(S)) if (TAL[tk].onScroll) TAL[tk].onScroll(S); PROFILE.scrollsUsed++; saveProfile(); }
-  else if (it.kind === 'tile') { S.deck.push(it.tile); for (const k of liveTals(S)) if (TAL[k].onTileAdded) TAL[k].onTileAdded(S, 1); }
+  else if (it.kind === 'tile') { S.deck.push(it.tile); PROFILE.tilesAdded = (PROFILE.tilesAdded || 0) + 1; saveProfile(); for (const k of liveTals(S)) if (TAL[k].onTileAdded) TAL[k].onTileAdded(S, 1); }
   else { if (S.consumables.length >= conSlots()) { setMsg('Consumable slots are full. Use or sell one first.', true); return render(); } S.consumables.push({ kind: it.kind, key: it.key }); }
   it.sold = true; S.pack.left--; setMsg(it.kind === 'tile' ? `Added ${itemDef(it).name} to your Wall.` : `Took ${itemDef(it).name}.`);
   if (S.pack.left <= 0) S.pack = null;
@@ -1676,6 +1704,8 @@ function profileHTML() {
   h += `<div class="label" style="margin:12px 0 6px">Unlocks · ${earned.length} of ${UNLOCKS.length}${UNLOCK_ALL ? ' · Unlock everything is on in Settings' : ''}</div>`;
   if (earned.length) h += `<div class="overtals" style="margin-bottom:8px">${earned.map(u => `<span class="tagchip">${unlockName(u)}</span>`).join('')}</div>`;
   if (locked.length) h += `<div class="locklist">${locked.map(u => `<div class="lockrow"><div><span class="muted" style="font-size:11px">${UNLOCK_KIND[u.kind]}</span> <b>${unlockName(u)}</b></div>${lockHTML(u)}</div>`).join('')}</div>`;
+  const got = P.achieved || [];
+  h += `<div class="label" style="margin:12px 0 6px">Achievements · ${got.length} of ${ACHIEVEMENTS.length}</div><div class="achgrid">${ACHIEVEMENTS.map(a => { const done = got.includes(a.key), [have, need] = a.prog(P); return `<div class="ach${done ? ' done' : ''}"><b>${a.name}</b><span class="muted">${a.goal}</span>${done ? '' : need > 1 ? `<div class="lockbar"><i style="width:${Math.min(100, 100 * (have || 0) / need)}%"></i></div>` : ''}</div>`; }).join('')}</div>`;
   const disc = [...TALISMANS.map(t => ['tal', t.key]), ...OMIKUJI.map(o => ['omikuji', o.key]), ...KAMI.map(o => ['kami', o.key]), ...SCROLLS.map(o => ['scroll', o.key]), ...FLOWERS.map(o => ['flower', o.key]), ...Object.keys(PACKS).map(k => ['pack', k]), ...Object.keys(TAGS).map(k => ['tag', k]), ...Object.keys(BOSSES).map(k => ['boss', k])];
   h += `<div class="label" style="margin:12px 0 6px">Collection · ${disc.filter(([k, key]) => isSeen(k, key)).length} of ${disc.length} discovered</div>`;
   h += `<div class="label" style="margin:12px 0 6px">Stakes won by Wall</div><div class="wallstakes">${Object.entries(DECKS).map(([w, d]) => `<div class="wsrow${lockOf('wall', w) ? ' lk' : ''}"><span>${d.name}</span><span class="wspips">${STAKE_KEYS.map((k, i) => `<i class="sw sw-${k}${wallBest(w) >= i ? '' : ' off'}" title="${STAKES[k].name}${wallBest(w) >= i ? ' won' : ''}"></i>`).join('')}</span></div>`).join('')}</div>`;
