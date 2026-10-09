@@ -208,6 +208,7 @@ aside{display:flex;flex-direction:column;gap:10px;min-width:0}
 .exrow{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end} .exgrp{display:flex;gap:2px}
 .tile.tiny{--tw:30px;--th:41px;box-shadow:0 1px 0 #8f815f;border-radius:4px}
 .sheet .exrow{gap:6px}
+.owned-grid{grid-template-columns:repeat(auto-fill,minmax(170px,1fr))} .owned-card{opacity:.92} .owned-card .d{font-size:11px}
 .tag{display:inline-block;font-size:10px;padding:1px 6px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);color:var(--muted);margin-left:4px}
 .flowers{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}
 .flowerchip{font-size:11px;background:rgba(240,163,184,.12);border:1px solid rgba(240,163,184,.4);border-radius:10px;padding:1px 7px;color:#f0a3b8}
@@ -1561,18 +1562,23 @@ function shopHTML() {
   if (S.shop.coupon) h += `<div class="msg">Coupon Tag: Talismans and consumables are free in this shop.</div>`;
   if (S.shop.freePacks.length) h += `<div style="display:flex;gap:8px;flex-wrap:wrap;margin:6px 0">${S.shop.freePacks.map((pk, i) => `<button class="primary" data-freepack="${i}">Open free ${PACKS[pk].name}</button>`).join('')}</div>`;
   h += `<div class="shop-grid">${items.map((it, i) => cardHTML(it, i)).join('')}</div>`;
-  h += `<div class="label" style="margin:6px 0 4px">Yours · sell to make room</div><div class="owned">${S.talismans.map(k => `<span class="own"><b>${TAL[k].name}</b>${S.editions[k] ? ' <span class="edtag ed-' + S.editions[k] + '">' + EDITIONS[S.editions[k]].name + '</span>' : ''} <button class="ghost" data-sell="${k}">Sell ¥${Math.max(1, Math.floor(talValue(k) / 2))}</button></span>`).join('')}${S.consumables.map((c, i) => `<span class="own"><b>${CONS[c.key].name}</b> ${CONS[c.key].anywhere ? `<button class="ghost" data-usecon="${i}">Use</button>` : ''}<button class="ghost" data-sellcon="${i}">Sell ¥${Math.max(1, Math.floor(CONS[c.key].cost / 2))}</button></span>`).join('')}${!S.talismans.length && !S.consumables.length ? '<span class="muted">Nothing yet.</span>' : ''}</div>`;
+  h += ownedHTML();
   h += `<div class="msg${S.msgErr ? ' err' : ''}" style="margin-bottom:8px">${S.msg || ''}</div>`;
   h += `<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px"><button id="mReroll">Reroll cards (${S.shop.freeReroll ? 'free' : '¥' + rerollCost()})</button><button id="mDeck" class="ghost">View Wall</button><span style="flex:1"></span><span class="muted">Next: Ante ${S.ante} ${next}${nextBoss ? ' · ' + nextBoss.name : ''}</span>${blindKind() !== 'boss' ? `<button id="mSkip" class="ghost" title="Skip this Blind: no reward money, but you gain a random Tag">Skip for a Tag</button>` : ''}<button id="mNext" class="primary">Next Blind →</button></div>`;
   if (S.consumables.length) h += `<div class="muted" style="font-size:12px;margin-top:8px">Consumables that need tiles are used during a Blind. Click one on the board to use it now if it needs none.</div>`;
   return h;
+}
+function ownedHTML() {
+  const tal = S.talismans.map((k, i) => { const ed = S.editions[k]; const tgt = TAL[k].copies ? talTarget(S, k) : null; return `<div class="shopcard talisman owned-card${ed ? ' ed-' + ed : ''}"><div class="kind"><span class="order">${i + 1}</span>Talisman${ed ? ` · <span class="edtag ed-${ed}">${EDITIONS[ed].name}</span>` : ''}</div><div class="n">${TAL[k].name}</div><div class="d">${TAL[k].desc}${tgt ? ` <b>Now: ${tgt.name}.</b>` : ''}${ed ? ` <b>${EDITIONS[ed].desc}.</b>` : ''}${TAL[k].status ? ' <b>(' + TAL[k].status(S) + ')</b>' : ''}</div><div class="buy"><span class="muted">Sells for</span><button class="ghost" data-sell="${k}">Sell ¥${Math.max(1, Math.floor(talValue(k) / 2))}</button></div></div>`; });
+  const con = S.consumables.map((c, i) => { const d = CONS[c.key]; return `<div class="shopcard ${c.kind} owned-card"><div class="kind">${c.kind === 'kami' ? 'Kami Spirit' : 'Omikuji'}</div><div class="n">${d.name}</div><div class="d">${d.desc}</div><div class="buy"><span class="muted">${d.anywhere ? 'Usable now' : 'Use during a Blind'}</span><span style="display:flex;gap:6px">${d.anywhere ? `<button class="ghost" data-usecon="${i}">Use</button>` : ''}<button class="ghost" data-sellcon="${i}">Sell ¥${Math.max(1, Math.floor(d.cost / 2))}</button></span></div></div>`; });
+  return `<div class="label" style="margin:10px 0 4px">Yours · ${S.talismans.length}/${talSlots()} Talismans, ${S.consumables.length}/${conSlots()} consumables · sell to make room</div>` + (tal.length || con.length ? `<div class="shop-grid owned-grid">${tal.join('')}${con.join('')}</div>` : `<div class="muted" style="font-size:12px">Nothing yet.</div>`);
 }
 function packHTML() {
   const pk = PACKS[S.pack.key];
   let h = `<h2>${pk.name}</h2><p class="muted" style="margin:0 0 8px">${pk.desc} Choose ${S.pack.left} more.${S.pack.free ? ' (Free, from a Tag.)' : ''}</p>`;
   h += `<div class="shop-grid">${S.pack.choices.map((it, i) => { const d = itemDef(it); const ed = it.edition ? EDITIONS[it.edition] : null; return `<div class="shopcard ${it.kind}${it.sold ? ' sold' : ''}${ed ? ' ed-' + it.edition : ''}"><div class="kind">${{ talisman: 'Talisman', omikuji: 'Omikuji', kami: 'Kami Spirit', scroll: 'Scroll of Mastery' }[it.kind]}${ed ? ` · <span class="edtag ed-${it.edition}">${ed.name}</span>` : ''}</div><div class="n">${d.name}</div><div class="d">${d.desc}${ed ? ` <b>${ed.name}: ${ed.desc}.</b>` : ''}</div><div class="buy"><span></span>${it.sold ? '<span class="muted">Taken</span>' : `<button class="primary" data-take="${i}">Take</button>`}</div></div>`; }).join('')}</div>`;
   h += `<div class="msg${S.msgErr ? ' err' : ''}" style="margin:6px 0">${S.msg || ''}</div>`;
-  h += `<div class="label" style="margin:6px 0 4px">Yours</div><div class="owned">${S.talismans.map(k => `<span class="own"><b>${TAL[k].name}</b> <button class="ghost" data-sell="${k}">Sell ¥${Math.max(1, Math.floor(talValue(k) / 2))}</button></span>`).join('')}${S.consumables.map((c, i) => `<span class="own"><b>${CONS[c.key].name}</b><button class="ghost" data-sellcon="${i}">Sell ¥${Math.max(1, Math.floor(CONS[c.key].cost / 2))}</button></span>`).join('')}</div>`;
+  h += ownedHTML();
   h += `<div style="margin-top:12px"><button id="mPackDone" class="ghost">Skip the rest</button></div>`;
   return h;
 }

@@ -39,6 +39,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 23: Talismans fire in slot order after the Han table; flat +Mult class (Kitsune, Tengu, Amanojaku, Nure-onna, Sazae-oni converted; Kasa-obake and Ittan-momen added); drag to reorder Talismans; running Mult in the animation and breakdown.
 - Build 24: run setup with seven Walls (decks), four Stakes and seeds (seeded RNG); Run Info with play and Yaku counts; booster packs in the shop; skip a Small/Big Blind for one of fifteen Tags; sell Talismans and consumables inside the shop; six new bosses (Fisherman, Censor, Gatekeeper, Collector, Miser, Monk); Steel engraving (held-in-hand); Negative edition (+1 slot); seventeen new Talismans: streak and scaling (Nopperabō, Sekitō, Aobōzu, Shiro, Takibi, Hoshizora, Mabo, Chōchin), run-info powers (Hoshi, Hatsumōde, Oshi), held-in-hand (Daimyō), copiers (Utsushi, Kagami), gapped Chi (Hashi), plus Kasa-obake and Ittan-momen from build 23.
 - Build 25: Run Info split into Run / Play ladder / Yaku / Yakuman tabs; every Yaku, Yakuman and ladder rung shows an example hand drawn with tiles.
+- Build 26: owned Talismans and consumables shown as full cards (description, edition, copier target, current value) in the shop and pack screens, with Use and Sell; pack Open button fixed.
 - Build 7: multi-meld play ladder (Two Melds ... Four Melds), targets 300...45000, retrigger and scaling Talismans, Wall-Builder rewording, scoring animation.
 
 ## Simulators (in `sim/`)
