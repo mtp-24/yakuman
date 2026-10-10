@@ -826,7 +826,7 @@ function reroll() {
 }
 function flipIn() {
   if (!motionOK) return;
-  document.querySelectorAll('#modal .cardshelf .shopcard').forEach((el, i) => el.animate([{ transform: 'perspective(700px) rotateY(-90deg) scale(.96)', opacity: .5 }, { transform: 'perspective(700px) rotateY(0)', opacity: 1 }], { duration: 220, delay: i * 55, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' }));
+  document.querySelectorAll('#modal .cardshelf .shopcard').forEach((el, i) => el.animate([{ transform: 'perspective(700px) rotateY(-90deg) scale(.96)', opacity: .5 }, { transform: 'perspective(700px) rotateY(0)' }], { duration: 220, delay: i * 55, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' }));
 }
 function skipBlind() {
   if (S.phase !== 'select' || blindKind() === 'boss') return;
@@ -1822,7 +1822,7 @@ function trayIn(kind) {
   dealIn(kind === 'pack' ? '#modal .packshelf .shopcard' : '#modal .shopshelves .shopcard', tray ? 150 : 0);
 }
 function dealIn(sel, start) {
-  document.querySelectorAll(sel).forEach((el, i) => el.animate([{ transform: 'translateY(46px) rotate(-5deg) scale(.9)', opacity: 0 }, { transform: 'translateY(-4px) rotate(.5deg) scale(1.01)', opacity: 1, offset: .7 }, { transform: 'none', opacity: 1 }], { duration: 340, delay: start + i * 70, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' }));
+  document.querySelectorAll(sel).forEach((el, i) => el.animate([{ transform: 'translateY(46px) rotate(-5deg) scale(.9)', opacity: 0 }, { transform: 'translateY(-4px) rotate(.5deg) scale(1.01)', offset: .7 }, { transform: 'none' }], { duration: 340, delay: start + i * 70, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' }));
 }
 function placeOverlay(boardOnly, mode) {
   const ov = $('#overlay'); ov.classList.remove('boardonly', 'shoptray', 'inflow'); ['left', 'top', 'width', 'height'].forEach(k => ov.style[k] = '');
@@ -2482,6 +2482,9 @@ function copySeed(btn) {
 // ===================== CRT =====================
 // Full CRT is one SVG filter on the game and its overlays: a barrel bend (a displacement map, strongest at the corners),
 // the red and blue channels nudged apart (chromatic aberration, more toward the edges), and a soft glow added back (bloom).
+// Full CRT: the picture is bent outwards by a displacement map, and its red channel is nudged right for a colour fringe.
+// Kept to five steps (the bloom blur and the three-way channel split were dropped: browsers run SVG filters on the CPU and
+// redo them on every frame anything moves); the glow is a cheap static layer in CSS instead.
 function crtFilterSVG() {
   const N = 128, c = document.createElement('canvas'); c.width = c.height = N; const g = c.getContext('2d'), img = g.createImageData(N, N);
   for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
@@ -2492,12 +2495,10 @@ function crtFilterSVG() {
   return `<svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="crtfx" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
     <feImage href="${map}" preserveAspectRatio="none" result="map"/>
     <feDisplacementMap in="SourceGraphic" in2="map" scale="28" xChannelSelector="R" yChannelSelector="G" result="bent"/>
-    <feColorMatrix in="bent" type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="r"/><feOffset in="r" dx="1.2" dy="0" result="r2"/>
-    <feColorMatrix in="bent" type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0" result="g"/>
-    <feColorMatrix in="bent" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0" result="b"/><feOffset in="b" dx="-1.2" dy="0" result="b2"/>
-    <feBlend in="r2" in2="g" mode="screen" result="rg"/><feBlend in="rg" in2="b2" mode="screen" result="rgb"/>
-    <feGaussianBlur in="rgb" stdDeviation="5" result="glow"/>
-    <feComposite in="rgb" in2="glow" operator="arithmetic" k1="0" k2="1" k3=".28" k4="0"/>
+    <feOffset in="bent" dx="1.4" dy="0" result="sh"/>
+    <feColorMatrix in="sh" type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="r"/>
+    <feColorMatrix in="bent" type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0" result="gb"/>
+    <feComposite in="r" in2="gb" operator="arithmetic" k1="0" k2="1" k3="1" k4="0"/>
   </filter></svg>`;
 }
 function applyCRT() {

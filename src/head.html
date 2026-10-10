@@ -883,6 +883,10 @@ body.crt::after{content:'';position:fixed;inset:0;z-index:90;pointer-events:none
 .shelf.many .shelfrow{grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:10px} .shelf.many .shopcard{min-height:206px;padding:16px 8px 10px} .shelf.many .shopcard .n{font-size:15px} .shelf.many .shopcard .d{font-size:11px;line-height:1.35} .shelf.many .emblem{width:36px;height:36px} .shelf.many .lvline{font-size:10.5px}
 /* Full CRT: the SVG filter bends the picture; a dark rounded mask hides the bent-away edges like a tube's bezel */
 body.crt-full #app,body.crt-full #overlay{filter:url(#crtfx)} #crtbezel{display:none} body.crt-full #crtbezel{display:block;position:fixed;inset:0;z-index:91;pointer-events:none;border-radius:28px/22px;box-shadow:0 0 0 40px #050806,inset 0 0 60px 18px rgba(0,0,0,.65)}
+/* Full CRT stays light: a static phosphor glow instead of a blur-based bloom, and the always-running shimmer and glow loops
+   under the filter hold still (each frame they run would otherwise make the browser redo the whole filter) */
+body.crt-full #crtbezel::before{content:'';position:absolute;inset:0;border-radius:inherit;background:radial-gradient(ellipse at center,rgba(255,236,200,.07),transparent 70%);mix-blend-mode:screen}
+body.crt-full .slot[class*="ed-"]::before,body.crt-full .slot[class*="ed-"]::after,body.crt-full .shopcard[class*="ed-"]::before,body.crt-full .shopcard[class*="ed-"]::after,body.crt-full .shoprail .nextbtn.primary,body.crt-full .shoprail .nextbtn.primary::after{animation:none!important}
 @media (prefers-reduced-motion: reduce){body.crt-full #app,body.crt-full #overlay{filter:none}}
 /* ===== Tray Shop (and packs): rises from the bottom of the board; the Talisman row above stays clear ===== */
 /* Below the Talisman row the board darkens gradually, like the cash-out */
