@@ -13,6 +13,9 @@ let CRT = 'off'; try { CRT = localStorage.getItem('yakuman.crt') || 'off'; } cat
 let HINTS = { away: true, waits: false, without: false };
 // Corner numbers on tiles: 'all', 'some' (Characters and Winds, the default) or 'none'. Dots and Bamboo can be counted by their pips.
 let TILE_NUMS = 'some'; try { TILE_NUMS = localStorage.getItem('yakuman.tilenums') || 'some'; } catch (e) { } try { Object.assign(HINTS, JSON.parse(localStorage.getItem('yakuman.hints') || '{}')); } catch (e) { }
+// The sidebar's Last Play panel is hidden until the player shows it; both it and the debug bar remember their state.
+let SHOW_LAST = false; try { SHOW_LAST = localStorage.getItem('yakuman.lastplay') === 'show'; } catch (e) { }
+const applyLastPlay = () => { document.body.classList.toggle('nolastplay', !SHOW_LAST); const b = document.getElementById('sideLastPlay'); if (b) { b.classList.toggle('on', SHOW_LAST); b.setAttribute('aria-pressed', SHOW_LAST); } };
 // Animation speed stretches or shortens everything you wait on (scoring, trays, flights, deal-ins); Instant scoring
 // is separate and skips the scoring animation only. An old 'instant' speed becomes Normal with Instant scoring on.
 // Normal runs everything at 1.5x the original pace (chosen in the popup lab); Slow and Fast are half and double that.
@@ -501,6 +504,76 @@ function newRun(opts) { S = newState(opts || {}); S.stats.seen0 = Object.keys(PR
   if (S.deckKey === 'magic') { S.flowers.push('spring'); S.consumables.push({ kind: 'omikuji', key: 'echo' }, { kind: 'omikuji', key: 'echo' }); } PROFILE.runs++; saveProfile(); rollAnteTags(); S.phase = 'select'; render(); }
 
 // ===================== ACTIONS =====================
+// Wide layouts fit the window's height, so the action buttons never need a scroll. The River and Open Melds keep a fixed
+// two-row space and shrink their tiles as they fill (the River scrolls inside itself once its tiles are as small as they
+// go), and the hand's tiles take the largest size, up to the usual one, at which the whole board fits. The hand is sized
+// for a full hand, so its tiles keep one size through a Blind instead of growing whenever the hand is short.
+const fitMQ = matchMedia('(min-width:821px)');
+// The board is fitted to the shortest the window has been at its current width. On an iPad, scrolling makes Safari shrink
+// and grow its toolbar, which changes the window's height; fitting to the shortest keeps the board one size through that,
+// so the page does not refit and snap back to the top.
+let shortest = { w: 0, h: 0 };
+// A sudden drop of more than a toolbar's height is the on-screen keyboard, which comes and goes, so it is not counted.
+function fitHeight() { if (innerWidth !== shortest.w) shortest = { w: innerWidth, h: innerHeight }; else if (innerHeight > shortest.h - 140) shortest.h = Math.min(shortest.h, innerHeight); return shortest.h; }
+function fitBoard() {
+  const on = fitMQ.matches, hand = $('#hand'), river = $('#river'), open = $('#open'), aside = document.querySelector('aside'), board = document.querySelector('.board');
+  document.body.classList.toggle('fitboard', on);
+  hand.style.removeProperty('--tw'); hand.style.removeProperty('--th'); river.style.removeProperty('--tws'); open.style.removeProperty('--tws'); river.classList.remove('scrolly'); aside.style.maxHeight = ''; document.querySelector('.zone-row').style.removeProperty('--rws');
+  // the action message joins the hint line, sharing it with the hint, and goes back under the buttons otherwise
+  const msg = $('#msg'), slot = on ? $('.hintrow') : $('.actions'); if (msg.parentElement !== slot) slot.appendChild(msg);
+  $('#hint').title = on ? $('#hint').textContent : '';
+  const body = document.body; body.classList.remove('descopen');
+  if (!on || !board) return;
+  // The River and Open Melds keep two rows of tiles of size rws (40px, larger when there is room, see below) and shrink
+  // their tiles as they fill. Open Melds may grow past its two rows once its tiles are as small as they go (four Kans with
+  // their labels); the hand then gives up the room, which a hand with that many melds has to spare.
+  const zrow = document.querySelector('.zone-row');
+  const sizeRows = rws => {
+    zrow.style.setProperty('--rws', rws + 'px'); river.style.removeProperty('--tws'); open.style.removeProperty('--tws'); river.classList.remove('scrolly');
+    const rows = river.clientHeight;
+    for (const e of [open, river]) {
+      let w = rws; while (e.scrollHeight > rows + 1 && w > 26) { w -= 2; e.style.setProperty('--tws', w + 'px'); }
+      if (e === river && e.scrollHeight > e.clientHeight + 1) { e.classList.add('scrolly'); e.scrollTop = e.scrollHeight; }
+    }
+  };
+  sizeRows(40);
+  aside.style.maxHeight = Math.max(200, fitHeight() - aside.getBoundingClientRect().top - scrollY - 10) + 'px';
+  const first = hand.querySelector('.tile');
+  const pads = [], need = first ? Math.max(S ? capacity() : 0, hand.children.length) - hand.children.length : 0;
+  for (let i = 0; i < need; i++) { const g = first.cloneNode(false); g.style.visibility = 'hidden'; g.removeAttribute('data-id'); hand.appendChild(g); pads.push(g); }
+  // --th is worked out once at the root, so the height is set alongside the width
+  const size = w => { hand.style.setProperty('--tw', w + 'px'); hand.style.setProperty('--th', w * 1.36 + 'px'); };
+  const room = fitHeight(), fits = w => { if (w) size(w); return board.getBoundingClientRect().bottom + scrollY + 10 <= room + 0.5; };
+  // On a screen with room to spare (a desktop monitor), the cards show their descriptions in full during a Blind too, as
+  // long as the board still fits with a full hand at the usual tile size; otherwise they collapse and expand on hover.
+  if (S.phase === 'blind' && first) { body.classList.add('descopen'); if (!fits(0)) body.classList.remove('descopen'); }
+  // Then, with room still to spare, the River and Open Melds grow back toward the usual small-tile size (up to 62px), as
+  // large as still fits with the full hand at its usual size. The iPad has no room left by now, so it stays at 40px.
+  if (first && fits(0)) {
+    const max = Math.min(62, Math.max(42, innerWidth * .039)); let lo = 40, hi = max;
+    sizeRows(max); if (fits(0)) lo = max; else for (let i = 0; i < 5; i++) { const m = (lo + hi) / 2; sizeRows(m); if (fits(0)) lo = m; else hi = m; }
+    sizeRows(Math.floor(lo));
+  }
+  // card names stay on one line: a name too long for its card is set smaller, and one that would need less than 11px
+  // ("Yamata-no-Orochi", "Slip of the Dragon Mark") wraps onto two lines instead
+  const collapsed = S.phase === 'blind' && !body.classList.contains('descopen');
+  for (const n of document.querySelectorAll('#talismans .slot.filled .n, #consumables .slot.filled .n')) {
+    n.style.fontSize = ''; n.classList.remove('twoline'); if (!collapsed) continue;
+    // measured to the fraction of a pixel, as even a fraction over shows the "…"
+    const w = n.getBoundingClientRect().width, need = () => { const r = document.createRange(); r.selectNodeContents(n); return r.getBoundingClientRect().width; };
+    if (need() <= w) continue;
+    const f = parseFloat(getComputedStyle(n).fontSize), fit = Math.floor(f * w / need() * 10) / 10 - 0.2;
+    if (fit >= 11) n.style.fontSize = fit + 'px'; else n.classList.add('twoline');
+  }
+  if (first) { const base = first.offsetWidth; if (!fits(0)) { let lo = 36, hi = base; for (let i = 0; i < 7; i++) { const m = (lo + hi) / 2; if (fits(m)) lo = m; else hi = m; } size(Math.floor(lo)); } }
+  pads.forEach(g => g.remove());
+}
+let fitTimer = 0, fitWidth = innerWidth; const refit = () => { clearTimeout(fitTimer); fitTimer = setTimeout(() => { if (S) fitBoard(); }, 60); };
+// a change of height alone (Safari's toolbar shrinking or growing as the page scrolls) only refits when the window is
+// shorter than it has been, so the page does not jump while it is being scrolled
+addEventListener('resize', () => { const same = innerWidth === fitWidth; fitWidth = innerWidth; if (same && (innerHeight >= shortest.h || innerHeight <= shortest.h - 140)) return; refit(); });
+// the card names are measured in the title font, so they are measured again once it has loaded
+if (document.fonts) { document.fonts.ready.then(refit); document.fonts.addEventListener('loadingdone', refit); }
 function setMsg(m, err) { S.msg = m; S.msgErr = !!err; }
 // Boss rules about what you may play: The Ascetic (5+ tiles), The Eye (no repeats) and The Mouth (one type only).
 function bossPlayCheck(o) {
@@ -1130,10 +1203,10 @@ function render() {
   const grow = rowHeights();
   const motionBefore = tileSnapshot(), freshTiles = new Set(S.newIds || []);
   renderBlind(); renderTalismans(); renderConsumables(); renderOpen(); renderRiver(); renderHand(); renderActions(); renderLast();
-  $('#msg').textContent = S.msg || ''; $('#msg').className = 'msg' + (S.msgErr ? ' err' : '');
+  $('#msg').textContent = S.msg || ''; $('#msg').title = S.msg || ''; $('#msg').className = 'msg' + (S.msgErr ? ' err' : '');
   if (S.phase === 'cashout') { showModal(cashoutHTML(), false, 'cashmodal traymodal'); placeOverlay(true); animateCashout(); } else if (S.phase === 'shop' && S.pack) { showModal(packHTML(), false, 'packmodal traymodal'); placeOverlay(true, 'shop'); fillPackTiles(); fillPackHand(); trayIn('pack'); } else if (S.phase === 'shop') { showModal(shopHTML(), false, 'shopmodal traymodal'); placeOverlay(true, 'shop'); tweenWallet(); trayIn('shop'); } else if (S.phase === 'select') { showModal(selectHTML(), false, 'selectmodal'); anteUp(); } else if (S.phase === 'gameover') { showModal(overHTML(false), false, 'overmodal'); tallyOver(); } else if (S.phase === 'win') { showModal(overHTML(true), false, 'overmodal winmodal'); tallyOver(); } else if (!modalPinned) hideModal();
   document.querySelectorAll('.zhead > .muted').forEach(e => { e.title = e.textContent; });   // full text on hover when a header is truncated
-  translateDOM($('#app')); fitNumbers(); fitHead('talSell'); fitHead('conSell');
+  translateDOM($('#app')); fitNumbers(); fitHead('talSell'); fitHead('conSell'); fitBoard();
   if ($('#overlay').classList.contains('inflow')) placeOverlay(true, S.phase === 'shop' ? 'shop' : undefined);   // terms and fitted numbers can change the left column's height, so a tray that is part of the page is measured again
   if (S.placeholder && $('#overlay').hidden) showModal(menuHTML(false), true, 'menumodal');   // closing a screen opened from the title goes back to the title
   tileMotion(motionBefore, freshTiles); syncEditions(); refreshTileTip(); animateWall(); animateSlots(); playRowHolds(); afterUse(); growRows(grow); if (S.phase !== 'shop' && !S.quiet) walletShown = S.money;
@@ -1461,8 +1534,9 @@ function computePreview() {
   PREVIEW = { ctx, label: opt.type === 'hand' ? (ctx.yaku.length ? ctx.yaku.map(y => y.name).join(', ') : 'Complete Hand') : ctx.rungName, kind: opt.type, claim: !!opt.claim };
 }
 function renderBlind() {
-  // During cash-out the card keeps showing the Blind just beaten (marked Defeated, with its final score) until Cash Out.
-  const cleared = S.phase === 'cashout' && !!S.reward, show = S.phase === 'blind' || cleared;
+  // During cash-out and in the Shop the card keeps showing the Blind just beaten (marked Defeated, with its final score);
+  // the next Blind takes its place once it is chosen.
+  const cleared = (S.phase === 'cashout' || S.phase === 'shop') && !!S.reward, show = S.phase === 'blind' || cleared;
   const kind = cleared ? S.reward.kind : blindKind(); const inBlind = S.phase === 'blind'; computePreview();
   const offBoss = show && kind === 'boss' && !S.boss && S.bossOff;
   const bossShown = show && S.boss && kind === 'boss';
@@ -1499,7 +1573,7 @@ function renderBlind() {
   const wallN = S.phase === 'blind' ? S.wall.length : unpaid && S.reward.wallLeft != null ? S.reward.wallLeft : (S.deck || []).length;
   h += `<div class="stats"><div class="stat plays"><div class="label">Plays</div><div class="v num">${S.plays}</div></div><div class="stat discards"><div class="label">Discards</div><div class="v num">${S.discards}</div></div></div>`;
   h += `<div class="stats purserow"><div class="purse" title="Interest: +¥${interest} at the next cash-out (¥1 for every ¥${CFG.interestPer} you hold, up to ¥${interestCap()})"><span class="coin" aria-hidden="true">${coinSVG()}</span><span class="wtx"><span class="pv num" id="purseVal">${money('¥', unpaid ? (S.reward.before ?? S.money - S.reward.total) : S.money)}</span><span class="wl" data-notr>${LANG === 'hk' ? 'HKD' : 'JPY'}</span></span></div><button class="wallbtn" id="wallBtn" title="${S.phase === 'blind' ? 'Tiles still face down in the Wall. Click to see every tile.' : 'Tiles in your Wall. Click to see every tile.'}"><span class="wallico" aria-hidden="true"><i></i><i></i><i></i></span><span class="wtx"><span class="wv num">${wallN}</span><span class="wl">Wall</span></span></button></div>`;
-  h += `<button class="sidebtn" id="sideRunInfo"><span class="runico" aria-hidden="true"></span><span>Run Info</span></button>`;   // run-related screens live in the sidebar, beside the run
+  h += `<div class="sidebtns"><button class="sidebtn" id="sideRunInfo"><span class="runico" aria-hidden="true"></span><span>Run Info</span></button><button class="sidebtn lpbtn${SHOW_LAST ? ' on' : ''}" id="sideLastPlay" aria-pressed="${SHOW_LAST}" title="Show or hide the Last Play breakdown"><span class="lpico" aria-hidden="true"><svg viewBox="0 0 20 24"><defs><linearGradient id="lpPaper" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fffaf0"/><stop offset="1" stop-color="#e9dec3"/></linearGradient></defs><path d="M3 1.5h14A1.5 1.5 0 0 1 18.5 3v17.4l-2.4-1.5-2.4 1.5-2.4-1.5-2.4 1.5-2.4-1.5-2.4 1.5-2.6-1.5V3A1.5 1.5 0 0 1 3 1.5z" fill="#2b5c8f" transform="translate(0 1.6)"/><path d="M3 1.5h14A1.5 1.5 0 0 1 18.5 3v17.4l-2.4-1.5-2.4 1.5-2.4-1.5-2.4 1.5-2.4-1.5-2.4 1.5-2.6-1.5V3A1.5 1.5 0 0 1 3 1.5z" fill="url(#lpPaper)" stroke="#cdbb90"/><path d="M5 6h10M5 9.5h10M5 13h5.5" stroke="rgba(120,95,50,.55)" stroke-width="1.2" stroke-linecap="round"/><circle cx="14.3" cy="14.4" r="2.7" fill="#e3b04a" stroke="#a87412" stroke-width=".8"/><circle cx="13.6" cy="13.7" r=".9" fill="#fff3c8"/></svg></span><span>Last Play</span></button></div>`;   // run-related screens live in the sidebar, beside the run
   // The extras in one plate at the bottom, one labelled row each: the Dora (Bonus Tile) indicators, Tags held, and Flowers.
   const extras = [];
   if (S.indicators.length) extras.push(`<div class="sx-row"><span class="label">Dora</span><div class="sx-val" id="doraRow"></div></div>`);
@@ -1509,18 +1583,62 @@ function renderBlind() {
   $('#blindCard').innerHTML = h;
   if (S.indicators.length) { const row = $('#doraRow'); for (const t of S.indicators) { const e = tileEl(t, { small: true }); e.style.cursor = 'default'; const d = tileFromIdx(nextDora(idx(t))); e.title = 'Indicator: ' + tileName(t) + ' → Dora is ' + tileName(d); row.appendChild(e); } row.insertAdjacentHTML('beforeend', `<span class="sx-note">→ ${S.dora.map(i => tileName(tileFromIdx(i))).join(', ')}</span>`); }
 }
+// Talisman and consumable cards show their kind row and name. When the mouse rests on one (or it is selected) it expands
+// downward to show its description too (with any live status), over the row below, so the rows never change height:
+// a negative bottom margin as tall as the growth keeps the card's share of the row the same. Selecting is also how touch
+// screens read a card.
+let expHover = null, flipPrevTal = null, flipPrevCon = null, expTimer = 0;
+// measures a card collapsed and expanded, leaving it expanded at its natural height
+function expandSizes(el) {
+  el.classList.remove('expanded'); el.style.height = el.style.marginBottom = el.style.alignSelf = '';
+  const h0 = el.offsetHeight; el.classList.add('expanded'); el.style.alignSelf = 'flex-start';
+  return [h0, Math.max(h0, el.offsetHeight)];
+}
+function setExpanded(el, h0, h1) { el.style.height = h1 + 'px'; el.style.marginBottom = (h0 - h1) + 'px'; }
+function animateExpand(el, on) {
+  if (!el.isConnected || !!el._open === on) return;
+  el._open = on; if (el._anim) el._anim.cancel(); if (el._fade) el._fade.cancel();
+  const [h0, h1] = expandSizes(el), d = el.querySelector('.d'), from = on ? h0 : h1, to = on ? h1 : h0;
+  // the end state is set first and the animation plays over it, so the row never sees the card at its natural height
+  if (on) setExpanded(el, h0, h1); else { el.style.height = h0 + 'px'; el.style.marginBottom = '0px'; }
+  const end = () => { if (el._open !== on) return; el.style.clipPath = ''; if (!on) { el.classList.remove('expanded'); el.style.height = el.style.marginBottom = el.style.alignSelf = ''; } };
+  if (!motionOK || h1 === h0) { end(); return; }
+  // while the height changes the description is clipped at the card's bottom edge; the corner badges above stay visible
+  el.style.clipPath = 'inset(-20px -20px 0 -20px)';
+  el._anim = el.animate([{ height: from + 'px', marginBottom: (h0 - from) + 'px' }, { height: to + 'px', marginBottom: (h0 - to) + 'px' }], { duration: on ? 90 : 70, easing: 'cubic-bezier(.2,.9,.3,1)' });
+  if (d) el._fade = d.animate([{ opacity: on ? 0 : 1 }, { opacity: on ? 1 : 0 }], { duration: on ? 80 : 50, easing: 'ease-out', fill: 'forwards' });
+  let fin = false; const f = () => { if (fin) return; fin = true; end(); if (el._fade && el._open === on) { el._fade.cancel(); el._fade = null; } }; el._anim.onfinish = f; setTimeout(f, spd(140));
+}
+function bindExpand(el, id, selected, wasSelected) {
+  // a card selected since the last redraw expands; one already expanded (selected or under the mouse) stays so, and one
+  // just deselected (and not under the mouse) collapses. Sizes are measured once the redraw has put the card on the page.
+  if (S.phase !== 'blind') return;
+  const was = expHover === id || (wasSelected && selected);
+  queueMicrotask(() => {
+    if (!el.isConnected || document.body.classList.contains('descopen')) return;
+    if (was || wasSelected) { el._open = true; const [h0, h1] = expandSizes(el); setExpanded(el, h0, h1); }
+    if (!was && selected) animateExpand(el, true); else if (!was && wasSelected) animateExpand(el, false);
+  });
+  el.addEventListener('pointerenter', e => { if (e.pointerType !== 'mouse') return; clearTimeout(expTimer); expTimer = setTimeout(() => { if (document.body.classList.contains('descopen') || slotDrag || (S && S.busy) || !el.matches(':hover')) return; expHover = id; animateExpand(el, true); }, 50); });
+  el.addEventListener('pointerleave', e => { if (e.pointerType !== 'mouse') return; clearTimeout(expTimer); if (expHover === id) expHover = null; if (!selected) animateExpand(el, false); });
+}
 function renderTalismans() {
   const box = $('#talismans'); box.innerHTML = '';
+  // cards only collapse during a Blind; in the Shop and Cash Out they show their descriptions in full
+  document.body.classList.toggle('cardsopen', S.phase !== 'blind');
   // Column widths follow the slot counts (a Negative edition or Spring adds a slot); ignored when the columns stack.
-  $('.talcols').style.gridTemplateColumns = `minmax(0,${talSlots()}fr) minmax(0,${conSlots()}fr)`;
+  // Consumable slots get a little more width each, as their names run longer ("Slip of Bamboo").
+  $('.talcols').style.gridTemplateColumns = `minmax(0,${talSlots()}fr) minmax(0,${conSlots() * 1.25}fr)`;
   $('#talCount').textContent = `${S.talismans.length} / ${talSlots()}`;
   for (let i = 0; i < talSlots(); i++) {
     const k = S.talismans[i]; const el = document.createElement('div');
     if (k) { const ed = S.editions[k]; el.className = 'slot filled' + (S.selTal === k ? ' sel' : '') + (ed ? ' ed-' + ed : '') + (talOff(S).includes(k) ? ' off' : ''); el.dataset.tal = TAL[k].name; const tgt = TAL[k].copies ? talTarget(S, k) : null; el.innerHTML = `${stickerBadges(S.stickers && S.stickers[k])}<div class="kind">${talKindRow(k, ed, i + 1, 'slot')}</div><div class="n">${TAL[k].name}</div><div class="d">${TAL[k].desc}${tgt ? ` <b>Now: ${tgt.name}.</b>` : TAL[k].copies ? ' <b>Nothing to copy.</b>' : ''}${ed ? ` <b>${EDITIONS[ed].desc}.</b>` : ''}${TAL[k].status ? ' <b>(' + TAL[k].status(S) + ')</b>' : ''}</div>`; bindSlotDrag(el, k); }
     else { el.className = 'slot'; el.innerHTML = `<div class="d">Empty slot</div>`; }
     if (k && talOff(S).includes(k)) el.insertAdjacentHTML('beforeend', '<span class="offtag">Disabled</span>');
+    if (k) bindExpand(el, 'tal:' + k, S.selTal === k, flipPrevTal === k);
     box.appendChild(el);
   }
+  flipPrevTal = S.selTal;
   const ts = $('#talSell'); ts.innerHTML = '';
   if (S.selTal && S.talismans.includes(S.selTal)) { const b = document.createElement('button'); b.className = 'ghost'; b.style.cssText = 'padding:3px 8px;font-size:12px'; b.textContent = isEternal(S.selTal) ? 'Eternal' : `Sell ¥${talSellValue(S.selTal)}`; b.title = `${TAL[S.selTal].name}${isEternal(S.selTal) ? ' is Eternal and can never be sold' : ''}`; if (isEternal(S.selTal)) b.disabled = true; b.onclick = () => sellTalisman(S.selTal); ts.appendChild(b); }
 }
@@ -1528,10 +1646,11 @@ function renderConsumables() {
   const box = $('#consumables'); box.innerHTML = ''; $('#conCount').textContent = `${S.consumables.length} / ${conSlots()}`;
   for (let i = 0; i < conSlots(); i++) {
     const c = S.consumables[i]; const el = document.createElement('div');
-    if (c) { const d = CONS[c.key]; el.className = 'slot filled ' + c.kind; el.innerHTML = `<div class="kind">${c.kind === 'kami' ? 'Kami Spirit' : 'Omikuji'}</div><div class="n">${d.name}</div><div class="d">${d.desc}</div>`; if (S.selCon === i) el.classList.add('sel'); el.onclick = () => { S.selCon = S.selCon === i ? null : i; render(); }; }
+    if (c) { const d = CONS[c.key]; el.className = 'slot filled ' + c.kind; el.innerHTML = `<div class="kind">${c.kind === 'kami' ? 'Kami Spirit' : 'Omikuji'}</div><div class="n">${d.name}</div><div class="d">${d.desc}</div>`; if (S.selCon === i) el.classList.add('sel'); el.onclick = () => { S.selCon = S.selCon === i ? null : i; render(); }; bindExpand(el, 'con:' + i, S.selCon === i, flipPrevCon === i); }
     else { el.className = 'slot'; el.innerHTML = `<div class="d">Empty slot</div>`; }
     box.appendChild(el);
   }
+  flipPrevCon = S.selCon;
   // Like Balatro: a selected consumable shows Use and Sell in the row's header (Use only when it can be used right now).
   const cs = $('#conSell'); if (!cs) return; cs.innerHTML = ''; const c = S.consumables[S.selCon]; if (!c) { S.selCon = null; return; }
   const d = CONS[c.key], canUse = S.phase === 'blind' || d.anywhere;
@@ -1547,8 +1666,6 @@ function fitHead(id) {
 }
 function renderOpen() {
   const box = $('#open'); box.innerHTML = '';
-  const allClosed = S.open.every(m => m.closed);
-  $('#openInfo').textContent = S.open.length ? (allClosed ? `${S.open.length} declared · hand is still closed for Yaku` : `${S.open.length} on the table · hand is Open for Yaku`) : '';
   if (!S.open.length) box.innerHTML = '<span class="muted empty">No melds on the table</span>';
   for (const m of S.open) { const w = document.createElement('div'); w.className = 'meld' + (m.closed ? ' closedmeld' : ''); w.innerHTML = `<span class="mt">${m.closed ? 'Concealed ' : ''}${MELD_LABEL[m.type]}</span>`; if (m.closed) w.title = 'Concealed Kan: declared from your hand, so your hand stays closed. Shown like real Mahjong, with the two end tiles face down.';
     // A concealed Kan is shown as in real Mahjong: the two end tiles face down, the middle two face up.
@@ -1556,7 +1673,6 @@ function renderOpen() {
 }
 function renderRiver() {
   const box = $('#river'); box.innerHTML = '';
-  $('#riverInfo').textContent = S.boss === 'fisherman' ? 'The Fisherman forbids Calls and claims this Blind.' : canClaim() ? `Select one plus 2–3 hand tiles to Call, or plus the other ${neededConcealed() - 1} of a complete hand to claim it with Kawauso.` : '';
   for (const t of S.river) { const e = tileEl(t, { small: true, sel: S.selRiver === t.id }); e.onclick = () => { if (S.phase !== 'blind') return; S.selRiver = S.selRiver === t.id ? null : t.id; render(); }; box.appendChild(e); }
   if (!S.river.length) box.innerHTML = '<span class="muted empty">No discards yet</span>';
 }
@@ -2116,6 +2232,11 @@ function trayIn(kind) {
 function dealIn(sel, start) {
   document.querySelectorAll(sel).forEach((el, i) => el.animate([{ transform: 'translateY(46px) rotate(-5deg) scale(.9)', opacity: 0 }, { transform: 'translateY(-4px) rotate(.5deg) scale(1.01)', offset: .7 }, { transform: 'none' }], { duration: 340, delay: start + i * 70, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' }));
 }
+// The tallest the window has been at its current width. On an iPad, Safari's toolbar shrinks and grows as the page scrolls,
+// changing the window's height; a tray that is part of the page is sized to this instead, so the page keeps one length and
+// does not snap back to the top as the toolbar comes back.
+let tallest = { w: 0, h: 0 };
+function stableHeight() { if (innerWidth !== tallest.w) tallest = { w: innerWidth, h: innerHeight }; else tallest.h = Math.max(tallest.h, innerHeight); return tallest.h; }
 function placeOverlay(boardOnly, mode) {
   const ov = $('#overlay'); ov.classList.remove('boardonly', 'shoptray', 'inflow'); ['left', 'top', 'width', 'height'].forEach(k => ov.style[k] = '');
   const board = document.querySelector('.board'); if (board) board.classList.remove('cashdim', 'shopdim'); if (!boardOnly || !board || innerWidth <= 900 || (mode === 'shop' && !shopTray)) return;
@@ -2133,7 +2254,7 @@ function placeOverlay(boardOnly, mode) {
     // the board, the tray and Last Play together.
     const t = tz ? tz.getBoundingClientRect().bottom + 6 : top + cut + 2;
     ov.classList.add('boardonly', 'shoptray', 'inflow'); Object.assign(ov.style, { left: b.left + scrollX + 'px', top: t + scrollY + 'px', width: b.width + 'px' });
-    ov.style.setProperty('--trayMin', Math.max(innerHeight - t, b.bottom - t, pageBottom - t - scrollY, 0) + 'px'); ov.style.setProperty('--reach', '0px'); return;
+    ov.style.setProperty('--trayMin', Math.max(stableHeight() - t, b.bottom - t, pageBottom - t - scrollY, 0) + 'px'); ov.style.setProperty('--reach', '0px'); return;
   }
   ov.classList.add('boardonly'); Object.assign(ov.style, { left: b.left + 'px', top: top + 'px', width: b.width + 'px', height: (bottom - top) + 'px' });
   // The tray grows up from the screen's bottom edge until its contents sit around the middle of the screen
@@ -2146,7 +2267,7 @@ function placeOverlay(boardOnly, mode) {
   // shows the rest (like the Shop tray).
   if (contentH > bottom - top) {
     ov.classList.add('inflow'); Object.assign(ov.style, { left: b.left + scrollX + 'px', top: top + scrollY + 'px', height: '' });
-    ov.style.setProperty('--trayMin', Math.max(innerHeight - top, pageBottom - top - scrollY) + 'px'); ov.style.setProperty('--reach', '0px');
+    ov.style.setProperty('--trayMin', Math.max(stableHeight() - top, pageBottom - top - scrollY) + 'px'); ov.style.setProperty('--reach', '0px');
   }
 }
 // A tray that is part of the page runs to the page's bottom, measured when it opens. The left column and the board can still
@@ -2155,9 +2276,12 @@ let reflowTray = 0;
 if (window.ResizeObserver) { const ro = new ResizeObserver(() => { clearTimeout(reflowTray); reflowTray = setTimeout(() => { const ov = $('#overlay'); if (!ov.hidden && ov.classList.contains('inflow')) placeOverlay(true, ov.classList.contains('shoptray') ? 'shop' : undefined); }, 30); }); ['main > aside', '.board'].forEach(q => { const el = document.querySelector(q); if (el) ro.observe(el); }); }
 // On resize or scroll, a tray screen (cash-out, Shop, pack) is placed again from scratch, so it can go back to being a tray
 // after the window was narrow; the Shop and packs redraw when they cross between tray and full screen.
+let trayWidth = innerWidth;
 ['resize', 'scroll'].forEach(ev => window.addEventListener(ev, () => {
   const ov = $('#overlay'), cls = $('#modal').className, shop = /\b(shopmodal|packmodal)\b/.test(cls);
+  const heightOnly = ev === 'resize' && innerWidth === trayWidth; if (ev === 'resize') trayWidth = innerWidth;
   if (ov.hidden || !/\btraymodal\b/.test(cls) || (ev === 'scroll' && ov.classList.contains('inflow'))) return;   // a tray that is part of the page scrolls with it by itself
+  if (heightOnly && ov.classList.contains('inflow')) return;   // nor does Safari's toolbar coming and going move it
   if (ev === 'resize' && shop && useTray() !== shopTray) { render(); return; }
   placeOverlay(true, shop ? 'shop' : undefined);
 }));
@@ -2285,14 +2409,18 @@ function animateCashout() {
   if ($('#overlay').classList.contains('boardonly')) m.animate([{ transform: 'translateY(105%)' }, { transform: 'none' }], { duration: 320, easing: 'cubic-bezier(.2,.8,.2,1)' });
   const vals = rows.map(x => +x.querySelector('b').dataset.v || 0);
   rows.forEach(x => { x.style.opacity = '0'; x.querySelector('b').textContent = cur + 0; }); if (amt) amt.textContent = cur + 0;
+  // Each line holds as long as a scoring popup with the same text (popHold), so a Talisman's +¥ popup here keeps the pace
+  // of the popups during a play.
+  const texts = vals.map(v => (v < 0 ? '' : '+') + money(cur, v)), at = []; let t = 260;
+  for (const tx of texts) { at.push(t); t += popHold(tx); }
   rows.forEach((x, i) => setTimeout(() => {
     x.style.opacity = ''; x.animate([{ opacity: 0, transform: 'translateY(18px) rotate(-1.5deg) scale(.96)' }, { opacity: 1, transform: 'translateY(-2px) scale(1.01)', offset: .7 }, { opacity: 1, transform: 'none' }], { duration: 300, easing: 'cubic-bezier(.2,.8,.2,1)' });   // dealt in like the Shop's cards
     countUp(x.querySelector('b'), 0, vals[i], 220, cur, 'coin');
     // the Talisman (or Flower) that paid this line bounces and pops its amount, as in scoring
     const src = x.dataset.src && document.querySelector(x.dataset.src);
-    if (src && src.getClientRects().length) { const cls = src.classList.contains('slot') ? 'bounce' : 'flowpop'; src.classList.remove(cls); void src.offsetWidth; src.classList.add(cls); scorePop(src, vals[i] < 0 ? 'mult' : 'money', (vals[i] < 0 ? '' : '+') + money(cur, vals[i]), true); }
-  }, spd(260 + i * 260)));
-  const tStart = 260 + rows.length * 260 + 80;
+    if (src && src.getClientRects().length) { const cls = src.classList.contains('slot') ? 'bounce' : 'flowpop'; src.classList.remove(cls); void src.offsetWidth; src.classList.add(cls); scorePop(src, vals[i] < 0 ? 'mult' : 'money', texts[i], true); }
+  }, spd(at[i])));
+  const tStart = t + 80;
   setTimeout(() => countUp(amt, 0, r.total, 380, cur, 'coin'), spd(tStart));
   setTimeout(() => { sfx('kaching'); if (amt) juice(amt.parentElement, .9); }, spd(tStart + 400));
 }
@@ -2596,7 +2724,7 @@ function profileHTML() {
 }
 // ===================== EXPORT / IMPORT =====================
 // One save = profile + settings + current run, as gzip + base64 text ("YKM1Z:...") or plain JSON.
-const SETTING_KEYS = ['yakuman.lang', 'yakuman.speed', 'yakuman.dots', 'yakuman.hints', 'yakuman.tilenums', 'yakuman.unlockall', 'yakuman.sound', 'yakuman.music', 'yakuman.bganim', 'yakuman.hc', 'yakuman.shake', 'yakuman.crt', 'yakuman.motion', 'yakuman.instantscore'];
+const SETTING_KEYS = ['yakuman.lastplay', 'yakuman.debug', 'yakuman.lang', 'yakuman.speed', 'yakuman.dots', 'yakuman.hints', 'yakuman.tilenums', 'yakuman.unlockall', 'yakuman.sound', 'yakuman.music', 'yakuman.bganim', 'yakuman.hc', 'yakuman.shake', 'yakuman.crt', 'yakuman.motion', 'yakuman.instantscore'];
 function exportPayload() { const settings = {}; for (const k of SETTING_KEYS) { try { const v = localStorage.getItem(k); if (v != null) settings[k] = v; } catch (e) { } } save(); let run = null; try { run = localStorage.getItem(SAVE_KEY); } catch (e) { } return { app: 'yakuman', v: 1, exported: new Date().toISOString(), profile: PROFILE, settings, run }; }
 async function toCode(obj) {
   const bytes = new TextEncoder().encode(JSON.stringify(obj)); let out = bytes, gz = false;
@@ -2616,20 +2744,20 @@ let PENDING_IMPORT = null, EXPORT_CODE = '';
 function exportHTML() {
   return `<div class="shophead"><h2>Export Save</h2></div><p class="muted" style="margin:2px 0 10px">Your profile, settings and current run in one code. Copy it or save it as a file, then use Import on your other device or browser.</p>
   <textarea id="saveCode" class="savecode" readonly rows="5">${EXPORT_CODE}</textarea><div class="muted" style="font-size:11px;margin-top:4px">${EXPORT_CODE.length.toLocaleString()} characters</div>
-  <div class="shopfoot"><button id="mClose" class="ghost">Back</button><span style="flex:1"></span><button id="mDownloadCode" class="ghost">Save as File</button><button id="mCopyCode" class="primary">Copy Code</button></div>`;
+  <div class="shopfoot bigfoot"><button id="mClose" class="ghost bigbtn bb-plain">${BTN_ICO.back}Back</button><span style="flex:1"></span><button id="mDownloadCode" class="ghost bigbtn bb-plain">Save as File</button><button id="mCopyCode" class="primary bigbtn bb-gold">Copy Code</button></div>`;
 }
 function importHTML(err) {
   if (PENDING_IMPORT) {
     const P = Object.assign(blankProfile(), PENDING_IMPORT.profile); let run = null; try { run = PENDING_IMPORT.run ? JSON.parse(PENDING_IMPORT.run) : null; } catch (e) { }
     return `<div class="shophead"><h2>Replace This Save?</h2></div><p class="muted" style="margin:2px 0 10px">Loading replaces the profile, settings and current run in this browser.</p>
     <div class="receipt"><div class="rrow"><div><div class="rl">Profile</div><div class="rd muted">${P.runs} runs · ${P.wins} wins · best Ante ${P.bestAnte || '—'}</div></div></div><div class="rrow"><div><div class="rl">Current run</div><div class="rd muted">${run ? `Ante ${Math.min(run.ante, CFG.antes)} · ${(DECKS[run.deckKey] || {}).name || 'Wall'} · ${(STAKES[run.stake] || {}).name || 'Stake'}` : 'None'}</div></div></div><div class="rrow" style="border-bottom:0"><div><div class="rl">Exported</div><div class="rd muted">${PENDING_IMPORT.exported ? new Date(PENDING_IMPORT.exported).toLocaleString() : 'unknown'}</div></div></div></div>
-    <div class="shopfoot"><button id="mClose" class="ghost">Cancel</button><span style="flex:1"></span><button id="mConfirmImport" class="danger">Replace and Reload</button></div>`;
+    <div class="shopfoot bigfoot"><button id="mClose" class="ghost bigbtn bb-plain">${BTN_ICO.x}Cancel</button><span style="flex:1"></span><button id="mConfirmImport" class="danger bigbtn bb-red">Replace and Reload</button></div>`;
   }
   return `<div class="shophead"><h2>Import Save</h2></div><p class="muted" style="margin:2px 0 10px">Paste a save code from Export, or choose a save file.</p>
   <textarea id="importCode" class="savecode" rows="5" placeholder="YKM1Z:..."></textarea>
   <div style="display:flex;gap:8px;align-items:center;margin-top:8px"><label class="ghost filebtn">Choose File<input type="file" id="importFile" accept=".txt,.json,text/plain,application/json" hidden></label><span class="muted" id="importFileName" style="font-size:12px"></span></div>
   <div class="msg${err ? ' err' : ''}" style="min-height:18px;margin-top:6px">${err || ''}</div>
-  <div class="shopfoot"><button id="mClose" class="ghost">Back</button><span style="flex:1"></span><button id="mLoadSave" class="primary">Load Save</button></div>`;
+  <div class="shopfoot bigfoot"><button id="mClose" class="ghost bigbtn bb-plain">${BTN_ICO.back}Back</button><span style="flex:1"></span><button id="mLoadSave" class="primary bigbtn bb-gold">Load Save</button></div>`;
 }
 // Save the export code as a .txt file. On claude.ai the artifact viewer offers it through the downloads
 // capability (the viewer confirms); elsewhere (GitHub Pages, local) a normal browser download is used.
@@ -2646,6 +2774,13 @@ async function saveCodeFile(btn) {
   try { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([EXPORT_CODE], { type: 'text/plain' })); a.download = filename; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); say('Saved'); } catch (e) { say('Could not save: copy the code'); }
 }
 // Screens opened from the title (New Run, Challenges, Collection, Rules) close back to the title, not to the run behind it.
+// Icons for the chunky footer buttons (bigbtn): Cancel, Back, Play and New Run
+const BTN_ICO = {
+  x: '<svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M3.5 3.5l9 9M12.5 3.5l-9 9" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>',
+  back: '<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M13 8H4M7.5 3.5 3 8l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  play: '<svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M4 2.5v11l9.5-5.5z" fill="currentColor"/></svg>',
+  newrun: '<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M13 8a5 5 0 1 1-1.5-3.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M12.6 1.8v3h-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+};
 // A confirm screen: a pack-style header with an icon and what happens, a row of what you would lose, then Cancel and the action.
 const CONFIRM_ICONS = {
   newrun: '<g transform="rotate(-12 18 26)"><rect x="6" y="10" width="20" height="28" rx="3" fill="#e9dfc6" stroke="#9c8f6c"/><circle cx="16" cy="24" r="5" fill="none" stroke="#c9453a" stroke-width="2.2"/></g><g transform="rotate(9 32 24)"><rect x="21" y="7" width="20" height="28" rx="3" fill="#f6eedc" stroke="#9c8f6c"/><path d="M27 14h8M27 20h8M27 26h8" stroke="#2e7d4f" stroke-width="2.2" stroke-linecap="round"/></g><circle cx="37" cy="37" r="8.5" fill="#d9a441" stroke="rgba(0,0,0,.35)"/><path d="M33.4 37a3.6 3.6 0 1 0 1.3-2.8" fill="none" stroke="#2a1d12" stroke-width="1.9" stroke-linecap="round"/><path d="M33.6 31.8v2.9h2.9" fill="none" stroke="#2a1d12" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>',
@@ -2654,7 +2789,7 @@ const CONFIRM_ICONS = {
 };
 function confirmHTML(icon, title, text, stats, actId, actLabel) {
   const st = stats && stats.length ? `<div class="confstats">${stats.map(([l, v]) => `<div class="stat"><span class="label">${l}</span><b class="v num">${v}</b></div>`).join('')}</div>` : '';
-  return `<div class="packhead confhd"><div class="packart"><svg viewBox="0 0 48 48" aria-hidden="true">${CONFIRM_ICONS[icon]}</svg></div><div class="packtitle"><h2>${title}</h2><p>${text}</p></div></div>${st}<div class="shopfoot"><button id="mClose" class="ghost">Cancel</button><span style="flex:1"></span><button id="${actId}" class="danger">${actLabel}</button></div>`;
+  return `<div class="packhead confhd"><div class="packart"><svg viewBox="0 0 48 48" aria-hidden="true">${CONFIRM_ICONS[icon]}</svg></div><div class="packtitle"><h2>${title}</h2><p>${text}</p></div></div>${st}<div class="shopfoot bigfoot"><button id="mClose" class="ghost bigbtn bb-plain">${BTN_ICO.x}Cancel</button><span style="flex:1"></span><button id="${actId}" class="danger bigbtn bb-red">${icon === 'newrun' ? BTN_ICO.newrun : ''}${actLabel}</button></div>`;
 }
 // The run you would give up: how far it got, its money, Talismans and best play.
 function runAtStake() {
@@ -2738,7 +2873,7 @@ function setupHTML() {
   const html = `<div class="shophead"><h2>New Run</h2></div><p class="muted" style="margin:2px 0 14px">Choose your Wall and Stake. Enter a seed to replay someone else's run.</p>
   ${car('deck', 'wall')}${car('stake', 'stake')}
   <div class="seedrow"><label class="label" for="seedInput">Seed</label><input id="seedInput" placeholder="Random" maxlength="24" autocomplete="off"></div><div class="muted seedhelp">Optional. The same seed gives the same Wall, shops and bosses, as long as both players have the same unlocks.</div>
-  <div class="shopfoot"><button id="mClose" class="ghost">Cancel</button><span style="flex:1"></span><button id="mStartRun" class="primary"${blocked ? ' disabled' : ''}>${blocked ? 'Locked' : 'Start Run'}</button></div>`;
+  <div class="shopfoot bigfoot"><button id="mClose" class="ghost bigbtn bb-plain">${BTN_ICO.x}Cancel</button><span style="flex:1"></span><button id="mStartRun" class="primary bigbtn bb-gold wide"${blocked ? ' disabled' : ''}>${blocked ? 'Locked' : BTN_ICO.play + 'Start Run'}</button></div>`;
   setupDir = { deck: 0, stake: 0 };
   return html;
 }
@@ -2747,7 +2882,7 @@ function fillTileArt(root) { root && root.querySelectorAll('.tilesart').forEach(
 function challengesHTML() {
   const won = PROFILE.challengesWon || {};
   const cards = CHALLENGES.map(c => `<div class="shopcard flower chalcard"><div class="kind">Challenge${won[c.key] ? ' <span class="tag colmark">Completed</span>' : ''}</div><div class="n">${c.name}</div><div class="d">${c.desc}</div><div class="buy"><span></span><button class="primary" data-chal="${c.key}">Start</button></div></div>`).join('');
-  return `<div class="shophead"><h2>Challenges</h2><span class="muted">${Object.keys(won).length} / ${CHALLENGES.length} completed</span></div><p class="muted" style="margin:2px 0 12px">Fixed runs with special rules, on the Standard Wall and White Stake. Winning one does not count toward Stakes or unlocks.</p><div class="shop-grid colgrid">${cards}</div><div class="shopfoot"><button id="mClose" class="ghost">Back</button></div>`;
+  return `<div class="shophead"><h2>Challenges</h2><span class="muted">${Object.keys(won).length} / ${CHALLENGES.length} completed</span></div><p class="muted" style="margin:2px 0 12px">Fixed runs with special rules, on the Standard Wall and White Stake. Winning one does not count toward Stakes or unlocks.</p><div class="shop-grid colgrid">${cards}</div><div class="shopfoot bigfoot"><button id="mClose" class="ghost bigbtn bb-plain">${BTN_ICO.back}Back</button></div>`;
 }
 function menuHTML(hasSave) {
   const where = hasSave && S ? `${S.ante > CFG.antes ? `Endless Ante ${S.ante}` : `Ante ${S.ante}`} · ${S.phase === 'blind' ? ({ small: 'Small Blind', big: 'Big Blind', boss: S.boss ? BOSSES[S.boss].name : 'Boss Blind' })[blindKind()] : S.phase === 'shop' ? 'Shop' : 'Blind Select'} · ¥${S.money}` : '';
@@ -2872,11 +3007,13 @@ function applyCRT() {
   if (CRT === 'full' && !document.getElementById('crtfx')) document.body.insertAdjacentHTML('beforeend', crtFilterSVG());
   if (CRT === 'full' && !document.getElementById('crtbezel')) document.body.insertAdjacentHTML('beforeend', '<div id="crtbezel" aria-hidden="true"></div>');
 }
-// Balatro-style hover: Talisman and shop cards tilt toward the mouse with a soft shine. Off while dragging or with reduced motion.
+// Balatro-style hover: shop and pack cards lift and tilt toward the mouse with a soft shine. Off while dragging or with
+// reduced motion. Talisman and consumable cards tilt too whenever they show their descriptions in full (outside a Blind,
+// or during one on a screen with room for them); otherwise they expand on hover instead.
 let tiltEl = null;
 document.addEventListener('pointermove', e => {
   if (!motionOK || drag || slotDrag) { if (tiltEl) tiltEl.classList.remove('tilting'); tiltEl = null; return; }
-  const el = e.target.closest && e.target.closest('.shelf .shopcard, .packmodal .shop-grid:not(.owned-grid) .shopcard, #talismans .slot.filled');
+  const el = e.target.closest && e.target.closest('.shelf .shopcard, .packmodal .shop-grid:not(.owned-grid) .shopcard, body.cardsopen #talismans .slot.filled, body.cardsopen #consumables .slot.filled, body.descopen #talismans .slot.filled, body.descopen #consumables .slot.filled');
   if (tiltEl && tiltEl !== el) tiltEl.classList.remove('tilting'); tiltEl = el; if (!el) return;
   el.classList.add('tiltcard', 'tilting'); if (!el.querySelector('.cshine')) el.insertAdjacentHTML('beforeend', '<span class="cshine" aria-hidden="true"></span>');
   const r = el.getBoundingClientRect(), x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
@@ -2889,7 +3026,14 @@ function bindEvents() {
   $('#btnSortMode').onclick = () => { S.sortMode = S.sortMode === 'rank' ? 'suit' : 'rank'; S.sortHand = true; S.hand = sortHandTiles(S.hand); render(); };
 
   // The Wall tile-stack in the side panel opens the Wall screen (the panel is redrawn on render, so the click is delegated).
-  document.addEventListener('click', e => { if (e.target.closest('#wallBtn')) showModal(deckHTML(), true); else if (e.target.closest('#sideRunInfo')) showModal(yakuHTML(), true); else if (e.target.closest('[data-lpmore]')) lpToggle(); });
+  document.addEventListener('click', e => { if (e.target.closest('#wallBtn')) showModal(deckHTML(), true); else if (e.target.closest('#sideRunInfo')) showModal(yakuHTML(), true);
+    else if (e.target.closest('#sideLastPlay')) {
+      // Last Play fades and slides in when shown, and out (the same way, reversed) before it is hidden
+      const lp = $('#lastPlay'); if (lp && lp.dataset.leaving) return;
+      SHOW_LAST = !SHOW_LAST; try { localStorage.setItem('yakuman.lastplay', SHOW_LAST ? 'show' : 'hide'); } catch (err) { }
+      if (SHOW_LAST || !lp || !motionOK) { applyLastPlay(); if (SHOW_LAST && lp && motionOK) lp.animate([{ opacity: 0, transform: 'translateY(-8px)' }, { opacity: 1, transform: 'none' }], { duration: 200, easing: 'ease-out' }); }
+      else { const b = $('#sideLastPlay'); if (b) b.classList.remove('on'); lp.dataset.leaving = '1'; let gone = false; const fin = () => { if (gone) return; gone = true; delete lp.dataset.leaving; applyLastPlay(); };
+        lp.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(-8px)' }], { duration: 180, easing: 'ease-in' }).onfinish = fin; setTimeout(fin, spd(260)); } } else if (e.target.closest('[data-lpmore]')) lpToggle(); });
   $('#btnRules').onclick = () => showModal(rulesHTML(), true);
   $('#btnCollection').onclick = () => showModal(collectionHTML(), true, 'colmodal');
   // Collection search filters the current tab by the cards' visible text (works in both terminologies).
@@ -2931,7 +3075,7 @@ function bindEvents() {
     if (t.dataset.setdots) { SHOW_DOTS = t.dataset.setdots === 'on'; try { localStorage.setItem('yakuman.dots', SHOW_DOTS ? 'on' : 'off'); } catch (e) { } render(); showSettings(); return; }
     if (t.dataset.setinstant) { INSTANT_SCORE = t.dataset.setinstant === 'on'; try { localStorage.setItem('yakuman.instantscore', t.dataset.setinstant); } catch (e) { } showSettings(); return; }
     if (t.dataset.setspeed) { ANIM_SPEED = t.dataset.setspeed; try { localStorage.setItem('yakuman.speed', ANIM_SPEED); } catch (e) { } showSettings(); return; }
-    if (t.dataset.setdbg) { const b = $('#debugBar'); b.hidden = t.dataset.setdbg !== 'on'; if (!b.hidden) renderDebug(); showSettings(); return; }
+    if (t.dataset.setdbg) { const b = $('#debugBar'); b.hidden = t.dataset.setdbg !== 'on'; try { localStorage.setItem('yakuman.debug', t.dataset.setdbg); } catch (e) { } if (!b.hidden) renderDebug(); showSettings(); return; }
     if (t.dataset.setunlock) { UNLOCK_ALL = t.dataset.setunlock === 'on'; try { localStorage.setItem(UNLOCK_ALL_KEY, UNLOCK_ALL ? 'on' : 'off'); } catch (e) { } render(); showSettings(); return; }
     if (t.id === 'mDeleteRun') { showModal(confirmHTML('deleterun', 'Delete Run?', 'The run in progress ends and can\'t be continued. Your profile, unlocks and settings stay.', runAtStake(), 'mConfirmDeleteRun', 'Delete Run'), true, 'confirmmodal'); backToSettings(); return; }
     if (t.id === 'mConfirmDeleteRun') { clearSave(); S = null; location.reload(); return; }
@@ -2979,7 +3123,9 @@ function bindEvents() {
   });
 }
 function boot(saved) {
-  bindEvents(); document.body.classList.toggle('bganim', BG_ANIM); applyCRT(); applyMotion();
+  bindEvents(); document.body.classList.toggle('bganim', BG_ANIM); applyCRT(); applyMotion(); applyLastPlay();
+  // the debug bar comes back if it was showing when the page was last open
+  try { if (localStorage.getItem('yakuman.debug') === 'on') $('#debugBar').hidden = false; } catch (e) { }
   if (saved && saved.phase && saved.deck) { S = saved; S.talState = S.talState || {}; (S.talismans || []).forEach(k => { if (String(k).includes('#')) talAlias(k); });
     // Resume the tile id counter above every id in the saved run, so tiles created later never collide with existing ones.
     let maxId = 0; for (const t of [...S.deck, ...S.hand, ...S.wall, ...S.river, ...S.played, ...(S.indicators || []), ...S.open.flatMap(m => m.tiles), ...((S.pack && S.pack.choices) || []).filter(c => c.tile).map(c => c.tile)]) if (t.id > maxId) maxId = t.id; tileSeq = Math.max(tileSeq, maxId);
@@ -2989,6 +3135,7 @@ function boot(saved) {
   // No saved run: the title sits over an empty table. A stand-in state lets the page draw, but it is not a run:
   // it is never saved or counted, and the first run starts when the player presses New Run and picks a Wall and Stake.
   else { S = newState(); S.placeholder = true; S.phase = 'idle'; render(); }
+  if (!$('#debugBar').hidden) renderDebug();
 }
 try { if (window.claude && window.claude.hot) window.claude.hot.snapshot(() => S); } catch (e) { }
 const hotData = (window.claude && window.claude.hot && window.claude.hot.data) || null;

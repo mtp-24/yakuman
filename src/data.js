@@ -228,7 +228,7 @@ const TALISMANS = [
   { key: 'jizo', name: 'Jizō', cost: 5, desc: '+1 Discard each Blind.', discards: 1 },
   { key: 'komainu', name: 'Komainu', cost: 7, desc: '+1 Play each Blind.', plays: 1 },
   { key: 'yukionna', name: 'Yuki-onna', cost: 5, desc: 'Terminal tiles (1s and 9s) give +15 Chips.', onTile: t => isTerminal(t) ? { chips: 15 } : null },
-  { key: 'baku', name: 'Baku', cost: 6, desc: 'Open melds no longer reduce Yaku Han. Closed-only Yaku still need a closed hand.' },
+  { key: 'baku', name: 'Baku', cost: 6, desc: 'Open melds no longer cost Han: Yaku score their full closed value. Yaku that need a closed hand still need one.' },
   { key: 'nue', name: 'Nue', cost: 6, desc: 'x1.5 Mult on a Complete Hand that is Honitsu or Chinitsu.', onScore: c => c.yaku.some(y => y.key === 'honitsu' || y.key === 'chinitsu') ? { xmult: 1.5 } : null },
   { key: 'kodama', name: 'Kodama', cost: 4, desc: '+15 Chips per open meld on a Complete Hand.', onScore: (c, S) => c.kind === 'hand' && S.open.length ? { chips: 15 * S.open.length } : null },
   { key: 'hannya', name: 'Hannya', cost: 8, desc: 'x3 Mult on every play, but -1 Play each Blind.', onScore: () => ({ xmult: 3 }), plays: -1 },
