@@ -881,10 +881,10 @@ body.crt-full #app,body.crt-full #overlay{filter:url(#crtfx)} #crtbezel{display:
 /* ===== Tray Shop (and packs): rises from the bottom of the board; the Talisman row above stays clear ===== */
 .board.shopdim::after{background:linear-gradient(180deg,transparent 0,transparent calc(var(--cut,0px) + 2px),rgba(5,10,9,.55) calc(var(--cut,0px) + 2px))}
 .overlay.shoptray .modal.traymodal{min-height:100%;max-width:none;width:100%;box-sizing:border-box;padding:12px 16px 14px;background:radial-gradient(ellipse at top,rgba(217,164,65,.12),transparent 60%),linear-gradient(180deg,#2c1f11,#1c130a)}
-.shopmodal .tshead{display:flex;align-items:center;gap:14px;margin:0 2px 10px}
-.shopmodal .tstitle{display:flex;align-items:baseline;gap:12px;flex:1;min-width:0} .shopmodal .tshead h2{margin:0;font-size:28px;font-weight:500;color:var(--accent);letter-spacing:.02em}
+.traymodal .tshead{display:flex;align-items:center;gap:14px;margin:0 2px 10px}
+.traymodal .tstitle{display:flex;align-items:baseline;gap:12px;flex:1;min-width:0} .traymodal .tshead h2{margin:0;font-size:28px;font-weight:500;color:var(--accent);letter-spacing:.02em}
 .shopmodal .tssub{font-size:12px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.shopmodal .tscoupon{font-size:11px;padding:3px 10px;border-radius:999px;background:rgba(111,207,151,.15);border:1px solid rgba(111,207,151,.45);color:var(--good)}
+.traymodal .tscoupon{font-size:11px;padding:3px 10px;border-radius:999px;background:rgba(111,207,151,.15);border:1px solid rgba(111,207,151,.45);color:var(--good)}
 .tsbody{display:grid;grid-template-columns:minmax(348px,1fr) auto auto 196px;gap:0;align-items:stretch;background:radial-gradient(ellipse at 50% 0%,#24543f,#173a2c 70%);border:1px solid rgba(240,220,170,.2);border-radius:14px;padding:12px 6px 14px;box-shadow:inset 0 2px 14px rgba(0,0,0,.4),0 4px 14px rgba(0,0,0,.35)}
 .tsgroup{display:flex;flex-direction:column;gap:10px;min-width:0;padding:0 14px} .tsgroup + .tsgroup{border-left:1px solid rgba(240,220,170,.12)}
 .tslabel{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#d8c48f;display:flex;align-items:center;gap:8px} .tslabel::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(216,196,143,.35),transparent)}
@@ -905,4 +905,15 @@ body.crt-full #app,body.crt-full #overlay{filter:url(#crtfx)} #crtbezel{display:
 .tspacks .tsrow,.tsflower .tsrow{flex-wrap:nowrap}
 .overlay.shoptray .modal.shopmodal{display:flex;flex-direction:column} .overlay.shoptray .modal.shopmodal .tsbody{margin:auto 0 0} .overlay.shoptray .modal.shopmodal .tsmsg{margin:8px 4px auto}
 .overlay.shoptray .modal.packmodal{display:flex;flex-direction:column} .overlay.shoptray .modal.packmodal .packhead{margin:-12px -16px 10px;border-radius:12px 12px 0 0}
+/* Pack tray, in the Shop's style */
+.overlay.shoptray .modal.packmodal .packhead{display:none}
+.traymodal .tspackart{width:30px;height:30px;color:#ff9f43;align-self:center} .traymodal .tspackart svg{width:100%;height:100%}
+.traymodal .tspicks{display:flex;align-items:baseline;gap:6px;padding:4px 14px;border-radius:999px;background:rgba(0,0,0,.25);border:1px solid rgba(217,164,65,.45)} .traymodal .tspicks b{font-family:var(--display);font-size:24px;color:var(--accent);line-height:1} .traymodal .tspicks span{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.tsbody.packbody{grid-template-columns:minmax(0,1fr) 196px} .tsbody.packbody .tsrail{grid-row:1 / span 2;grid-column:2}
+.tsbody.packbody .tshand{grid-column:1;padding-bottom:12px;border-bottom:1px solid rgba(240,220,170,.12)} .tsbody.packbody .tschoices{grid-column:1;padding-top:10px} .tsbody.packbody .tsgroup + .tsgroup{border-left:0}
+.tsbody.packbody .tshand + .tschoices{border-left:0}
+.tshand .packhand{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;padding:6px 0} .tshint{font-size:11.5px;color:var(--muted);text-align:center}
+.tsbody.packbody .tschoices .tslabel{text-transform:none;letter-spacing:.02em;font-size:12px;color:#d8c48f}
+@media (max-width:900px){.tsbody.packbody{grid-template-columns:1fr} .tsbody.packbody .tsrail{grid-row:auto;grid-column:1;flex-direction:row;flex-wrap:wrap;border-left:0;padding:10px 14px 0}}
+.overlay.shoptray .modal.packmodal .tsbody{margin:auto 0 0} .overlay.shoptray .modal.packmodal .tsmsg{margin:8px 4px auto}
 </style>

@@ -881,10 +881,10 @@ body.crt-full #app,body.crt-full #overlay{filter:url(#crtfx)} #crtbezel{display:
 /* ===== Tray Shop (and packs): rises from the bottom of the board; the Talisman row above stays clear ===== */
 .board.shopdim::after{background:linear-gradient(180deg,transparent 0,transparent calc(var(--cut,0px) + 2px),rgba(5,10,9,.55) calc(var(--cut,0px) + 2px))}
 .overlay.shoptray .modal.traymodal{min-height:100%;max-width:none;width:100%;box-sizing:border-box;padding:12px 16px 14px;background:radial-gradient(ellipse at top,rgba(217,164,65,.12),transparent 60%),linear-gradient(180deg,#2c1f11,#1c130a)}
-.shopmodal .tshead{display:flex;align-items:center;gap:14px;margin:0 2px 10px}
-.shopmodal .tstitle{display:flex;align-items:baseline;gap:12px;flex:1;min-width:0} .shopmodal .tshead h2{margin:0;font-size:28px;font-weight:500;color:var(--accent);letter-spacing:.02em}
+.traymodal .tshead{display:flex;align-items:center;gap:14px;margin:0 2px 10px}
+.traymodal .tstitle{display:flex;align-items:baseline;gap:12px;flex:1;min-width:0} .traymodal .tshead h2{margin:0;font-size:28px;font-weight:500;color:var(--accent);letter-spacing:.02em}
 .shopmodal .tssub{font-size:12px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.shopmodal .tscoupon{font-size:11px;padding:3px 10px;border-radius:999px;background:rgba(111,207,151,.15);border:1px solid rgba(111,207,151,.45);color:var(--good)}
+.traymodal .tscoupon{font-size:11px;padding:3px 10px;border-radius:999px;background:rgba(111,207,151,.15);border:1px solid rgba(111,207,151,.45);color:var(--good)}
 .tsbody{display:grid;grid-template-columns:minmax(348px,1fr) auto auto 196px;gap:0;align-items:stretch;background:radial-gradient(ellipse at 50% 0%,#24543f,#173a2c 70%);border:1px solid rgba(240,220,170,.2);border-radius:14px;padding:12px 6px 14px;box-shadow:inset 0 2px 14px rgba(0,0,0,.4),0 4px 14px rgba(0,0,0,.35)}
 .tsgroup{display:flex;flex-direction:column;gap:10px;min-width:0;padding:0 14px} .tsgroup + .tsgroup{border-left:1px solid rgba(240,220,170,.12)}
 .tslabel{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#d8c48f;display:flex;align-items:center;gap:8px} .tslabel::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(216,196,143,.35),transparent)}
@@ -905,6 +905,17 @@ body.crt-full #app,body.crt-full #overlay{filter:url(#crtfx)} #crtbezel{display:
 .tspacks .tsrow,.tsflower .tsrow{flex-wrap:nowrap}
 .overlay.shoptray .modal.shopmodal{display:flex;flex-direction:column} .overlay.shoptray .modal.shopmodal .tsbody{margin:auto 0 0} .overlay.shoptray .modal.shopmodal .tsmsg{margin:8px 4px auto}
 .overlay.shoptray .modal.packmodal{display:flex;flex-direction:column} .overlay.shoptray .modal.packmodal .packhead{margin:-12px -16px 10px;border-radius:12px 12px 0 0}
+/* Pack tray, in the Shop's style */
+.overlay.shoptray .modal.packmodal .packhead{display:none}
+.traymodal .tspackart{width:30px;height:30px;color:#ff9f43;align-self:center} .traymodal .tspackart svg{width:100%;height:100%}
+.traymodal .tspicks{display:flex;align-items:baseline;gap:6px;padding:4px 14px;border-radius:999px;background:rgba(0,0,0,.25);border:1px solid rgba(217,164,65,.45)} .traymodal .tspicks b{font-family:var(--display);font-size:24px;color:var(--accent);line-height:1} .traymodal .tspicks span{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.tsbody.packbody{grid-template-columns:minmax(0,1fr) 196px} .tsbody.packbody .tsrail{grid-row:1 / span 2;grid-column:2}
+.tsbody.packbody .tshand{grid-column:1;padding-bottom:12px;border-bottom:1px solid rgba(240,220,170,.12)} .tsbody.packbody .tschoices{grid-column:1;padding-top:10px} .tsbody.packbody .tsgroup + .tsgroup{border-left:0}
+.tsbody.packbody .tshand + .tschoices{border-left:0}
+.tshand .packhand{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;padding:6px 0} .tshint{font-size:11.5px;color:var(--muted);text-align:center}
+.tsbody.packbody .tschoices .tslabel{text-transform:none;letter-spacing:.02em;font-size:12px;color:#d8c48f}
+@media (max-width:900px){.tsbody.packbody{grid-template-columns:1fr} .tsbody.packbody .tsrail{grid-row:auto;grid-column:1;flex-direction:row;flex-wrap:wrap;border-left:0;padding:10px 14px 0}}
+.overlay.shoptray .modal.packmodal .tsbody{margin:auto 0 0} .overlay.shoptray .modal.packmodal .tsmsg{margin:8px 4px auto}
 </style>
 <div id="app">
 <header>
@@ -3772,7 +3783,7 @@ function shopHTML() {
   // The Shop is a tray that rises from the bottom of the board, like Balatro's: your Talismans and consumables stay in view
   // above it (select one there to sell or use it). One felt panel holds three groups and the buttons, in Balatro's order:
   // the rerollable cards, the Ante's Flower (its Voucher), then the two Booster Packs.
-  let h = `<div class="tshead"><div class="tstitle"><h2>Shop</h2><span class="tssub">${anteLabel()} · next: ${nextBoss ? nextBoss.name : next}</span></div>${S.shop.coupon ? '<span class="tscoupon">Coupon Tag: Talismans and consumables are free</span>' : ''}${walletHTML()}</div>`;
+  let h = `<div class="tshead"><div class="tstitle"><h2>Shop</h2></div>${S.shop.coupon ? '<span class="tscoupon">Coupon Tag: Talismans and consumables are free</span>' : ''}${walletHTML()}</div>`;
   h += `<div class="tsbody${S.shop.cards.length > 3 ? ' many' : ''}">
     <section class="tsgroup tscards"><div class="tslabel">Cards</div><div class="tsrow">${S.shop.cards.map(it => cardHTML(it, at(it))).join('')}</div></section>
     <section class="tsgroup tsflower"><div class="tslabel">Flower · this Ante</div><div class="tsrow">${S.shop.flower ? cardHTML(S.shop.flower, at(S.shop.flower)) : '<div class="tsempty">Bought. A new Flower arrives next Ante.</div>'}</div></section>
@@ -3804,14 +3815,15 @@ function packButtons(it, i) {
   return `<span style="display:flex;gap:6px;align-items:center">${use}<button class="ghost" data-take="${i}"${dis}>Keep</button></span>`;
 }
 function packHTML() {
-  const pk = PACKS[S.pack.key];
-  const tone = { omikuji: 'omikuji', kami: 'kami', scroll: 'scroll', talisman: 'talisman' }[pk.type] || 'pack';
-  let h = `<div class="packhead ${tone}"><div class="packart">${emblem('pack')}</div><div class="packtitle"><div class="label">Booster pack${S.pack.free ? ' · free from a Tag' : ''}</div><h2>${pk.name}</h2><p>${pk.desc}</p></div><div class="packpicks"><b class="num">${S.pack.done ? 0 : S.pack.left}</b><span>${S.pack.done || S.pack.left !== 1 ? 'picks' : 'pick'} left</span></div></div>`;
-  if (S.pack.hand) h += `<div class="packhandwrap"><div class="label">Your Tiles · ${(S.pack.view || S.pack.hand).length} random tiles from your Wall</div><div class="muted" style="font-size:12px;margin:2px 0 6px">${S.pack.done ? 'All picks used. Outlined tiles changed and stay that way in your Wall. Press Done to return to the shop.' : 'Select tiles, then press Use on a card. The change stays in your Wall for the rest of the run. Keep puts the card in your consumable slots instead.'}</div><div class="packhand" id="packHand"></div></div>`;
-  h += `<div class="shelf packshelf"><div class="shelflabel">${S.pack.done ? 'Cards · all picks used' : `Cards · choose ${S.pack.left} more`}</div><div class="shop-grid">${S.pack.choices.map((it, i) => { const d = itemDef(it); const ed = it.edition ? EDITIONS[it.edition] : null; return `<div class="shopcard ${it.kind === 'tile' ? 'tilecard' : it.kind}${it.sold ? ' sold' : ''}${ed ? ' ed-' + it.edition : ''}"><div class="${it.kind === 'tile' ? 'packtileart' : 'emblem'}" data-pt="${i}">${it.kind === 'tile' ? '' : emblem(it.kind)}</div>${it.kind === 'talisman' ? stickerBadges(it.sticker) : ''}<div class="kind">${it.kind === 'talisman' ? talKindRow(it.key, it.edition) : { omikuji: 'Omikuji', kami: 'Kami Spirit', scroll: 'Scroll of Mastery', tile: 'Tile' }[it.kind] + (ed ? `<span class="edtag ed-${it.edition}">${ed.name}</span>` : '')}</div><div class="n">${d.name}</div><div class="d">${d.desc}${ed ? ` <b>${ed.name}: ${ed.desc}.</b>` : ''}</div>${it.kind === 'scroll' && !it.sold ? scrollLevelHTML(it.key) : it.kind === 'talisman' && !it.sold ? talPreview(it.key) : ''}<div class="buy"><span></span>${it.sold ? `<span class="muted">${it.used ? 'Used' : 'Taken'}</span>` : packButtons(it, i)}</div></div>`; }).join('')}</div></div>`;
-  h += `<div class="msg${S.msgErr ? ' err' : ''}" style="min-height:18px;margin:2px 0 6px">${S.msg || ''}</div>`;
-  if (!useTray()) h += ownedHTML();
-  h += `<div class="shopfoot"><button id="mDeck" class="ghost">View Wall</button><button id="mRunInfo" class="ghost">Run Info</button><span style="flex:1"></span>${S.pack.done ? '<button id="mPackDone" class="primary">Done</button>' : '<button id="mPackDone" class="ghost">Skip the Rest</button>'}</div>`;
+  const pk = PACKS[S.pack.key], left = S.pack.done ? 0 : S.pack.left, tray = useTray();
+  // Same tray as the Shop: a slim header, then one felt panel with your dealt tiles (Omikuji and Kami packs), the cards, and the buttons.
+  let h = `<div class="tshead"><div class="tstitle"><span class="tspackart" aria-hidden="true">${emblem('pack')}</span><h2>${pk.name}</h2>${S.pack.free ? '<span class="tscoupon">Free from a Tag</span>' : ''}</div><div class="tspicks"><b class="num">${left}</b><span>${left === 1 ? 'pick' : 'picks'} left</span></div></div>`;
+  h += `<div class="tsbody packbody${S.pack.hand ? ' withhand' : ''}">`;
+  if (S.pack.hand) h += `<section class="tsgroup tshand"><div class="tslabel">Your tiles · ${(S.pack.view || S.pack.hand).length} random tiles from your Wall</div><div class="packhand" id="packHand"></div><div class="tshint">${S.pack.done ? 'All picks used. Outlined tiles changed and stay that way in your Wall.' : 'Select tiles, then press Use on a card: the change stays in your Wall for the rest of the run. Keep puts the card in your consumable slots instead.'}</div></section>`;
+  h += `<section class="tsgroup tschoices"><div class="tslabel">${S.pack.done ? 'All picks used' : `${pk.desc}`}</div><div class="tsrow">${S.pack.choices.map((it, i) => { const d = itemDef(it); const ed = it.edition ? EDITIONS[it.edition] : null; return `<div class="shopcard ${it.kind === 'tile' ? 'tilecard' : it.kind}${it.sold ? ' sold' : ''}${ed ? ' ed-' + it.edition : ''}"><div class="${it.kind === 'tile' ? 'packtileart' : 'emblem'}" data-pt="${i}">${it.kind === 'tile' ? '' : emblem(it.kind)}</div>${it.kind === 'talisman' ? stickerBadges(it.sticker) : ''}<div class="kind">${it.kind === 'talisman' ? talKindRow(it.key, it.edition) : { omikuji: 'Omikuji', kami: 'Kami Spirit', scroll: 'Scroll of Mastery', tile: 'Tile' }[it.kind] + (ed ? `<span class="edtag ed-${it.edition}">${ed.name}</span>` : '')}</div><div class="n">${d.name}</div><div class="d">${d.desc}${ed ? ` <b>${ed.name}: ${ed.desc}.</b>` : ''}</div>${it.kind === 'scroll' && !it.sold ? scrollLevelHTML(it.key) : it.kind === 'talisman' && !it.sold ? talPreview(it.key) : ''}<div class="buy"><span></span>${it.sold ? `<span class="muted">${it.used ? 'Used' : 'Taken'}</span>` : packButtons(it, i)}</div></div>`; }).join('')}</div></section>`;
+  h += `<aside class="shoprail tsrail">${S.pack.done ? '<button id="mPackDone" class="primary nextbtn"><span class="nb-main">Done</span><small>Back to the shop</small></button>' : '<button id="mPackDone" class="ghost railbtn"><span class="rbl">Skip the Rest</span></button>'}<button id="mDeck" class="ghost railbtn"><span class="rbl"><span class="wallico" aria-hidden="true"><i></i><i></i><i></i></span>View Wall</span><b class="num">${(S.deck || []).length}</b></button><button id="mRunInfo" class="ghost railbtn"><span class="rbl">Run Info</span></button></aside></div>`;
+  h += `<div class="msg tsmsg${S.msgErr ? ' err' : ''}">${S.msg || ''}</div>`;
+  if (!tray) h += ownedHTML();
   return h;
 }
 function overHTML(won) {
