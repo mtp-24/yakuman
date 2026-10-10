@@ -883,6 +883,8 @@ body.crt-full #app,body.crt-full #overlay{filter:url(#crtfx)} #crtbezel{display:
 /* The Shop and packs keep their usual look (noren banner, felt shelves, rail) and slide up as a tray to the screen's bottom edge */
 .overlay.shoptray .modal.traymodal{min-height:100%;max-width:none;width:100%;box-sizing:border-box;background:var(--panel);border:1px solid var(--line);border-bottom:0;border-radius:12px 12px 0 0;box-shadow:0 -12px 34px rgba(0,0,0,.6)}
 .slot.filled.sel{outline:2px solid var(--accent);outline-offset:1px}
+.wallfly{position:fixed;z-index:95;pointer-events:none} .wallfly .tile{box-shadow:0 8px 18px rgba(0,0,0,.5)}
+.shopfoot .wallico{transform:scale(.62);width:16px;margin:0 2px 0 -2px;display:inline-block;vertical-align:middle} .shopfoot b.num{font-family:var(--display);font-weight:500;color:var(--muted);margin-left:6px}
 .overlay.shoptray{padding:0} .overlay.shoptray .modal.shopmodal{padding-top:0} .overlay.shoptray .modal.packmodal{padding-top:20px}
 /* Shop: the buttons in a bar under the banner, the shelves side by side. Each shelf is as wide as its cards (--n of them) and they wrap. */
 /* Compact buttons in the Shop banner and pack header; Reroll is a pill on the Cards shelf */

@@ -883,6 +883,8 @@ body.crt-full #app,body.crt-full #overlay{filter:url(#crtfx)} #crtbezel{display:
 /* The Shop and packs keep their usual look (noren banner, felt shelves, rail) and slide up as a tray to the screen's bottom edge */
 .overlay.shoptray .modal.traymodal{min-height:100%;max-width:none;width:100%;box-sizing:border-box;background:var(--panel);border:1px solid var(--line);border-bottom:0;border-radius:12px 12px 0 0;box-shadow:0 -12px 34px rgba(0,0,0,.6)}
 .slot.filled.sel{outline:2px solid var(--accent);outline-offset:1px}
+.wallfly{position:fixed;z-index:95;pointer-events:none} .wallfly .tile{box-shadow:0 8px 18px rgba(0,0,0,.5)}
+.shopfoot .wallico{transform:scale(.62);width:16px;margin:0 2px 0 -2px;display:inline-block;vertical-align:middle} .shopfoot b.num{font-family:var(--display);font-weight:500;color:var(--muted);margin-left:6px}
 .overlay.shoptray{padding:0} .overlay.shoptray .modal.shopmodal{padding-top:0} .overlay.shoptray .modal.packmodal{padding-top:20px}
 /* Shop: the buttons in a bar under the banner, the shelves side by side. Each shelf is as wide as its cards (--n of them) and they wrap. */
 /* Compact buttons in the Shop banner and pack header; Reroll is a pill on the Cards shelf */
@@ -2668,6 +2670,7 @@ function usePackCard(i) {
   for (const id of order) if (!after.some(t => t.id === id)) gone.push(snap.get(id));
   // Row to display: the previous order with removed tiles left in place (greyed), new tiles at the end.
   S.pack.view = order.map(id => after.some(t => t.id === id) ? { id } : { id, gone: snap.get(id) }).concat(after.filter(t => !snap.has(t.id)).map(t => ({ id: t.id })));
+  for (const t of after) if (!snap.has(t.id)) queueWallFlight($(`#modal .emblem[data-pt="${i}"]`), t);   // created tiles fly to the Wall
   S.pack.marks = marks; S.pack.hand = after.map(t => t.id); S.pack.sel = [];
   it.sold = true; it.used = true; S.pack.left--; if (it.key !== 'echo') S.lastCons = it.key; bump(PROFILE, def.kind === 'kami' ? 'kamiUsed' : 'omikujiUsed');
   const gained = S.money - m0, list = a0 => { const c = {}; for (const n of a0) c[n] = (c[n] || 0) + 1; const a = Object.entries(c).map(([n, k]) => k > 1 ? `${n} ×${k}` : n); return a.length > 1 ? a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1] : a[0]; };
@@ -2696,7 +2699,7 @@ function takeFromPack(i) {
   const it = S.pack.choices[i]; if (!it || it.sold) return;
   if (it.kind === 'talisman') { if (S.talismans.length >= talSlots()) { setMsg('Talisman slots are full. Sell one from the list below first.', true); return render(); } gainTalisman(it.key, it.sticker); if (it.edition) S.editions[it.key] = it.edition; }
   else if (it.kind === 'scroll') { const [t, k] = it.key.split(':'); S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] = (S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] || 0) + 1; for (const tk of liveTals(S)) if (TAL[tk].onScroll) TAL[tk].onScroll(S); PROFILE.scrollsUsed++; saveProfile(); }
-  else if (it.kind === 'tile') { S.deck.push(it.tile); PROFILE.tilesAdded = (PROFILE.tilesAdded || 0) + 1; saveProfile(); for (const k of liveTals(S)) if (TAL[k].onTileAdded) TAL[k].onTileAdded(S, 1); }
+  else if (it.kind === 'tile') { queueWallFlight($(`#modal .packtileart[data-pt="${i}"]`), it.tile); S.deck.push(it.tile); PROFILE.tilesAdded = (PROFILE.tilesAdded || 0) + 1; saveProfile(); for (const k of liveTals(S)) if (TAL[k].onTileAdded) TAL[k].onTileAdded(S, 1); }
   else { if (S.consumables.length >= conSlots()) { setMsg('Consumable slots are full. Use or sell one first.', true); return render(); } S.consumables.push({ kind: it.kind, key: it.key }); }
   it.sold = true; S.pack.left--; setMsg(it.kind === 'tile' ? `Added ${itemDef(it).name} to your Wall.` : `Took ${itemDef(it).name}.`);
   if (S.pack.left <= 0) S.pack = null;
@@ -2891,8 +2894,34 @@ function render() {
   document.querySelectorAll('.zhead > .muted').forEach(e => { e.title = e.textContent; });   // full text on hover when a header is truncated
   translateDOM($('#app')); fitNumbers();
   if (S.placeholder && $('#overlay').hidden) showModal(menuHTML(false), true, 'menumodal');   // closing a screen opened from the title goes back to the title
-  tileMotion(motionBefore, freshTiles); syncEditions(); refreshTileTip(); if (S.phase !== 'shop' && !S.quiet) walletShown = S.money;
+  tileMotion(motionBefore, freshTiles); syncEditions(); refreshTileTip(); animateWall(); if (S.phase !== 'shop' && !S.quiet) walletShown = S.money;
   save();
+}
+// Tiles added to the Wall fly from where they were added to the Wall counter, which ticks up as each one lands. The counter is
+// the left panel's Wall button, or the View Wall button when a full-screen Shop covers the board.
+let flyShown = null, wallFlights = [];
+function queueWallFlight(el, tile) { if (el) wallFlights.push({ rect: (el.firstElementChild || el).getBoundingClientRect(), tile }); }
+function animateWall() {
+  const ov = $('#overlay'), board = ov.hidden || ov.classList.contains('boardonly');
+  const btn = board ? $('#wallBtn') : $('#modal #mDeck') || $('#wallBtn'), v = btn && btn.querySelector('.wv, .num');
+  const flights = wallFlights; wallFlights = [];
+  const n = v ? parseInt(v.textContent, 10) : NaN;
+  if (!v || isNaN(n) || !flights.length || !motionOK || S.quiet || flyShown == null || n <= flyShown) { flyShown = isNaN(n) ? null : n; return; }
+  let shown = Math.max(flyShown, n - flights.length); flyShown = n; v.textContent = shown;
+  const to = btn.getBoundingClientRect(), tx = to.left + to.width / 2, ty = to.top + to.height / 2, flies = [];
+  flights.forEach((f, k) => {
+    const w = Math.max(28, Math.min(64, f.rect.width)), fly = document.createElement('div');
+    fly.className = 'wallfly'; fly.style.cssText = `left:${f.rect.left + f.rect.width / 2 - w / 2}px;top:${f.rect.top + f.rect.height / 2 - w * .68}px`;
+    const t = tileEl(f.tile); t.style.setProperty('--tw', w + 'px'); t.style.setProperty('--th', w * 1.36 + 'px'); fly.appendChild(t); document.body.appendChild(fly); flies.push(fly);
+    const dx = tx - (f.rect.left + f.rect.width / 2), dy = ty - (f.rect.top + f.rect.height / 2);
+    fly.animate([{ transform: 'translate(0,0) scale(1) rotate(0)', opacity: 1 }, { transform: `translate(${dx * .45}px,${dy * .45 - 90}px) scale(.85) rotate(-8deg)`, opacity: 1, offset: .45 }, { transform: `translate(${dx}px,${dy}px) scale(.3) rotate(-14deg)`, opacity: .6 }],
+      { duration: 700, delay: k * 120, easing: 'cubic-bezier(.45,0,.55,1)', fill: 'backwards' }).onfinish = () => {
+      fly.remove(); if (!v.isConnected) return; v.textContent = ++shown;
+      btn.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.12)', filter: 'brightness(1.4)' }, { transform: 'scale(1)' }], { duration: 260, easing: 'ease-out' });
+    };
+  });
+  // Safety if animations are paused (a hidden tab): the count still ends right and no tile is left hanging.
+  setTimeout(() => { flies.forEach(f => f.remove()); if (v.isConnected && shown < n) v.textContent = shown = n; }, 700 + flights.length * 120 + 600);
 }
 // Edition effects run on one shared 15 s clock: each newly drawn edition card gets a negative delay matching the
 // clock, so a redraw picks up mid-cycle and all cards stay in step.
@@ -3759,7 +3788,7 @@ function cashoutHTML() {
   const talRows = r.talPay ? r.talPay.map(([k, v]) => [TAL[k] ? TAL[k].name : k, 'Talisman', v]) : r.tal ? [['Talismans', 'end-of-Blind payouts', r.tal]] : [];   // older saves only kept the total
   const rows = [['Blind reward', names[r.kind], r.base], ['Unused Plays', `${r.left} × ¥1`, r.left], ['Interest', `¥1 per ¥${CFG.interestPer} held, up to ¥${cap}`, r.interest], ...talRows, r.summer ? ['Summer', 'Flower', r.summer] : null, r.invest ? ['Investment Tag', 'Boss bonus', r.invest] : null, ...(r.rent || []).map(([k, v]) => [TAL[k] ? TAL[k].name : k, 'Rental', -v])].filter(Boolean);
   const cur = LANG === 'hk' ? '$' : '¥';
-  let h = `<div class="drawhead"><h2>${bossName ? bossName + ' beaten' : 'Blind cleared'}</h2><span class="label">${names[r.kind]} defeated</span></div>`;
+  let h = `<div class="drawhead"><h2>${bossName ? bossName + ' beaten' : 'Blind cleared'}</h2></div>`;
   // Like Balatro, the Cash Out button sits on top and the reward rows fill in beneath it, so the button never moves.
   h += `<button id="mCashOut" class="primary cashbtn">Cash Out <span class="cashamt"><span class="coin" aria-hidden="true">${coinSVG()}</span><span class="num">${money(cur, r.total)}</span></span></button>`;
   h += `<div class="receipt">${rows.map(([k, d, v]) => `<div class="rrow"><span class="rl">${k}</span><span class="rd muted">${d}</span><span class="rlead" aria-hidden="true"></span><b class="num${v < 0 ? ' neg' : ''}" data-v="${v}">${money('¥', v)}</b></div>`).join('')}</div>`;
@@ -3773,9 +3802,10 @@ function shopHTML() {
   const items = shopItems(), tray = shopTray = useTray();
   const next = ({ small: 'Small Blind', big: 'Big Blind', boss: 'Boss Blind' })[blindKind()];
   const nextBoss = blindKind() === 'boss' ? BOSSES[S.bossOrder[S.ante - 1]] : null;
-  // The banner holds the buttons: View Wall and Run Info, then Next Blind. Reroll sits on the Cards shelf, the only thing it changes.
-  // In the tray the wallet is left out: your money is in view in the left panel. Full screen keeps it in the banner.
-  const shopBtns = `<button id="mDeck" class="ghost hbtn"><span class="wallico" aria-hidden="true"><i></i><i></i><i></i></span>View Wall <b class="num">${(S.deck || []).length}</b></button><button id="mRunInfo" class="ghost hbtn"><svg class="rbico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 11v6M12 7.5v.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>Run Info</button><button id="mNext" class="primary hnext"><span class="nb-main">Next Blind <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M3 8h9M8.5 3.5 13 8l-4.5 4.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><small>Ante ${S.ante} · ${nextBoss ? nextBoss.name : next}</small></button>`;
+  // The banner holds Next Blind; Reroll sits on the Cards shelf, the only thing it changes. In the tray the play area stays in
+  // view, so the wallet and View Wall / Run Info are left out (the left panel and the top bar have them). Full screen keeps the
+  // wallet in the banner and puts View Wall and Run Info at the bottom.
+  const shopBtns = `<button id="mNext" class="primary hnext"><span class="nb-main">Next Blind <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M3 8h9M8.5 3.5 13 8l-4.5 4.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><small>Ante ${S.ante} · ${nextBoss ? nextBoss.name : next}</small></button>`;
   let h = `<div class="noren"><div class="norenbar"><h2>Shop</h2><div class="shopacts">${tray ? '' : walletHTML()}${shopBtns}</div></div><div class="norenflaps" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div></div>`;
   if (S.shop.coupon) h += `<div class="msg">Coupon Tag: Talismans and consumables are free in this shop.</div>`;
   // The three shelves stand side by side, in Balatro's order: the rerollable
@@ -3789,9 +3819,11 @@ function shopHTML() {
     <div class="shelf packsshelf" style="--n:${Math.max(1, S.shop.packs.length)}"><div class="shelflabel">Booster Packs</div><div class="shelfrow">${S.shop.packs.map(it => cardHTML(it, at(it))).join('')}</div></div></div>
     ${S.shop.freePacks.length ? `<div class="freepacks">${S.shop.freePacks.map((pk, i) => `<button class="primary" data-freepack="${i}">Open Free ${PACKS[pk].name}</button>`).join('')}</div>` : ''}`;
   h += `<div class="msg${S.msgErr ? ' err' : ''}" style="min-height:18px;margin:6px 0">${S.msg || (tray ? 'Select a Talisman or consumable on the board above to sell or use it.' : '')}</div>`;
-  if (!tray) h += ownedHTML();
+  if (!tray) h += ownedHTML() + footHTML();
   return h;
 }
+// View Wall and Run Info, for the full-screen Shop and packs (in the tray the board's own buttons are in view).
+const footHTML = () => `<div class="shopfoot"><button id="mDeck" class="ghost"><span class="wallico" aria-hidden="true"><i></i><i></i><i></i></span>View Wall <b class="num">${(S.deck || []).length}</b></button><button id="mRunInfo" class="ghost">Run Info</button></div>`;
 // The Shop and packs open as a tray over the board on wide screens. On narrow ones (900px or less), or when the window is too
 // short to fit the tray below your Talismans, they open full screen and list your items so you can still sell them.
 const TRAY_MIN_H = 400;
@@ -3814,12 +3846,12 @@ function packButtons(it, i) {
 function packHTML() {
   const pk = PACKS[S.pack.key], tray = shopTray = useTray();
   const tone = { omikuji: 'omikuji', kami: 'kami', scroll: 'scroll', talisman: 'talisman' }[pk.type] || 'pack';
-  // Same buttons as the Shop's banner, in the header beside the picks left, so Done is always in view.
-  let h = `<div class="packhead ${tone}"><div class="packart">${emblem('pack')}</div><div class="packtitle"><div class="label">Booster pack${S.pack.free ? ' · free from a Tag' : ''}</div><h2>${pk.name}</h2><p>${pk.desc}</p></div><div class="packacts"><button id="mDeck" class="ghost hbtn"><span class="wallico" aria-hidden="true"><i></i><i></i><i></i></span>View Wall <b class="num">${(S.deck || []).length}</b></button><button id="mRunInfo" class="ghost hbtn"><svg class="rbico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 11v6M12 7.5v.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>Run Info</button>${S.pack.done ? '<button id="mPackDone" class="primary hnext"><span class="nb-main">Done <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M3 8h9M8.5 3.5 13 8l-4.5 4.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><small>Back to the Shop</small></button>' : '<button id="mPackDone" class="ghost hbtn">Skip the Rest</button>'}</div><div class="packpicks"><b class="num">${S.pack.done ? 0 : S.pack.left}</b><span>${S.pack.done || S.pack.left !== 1 ? 'picks' : 'pick'} left</span></div></div>`;
+  // Skip the Rest or Done sits in the header beside the picks left, so it is always in view.
+  let h = `<div class="packhead ${tone}"><div class="packart">${emblem('pack')}</div><div class="packtitle"><div class="label">Booster pack${S.pack.free ? ' · free from a Tag' : ''}</div><h2>${pk.name}</h2><p>${pk.desc}</p></div><div class="packacts">${S.pack.done ? '<button id="mPackDone" class="primary hnext"><span class="nb-main">Done <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M3 8h9M8.5 3.5 13 8l-4.5 4.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><small>Back to the Shop</small></button>' : '<button id="mPackDone" class="ghost hbtn">Skip the Rest</button>'}</div><div class="packpicks"><b class="num">${S.pack.done ? 0 : S.pack.left}</b><span>${S.pack.done || S.pack.left !== 1 ? 'picks' : 'pick'} left</span></div></div>`;
   if (S.pack.hand) h += `<div class="packhandwrap"><div class="label">Your Tiles · ${(S.pack.view || S.pack.hand).length} random tiles from your Wall</div><div class="muted" style="font-size:12px;margin:2px 0 6px">${S.pack.done ? 'All picks used. Outlined tiles changed and stay that way in your Wall. Press Done to return to the shop.' : 'Select tiles, then press Use on a card. The change stays in your Wall for the rest of the run. Keep puts the card in your consumable slots instead.'}</div><div class="packhand" id="packHand"></div></div>`;
   h += `<div class="shelf packshelf"><div class="shelflabel">${S.pack.done ? 'Cards · all picks used' : `Cards · choose ${S.pack.left} more`}</div><div class="shop-grid" style="--n:${S.pack.choices.length}">${S.pack.choices.map((it, i) => { const d = itemDef(it); const ed = it.edition ? EDITIONS[it.edition] : null; return `<div class="shopcard ${it.kind === 'tile' ? 'tilecard' : it.kind}${it.sold ? ' sold' : ''}${ed ? ' ed-' + it.edition : ''}"><div class="${it.kind === 'tile' ? 'packtileart' : 'emblem'}" data-pt="${i}">${it.kind === 'tile' ? '' : emblem(it.kind)}</div>${it.kind === 'talisman' ? stickerBadges(it.sticker) : ''}<div class="kind">${it.kind === 'talisman' ? talKindRow(it.key, it.edition) : { omikuji: 'Omikuji', kami: 'Kami Spirit', scroll: 'Scroll of Mastery', tile: 'Tile' }[it.kind] + (ed ? `<span class="edtag ed-${it.edition}">${ed.name}</span>` : '')}</div><div class="n">${d.name}</div><div class="d">${d.desc}${ed ? ` <b>${ed.name}: ${ed.desc}.</b>` : ''}</div>${it.kind === 'scroll' && !it.sold ? scrollLevelHTML(it.key) : it.kind === 'talisman' && !it.sold ? talPreview(it.key) : ''}<div class="buy"><span></span>${it.sold ? `<span class="muted">${it.used ? 'Used' : 'Taken'}</span>` : packButtons(it, i)}</div></div>`; }).join('')}</div></div>`;
   h += `<div class="msg${S.msgErr ? ' err' : ''}" style="min-height:18px;margin:2px 0 6px">${S.msg || ''}</div>`;
-  if (!tray) h += ownedHTML();
+  if (!tray) h += ownedHTML() + footHTML();
   return h;
 }
 function overHTML(won) {
