@@ -13,8 +13,11 @@ let CRT = 'off'; try { CRT = localStorage.getItem('yakuman.crt') || 'off'; } cat
 let HINTS = { away: true, waits: false, without: false };
 // Corner numbers on tiles: 'all', 'some' (Characters and Winds, the default) or 'none'. Dots and Bamboo can be counted by their pips.
 let TILE_NUMS = 'some'; try { TILE_NUMS = localStorage.getItem('yakuman.tilenums') || 'some'; } catch (e) { } try { Object.assign(HINTS, JSON.parse(localStorage.getItem('yakuman.hints') || '{}')); } catch (e) { }
-const SPEEDS = { slow: 2.5, normal: 1, fast: 0.45, instant: 0 };
-let ANIM_SPEED = 'normal'; try { const v = localStorage.getItem('yakuman.speed'); if (SPEEDS[v] !== undefined) ANIM_SPEED = v; } catch (e) { }
+// Animation speed stretches or shortens everything you wait on (scoring, trays, flights, deal-ins); Instant scoring
+// is separate and skips the scoring animation only. An old 'instant' speed becomes Normal with Instant scoring on.
+const SPEEDS = { slow: 2, normal: 1, fast: 0.5 };
+let ANIM_SPEED = 'normal', INSTANT_SCORE = false;
+try { const v = localStorage.getItem('yakuman.speed'); if (SPEEDS[v] !== undefined) ANIM_SPEED = v; INSTANT_SCORE = localStorage.getItem('yakuman.instantscore') === 'on' || v === 'instant'; if (v === 'instant') { localStorage.setItem('yakuman.instantscore', 'on'); localStorage.removeItem('yakuman.speed'); } } catch (e) { }
 let HK_RE = null, HK_MAP = null;
 function buildHK() {
   HK_MAP = Object.assign({}, HK_TERMS);
@@ -61,7 +64,8 @@ function settingsHTML() {
   <div class="setrow"><div><b>CRT filter</b><div class="muted">Light adds faint scanlines and a soft vignette. Full also curves the screen like an old tube, with a soft glow at the edges, like Balatro's CRT; it is heavier and may slow older devices.</div></div><div class="setbtns">${[['off', 'Off'], ['on', 'Light'], ['full', 'Full']].map(([k, n]) => `<button class="${CRT === k ? 'primary' : ''}" data-setcrt="${k}">${n}</button>`).join('')}</div></div>
   <div class="setsec">Motion</div>
   <div class="setrow"><div><b>Reduce motion</b><div class="muted">Turns off all animation: cards flying and dealing in, trays sliding, shimmer, the drifting background and the scoring effects. Everything happens instantly instead. Also on automatically if your device asks for reduced motion.</div></div><div class="setbtns"><button class="${REDUCE_MOTION ? 'primary' : ''}" data-setmotion="reduce">On</button><button class="${!REDUCE_MOTION ? 'primary' : ''}" data-setmotion="full">Off</button></div></div>
-  <div class="setrow${noMotion ? ' setoff' : ''}"><div><b>Scoring animation speed</b><div class="muted">How fast tiles and Talismans score. Instant shows the result at once. Clicking anywhere during scoring also skips.${noMotion ? `<div class="setnote">Off while ${deviceReduce && !REDUCE_MOTION ? 'your device asks for reduced motion' : 'Reduce motion is on'}.</div>` : ''}</div></div><div class="setbtns">${Object.keys(SPEEDS).map(k => `<button ${noMotion ? 'disabled ' : ''}class="${ANIM_SPEED === k ? 'primary' : ''}" data-setspeed="${k}">${k[0].toUpperCase() + k.slice(1)}</button>`).join('')}</div></div>
+  <div class="setrow${noMotion ? ' setoff' : ''}"><div><b>Animation speed</b><div class="muted">How fast everything moves: scoring, trays sliding, cards dealing in and flying to their slots. The drifting background and shimmer keep their pace.${noMotion ? `<div class="setnote">Off while ${deviceReduce && !REDUCE_MOTION ? 'your device asks for reduced motion' : 'Reduce motion is on'}.</div>` : ''}</div></div><div class="setbtns">${[['slow', 'Slow'], ['normal', 'Normal'], ['fast', 'Fast']].map(([k, n]) => `<button ${noMotion ? 'disabled ' : ''}class="${ANIM_SPEED === k ? 'primary' : ''}" data-setspeed="${k}">${n}</button>`).join('')}</div></div>
+  <div class="setrow${noMotion ? ' setoff' : ''}"><div><b>Instant scoring</b><div class="muted">Shows a play's result at once instead of scoring tile by tile. Clicking anywhere during scoring also skips it.${noMotion ? `<div class="setnote">Off while ${deviceReduce && !REDUCE_MOTION ? 'your device asks for reduced motion' : 'Reduce motion is on'}.</div>` : ''}</div></div><div class="setbtns"><button ${noMotion ? 'disabled ' : ''}class="${INSTANT_SCORE ? 'primary' : ''}" data-setinstant="on">On</button><button ${noMotion ? 'disabled ' : ''}class="${!INSTANT_SCORE ? 'primary' : ''}" data-setinstant="off">Off</button></div></div>
   <div class="setrow${noMotion ? ' setoff' : ''}"><div><b>Animated background</b><div class="muted">Slowly drifting light behind the table, like Balatro's swirl.${noMotion ? `<div class="setnote">Off while ${deviceReduce && !REDUCE_MOTION ? 'your device asks for reduced motion' : 'Reduce motion is on'}.</div>` : ''}</div></div><div class="setbtns"><button ${noMotion ? 'disabled ' : ''}class="${BG_ANIM ? 'primary' : ''}" data-setbg="on">On</button><button ${noMotion ? 'disabled ' : ''}class="${!BG_ANIM ? 'primary' : ''}" data-setbg="off">Off</button></div></div>
   <div class="setrow${noMotion ? ' setoff' : ''}"><div><b>Screen shake</b><div class="muted">The table shakes a little when a play scores three times the target or more.${noMotion ? `<div class="setnote">Off while ${deviceReduce && !REDUCE_MOTION ? 'your device asks for reduced motion' : 'Reduce motion is on'}.</div>` : ''}</div></div><div class="setbtns"><button ${noMotion ? 'disabled ' : ''}class="${SHAKE ? 'primary' : ''}" data-setshake="on">On</button><button ${noMotion ? 'disabled ' : ''}class="${!SHAKE ? 'primary' : ''}" data-setshake="off">Off</button></div></div>
   <div class="setsec">Your data</div>
@@ -125,13 +129,13 @@ function dissolveTal(k) {
 function burnInList(el) {
   if (!el || !motionOK) return false; $('#modal').style.pointerEvents = 'none';
   el.animate([{ opacity: 1, filter: 'none', transform: 'none' }, { opacity: .9, filter: 'brightness(1.6) sepia(.6) saturate(3) blur(.5px)', transform: 'scale(1.03)', offset: .3 }, { opacity: 0, filter: 'brightness(2) saturate(4) blur(6px)', transform: 'scale(.92) translateY(-10px)' }], { duration: DISSOLVE_MS, easing: 'ease-in', fill: 'forwards' });
-  setTimeout(() => { $('#modal').style.pointerEvents = ''; render(); }, DISSOLVE_MS + 20);
+  setTimeout(() => { $('#modal').style.pointerEvents = ''; render(); }, spd(DISSOLVE_MS + 20));
   return true;
 }
 const DISSOLVE_MS = 520;
 function dissolveEl(el) {
   if (!el || !motionOK) return; const r = el.getBoundingClientRect(), g = el.cloneNode(true); Object.assign(g.style, { position: 'fixed', left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px', margin: 0, zIndex: 60, pointerEvents: 'none' }); document.body.appendChild(g);
-  g.animate([{ opacity: 1, filter: 'none', transform: 'none' }, { opacity: .9, filter: 'brightness(1.6) sepia(.6) saturate(3) blur(.5px)', transform: 'scale(1.03)', offset: .3 }, { opacity: 0, filter: 'brightness(2) saturate(4) blur(6px)', transform: 'scale(.92) translateY(-10px)' }], { duration: DISSOLVE_MS, easing: 'ease-in' }).onfinish = () => g.remove(); setTimeout(() => g.remove(), 900);
+  g.animate([{ opacity: 1, filter: 'none', transform: 'none' }, { opacity: .9, filter: 'brightness(1.6) sepia(.6) saturate(3) blur(.5px)', transform: 'scale(1.03)', offset: .3 }, { opacity: 0, filter: 'brightness(2) saturate(4) blur(6px)', transform: 'scale(.92) translateY(-10px)' }], { duration: DISSOLVE_MS, easing: 'ease-in' }).onfinish = () => g.remove(); setTimeout(() => g.remove(), spd(900));
 }
 // When a card leaves a row (sold or destroyed), the cards after it wait where they were until the dissolve has burned out,
 // then slide into the gap, so they never pass over the burning card. Positions are taken before the redraw and played after it.
@@ -149,7 +153,7 @@ function growRows(was) {
   const ease = { duration: 240, easing: 'cubic-bezier(.2,.8,.2,1)' };
   GROW_ROWS.forEach((q, i) => {
     const e = document.querySelector(q), h0 = was.h[i]; if (!e || h0 == null) return; const h1 = e.getBoundingClientRect().height;
-    if (h1 - h0 > 1) { e.style.overflow = 'hidden'; const done = () => { e.style.overflow = ''; }; e.animate([{ height: h0 + 'px' }, { height: h1 + 'px' }], ease).onfinish = done; setTimeout(done, 600); }
+    if (h1 - h0 > 1) { e.style.overflow = 'hidden'; const done = () => { e.style.overflow = ''; }; e.animate([{ height: h0 + 'px' }, { height: h1 + 'px' }], ease).onfinish = done; setTimeout(done, spd(600)); }
   });
   const ov = $('#overlay'); if (was.top && ov.classList.contains('inflow') && ov.style.top !== was.top && parseFloat(ov.style.top) > parseFloat(was.top)) ov.animate([{ top: was.top }, { top: ov.style.top }], ease);
 }
@@ -162,12 +166,12 @@ function holdRow(sel, box, gone) {
 function playRowHolds() {
   const holds = rowHolds; rowHolds = [];
   for (const h of holds) {
-    if (performance.now() - h.t > 1000) continue;
+    if (performance.now() - h.t > spd(1000)) continue;
     const box = document.querySelector(h.box); if (!box) continue;
     const br = box.getBoundingClientRect(), nowH = br.height, wait = DISSOLVE_MS - 60, total = wait + 280;
     // The row's box keeps its old height while the card burns (a list that loses a whole row would otherwise jump), then
     // eases to its new height as the cards slide. Rows stay packed at the top meanwhile instead of stretching to fill it.
-    box.classList.add('reflowing'); setTimeout(() => box.classList.remove('reflowing'), total + 80);
+    box.classList.add('reflowing'); setTimeout(() => box.classList.remove('reflowing'), spd(total + 80));
     if (h.h - nowH > 1) box.animate([{ height: h.h + 'px' }, { height: h.h + 'px', offset: wait / total }, { height: nowH + 'px' }], { duration: total, easing: 'ease-in-out' });
     // A Shop tray under the board's row moves with it: it waits at its old place, then rises as the row shrinks.
     const ov = $('#overlay'); if (h.top && ov.classList.contains('inflow') && parseFloat(ov.style.top) < parseFloat(h.top) - 1) ov.animate([{ top: h.top }, { top: h.top, offset: wait / total }, { top: ov.style.top }], { duration: total, easing: 'ease-in-out' });
@@ -183,7 +187,7 @@ function playRowHolds() {
       box.appendChild(g); el.style.visibility = 'hidden';
       const show = () => { g.remove(); el.style.visibility = ''; };
       g.animate([{ transform: `translate(${dx}px,${dy}px)`, width: was.width + 'px', height: was.height + 'px' }, { transform: 'none', width: now.width + 'px', height: now.height + 'px' }], { duration: 280, delay: wait, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' }).onfinish = show;
-      setTimeout(() => { if (g.isConnected) show(); }, total + 400);   // safety if animations are paused
+      setTimeout(() => { if (g.isConnected) show(); }, spd(total + 400));   // safety if animations are paused
     });
   }
 }
@@ -557,7 +561,7 @@ async function doPlay() {
   render();
 }
 // One clack per discarded tile, timed with their flight into the River.
-function sfxDiscard(n) { for (let k = 0; k < Math.min(n, 5); k++) setTimeout(() => sfx('discard'), 180 + k * 30); }
+function sfxDiscard(n) { for (let k = 0; k < Math.min(n, 5); k++) setTimeout(() => sfx('discard'), spd(180 + k * 30)); }
 function doDiscard() {
   if (S.phase !== 'blind' || S.busy) return;
   const sel = selTiles();
@@ -780,7 +784,7 @@ const PACK_CLOSE_MS = 900, PACK_USE_CLOSE_MS = 1400;
 let packClosing = null;
 function closePackSoon(ms) {
   S.pack.done = true; clearTimeout(packClosing);
-  packClosing = setTimeout(() => trayOut(() => { packClosing = null; if (S.phase === 'shop' && S.pack && S.pack.done) { S.pack = null; render(); } }), motionOK ? ms : 0);
+  packClosing = setTimeout(() => trayOut(() => { packClosing = null; if (S.phase === 'shop' && S.pack && S.pack.done) { S.pack = null; render(); } }), spd(motionOK ? ms : 0));
 }
 function takeFromPack(i) {
   const it = S.pack.choices[i]; if (!it || it.sold) return;
@@ -820,7 +824,7 @@ function rerollBoss() {
   if (!canRerollBoss() || rerolling) return; S.money -= 10; S.bossRerollAnte = S.ante; const old = S.bossOrder[S.ante - 1]; S.bossOrder[S.ante - 1] = rollBoss(S.ante, [old]); sfx('reroll'); setMsg(`${BOSSES[old].name} rerolled into ${BOSSES[S.bossOrder[S.ante - 1]].name}.`);
   const card = $('#modal .blindcard.bosscard'), show = () => { render(); const c = $('#modal .blindcard.bosscard'); if (c && motionOK) c.animate([{ transform: 'perspective(800px) rotateY(-90deg)', opacity: .4 }, { transform: 'perspective(800px) rotateY(0)' }], { duration: 260, easing: 'cubic-bezier(.2,.8,.2,1)' }); };
   if (!card || !motionOK) return show(); rerolling = true; let done = false; const go = () => { if (done) return; done = true; rerolling = false; show(); };
-  card.animate([{ transform: 'perspective(800px) rotateY(0)' }, { transform: 'perspective(800px) rotateY(90deg)', opacity: .4 }], { duration: 180, easing: 'ease-in', fill: 'forwards' }).onfinish = go; setTimeout(go, 420);
+  card.animate([{ transform: 'perspective(800px) rotateY(0)' }, { transform: 'perspective(800px) rotateY(90deg)', opacity: .4 }], { duration: 180, easing: 'ease-in', fill: 'forwards' }).onfinish = go; setTimeout(go, spd(420));
 }
 // A copy of one element flies onto another and shrinks into it; the target pops when it lands. Used inside full screens
 // (a Tag skipped for on the Blind screen flying into Tags held).
@@ -831,7 +835,7 @@ function flyOnto(node, from, dest, ms = 560) {
   const dx = to.left + to.width / 2 - (from.left + from.width / 2), dy = to.top + to.height / 2 - (from.top + from.height / 2), sc = Math.max(.4, Math.min(1.2, to.width / from.width));
   const land = () => { fly.remove(); if (!dest.isConnected) return; dest.style.visibility = ''; dest.animate([{ transform: 'scale(.8)', filter: 'brightness(1.6)' }, { transform: 'scale(1.1)', offset: .6 }, { transform: 'none', filter: 'none' }], { duration: 300, easing: 'ease-out' }); };
   fly.animate([{ transform: 'none' }, { transform: `translate(${dx * .45}px,${dy * .45 - 50}px) scale(${(1 + sc) / 2}) rotate(-4deg)`, offset: .45 }, { transform: `translate(${dx}px,${dy}px) scale(${sc})` }], { duration: ms, easing: 'cubic-bezier(.45,0,.4,1)' }).onfinish = land;
-  setTimeout(() => { if (fly.isConnected) land(); }, ms + 500);
+  setTimeout(() => { if (fly.isConnected) land(); }, spd(ms + 500));
 }
 // Rerolling flips the cards: the old ones turn away one after another, then the new ones turn in from the other side.
 // Clicks on the Shop are ignored for the half second it takes.
@@ -845,7 +849,7 @@ function reroll() {
   rerolling = true; const m = $('#modal'); m.style.pointerEvents = 'none'; let done = false;
   const go = () => { if (done) return; done = true; rerolling = false; m.style.pointerEvents = ''; roll(); };
   old.forEach((el, i) => el.animate([{ transform: 'perspective(700px) rotateY(0)', opacity: 1 }, { transform: 'perspective(700px) rotateY(90deg) scale(.96)', opacity: .5 }], { duration: 150, delay: i * 45, easing: 'ease-in', fill: 'forwards' }));
-  setTimeout(go, 150 + (old.length - 1) * 45 + 10);
+  setTimeout(go, spd(150 + (old.length - 1) * 45 + 10));
 }
 function flipIn() {
   if (!motionOK) return;
@@ -1060,7 +1064,7 @@ function animateWall() {
     };
   });
   // Safety if animations are paused (a hidden tab): the count still ends right and no tile is left hanging.
-  setTimeout(() => { flies.forEach(f => f.remove()); if (v.isConnected && shown < n) v.textContent = shown = n; }, 700 + flights.length * 120 + 600);
+  setTimeout(() => { flies.forEach(f => f.remove()); if (v.isConnected && shown < n) v.textContent = shown = n; }, spd(700 + flights.length * 120 + 600));
 }
 // A Talisman or consumable bought or taken flies from its card into its new slot on the board, shrinking to fit, then the slot
 // pops in. The card is copied before the Shop redraws; the copy sits in a bare shelf so it keeps the shop card's look.
@@ -1084,10 +1088,10 @@ function playScrollFlight(f) {
     const r = dest.getBoundingClientRect(), tag = document.createElement('div'); tag.className = 'lvpop'; tag.innerHTML = f.text;
     tag.style.cssText = `left:${r.left + r.width / 2}px;top:${r.top - 4}px`; document.body.appendChild(tag); translateDOM(tag);
     tag.animate([{ transform: 'translate(-50%,-60%) scale(.8)', opacity: 0 }, { transform: 'translate(-50%,-100%) scale(1)', opacity: 1, offset: .2 }, { transform: 'translate(-50%,-110%)', opacity: 1, offset: .75 }, { transform: 'translate(-50%,-150%)', opacity: 0 }], { duration: 1400, easing: 'ease-out' }).onfinish = () => tag.remove();
-    setTimeout(() => tag.remove(), 2000);
+    setTimeout(() => tag.remove(), spd(2000));
   };
   fly.animate([{ transform: 'none', opacity: 1 }, { transform: `translate(${dx * .4}px,${dy * .4 - 70}px) rotate(-12deg) scale(.9)`, offset: .45 }, { transform: `translate(${dx}px,${dy}px) rotate(-20deg) scale(.4)`, opacity: .7 }], { duration: 650, easing: 'cubic-bezier(.45,0,.4,1)' }).onfinish = land;
-  setTimeout(land, 1200);
+  setTimeout(land, spd(1200));
 }
 // In the compact (full-screen) layout the board is hidden behind the screen, so nothing flies there.
 const compactScreen = () => { const ov = $('#overlay'); return !ov.hidden && !ov.classList.contains('boardonly'); };
@@ -1107,7 +1111,7 @@ function animateSlots() {
     const land = () => { fly.remove(); if (!dest.isConnected) return; dest.style.visibility = ''; dest.animate([{ transform: 'scale(.86)', filter: 'brightness(1.6)' }, { transform: 'scale(1.04)', filter: 'brightness(1.2)', offset: .6 }, { transform: 'none', filter: 'none' }], { duration: 320, easing: 'ease-out' }); };
     const a = fly.animate([{ transform: 'none', opacity: 1 }, { transform: `translate(${dx * .4}px,${dy * .4 - 40}px) scale(${(1 + sx) / 2},${(1 + sy) / 2}) rotate(-3deg)`, opacity: 1, offset: .45 }, { transform: `translate(${dx}px,${dy}px) scale(${sx},${sy})`, opacity: .4 }],
       { duration: 620, delay: k * 120, easing: 'cubic-bezier(.45,0,.4,1)', fill: 'backwards' });
-    a.onfinish = land; setTimeout(() => { if (fly.isConnected) land(); }, 620 + k * 120 + 600);   // safety if animations are paused
+    a.onfinish = land; setTimeout(() => { if (fly.isConnected) land(); }, spd(620 + k * 120 + 600));   // safety if animations are paused
   });
 }
 // Edition effects run on one shared 15 s clock: each newly drawn edition card gets a negative delay matching the
@@ -1321,7 +1325,7 @@ function tileMotion(before, fresh) {
       const d = deal * dealGap;
       e.animate([{ transform: `translate(0px,${lift - 46}px) scale(.86) rotate(-6deg)`, opacity: 0 }, { transform: `translate(0px,${lift + 5}px) scale(1.02) rotate(1deg)`, opacity: 1, offset: .7 }, { transform: end, opacity: 1 }],
         { duration: 340, delay: d, easing: 'cubic-bezier(.25,.8,.35,1)', fill: 'backwards' });
-      e.classList.add('fresh'); e.style.animationDelay = `${d}ms`; setTimeout(() => sfx('draw'), d + 220); deal++;
+      e.classList.add('fresh'); e.style.animationDelay = `${d}ms`; setTimeout(() => sfx('draw'), spd(d + 220)); deal++;
     }
   });
 }
@@ -1540,11 +1544,11 @@ let wallShown = null, wallTween = 0, wallToken = 0;
 function tickWall() {
   const el = $('#wallBtn .wv'); if (!el) return; const target = +el.textContent;
   if (wallShown === null || target >= wallShown || !motionOK) { wallShown = target; return; }
-  const from = wallShown, t0 = performance.now(), dur = 350; el.textContent = from; cancelAnimationFrame(wallTween);
+  const from = wallShown, t0 = performance.now(), dur = spd(350); el.textContent = from; cancelAnimationFrame(wallTween);
   const step = now => { const k = Math.min(1, (now - t0) / dur), v = Math.round(from + (target - from) * (1 - Math.pow(1 - k, 2))); if (v !== wallShown) sfx('wall'); wallShown = v; const cur = $('#wallBtn .wv'); if (cur) cur.textContent = v;
     if (k < 1) wallTween = requestAnimationFrame(step); else { wallShown = target; if (cur) juice(cur, .5); } };
   wallTween = requestAnimationFrame(step);
-  const token = ++wallToken; setTimeout(() => { if (token !== wallToken) return; const cur = $('#wallBtn .wv'); if (cur) cur.textContent = target; wallShown = target; }, dur + 300);   // safety if frames are paused; only the latest countdown may finish it
+  const token = ++wallToken; setTimeout(() => { if (token !== wallToken) return; const cur = $('#wallBtn .wv'); if (cur) cur.textContent = target; wallShown = target; }, spd(dur + 300));   // safety if frames are paused; only the latest countdown may finish it
 }
 let lastPurse = null;
 function bumpPurse() { const el = $('#purseVal'); if (!el) return; if (lastPurse !== null && lastPurse !== S.money) juice(el, .8); lastPurse = S.money; }
@@ -1606,7 +1610,7 @@ function lpToggle() {
   extra.forEach(r => { r.style.display = 'none'; }); const h1 = box.getBoundingClientRect().height; extra.forEach(r => { r.style.display = ''; });   // the exact folded height
   lpBusy = true; extra.forEach(r => r.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 140, easing: 'ease-in', fill: 'forwards' }));
   box.style.overflow = 'hidden'; let done = false; const fin = () => { if (done) return; done = true; lpBusy = false; lpOpen = false; redraw(); };
-  box.animate([{ height: h0 + 'px' }, { height: h1 + 'px' }], { duration: 260, delay: 80, easing: ease, fill: 'forwards' }).onfinish = fin; setTimeout(fin, 700);
+  box.animate([{ height: h0 + 'px' }, { height: h1 + 'px' }], { duration: 260, delay: 80, easing: ease, fill: 'forwards' }).onfinish = fin; setTimeout(fin, spd(700));
 }
 function renderLast() {
   const c = S.lastPlay; const box = $('#lastPlay');
@@ -1624,7 +1628,7 @@ function renderLast() {
   h += lastSummaryHTML(c);
   box.innerHTML = h;
 }
-function popScore(n) { const p = document.createElement('div'); p.className = 'score-pop num'; p.textContent = '+' + fmtN(n); $('#pop').appendChild(p); setTimeout(() => p.remove(), 1500); }
+function popScore(n) { const p = document.createElement('div'); p.className = 'score-pop num'; p.textContent = '+' + fmtN(n); $('#pop').appendChild(p); setTimeout(() => p.remove(), spd(1500)); }
 
 // ===================== HAND DRAG & DROP =====================
 let drag = null;
@@ -1698,6 +1702,23 @@ function glideSlot(k, from) { if (!motionOK) return; const el = [...$('#talisman
 const deviceReduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 let motionOK = !deviceReduce && !REDUCE_MOTION;
 function applyMotion() { motionOK = !deviceReduce && !REDUCE_MOTION; document.body.classList.toggle('reducemotion', REDUCE_MOTION); }
+// Scales a one-off animation's time by the Animation speed. Timers that wait for an animation go through it too, so a
+// slow animation is never cut off by the redraw that follows it.
+const spd = ms => motionOK ? ms * SPEEDS[ANIM_SPEED] : ms;
+{
+  const nativeAnimate = Element.prototype.animate;
+  Element.prototype.animate = function (kf, opt) {
+    const k = motionOK ? SPEEDS[ANIM_SPEED] : 1;
+    if (k !== 1) { if (typeof opt === 'number') opt *= k; else if (opt && opt.iterations !== Infinity) opt = { ...opt, duration: (opt.duration || 0) * k, delay: (opt.delay || 0) * k, endDelay: (opt.endDelay || 0) * k }; }
+    return nativeAnimate.call(this, kf, opt);
+  };
+  // One-off CSS animations (pops, bounces, hit badges) follow the same speed; looping ones (shimmer, the drifting
+  // background, embers) keep their pace.
+  document.addEventListener('animationstart', e => {
+    const k = motionOK ? SPEEDS[ANIM_SPEED] : 1; if (k === 1 || !e.target.getAnimations) return;
+    for (const a of e.target.getAnimations()) if (a.animationName === e.animationName && a.effect && a.effect.getTiming().iterations !== Infinity) a.playbackRate = 1 / k;
+  });
+}
 let skipAnim = false, skipArmed = false;
 function wait(ms) { return new Promise(r => setTimeout(r, (motionOK && !skipAnim) ? Math.round(ms * SPEEDS[ANIM_SPEED]) : 0)); }
 // Balatro's "juice", copied from its curve: size wobbles as sin(50.8 t) fading with (1 - t/T)^3 and tilt as sin(40.8 t)
@@ -1728,7 +1749,7 @@ function juice(el, amt = 1) {
 }
 async function animateScore(ctx) {
   hideTileTip();
-  skipAnim = false; skipArmed = false; setTimeout(() => { skipArmed = true; }, 250);
+  skipAnim = INSTANT_SCORE; skipArmed = false; setTimeout(() => { skipArmed = true; }, 250);
   const box = $('#scorebox'); if (!box) return;
   const label = ctx.kind === 'hand' ? (ctx.yaku.length ? ctx.yaku.map(y => y.name).join(', ') : 'Complete Hand') : ctx.rungName;
   box.innerHTML = `${titleHTML(tr(label || ''), playLevel(ctx.kind, ctx.meldType), ctx.claimed)}${mathBoxes(0, 1, 0)}`; box.title = 'Click anywhere to skip'; fitTitle(box.querySelector('.hb-title'));
@@ -1753,7 +1774,7 @@ async function animateScore(ctx) {
   };
   const showLine = l => { const d = document.createElement('div'); d.className = 'row sline' + lineCls(l); d.dataset.li = ctx.lines.indexOf(l); d.innerHTML = `<span>${tr(l.label)}</span><span class="num">${tr(l.val)}</span>`; linesBox.appendChild(d); if (l.tal && !/retrigger/.test(l.label)) { const slot = document.querySelector(`.slot[data-tal="${l.tal}"]`); if (slot) { slot.classList.remove('bounce'); void slot.offsetWidth; slot.classList.add('bounce');
       // the Talisman's effect pops under its slot, coloured like the tile badges
-      const v = /retrigger/.test(l.label) ? '' : tr(l.val || ''); if (v) { const kind = /×|^x/i.test(v) ? 'x' : /Mult/.test(v) ? 'mult' : /Chip/.test(v) ? 'chips' : /Han|Faan/.test(v) ? 'han' : /[¥$]/.test(v) ? 'money' : 'info'; const f = document.createElement('div'); f.className = 'talpop num'; f.innerHTML = `<span class="hp ${kind}">${v}</span>`; slot.appendChild(f); setTimeout(() => f.remove(), 1100); } } } };
+      const v = /retrigger/.test(l.label) ? '' : tr(l.val || ''); if (v) { const kind = /×|^x/i.test(v) ? 'x' : /Mult/.test(v) ? 'mult' : /Chip/.test(v) ? 'chips' : /Han|Faan/.test(v) ? 'han' : /[¥$]/.test(v) ? 'money' : 'info'; const f = document.createElement('div'); f.className = 'talpop num'; f.innerHTML = `<span class="hp ${kind}">${v}</span>`; slot.appendChild(f); setTimeout(() => f.remove(), spd(1100)); } } } };
   const applyLine = l => { if (l.zero) chips = 0; else { chips += l.chips || 0; han += l.han || 0; if (l.convert) mult = hanMult(han) * tileX + tileM; if (l.mult) mult = (mult === null ? hanMult(han) * tileX + tileM : mult) + l.mult; if (l.xmult && mult !== null) mult *= l.xmult; } setMath(); };
   let fire = 0;
   // Hanabi: once a play beats the target, rockets shoot up from below the Chips and Mult boxes and burst above them.
@@ -1787,7 +1808,7 @@ async function animateScore(ctx) {
     // The original fire: embers rising behind the Chips and Mult boxes (8 at 1x the target, 6 more at 3x and at 10x).
     let embers = box.querySelector('.emberlayer'); if (!embers) { embers = document.createElement('div'); embers.className = 'emberlayer'; embers.setAttribute('aria-hidden', 'true'); box.insertBefore(embers, box.firstChild); }
     const addN = [0, 8, 14, 20][lvl] - [0, 8, 14, 20][prev]; for (let i = 0; i < addN; i++) { const em = document.createElement('i'); em.className = 'ember'; em.style.left = (8 + Math.random() * 84) + '%'; em.style.animationDelay = (Math.random() * 1.2) + 's'; em.style.animationDuration = (1 + Math.random()) + 's'; embers.appendChild(em); }
-    const n = [0, 1, 3, 6][lvl] - [0, 1, 3, 6][prev]; for (let k = 0; k < n; k++) setTimeout(launch, k * 170);
+    const n = [0, 1, 3, 6][lvl] - [0, 1, 3, 6][prev]; for (let k = 0; k < n; k++) setTimeout(launch, spd(k * 170));
     if (lvl === 3 && !fwTimer) fwTimer = setInterval(launch, 700);
   };
   setMath();
@@ -1800,12 +1821,12 @@ async function animateScore(ctx) {
   // Talismans fire left to right, each popping with Again! and replaying the tiles it affects. Only the order of the
   // reveal changes; the totals are the engine's.
   const perOf = h => ({ chips: h.chips / h.times, han: h.han / h.times, x: Math.pow(h.xmult, 1 / h.times), m: (h.mult || 0) / h.times, money: (h.money || 0) / h.times });
-  const popSlot = (el, text, cls) => { if (!el) return; el.classList.remove('bounce'); void el.offsetWidth; el.classList.add('bounce'); const g = document.createElement('div'); g.className = 'talpop num'; g.innerHTML = `<span class="hp ${cls}">${text}</span>`; el.appendChild(g); setTimeout(() => g.remove(), 900); };
+  const popSlot = (el, text, cls) => { if (!el) return; el.classList.remove('bounce'); void el.offsetWidth; el.classList.add('bounce'); const g = document.createElement('div'); g.className = 'talpop num'; g.innerHTML = `<span class="hp ${cls}">${text}</span>`; el.appendChild(g); setTimeout(() => g.remove(), spd(900)); };
   const hitOnce = async (h, again) => {
     const e = tileEls.get(h.id), per = perOf(h);
     if (e) { e.classList.remove('hit'); void e.offsetWidth; e.classList.add('hit');
       const pills = [again ? ['again', 'Again!'] : null, per.chips ? ['chips', `+${Math.round(per.chips)}`] : null, per.han ? ['han', tr(`+${per.han} Han`)] : null, per.m ? ['mult', `+${fmtMult(per.m)} Mult`] : null, per.x !== 1 ? ['x', `×${fmtMult(per.x)}`] : null, per.money >= 1 ? ['money', `+¥${Math.round(per.money)}`] : null].filter(Boolean);
-      const f = document.createElement('div'); f.className = 'hitpop num'; f.innerHTML = pills.map(([c, t]) => `<span class="hp ${c}">${t}</span>`).join(''); e.appendChild(f); setTimeout(() => f.remove(), 950); }
+      const f = document.createElement('div'); f.className = 'hitpop num'; f.innerHTML = pills.map(([c, t]) => `<span class="hp ${c}">${t}</span>`).join(''); e.appendChild(f); setTimeout(() => f.remove(), spd(950)); }
     chips += per.chips; han += per.han; tileX *= per.x; tileM += per.m; setMath(); heat(); logHit(h, per);
     await wait(again ? 220 : 150);
   };
@@ -1856,7 +1877,7 @@ async function animateScore(ctx) {
   await wait(ctx.kind === 'hand' ? 700 : 450);
   const rsEl = $('#roundScore'); const from = S.score, to = S.score + ctx.total; const dur = (motionOK && !skipAnim) ? Math.round(650 * SPEEDS[ANIM_SPEED]) : 0;
   if (rsEl) { rsEl.textContent = fmtN(to); fitText(rsEl); rsEl.textContent = fmtN(from); }
-  if (dur > 0) { const t0 = performance.now(); await new Promise(res => { const step = now => { const k = Math.min(1, (now - t0) / dur); const e = 1 - Math.pow(1 - k, 3); totEl.textContent = fmtN(Math.round(ctx.total * (1 - e))); if (rsEl) { const v = from + (to - from) * e; rsEl.textContent = fmtN(Math.round(v)); sfx('tick'); rsEl.classList.toggle('met', v >= S.target); const bar = $('#roundBar'); if (bar) bar.style.width = Math.min(100, 100 * v / S.target) + '%'; } if (k < 1) requestAnimationFrame(step); else res(); }; requestAnimationFrame(step); }); }
+  if (dur > 0) { const t0 = performance.now(); await new Promise(res => { const step = now => { const k = Math.min(1, (now - t0) / dur); const e = 1 - Math.pow(1 - k, 3); totEl.textContent = fmtN(Math.round(ctx.total * (1 - e))); if (rsEl) { const v = from + (to - from) * e; rsEl.textContent = fmtN(Math.round(v)); sfx('tick'); rsEl.classList.toggle('met', v >= S.target); const bar = $('#roundBar'); if (bar) bar.style.width = Math.min(100, 100 * v / S.target) + '%'; } if (k < 1) requestAnimationFrame(step); else res(); }; requestAnimationFrame(step); setTimeout(res, dur + 500); }); }
   if (rsEl) { rsEl.textContent = fmtN(to); fitText(rsEl); rsEl.classList.remove('bump'); void rsEl.offsetWidth; rsEl.classList.add('bump'); }
   await wait(250);
   if (fwTimer) clearInterval(fwTimer);
@@ -1889,7 +1910,7 @@ function trayOut(next) {
   const ov = $('#overlay'), m = $('#modal');
   if (trayLeaving) return; if (!motionOK || ov.hidden || !ov.classList.contains('boardonly')) { traySlidOut = !ov.hidden; next(); return; }
   trayLeaving = true; let done = false; const fin = () => { if (done) return; done = true; trayLeaving = false; traySlidOut = true; next(); };
-  m.animate([{ transform: 'none' }, { transform: 'translateY(105%)' }], { duration: 200, easing: 'cubic-bezier(.5,0,.75,0)', fill: 'forwards' }).onfinish = fin; setTimeout(fin, 450);
+  m.animate([{ transform: 'none' }, { transform: 'translateY(105%)' }], { duration: 200, easing: 'cubic-bezier(.5,0,.75,0)', fill: 'forwards' }).onfinish = fin; setTimeout(fin, spd(450));
 }
 // A tray rises when it first appears (or again after one slid away), and its cards are dealt in one after another: the Shop's
 // once per Shop (coming back from a pack does not deal them again), a pack's every time it opens. The compact full-screen
@@ -1972,7 +1993,7 @@ function tallyOver() {
     const d = 250 + i * 90; box.animate([{ opacity: 0, transform: 'translateY(16px) scale(.95)' }, { transform: 'translateY(-2px) scale(1.01)', offset: .7 }, { transform: 'none' }], { duration: 320, delay: d, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' });
     const v = box.querySelector('.v'), txt = v ? v.textContent.trim() : '', m = txt.match(/^([^\d−-]*)([\d,]+)(.*)$/); if (!v || !m) return;
     const to = +m[2].replace(/,/g, ''), pre = m[1], post = m[3]; if (!isFinite(to) || to <= 0) return;
-    v.textContent = pre + '0' + post; setTimeout(() => { const t0 = performance.now(), dur = 600; const step = now => { const k = Math.min(1, (now - t0) / dur); if (!v.isConnected) return; v.textContent = pre + fmtN(to * (1 - Math.pow(1 - k, 3))) + post; if (k < 1) requestAnimationFrame(step); }; requestAnimationFrame(step); setTimeout(() => { if (v.isConnected) v.textContent = txt; }, dur + 400); }, d);
+    v.textContent = pre + '0' + post; setTimeout(() => { const t0 = performance.now(), dur = spd(600); const step = now => { const k = Math.min(1, (now - t0) / dur); if (!v.isConnected) return; v.textContent = pre + fmtN(to * (1 - Math.pow(1 - k, 3))) + post; if (k < 1) requestAnimationFrame(step); }; requestAnimationFrame(step); setTimeout(() => { if (v.isConnected) v.textContent = txt; }, dur + 400); }, spd(d));
   });
 }
 function modalOut(next, from, toBoard) {
@@ -1983,7 +2004,7 @@ function modalOut(next, from, toBoard) {
   if (from) from.animate([{ transform: 'none', filter: 'none' }, { transform: 'scale(1.04)', filter: 'brightness(1.35)', offset: .5 }, { transform: 'scale(1.02)', filter: 'brightness(1.1)' }], { duration: 240, easing: 'ease-out', fill: 'forwards' });
   m.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: toBoard ? 'translateY(-24px) scale(.98)' : 'scale(.96)' }], { duration: toBoard ? 240 : 170, delay: lead, easing: 'ease-in', fill: 'forwards' }).onfinish = fin;
   if (toBoard) ov.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 260, delay: lead, easing: 'ease-in', fill: 'forwards' });
-  setTimeout(fin, lead + 520);   // safety if animations are paused
+  setTimeout(fin, spd(lead + 520));   // safety if animations are paused
 }
 function showModal(html, pinned, cls) {
   const wasHidden = $('#overlay').hidden, key = pinned ? ((html.match(/<h2[^>]*>([\s\S]*?)<\/h2>/) || [])[1] || html.slice(0, 60)) : null;
@@ -2054,7 +2075,7 @@ function tweenWallet() {
   const el = $('#modal .wallet .pv'); if (S.quiet) return;
   if (!el || walletShown === null || walletShown === S.money || !motionOK) { walletShown = S.money; return; }
   const cur = LANG === 'hk' ? '$' : '¥', from = walletShown, dur = Math.min(520, 160 + Math.abs(S.money - from) * 30); walletShown = S.money;
-  el.textContent = money(cur, from); countUp(el, from, S.money, dur, cur, 'coin'); setTimeout(() => juice(el, .6), dur);
+  el.textContent = money(cur, from); countUp(el, from, S.money, dur, cur, 'coin'); setTimeout(() => juice(el, .6), spd(dur));
 }
 // Cash-out plays like Balatro's: the receipt rises, each reward line slides in and counts up with coin clinks, then the
 // amount on the Cash Out button counts up and rings a register. Once per cash-out; about 1.5 s.
@@ -2062,7 +2083,7 @@ function tweenWallet() {
 // Money with thousands separators (¥1,250), also while it counts up.
 const money = (prefix, v) => (v < 0 ? '−' : '') + prefix + Math.abs(Math.round(v)).toLocaleString('en-US');
 function countUp(el, from, to, dur, prefix, sound) {
-  if (!el) return; const t0 = performance.now(); let last = from;
+  if (!el) return; dur = spd(dur); const t0 = performance.now(); let last = from;
   const step = now => { const k = Math.min(1, (now - t0) / dur), v = Math.round(from + (to - from) * (1 - Math.pow(1 - k, 2))); if (v !== last && sound) sfx(sound); last = v; el.textContent = money(prefix, v); if (k < 1) requestAnimationFrame(step); };
   requestAnimationFrame(step); setTimeout(() => { el.textContent = money(prefix, to); }, dur + 400);   // final value even if frames are paused
 }
@@ -2077,10 +2098,10 @@ function animateCashout() {
   rows.forEach((x, i) => setTimeout(() => {
     x.style.opacity = ''; x.animate([{ opacity: 0, transform: 'translateY(18px) rotate(-1.5deg) scale(.96)' }, { opacity: 1, transform: 'translateY(-2px) scale(1.01)', offset: .7 }, { opacity: 1, transform: 'none' }], { duration: 300, easing: 'cubic-bezier(.2,.8,.2,1)' });   // dealt in like the Shop's cards
     countUp(x.querySelector('b'), 0, vals[i], 220, cur, 'coin');
-  }, 260 + i * 260));
+  }, spd(260 + i * 260)));
   const tStart = 260 + rows.length * 260 + 80;
-  setTimeout(() => countUp(amt, 0, r.total, 380, cur, 'coin'), tStart);
-  setTimeout(() => { sfx('kaching'); if (amt) juice(amt.parentElement, .9); }, tStart + 400);
+  setTimeout(() => countUp(amt, 0, r.total, 380, cur, 'coin'), spd(tStart));
+  setTimeout(() => { sfx('kaching'); if (amt) juice(amt.parentElement, .9); }, spd(tStart + 400));
 }
 // Cash Out: the receipt slides back down, coins arc from the button into the purse, which counts up and bounces,
 // then the Shop opens (about 1 s). Full-screen cash-out on narrow layouts, or reduced motion, goes straight to the Shop.
@@ -2098,12 +2119,12 @@ function cashOut() {
   for (let i = 0; i < n; i++) {
     const c = document.createElement('div'); c.className = 'flycoin'; c.innerHTML = coinSVG(); Object.assign(c.style, { left: sx - 13 + 'px', top: sy - 13 + 'px' }); document.body.appendChild(c);
     c.animate(path, { duration: dur, delay: i * gap, easing: 'cubic-bezier(.45,.05,.55,.95)', fill: 'both' }).onfinish = () => c.remove();
-    setTimeout(() => { sfx('coin'); const el = $('#purseVal'); if (el) el.textContent = money(cur, startMoney + (S.money - startMoney) * (i + 1) / n); }, dur + i * gap);
-    setTimeout(() => c.remove(), dur + i * gap + 400);   // in case frames are paused
+    setTimeout(() => { sfx('coin'); const el = $('#purseVal'); if (el) el.textContent = money(cur, startMoney + (S.money - startMoney) * (i + 1) / n); }, spd(dur + i * gap));
+    setTimeout(() => c.remove(), spd(dur + i * gap + 400));   // in case frames are paused
   }
   const land = dur + (n - 1) * gap;
-  setTimeout(() => { const el = $('#purseVal'); if (el) { el.textContent = money(cur, S.money); fitText(el); juice(el, .8); } sfx('kaching'); }, land + 20);
-  setTimeout(go, land + 380);
+  setTimeout(() => { const el = $('#purseVal'); if (el) { el.textContent = money(cur, S.money); fitText(el); juice(el, .8); } sfx('kaching'); }, spd(land + 20));
+  setTimeout(go, spd(land + 380));
 }
 function cashoutHTML() {
   const r = S.reward; const names = { small: 'Small Blind', big: 'Big Blind', boss: 'Boss Blind' };
@@ -2379,7 +2400,7 @@ function profileHTML() {
 }
 // ===================== EXPORT / IMPORT =====================
 // One save = profile + settings + current run, as gzip + base64 text ("YKM1Z:...") or plain JSON.
-const SETTING_KEYS = ['yakuman.lang', 'yakuman.speed', 'yakuman.dots', 'yakuman.hints', 'yakuman.tilenums', 'yakuman.unlockall', 'yakuman.sound', 'yakuman.music', 'yakuman.bganim', 'yakuman.hc', 'yakuman.shake', 'yakuman.crt', 'yakuman.motion'];
+const SETTING_KEYS = ['yakuman.lang', 'yakuman.speed', 'yakuman.dots', 'yakuman.hints', 'yakuman.tilenums', 'yakuman.unlockall', 'yakuman.sound', 'yakuman.music', 'yakuman.bganim', 'yakuman.hc', 'yakuman.shake', 'yakuman.crt', 'yakuman.motion', 'yakuman.instantscore'];
 function exportPayload() { const settings = {}; for (const k of SETTING_KEYS) { try { const v = localStorage.getItem(k); if (v != null) settings[k] = v; } catch (e) { } } save(); let run = null; try { run = localStorage.getItem(SAVE_KEY); } catch (e) { } return { app: 'yakuman', v: 1, exported: new Date().toISOString(), profile: PROFILE, settings, run }; }
 async function toCode(obj) {
   const bytes = new TextEncoder().encode(JSON.stringify(obj)); let out = bytes, gz = false;
@@ -2700,6 +2721,7 @@ function bindEvents() {
     if (t.dataset.setbg) { BG_ANIM = t.dataset.setbg === 'on'; try { localStorage.setItem('yakuman.bganim', BG_ANIM ? 'on' : 'off'); } catch (e) { } document.body.classList.toggle('bganim', BG_ANIM); showModal(settingsHTML(), true); return; }
     if (t.dataset.sethc) { HIGH_CONTRAST = t.dataset.sethc === 'on'; try { localStorage.setItem('yakuman.hc', HIGH_CONTRAST ? 'on' : 'off'); } catch (e) { } render(); showModal(settingsHTML(), true); return; }
     if (t.dataset.setdots) { SHOW_DOTS = t.dataset.setdots === 'on'; try { localStorage.setItem('yakuman.dots', SHOW_DOTS ? 'on' : 'off'); } catch (e) { } render(); showModal(settingsHTML(), true); return; }
+    if (t.dataset.setinstant) { INSTANT_SCORE = t.dataset.setinstant === 'on'; try { localStorage.setItem('yakuman.instantscore', t.dataset.setinstant); } catch (e) { } showModal(settingsHTML(), true); return; }
     if (t.dataset.setspeed) { ANIM_SPEED = t.dataset.setspeed; try { localStorage.setItem('yakuman.speed', ANIM_SPEED); } catch (e) { } showModal(settingsHTML(), true); return; }
     if (t.dataset.setdbg) { const b = $('#debugBar'); b.hidden = t.dataset.setdbg !== 'on'; if (!b.hidden) renderDebug(); showModal(settingsHTML(), true); return; }
     if (t.dataset.setunlock) { UNLOCK_ALL = t.dataset.setunlock === 'on'; try { localStorage.setItem(UNLOCK_ALL_KEY, UNLOCK_ALL ? 'on' : 'off'); } catch (e) { } render(); showModal(settingsHTML(), true); return; }
