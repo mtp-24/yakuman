@@ -241,7 +241,7 @@ function markSeen() {
   if (!S || !S.talismans || S.placeholder) return false; let dirty = false;
   const add = (kind, key) => { if (key && !PROFILE.seen[`${kind}:${key}`]) { PROFILE.seen[`${kind}:${key}`] = 1; dirty = true; } };
   const item = it => { if (it) add(it.kind === 'talisman' ? 'tal' : it.kind, it.key); };
-  S.talismans.forEach(k => add('tal', k)); (S.consumables || []).forEach(c => CONS[c.key] && add(CONS[c.key].kind, c.key)); (S.flowers || []).forEach(k => add('flower', k));
+  S.talismans.forEach(k => add('tal', baseKey(k))); (S.consumables || []).forEach(c => CONS[c.key] && add(CONS[c.key].kind, c.key)); (S.flowers || []).forEach(k => add('flower', k));
   for (const [t, lv] of Object.entries(S.scrolls || {})) for (const k of Object.keys(lv || {})) add('scroll', `${t === 'meld' ? 'm' : 'y'}:${k}`);
   if (S.phase === 'shop' && S.shop) { S.shop.cards.forEach(item); item(S.shop.scroll); item(S.shop.flower); item(S.shop.pack); (S.shop.freePacks || []).forEach(k => add('pack', k)); }
   if (S.pack) { add('pack', S.pack.key); (S.pack.choices || []).forEach(item); }
@@ -278,11 +278,11 @@ function toast(html) {
   setTimeout(() => el.classList.add('out'), 4200); setTimeout(() => el.remove(), 4700);
 }
 const unlockedCount = () => UNLOCKS.filter(u => PROFILE.unlocked.includes(`${u.kind}:${u.key}`)).length;
-const talPool = () => chal('noTalismans') ? [] : TALISMANS.filter(t => !S.talismans.includes(t.key) && isUnlocked('tal', t.key) && (talRarity(t.key) !== 'legendary' || S.dbgRarity === 'legendary'));
+const talPool = () => chal('noTalismans') ? [] : TALISMANS.filter(t => (hasTal(S, 'kabuki') || !S.talismans.some(k => baseKey(k) === t.key)) && isUnlocked('tal', t.key) && (talRarity(t.key) !== 'legendary' || S.dbgRarity === 'legendary'));
 // Rarity label for a Talisman card, coloured like Balatro's (blue Common, green Uncommon, red Rare, purple Legendary).
 const rarityTag = k => { const r = talRarity(k); return `<span class="rar rar-${r}">${RARITIES[r]}</span>`; };
 // Hō-ō grows each time tiles are destroyed (Slip of Dust, Raijin, Susanoo, Tsukuyomi, shattered Glass).
-function tilesDestroyed(n) { if (n > 0 && liveTals(S).includes('hoo')) S.talState.hoo = (S.talState.hoo || 0) + n; }
+function tilesDestroyed(n) { if (n > 0 && hasTal(S, 'hoo')) S.talState.hoo = (S.talState.hoo || 0) + n; }
 
 // ===================== BLIND FLOW =====================
 // The Crimson Oni silences one random Talisman, never the same one twice in a row.
@@ -298,7 +298,7 @@ function startBlind() {
   S.selected = []; S.selRiver = null; S.dora = []; S.indicators = []; S.pendingDiscard = 0; S.revealed = false; S.score = 0; S.lastPlay = null; S.reward = null; S.selTal = null;
   S.discardsUsed = 0; S.playsMade = 0; S.usedTypes = []; S.mouthType = null; S.leafCut = false; S.crimsonOff = null;
   // Tamamo-no-Mae disables the Boss: it is still the Boss Blind (same target and reward), with no effect.
-  S.bossOff = null; if (S.boss && S.talismans.includes('tamamo')) { S.bossOff = S.boss; S.boss = null; }
+  S.bossOff = null; if (S.boss && hasTal(S, 'tamamo')) { S.bossOff = S.boss; S.boss = null; }
   S.firstPlayDone = false; S.freeCallsUsed = 0; S.bossSuit = S.boss === 'collector' ? pick(['m', 'p', 's']) : null;
   S.blindMods = S.nextBlindMods || {}; S.nextBlindMods = null;
   if (S.boss === 'needle') S.plays = 1;
@@ -308,7 +308,7 @@ function startBlind() {
   for (const k of liveTals(S).slice()) if (S.talismans.includes(k) && TAL[k].onBlindStart) TAL[k].onBlindStart(S);   // a copy: Kamikiri and Hyakki change the list
   setMsg(S.bossOff ? `Tamamo-no-Mae disables ${BOSSES[S.bossOff].name}.` : S.boss ? `${BOSSES[S.boss].name}: ${BOSSES[S.boss].desc}` : `${kind === 'small' ? 'Small' : 'Big'} Blind. Score ${S.target} to win.`);
 }
-function draw() { S.newIds = []; while (S.hand.length < capacity() && S.wall.length) { const t = S.wall.pop(); t.d = ++S.drawSeq; if (S.boss === 'wheel' && rand() < 1 / 7) t.down = true; S.hand.push(t); S.newIds.push(t.id); } }
+function draw() { S.newIds = []; while (S.hand.length < capacity() && S.wall.length) { const t = S.wall.pop(); t.d = ++S.drawSeq; if (S.boss === 'wheel' && rand() < chance(S, 1 / 7)) t.down = true; S.hand.push(t); S.newIds.push(t.id); } }
 function drawReplacement() { if (!S.wall.length) return null; const t = S.wall.pop(); t.d = ++S.drawSeq; t.rinshan = true; S.hand.push(t); S.newIds.push(t.id); return t; }
 function collectDeck() {
   S.deck = [...S.hand, ...S.wall, ...S.river, ...openTiles(), ...S.played, ...S.indicators];
@@ -443,6 +443,7 @@ async function doPlay() {
   if (S.boss === 'pickpocket' && S.hand.length) { const lost = shuffle(S.hand.slice()).slice(0, 2); S.hand = S.hand.filter(t => !lost.includes(t)); S.river.push(...lost); setMsg(`${S.msg} The Pickpocket took ${lost.map(tileName).join(' and ')} to the River.`); }
   if (S.boss === 'crimson') rollCrimson();
   draw();
+  if (S.plays <= 0 && hasTal(S, 'yurei') && S.score >= S.target * 0.25) { fadeAway(S, 'yurei'); toast('<div class="label">Yūrei</div><b>You survive</b><div class="muted" style="font-size:11px">the Blind counts as won, and Yūrei vanishes</div>'); winBlind(); return render(); }
   if (S.plays <= 0) { loseRun(); return render(); }
   render();
 }
@@ -544,7 +545,15 @@ function useConsumable(i) {
   setMsg(`${def.name} used.${S.gotLegend ? ` ${TAL[S.gotLegend].name} joins your Talismans.` : ''}${fortune}`); S.gotLegend = null; render();
 }
 function talValue(k) { return TAL[k].cost + (S.editions[k] ? EDITIONS[S.editions[k]].price : 0); }
-function sellTalisman(k) { const i = S.talismans.indexOf(k); if (i < 0) return; if (isEternal(k)) { setMsg(`${TAL[k].name} is Eternal and can never be sold.`, true); return render(); } if (S.stickers) delete S.stickers[k]; if (S.phase === 'blind') S.leafCut = true; if (S.crimsonOff === k) S.crimsonOff = null; const v = talSellValue(k); S.talismans.splice(i, 1); if (S.sellBonus) delete S.sellBonus[k]; S.money += v; sfx('sell'); delete S.editions[k]; S.selTal = null; for (const t of S.talismans) if (TAL[t].onSell) TAL[t].onSell(S); PROFILE.sold++; saveProfile(); setMsg(`Sold ${TAL[k].name} for ¥${v}.`); render(); }
+// Talismans that act when sold: Rikishi disables the Boss, Ramune gives a Double Tag, Kakuremino copies another Talisman.
+function sellEffect(k) {
+  const b = baseKey(k);
+  if (b === 'rikishi' && S.phase === 'blind' && S.boss) { S.bossOff = S.boss; S.boss = null; S.crimsonOff = null; return ` Rikishi disables ${BOSSES[S.bossOff].name}.`; }
+  if (b === 'ramune') { S.tags.push('double'); return ' Ramune gives you a Double Tag.'; }
+  if (b === 'kakuremino' && (S.talState.kakuremino || 0) >= 2) { const others = S.talismans.filter(x => x !== k); if (!others.length) return ''; const src = pick(others); const ed = S.editions[src]; const copy = newAlias(S, baseKey(src)); S.talismans.push(copy); if (ed && ed !== 'neg') S.editions[copy] = ed; return ` Kakuremino copies ${TAL[src].name}.`; }
+  return '';
+}
+function sellTalisman(k) { const i = S.talismans.indexOf(k); if (i < 0) return; if (isEternal(k)) { setMsg(`${TAL[k].name} is Eternal and can never be sold.`, true); return render(); } if (S.stickers) delete S.stickers[k]; if (S.phase === 'blind') S.leafCut = true; if (S.crimsonOff === k) S.crimsonOff = null; const v = talSellValue(k); S.talismans.splice(i, 1); const eff = sellEffect(k); if (S.sellBonus) delete S.sellBonus[k]; S.money += v; sfx('sell'); delete S.editions[k]; S.selTal = null; for (const t of S.talismans) if (TAL[t].onSell) TAL[t].onSell(S); PROFILE.sold++; saveProfile(); setMsg(`Sold ${TAL[k].name} for ¥${v}.${eff}`); render(); }
 function sellConsumable(i) { const c = S.consumables[i]; if (!c) return; const v = conSellValue(c); S.consumables.splice(i, 1); S.money += v; sfx('sell'); setMsg(`Sold ${CONS[c.key].name} for ¥${v}.`); render(); }
 
 // ===================== SHOP =====================
@@ -772,7 +781,7 @@ function tileTipHTML(t, back) {
   if (back) return `<div class="tt-n">Face down</div><div class="tt-e">A 1, 9, Wind or Dragon (The Purist).</div>`;
   const inRun = !!(S && S.talismans), chips = inRun ? tileChips(t, S) : ((isHonor(t) || isTerminal(t)) ? 10 : t.rank);
   const rows = [`<span class="hp chips">+${chips}</span><span>Chips</span>`];
-  if (t.red) rows.push(`<span class="hp han">+${inRun && liveTals(S).includes('koi') ? 2 : 1}</span><span>Han · Red Five</span>`);
+  if (t.red) rows.push(`<span class="hp han">+${inRun && hasTal(S, 'koi') ? 2 : 1}</span><span>Han · Red Five</span>`);
   if (inRun && S.phase === 'blind' && (S.dora || []).includes(idx(t))) rows.push(`<span class="hp han">+1</span><span>Han · Dora</span>`);
   const eng = t.eng && ENG[t.eng] ? `<div class="tt-e"><b>${ENG[t.eng].name}</b> ${ENG[t.eng].desc}</div>` : '';
   const seal = t.seal && SEALS[t.seal] ? `<div class="tt-e"><b>${SEALS[t.seal].name}</b> ${SEALS[t.seal].desc}</div>` : '';
@@ -1233,7 +1242,7 @@ function renderHint(hidden) {
   const rtc = claimTile();
   if (HINTS.away && !hidden && rtc && sel.length === neededConcealed() - 1) {
     const best = bestHand(sel.concat([rtc]), S.open, S);
-    parts.push(best ? `<span class="hint-sel bad">complete hand with ${tileName(rtc)} claimed from the River${S.talismans.includes('kappa') ? ': Kappa bonus' : ': Furiten, ×0.5'}</span>` : `<span class="hint-sel muted">${tileName(rtc)} from the River does not complete these tiles</span>`);
+    parts.push(best ? `<span class="hint-sel bad">complete hand with ${tileName(rtc)} claimed from the River${hasTal(S, 'kappa') ? ': Kappa bonus' : ': Furiten, ×0.5'}</span>` : `<span class="hint-sel muted">${tileName(rtc)} from the River does not complete these tiles</span>`);
   }
   let complete = false;
   if (!hidden && sel.length === neededConcealed()) {
@@ -1596,7 +1605,7 @@ function hideModal() { modalPinned = false; $('#modal').getAnimations().forEach(
 // Its state lives under its own key, or its key plus a capitalised suffix (kasaobake, shiroSuit).
 const ownsState = (k, x) => x === k || (x.startsWith(k) && /[A-Z]/.test(x[k.length] || ''));   // 'shiro' owns 'shiroSuit', but 'hoshi' does not own 'hoshizora'
 const freshTalState = k => Object.fromEntries(Object.entries(S.talState || {}).filter(([x]) => !ownsState(k, x)));
-function gainTalisman(k, sticker) { if (!sticker && (chal('allPerish') || chal('allRental'))) sticker = rollSticker(k); S.talState = freshTalState(k); S.talismans.push(k); if (S.sellBonus) delete S.sellBonus[k]; S.stickers = S.stickers || {}; delete S.stickers[k]; if (sticker) S.stickers[k] = Object.assign({}, sticker); }
+function gainTalisman(k, sticker) { if (S.talismans.includes(k)) k = newAlias(S, k); if (!sticker && (chal('allPerish') || chal('allRental'))) sticker = rollSticker(k); S.talState = freshTalState(k); S.talismans.push(k); if (S.sellBonus) delete S.sellBonus[k]; S.stickers = S.stickers || {}; delete S.stickers[k]; if (sticker) S.stickers[k] = Object.assign({}, sticker); }
 // What a Talisman's live value would be the moment you buy it (same text its card shows once owned).
 function talPreview(k) {
   const d = TAL[k]; if (!d) return '';
@@ -2230,7 +2239,7 @@ function bindEvents() {
 }
 function boot(saved) {
   bindEvents(); document.body.classList.toggle('bganim', BG_ANIM);
-  if (saved && saved.phase && saved.deck) { S = saved; S.talState = S.talState || {};
+  if (saved && saved.phase && saved.deck) { S = saved; S.talState = S.talState || {}; (S.talismans || []).forEach(k => { if (String(k).includes('#')) talAlias(k); });
     // Resume the tile id counter above every id in the saved run, so tiles created later never collide with existing ones.
     let maxId = 0; for (const t of [...S.deck, ...S.hand, ...S.wall, ...S.river, ...S.played, ...(S.indicators || []), ...S.open.flatMap(m => m.tiles), ...((S.pack && S.pack.choices) || []).filter(c => c.tile).map(c => c.tile)]) if (t.id > maxId) maxId = t.id; tileSeq = Math.max(tileSeq, maxId);
     for (const t of [...S.deck, ...S.hand, ...S.wall, ...S.river, ...S.played, ...(S.indicators || []), ...S.open.flatMap(m => m.tiles)]) normTile(t);

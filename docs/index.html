@@ -1235,9 +1235,24 @@ const TALISMANS = [
     onBlindStart: S => { if (typeof destroyTalisman !== 'function') return; const right = S.talismans[S.talismans.indexOf('kamikiri') + 1]; if (!right) return; const v = talSellValue(right); if (destroyTalisman(right)) S.talState.kamikiri = (S.talState.kamikiri || 0) + 2 * v; },
     onScore: (c, S) => S.talState.kamikiri ? { mult: S.talState.kamikiri } : null, status: S => `+${S.talState.kamikiri || 0} Mult` },
   { key: 'kotodama', name: 'Kotodama', cost: 6, desc: '1 in 4 chance to level up the Scroll for the play type you score.',
-    afterScore: (c, S) => { if (rand() >= 0.25) return; const k = c.kind === 'hand' ? 'hand' : c.nKan ? 'kan' : c.nPon ? 'pon' : c.nChi ? 'chi' : 'pair'; S.scrolls.meld[k] = (S.scrolls.meld[k] || 0) + 1; if (typeof toast === 'function') toast(`<div class="label">Kotodama</div><b>${SCR['m:' + k].name}</b><div class="muted" style="font-size:11px">+1 level</div>`); } },
+    afterScore: (c, S) => { if (rand() >= chance(S, 0.25)) return; const k = c.kind === 'hand' ? 'hand' : c.nKan ? 'kan' : c.nPon ? 'pon' : c.nChi ? 'chi' : 'pair'; S.scrolls.meld[k] = (S.scrolls.meld[k] || 0) + 1; if (typeof toast === 'function') toast(`<div class="label">Kotodama</div><b>${SCR['m:' + k].name}</b><div class="muted" style="font-size:11px">+1 level</div>`); } },
   { key: 'itako', name: 'Itako', cost: 7, desc: 'When you score a Complete Hand with 3 or more Yaku, create a random Kami if you have a free consumable slot.',
     afterScore: (c, S) => { if (c.kind !== 'hand' || c.yaku.length < 3 || typeof conSlots !== 'function' || S.consumables.length >= conSlots()) return; S.consumables.push({ kind: 'kami', key: pick(KAMI.filter(k => !k.soul)).key }); } },
+  // --- Fading, chance, safety-net and sell-for-effect Talismans (Balatro's Ice Cream, Popcorn, Ramen, Oops! All 6s, Mr. Bones,
+  // Luchador, Diet Cola, Invisible Joker and Showman).
+  { key: 'kakigori', name: 'Kakigōri', cost: 5, desc: '+100 Chips on every play, but −5 Chips after each play. Melts away at 0.',
+    onScore: (c, S) => ({ chips: S.talState.kakigori ?? 100 }), afterScore: (c, S) => { const n = (S.talState.kakigori ?? 100) - 5; S.talState.kakigori = n; if (n <= 0) fadeAway(S, 'kakigori'); }, status: S => `+${S.talState.kakigori ?? 100} Chips now` },
+  { key: 'senbei', name: 'Senbei', cost: 5, desc: '+20 Mult on every play, −4 Mult at the end of every Blind. Crumbles at 0.',
+    onScore: (c, S) => ({ mult: S.talState.senbei ?? 20 }), onBlindEnd: S => { const n = (S.talState.senbei ?? 20) - 4; S.talState.senbei = n; if (n <= 0) fadeAway(S, 'senbei'); return 0; }, status: S => `+${S.talState.senbei ?? 20} Mult now` },
+  { key: 'ramen', name: 'Ramen', cost: 6, desc: 'x2 Mult, but loses x0.01 for every tile you discard. Gone at x1.',
+    onScore: (c, S) => ({ xmult: +(2 - 0.01 * (S.talState.ramen || 0)).toFixed(2) }), onDiscard: (S, tiles) => { S.talState.ramen = (S.talState.ramen || 0) + tiles.length; if (S.talState.ramen >= 100) fadeAway(S, 'ramen'); }, status: S => `x${(2 - 0.01 * (S.talState.ramen || 0)).toFixed(2)} Mult now` },
+  { key: 'daikoku', name: 'Daikoku', cost: 6, desc: 'Doubles every listed chance: Lucky Inlay, Glass shattering, The Wheel, Kotodama and Slip of Fortune.' },
+  { key: 'yurei', name: 'Yūrei', cost: 5, desc: 'If you run out of Plays having scored at least 25% of the target, the Blind counts as won. Yūrei then vanishes.' },
+  { key: 'rikishi', name: 'Rikishi', cost: 5, desc: 'Sell this during a Boss Blind to disable the Boss for the rest of the Blind.' },
+  { key: 'ramune', name: 'Ramune', cost: 6, desc: 'Sell this to get a free Double Tag.' },
+  { key: 'kakuremino', name: 'Kakuremino', cost: 8, desc: 'After 2 Blinds, sell this to create a copy of a random other Talisman (Negative editions are not copied).',
+    onBlindEnd: S => { S.talState.kakuremino = (S.talState.kakuremino || 0) + 1; return 0; }, status: S => (S.talState.kakuremino || 0) >= 2 ? 'ready: sell to copy a Talisman' : `${2 - (S.talState.kakuremino || 0)} more Blind${(S.talState.kakuremino || 0) === 1 ? '' : 's'} to go` },
+  { key: 'kabuki', name: 'Kabuki', cost: 5, desc: 'Talismans you already own can turn up again in shops and packs, so you can hold two copies.' },
   // --- Legendary (Balatro's Triboulet, Yorick, Chicot and Canio). Only Hitodama creates them.
   { key: 'orochi', name: 'Yamata-no-Orochi', cost: 10, rarity: 'legendary', desc: 'Every Honor tile that scores gives x1.5 Mult, counting each time it scores.',
     onScore: c => { const n = c.hits.filter(h => { const t = c.tiles.find(x => x.id === h.id); return t && isHonor(t); }).reduce((a, h) => a + h.times, 0); return n ? { xmult: +Math.pow(1.5, n).toFixed(3) } : null; } },
@@ -1249,6 +1264,16 @@ const TALISMANS = [
     onScore: (c, S) => S.talState.hoo ? { xmult: 1 + S.talState.hoo } : null, status: S => `x${1 + (S.talState.hoo || 0)} Mult` },
 ];
 const TAL = {}; TALISMANS.forEach(t => TAL[t.key] = t);
+// A fading Talisman leaves your board when it runs out (Kakigōri, Senbei, Ramen), like Shōjō.
+function fadeAway(S, k) { const own = S.talismans.filter(x => baseKey(x) === k)[0]; if (!own) return; S.talismans = S.talismans.filter(x => x !== own); delete S.editions[own]; if (S.stickers) delete S.stickers[own]; delete S.talState[k]; S.spent = (S.spent || []).concat(own); }
+// Duplicate Talismans (Kabuki, Kakuremino): a second copy gets its own key, 'tanuki#2', that inherits everything from the original.
+const baseKey = k => String(k).split('#')[0];
+function talAlias(k) { const b = baseKey(k); if (!TAL[k] && TAL[b]) TAL[k] = Object.assign(Object.create(TAL[b]), { key: k }); return k; }
+function newAlias(S, b) { let n = 2; while (S.talismans.includes(`${b}#${n}`)) n++; return talAlias(`${b}#${n}`); }
+// Do you have this Talisman working right now (any copy)?
+const hasTal = (S, b) => !!S && !!S.talismans && liveTals(S).some(k => baseKey(k) === b);
+// Daikoku doubles every listed chance, like Balatro's Oops! All 6s.
+const chance = (S, p) => Math.min(1, p * (hasTal(S, 'daikoku') ? 2 : 1));
 // Rarity: set on the Talisman, or from its price (¥4–5 Common, ¥6 Uncommon, ¥7+ Rare).
 const RARITIES = { common: 'Common', uncommon: 'Uncommon', rare: 'Rare', legendary: 'Legendary' };
 function talRarity(k) { const t = TAL[k]; return t.rarity || (t.cost <= 5 ? 'common' : t.cost === 6 ? 'uncommon' : 'rare'); }
@@ -1304,7 +1329,7 @@ const OMIKUJI = [
   { key: 'priestess', name: 'Slip of the Priestess', cost: 3, sel: [0, 0], anywhere: true, desc: '2 random Scrolls of Mastery level up by 1.', use: S => { for (const sc of shuffle(SCROLLS.slice()).slice(0, 2)) { const [t, k] = sc.key.split(':'); const b = S.scrolls[t === 'm' ? 'meld' : 'yaku']; b[k] = (b[k] || 0) + 1; } } },
   { key: 'hermit', name: 'Slip of the Hermit', cost: 3, sel: [0, 0], anywhere: true, desc: 'Double your money (at most +¥20).', use: S => { S.money += Math.min(20, S.money); } },
   { key: 'temperance', name: 'Slip of Temperance', cost: 3, sel: [0, 0], anywhere: true, desc: 'Gain the total sell value of your Talismans (at most ¥50).', use: S => { if (typeof talSellValue !== 'function') return false; S.money += Math.min(50, S.talismans.reduce((a, k) => a + talSellValue(k), 0)); } },
-  { key: 'fortune', name: 'Slip of Fortune', cost: 3, sel: [0, 0], anywhere: true, desc: '1 in 4 chance: a random Talisman with no edition becomes Foil, Holographic or Polychrome.', use: S => { const pool = S.talismans.filter(k => !S.editions[k]); if (!pool.length) return false; if (rand() < 0.25) { const k = pick(pool); S.editions[k] = pick(['foil', 'holo', 'poly']); S.fortuneHit = k; } else S.fortuneHit = null; } },
+  { key: 'fortune', name: 'Slip of Fortune', cost: 3, sel: [0, 0], anywhere: true, desc: '1 in 4 chance: a random Talisman with no edition becomes Foil, Holographic or Polychrome.', use: S => { const pool = S.talismans.filter(k => !S.editions[k]); if (!pool.length) return false; if (rand() < chance(S, 0.25)) { const k = pick(pool); S.editions[k] = pick(['foil', 'holo', 'poly']); S.fortuneHit = k; } else S.fortuneHit = null; } },
 ];
 const KAMI = [
   { key: 'susanoo', name: 'Susanoo', cost: 4, sel: [1, 5], desc: 'Destroy all selected tiles (up to 5). Complete Hands permanently gain +1 level (+10 Chips, +1 Han).',
@@ -1519,7 +1544,7 @@ const YAKUMAN_SHEET = [
 
 // ===================== TERMINOLOGY: Riichi (default) vs Hong Kong =====================
 // Display strings are translated at render time by whole-word replacement. Logic and saves never change.
-const HK_TALISMAN = { miko: '巫女 Shrine Maiden', hyakki: '百鬼夜行 Night Parade', tsuchinoko: '槌之子 Mallet Snake', otoshidama: '利是 Red Packet', kamikiri: '剪髮鬼 Hair Cutter', kotodama: '言靈 Word Spirit', itako: '問米婆 Spirit Medium', takarabune: '寶船 Treasure Ship', binbogami: '窮神 God of Poverty', fukusuke: '福助 Fortune Doll', ebisu: '惠比壽 Fisherman God', kamaitachi: '鐮鼬 Sickle Weasel', orochi: '八岐大蛇 Eight-headed Serpent', shuten: '酒吞童子 Drunken Demon', tamamo: '九尾狐 Nine-tailed Fox', hoo: '鳳凰 Phoenix', hashi: '橋 Bridge', nopperabo: '無面鬼 Faceless Ghost', sekito: '石塔 Stone Pagoda', aobozu: '青僧 Blue Monk', shiro: '城 Castle', takibi: '篝火 Bonfire', hoshizora: '星空 Starry Sky', mabo: '魔寶 Phantom Treasure', chochin: '燈籠 Lantern', hoshi: '星 Star', hatsumode: '頭炷香 First Incense', oshi: '偶像 Idol', daimyo: '大名 Lord', utsushi: '影印 Mirror Copy', kagami: '鏡 Mirror', kasaobake: '傘妖 Umbrella Ghost', ittanmomen: '布妖 Cloth Ghost', kappa: '水鬼 Water Ghost', kitsune: '狐仙 Fox Spirit', tanuki: '貔貅 Pixiu', maneki: '招財貓 Lucky Cat', tengu: '雷震子 Leizhenzi', oni: '牛魔王 Bull Demon King', daruma: '達摩 Bodhidharma', tsuru: '仙鶴 Crane', koi: '錦鯉 Golden Carp', ryu: '龍王 Dragon King', jizo: '地藏 Dizang', komainu: '石獅 Stone Lion', yukionna: '雪妖 Snow Demon', baku: '貘 Mo', nue: '四不像 Sibuxiang', kodama: '樹精 Tree Spirit', hannya: '夜叉 Yaksha', tsukumogami: '器靈 Object Spirit', nurikabe: '門神 Door God', tengoku: '馬騮精 Monkey Spirit', hitotsume: '獨眼鬼 One-eyed Ghost', nekomata: '貓妖 Cat Demon', shikigami: '紙人 Paper Effigy', kirin: '麒麟 Qilin', hakutaku: '白澤 Bai Ze', yatagarasu: '金烏 Golden Crow', gashadokuro: '骷髏精 Skeleton Spirit', jorogumo: '蜘蛛精 Spider Spirit', rokurokubi: '長頸鬼 Long-neck Ghost', ushioni: '牛頭 Ox-Head', nurarihyon: '無常 Wuchang', zashiki: '福童 Fortune Child', nureonna: '白蛇 White Snake', ryujin: '龍母 Dragon Mother', namazu: '鯉魚精 Carp Spirit', funayurei: '鬼船 Ghost Ship', sazaeoni: '螺精 Conch Spirit', amabie: '人魚 Mermaid', mizuchi: '蛟 Flood Dragon', kawauso: '水獺精 Otter Spirit', omagatoki: '黃昏 Twilight Hour', shojo: '猩猩 Wine Ape', azukiarai: '洗豆妖 Bean Washer' };
+const HK_TALISMAN = { kakigori: '刨冰 Shaved Ice', senbei: '米餅 Rice Cracker', ramen: '拉麵 Ramen', daikoku: '大黑天 God of Plenty', yurei: '幽靈 Ghost', rikishi: '相撲手 Sumo Wrestler', ramune: '波子汽水 Marble Soda', kakuremino: '隱身蓑 Cloak of Invisibility', kabuki: '歌舞伎 Kabuki Actor', miko: '巫女 Shrine Maiden', hyakki: '百鬼夜行 Night Parade', tsuchinoko: '槌之子 Mallet Snake', otoshidama: '利是 Red Packet', kamikiri: '剪髮鬼 Hair Cutter', kotodama: '言靈 Word Spirit', itako: '問米婆 Spirit Medium', takarabune: '寶船 Treasure Ship', binbogami: '窮神 God of Poverty', fukusuke: '福助 Fortune Doll', ebisu: '惠比壽 Fisherman God', kamaitachi: '鐮鼬 Sickle Weasel', orochi: '八岐大蛇 Eight-headed Serpent', shuten: '酒吞童子 Drunken Demon', tamamo: '九尾狐 Nine-tailed Fox', hoo: '鳳凰 Phoenix', hashi: '橋 Bridge', nopperabo: '無面鬼 Faceless Ghost', sekito: '石塔 Stone Pagoda', aobozu: '青僧 Blue Monk', shiro: '城 Castle', takibi: '篝火 Bonfire', hoshizora: '星空 Starry Sky', mabo: '魔寶 Phantom Treasure', chochin: '燈籠 Lantern', hoshi: '星 Star', hatsumode: '頭炷香 First Incense', oshi: '偶像 Idol', daimyo: '大名 Lord', utsushi: '影印 Mirror Copy', kagami: '鏡 Mirror', kasaobake: '傘妖 Umbrella Ghost', ittanmomen: '布妖 Cloth Ghost', kappa: '水鬼 Water Ghost', kitsune: '狐仙 Fox Spirit', tanuki: '貔貅 Pixiu', maneki: '招財貓 Lucky Cat', tengu: '雷震子 Leizhenzi', oni: '牛魔王 Bull Demon King', daruma: '達摩 Bodhidharma', tsuru: '仙鶴 Crane', koi: '錦鯉 Golden Carp', ryu: '龍王 Dragon King', jizo: '地藏 Dizang', komainu: '石獅 Stone Lion', yukionna: '雪妖 Snow Demon', baku: '貘 Mo', nue: '四不像 Sibuxiang', kodama: '樹精 Tree Spirit', hannya: '夜叉 Yaksha', tsukumogami: '器靈 Object Spirit', nurikabe: '門神 Door God', tengoku: '馬騮精 Monkey Spirit', hitotsume: '獨眼鬼 One-eyed Ghost', nekomata: '貓妖 Cat Demon', shikigami: '紙人 Paper Effigy', kirin: '麒麟 Qilin', hakutaku: '白澤 Bai Ze', yatagarasu: '金烏 Golden Crow', gashadokuro: '骷髏精 Skeleton Spirit', jorogumo: '蜘蛛精 Spider Spirit', rokurokubi: '長頸鬼 Long-neck Ghost', ushioni: '牛頭 Ox-Head', nurarihyon: '無常 Wuchang', zashiki: '福童 Fortune Child', nureonna: '白蛇 White Snake', ryujin: '龍母 Dragon Mother', namazu: '鯉魚精 Carp Spirit', funayurei: '鬼船 Ghost Ship', sazaeoni: '螺精 Conch Spirit', amabie: '人魚 Mermaid', mizuchi: '蛟 Flood Dragon', kawauso: '水獺精 Otter Spirit', omagatoki: '黃昏 Twilight Hour', shojo: '猩猩 Wine Ape', azukiarai: '洗豆妖 Bean Washer' };
 const HK_CONS = { wild: '百搭籤 Wild', lucky: '幸運籤 Luck', crimson: '熱鬧籤 Fervour', stone: '石籤 Stone', echo: '回響籤 Echoes', judgement: '審判籤 Judgement', emperor: '皇帝籤 Emperor', priestess: '女祭司籤 Priestess', hermit: '隱士籤 Hermit', temperance: '節制籤 Temperance', fortune: '命運籤 Fortune', izanagi: '伊邪那岐 Creator God', izanami: '伊邪那美 Creator Goddess', okuninushi: '大國主 Lord of the Land', minakanushi: '天之御中主 First God', hiruko: '水蛭子 Leech Child', uzume: '天宇受賣 Dawn Goddess', hitodama: '鬼火 Ghost Fire', benzaiten: '辯才天 Goddess of Fortune', hachiman: '八幡 God of War', fujin: '風神 Wind God', steel: '鋼籤 Steel', redseal: '紅印籤 Red Seal', glass: '玻璃籤 Glass', dup: '分身籤 Duplication', ascend: '升籤 Ascension', descend: '降籤 Descent', toman: '萬子籤 Characters', topin: '筒子籤 Dots', tosou: '索子籤 Bamboo', destroy: '化灰籤 Dust', dragon: '紅中籤 Red Dragon', redfive: '紅五籤 Red Five', indicator: '寶牌籤 Bonus Tile Slip', wealth: '橫財籤 Windfall', gold: '金箔籤 Gold Foil', obsidian: '黑曜籤 Obsidian', dragonmark: '龍紋籤 Dragon Mark', jade: '翡翠籤 Jade', susanoo: '哪吒 Nezha', inari: '財神 God of Wealth', raijin: '雷公 Lei Gong', tsukuyomi: '嫦娥 Chang’e', amaterasu: '媽祖 Mazu' };
 const HK_SCROLL = { 'm:pair': '對子秘笈 Pairs Manual', 'm:chi': '上牌秘笈 Chow Manual', 'm:pon': '碰牌秘笈 Pung Manual', 'm:kan': '槓牌秘笈 Kong Manual', 'm:hand': '食糊秘笈 Winning Manual', 'y:tanyao': '斷幺九秘笈 All Simples Manual', 'y:pinfu': '平糊秘笈 All Chows Manual', 'y:yakuhai': '番牌秘笈 Honor Set Manual', 'y:honitsu': '混一色秘笈 Mixed Suit Manual', 'y:chinitsu': '清一色秘笈 Pure Suit Manual', 'y:toitoi': '對對糊秘笈 All Pungs Manual', 'y:chiitoitsu': '七對子秘笈 Seven Pairs Manual', 'y:sanshoku': '三色同順秘笈 Triple Chow Manual', 'y:ittsu': '一條龍秘笈 Straight Manual', 'y:chanta': '混全帶幺秘笈 Outside Hand Manual' };
 const HK_FLOWER = { plum: '梅 Plum', orchid: '蘭 Orchid', chrysanthemum: '菊 Chrysanthemum', bamboo: '竹 Bamboo', spring: '春 Spring', summer: '夏 Summer', autumn: '秋 Autumn', winter: '冬 Winter' };
@@ -1547,7 +1572,7 @@ const HK_TERMS = {
 let GAP_CHI = false;
 // A signed amount for breakdown lines: +12, or −30 (a real minus sign, never "+-30").
 const sgn = n => n < 0 ? '−' + Math.abs(n) : '+' + n;
-function setRules(S) { GAP_CHI = !!(S && S.talismans && liveTals(S).includes('hashi')); }
+function setRules(S) { GAP_CHI = !!(S && S.talismans && hasTal(S, 'hashi')); }
 const CHI_SHAPES = () => GAP_CHI ? [[0, 1, 2], [0, 1, 3], [0, 2, 3]] : [[0, 1, 2]];
 function meldType(tiles) {
   const n = tiles.length;
@@ -1626,7 +1651,7 @@ function finalize(list) {
 const sI = i => Math.floor(i / 9), rI = i => i % 9 + 1, honI = i => i >= 27, windI = i => i >= 27 && i <= 30, drgI = i => i >= 31,
   termI = i => i < 27 && (i % 9 === 0 || i % 9 === 8), orphI = i => honI(i) || termI(i);
 function evalStandard(dec, closed, S) {
-  const baku = liveTals(S).includes('baku'), typhoon = S.boss === 'typhoon';
+  const baku = hasTal(S, 'baku'), typhoon = S.boss === 'typhoon';
   const list = [];
   const add = (key, name, c, o) => { const h = (closed || baku) ? c : o; if (h > 0) list.push({ key, name, han: h }); };
   const ym = (key, name) => list.push({ key, name, han: 13, yakuman: true });
@@ -1765,7 +1790,7 @@ function scoreCtxInner(S, kind, tiles, info) {
     else ctx.desc = rung.name;
   }
   // ---- per-tile loop with retriggers
-  const redPer = S.talismans.includes('koi') ? 2 : 1;
+  const redPer = hasTal(S, 'koi') ? 2 : 1;
   const agg = { chips: 0, red: 0, redHan: 0, dora: 0, dm: 0, jade: 0, gold: 0, glass: 0, gseal: 0, foil: 0, holo: 0, poly: 0, crim: 0, lucky: 0, luckyM: 0, luckyY: 0, retrig: {} };
   ctx.tileMult = 0;   // +Mult from tiles (Holographic, Crimson, Lucky) joins after the Han table
   tiles.forEach((t, ti) => {
@@ -1779,7 +1804,7 @@ function scoreCtxInner(S, kind, tiles, info) {
       if (t.ed === 'holo') { m += 10; agg.holo++; }
       if (t.ed === 'poly') { x *= 1.5; agg.poly++; }
       if (t.eng === 'mult') { m += 4; agg.crim++; }
-      if (t.eng === 'lucky') { agg.lucky++; if (!info.preview && rand() < 1 / 5) { m += 20; agg.luckyM++; } if (!info.preview && rand() < 1 / 15) { money += 20; agg.luckyY++; } }
+      if (t.eng === 'lucky') { agg.lucky++; if (!info.preview && rand() < chance(S, 1 / 5)) { m += 20; agg.luckyM++; } if (!info.preview && rand() < chance(S, 1 / 15)) { money += 20; agg.luckyY++; } }
       if (t.eng === 'stone') continue;
       if (t.red && S.boss !== 'censor') { h += redPer; agg.redHan += redPer; if (r === 0) { agg.red++; ctx.redCount++; } }
       for (const di of S.dora) if (idx(t) === di) { h += 1; agg.dora++; }
@@ -1789,7 +1814,7 @@ function scoreCtxInner(S, kind, tiles, info) {
       if (t.eng === 'glass') { x *= 2; agg.glass++; }
       if (t.seal === 'gold') { money += 3; agg.gseal++; }
     }
-    if (t.eng === 'glass' && (info.preview ? false : rand() < 0.25)) ctx.shatter.push(t.id);
+    if (t.eng === 'glass' && (info.preview ? false : rand() < chance(S, 0.25))) ctx.shatter.push(t.id);
     ctx.chips += c; ctx.han += h; ctx.xmult *= x; ctx.money += money; ctx.tileMult += m;
     ctx.hits.push({ id: t.id, chips: c, han: h, xmult: x, mult: m, money, times, who });
   });
@@ -1827,7 +1852,7 @@ function scoreCtxInner(S, kind, tiles, info) {
     const matches = win ? S.river.filter(t => t !== claimT && key(t) === key(win)).length + (claimT ? 1 : 0) : 0;
     ctx.winningTile = win ? tileName(win) : '';
     if (matches) {
-      if (S.talismans.includes('kappa')) { ctx.chips += 100 * matches; L(`Kappa (${ctx.winningTile} ×${matches} in River)`, `+${100 * matches} Chips`, { chips: 100 * matches, tal: 'Kappa' }); }
+      if (hasTal(S, 'kappa')) { ctx.chips += 100 * matches; L(`Kappa (${ctx.winningTile} ×${matches} in River)`, `+${100 * matches} Chips`, { chips: 100 * matches, tal: 'Kappa' }); }
       else ctx.furiten = true;
     }
   }
@@ -2152,7 +2177,7 @@ function markSeen() {
   if (!S || !S.talismans || S.placeholder) return false; let dirty = false;
   const add = (kind, key) => { if (key && !PROFILE.seen[`${kind}:${key}`]) { PROFILE.seen[`${kind}:${key}`] = 1; dirty = true; } };
   const item = it => { if (it) add(it.kind === 'talisman' ? 'tal' : it.kind, it.key); };
-  S.talismans.forEach(k => add('tal', k)); (S.consumables || []).forEach(c => CONS[c.key] && add(CONS[c.key].kind, c.key)); (S.flowers || []).forEach(k => add('flower', k));
+  S.talismans.forEach(k => add('tal', baseKey(k))); (S.consumables || []).forEach(c => CONS[c.key] && add(CONS[c.key].kind, c.key)); (S.flowers || []).forEach(k => add('flower', k));
   for (const [t, lv] of Object.entries(S.scrolls || {})) for (const k of Object.keys(lv || {})) add('scroll', `${t === 'meld' ? 'm' : 'y'}:${k}`);
   if (S.phase === 'shop' && S.shop) { S.shop.cards.forEach(item); item(S.shop.scroll); item(S.shop.flower); item(S.shop.pack); (S.shop.freePacks || []).forEach(k => add('pack', k)); }
   if (S.pack) { add('pack', S.pack.key); (S.pack.choices || []).forEach(item); }
@@ -2189,11 +2214,11 @@ function toast(html) {
   setTimeout(() => el.classList.add('out'), 4200); setTimeout(() => el.remove(), 4700);
 }
 const unlockedCount = () => UNLOCKS.filter(u => PROFILE.unlocked.includes(`${u.kind}:${u.key}`)).length;
-const talPool = () => chal('noTalismans') ? [] : TALISMANS.filter(t => !S.talismans.includes(t.key) && isUnlocked('tal', t.key) && (talRarity(t.key) !== 'legendary' || S.dbgRarity === 'legendary'));
+const talPool = () => chal('noTalismans') ? [] : TALISMANS.filter(t => (hasTal(S, 'kabuki') || !S.talismans.some(k => baseKey(k) === t.key)) && isUnlocked('tal', t.key) && (talRarity(t.key) !== 'legendary' || S.dbgRarity === 'legendary'));
 // Rarity label for a Talisman card, coloured like Balatro's (blue Common, green Uncommon, red Rare, purple Legendary).
 const rarityTag = k => { const r = talRarity(k); return `<span class="rar rar-${r}">${RARITIES[r]}</span>`; };
 // Hō-ō grows each time tiles are destroyed (Slip of Dust, Raijin, Susanoo, Tsukuyomi, shattered Glass).
-function tilesDestroyed(n) { if (n > 0 && liveTals(S).includes('hoo')) S.talState.hoo = (S.talState.hoo || 0) + n; }
+function tilesDestroyed(n) { if (n > 0 && hasTal(S, 'hoo')) S.talState.hoo = (S.talState.hoo || 0) + n; }
 
 // ===================== BLIND FLOW =====================
 // The Crimson Oni silences one random Talisman, never the same one twice in a row.
@@ -2209,7 +2234,7 @@ function startBlind() {
   S.selected = []; S.selRiver = null; S.dora = []; S.indicators = []; S.pendingDiscard = 0; S.revealed = false; S.score = 0; S.lastPlay = null; S.reward = null; S.selTal = null;
   S.discardsUsed = 0; S.playsMade = 0; S.usedTypes = []; S.mouthType = null; S.leafCut = false; S.crimsonOff = null;
   // Tamamo-no-Mae disables the Boss: it is still the Boss Blind (same target and reward), with no effect.
-  S.bossOff = null; if (S.boss && S.talismans.includes('tamamo')) { S.bossOff = S.boss; S.boss = null; }
+  S.bossOff = null; if (S.boss && hasTal(S, 'tamamo')) { S.bossOff = S.boss; S.boss = null; }
   S.firstPlayDone = false; S.freeCallsUsed = 0; S.bossSuit = S.boss === 'collector' ? pick(['m', 'p', 's']) : null;
   S.blindMods = S.nextBlindMods || {}; S.nextBlindMods = null;
   if (S.boss === 'needle') S.plays = 1;
@@ -2219,7 +2244,7 @@ function startBlind() {
   for (const k of liveTals(S).slice()) if (S.talismans.includes(k) && TAL[k].onBlindStart) TAL[k].onBlindStart(S);   // a copy: Kamikiri and Hyakki change the list
   setMsg(S.bossOff ? `Tamamo-no-Mae disables ${BOSSES[S.bossOff].name}.` : S.boss ? `${BOSSES[S.boss].name}: ${BOSSES[S.boss].desc}` : `${kind === 'small' ? 'Small' : 'Big'} Blind. Score ${S.target} to win.`);
 }
-function draw() { S.newIds = []; while (S.hand.length < capacity() && S.wall.length) { const t = S.wall.pop(); t.d = ++S.drawSeq; if (S.boss === 'wheel' && rand() < 1 / 7) t.down = true; S.hand.push(t); S.newIds.push(t.id); } }
+function draw() { S.newIds = []; while (S.hand.length < capacity() && S.wall.length) { const t = S.wall.pop(); t.d = ++S.drawSeq; if (S.boss === 'wheel' && rand() < chance(S, 1 / 7)) t.down = true; S.hand.push(t); S.newIds.push(t.id); } }
 function drawReplacement() { if (!S.wall.length) return null; const t = S.wall.pop(); t.d = ++S.drawSeq; t.rinshan = true; S.hand.push(t); S.newIds.push(t.id); return t; }
 function collectDeck() {
   S.deck = [...S.hand, ...S.wall, ...S.river, ...openTiles(), ...S.played, ...S.indicators];
@@ -2354,6 +2379,7 @@ async function doPlay() {
   if (S.boss === 'pickpocket' && S.hand.length) { const lost = shuffle(S.hand.slice()).slice(0, 2); S.hand = S.hand.filter(t => !lost.includes(t)); S.river.push(...lost); setMsg(`${S.msg} The Pickpocket took ${lost.map(tileName).join(' and ')} to the River.`); }
   if (S.boss === 'crimson') rollCrimson();
   draw();
+  if (S.plays <= 0 && hasTal(S, 'yurei') && S.score >= S.target * 0.25) { fadeAway(S, 'yurei'); toast('<div class="label">Yūrei</div><b>You survive</b><div class="muted" style="font-size:11px">the Blind counts as won, and Yūrei vanishes</div>'); winBlind(); return render(); }
   if (S.plays <= 0) { loseRun(); return render(); }
   render();
 }
@@ -2455,7 +2481,15 @@ function useConsumable(i) {
   setMsg(`${def.name} used.${S.gotLegend ? ` ${TAL[S.gotLegend].name} joins your Talismans.` : ''}${fortune}`); S.gotLegend = null; render();
 }
 function talValue(k) { return TAL[k].cost + (S.editions[k] ? EDITIONS[S.editions[k]].price : 0); }
-function sellTalisman(k) { const i = S.talismans.indexOf(k); if (i < 0) return; if (isEternal(k)) { setMsg(`${TAL[k].name} is Eternal and can never be sold.`, true); return render(); } if (S.stickers) delete S.stickers[k]; if (S.phase === 'blind') S.leafCut = true; if (S.crimsonOff === k) S.crimsonOff = null; const v = talSellValue(k); S.talismans.splice(i, 1); if (S.sellBonus) delete S.sellBonus[k]; S.money += v; sfx('sell'); delete S.editions[k]; S.selTal = null; for (const t of S.talismans) if (TAL[t].onSell) TAL[t].onSell(S); PROFILE.sold++; saveProfile(); setMsg(`Sold ${TAL[k].name} for ¥${v}.`); render(); }
+// Talismans that act when sold: Rikishi disables the Boss, Ramune gives a Double Tag, Kakuremino copies another Talisman.
+function sellEffect(k) {
+  const b = baseKey(k);
+  if (b === 'rikishi' && S.phase === 'blind' && S.boss) { S.bossOff = S.boss; S.boss = null; S.crimsonOff = null; return ` Rikishi disables ${BOSSES[S.bossOff].name}.`; }
+  if (b === 'ramune') { S.tags.push('double'); return ' Ramune gives you a Double Tag.'; }
+  if (b === 'kakuremino' && (S.talState.kakuremino || 0) >= 2) { const others = S.talismans.filter(x => x !== k); if (!others.length) return ''; const src = pick(others); const ed = S.editions[src]; const copy = newAlias(S, baseKey(src)); S.talismans.push(copy); if (ed && ed !== 'neg') S.editions[copy] = ed; return ` Kakuremino copies ${TAL[src].name}.`; }
+  return '';
+}
+function sellTalisman(k) { const i = S.talismans.indexOf(k); if (i < 0) return; if (isEternal(k)) { setMsg(`${TAL[k].name} is Eternal and can never be sold.`, true); return render(); } if (S.stickers) delete S.stickers[k]; if (S.phase === 'blind') S.leafCut = true; if (S.crimsonOff === k) S.crimsonOff = null; const v = talSellValue(k); S.talismans.splice(i, 1); const eff = sellEffect(k); if (S.sellBonus) delete S.sellBonus[k]; S.money += v; sfx('sell'); delete S.editions[k]; S.selTal = null; for (const t of S.talismans) if (TAL[t].onSell) TAL[t].onSell(S); PROFILE.sold++; saveProfile(); setMsg(`Sold ${TAL[k].name} for ¥${v}.${eff}`); render(); }
 function sellConsumable(i) { const c = S.consumables[i]; if (!c) return; const v = conSellValue(c); S.consumables.splice(i, 1); S.money += v; sfx('sell'); setMsg(`Sold ${CONS[c.key].name} for ¥${v}.`); render(); }
 
 // ===================== SHOP =====================
@@ -2683,7 +2717,7 @@ function tileTipHTML(t, back) {
   if (back) return `<div class="tt-n">Face down</div><div class="tt-e">A 1, 9, Wind or Dragon (The Purist).</div>`;
   const inRun = !!(S && S.talismans), chips = inRun ? tileChips(t, S) : ((isHonor(t) || isTerminal(t)) ? 10 : t.rank);
   const rows = [`<span class="hp chips">+${chips}</span><span>Chips</span>`];
-  if (t.red) rows.push(`<span class="hp han">+${inRun && liveTals(S).includes('koi') ? 2 : 1}</span><span>Han · Red Five</span>`);
+  if (t.red) rows.push(`<span class="hp han">+${inRun && hasTal(S, 'koi') ? 2 : 1}</span><span>Han · Red Five</span>`);
   if (inRun && S.phase === 'blind' && (S.dora || []).includes(idx(t))) rows.push(`<span class="hp han">+1</span><span>Han · Dora</span>`);
   const eng = t.eng && ENG[t.eng] ? `<div class="tt-e"><b>${ENG[t.eng].name}</b> ${ENG[t.eng].desc}</div>` : '';
   const seal = t.seal && SEALS[t.seal] ? `<div class="tt-e"><b>${SEALS[t.seal].name}</b> ${SEALS[t.seal].desc}</div>` : '';
@@ -3144,7 +3178,7 @@ function renderHint(hidden) {
   const rtc = claimTile();
   if (HINTS.away && !hidden && rtc && sel.length === neededConcealed() - 1) {
     const best = bestHand(sel.concat([rtc]), S.open, S);
-    parts.push(best ? `<span class="hint-sel bad">complete hand with ${tileName(rtc)} claimed from the River${S.talismans.includes('kappa') ? ': Kappa bonus' : ': Furiten, ×0.5'}</span>` : `<span class="hint-sel muted">${tileName(rtc)} from the River does not complete these tiles</span>`);
+    parts.push(best ? `<span class="hint-sel bad">complete hand with ${tileName(rtc)} claimed from the River${hasTal(S, 'kappa') ? ': Kappa bonus' : ': Furiten, ×0.5'}</span>` : `<span class="hint-sel muted">${tileName(rtc)} from the River does not complete these tiles</span>`);
   }
   let complete = false;
   if (!hidden && sel.length === neededConcealed()) {
@@ -3507,7 +3541,7 @@ function hideModal() { modalPinned = false; $('#modal').getAnimations().forEach(
 // Its state lives under its own key, or its key plus a capitalised suffix (kasaobake, shiroSuit).
 const ownsState = (k, x) => x === k || (x.startsWith(k) && /[A-Z]/.test(x[k.length] || ''));   // 'shiro' owns 'shiroSuit', but 'hoshi' does not own 'hoshizora'
 const freshTalState = k => Object.fromEntries(Object.entries(S.talState || {}).filter(([x]) => !ownsState(k, x)));
-function gainTalisman(k, sticker) { if (!sticker && (chal('allPerish') || chal('allRental'))) sticker = rollSticker(k); S.talState = freshTalState(k); S.talismans.push(k); if (S.sellBonus) delete S.sellBonus[k]; S.stickers = S.stickers || {}; delete S.stickers[k]; if (sticker) S.stickers[k] = Object.assign({}, sticker); }
+function gainTalisman(k, sticker) { if (S.talismans.includes(k)) k = newAlias(S, k); if (!sticker && (chal('allPerish') || chal('allRental'))) sticker = rollSticker(k); S.talState = freshTalState(k); S.talismans.push(k); if (S.sellBonus) delete S.sellBonus[k]; S.stickers = S.stickers || {}; delete S.stickers[k]; if (sticker) S.stickers[k] = Object.assign({}, sticker); }
 // What a Talisman's live value would be the moment you buy it (same text its card shows once owned).
 function talPreview(k) {
   const d = TAL[k]; if (!d) return '';
@@ -4141,7 +4175,7 @@ function bindEvents() {
 }
 function boot(saved) {
   bindEvents(); document.body.classList.toggle('bganim', BG_ANIM);
-  if (saved && saved.phase && saved.deck) { S = saved; S.talState = S.talState || {};
+  if (saved && saved.phase && saved.deck) { S = saved; S.talState = S.talState || {}; (S.talismans || []).forEach(k => { if (String(k).includes('#')) talAlias(k); });
     // Resume the tile id counter above every id in the saved run, so tiles created later never collide with existing ones.
     let maxId = 0; for (const t of [...S.deck, ...S.hand, ...S.wall, ...S.river, ...S.played, ...(S.indicators || []), ...S.open.flatMap(m => m.tiles), ...((S.pack && S.pack.choices) || []).filter(c => c.tile).map(c => c.tile)]) if (t.id > maxId) maxId = t.id; tileSeq = Math.max(tileSeq, maxId);
     for (const t of [...S.deck, ...S.hand, ...S.wall, ...S.river, ...S.played, ...(S.indicators || []), ...S.open.flatMap(m => m.tiles)]) normTile(t);

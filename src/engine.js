@@ -3,7 +3,7 @@
 let GAP_CHI = false;
 // A signed amount for breakdown lines: +12, or −30 (a real minus sign, never "+-30").
 const sgn = n => n < 0 ? '−' + Math.abs(n) : '+' + n;
-function setRules(S) { GAP_CHI = !!(S && S.talismans && liveTals(S).includes('hashi')); }
+function setRules(S) { GAP_CHI = !!(S && S.talismans && hasTal(S, 'hashi')); }
 const CHI_SHAPES = () => GAP_CHI ? [[0, 1, 2], [0, 1, 3], [0, 2, 3]] : [[0, 1, 2]];
 function meldType(tiles) {
   const n = tiles.length;
@@ -82,7 +82,7 @@ function finalize(list) {
 const sI = i => Math.floor(i / 9), rI = i => i % 9 + 1, honI = i => i >= 27, windI = i => i >= 27 && i <= 30, drgI = i => i >= 31,
   termI = i => i < 27 && (i % 9 === 0 || i % 9 === 8), orphI = i => honI(i) || termI(i);
 function evalStandard(dec, closed, S) {
-  const baku = liveTals(S).includes('baku'), typhoon = S.boss === 'typhoon';
+  const baku = hasTal(S, 'baku'), typhoon = S.boss === 'typhoon';
   const list = [];
   const add = (key, name, c, o) => { const h = (closed || baku) ? c : o; if (h > 0) list.push({ key, name, han: h }); };
   const ym = (key, name) => list.push({ key, name, han: 13, yakuman: true });
@@ -221,7 +221,7 @@ function scoreCtxInner(S, kind, tiles, info) {
     else ctx.desc = rung.name;
   }
   // ---- per-tile loop with retriggers
-  const redPer = S.talismans.includes('koi') ? 2 : 1;
+  const redPer = hasTal(S, 'koi') ? 2 : 1;
   const agg = { chips: 0, red: 0, redHan: 0, dora: 0, dm: 0, jade: 0, gold: 0, glass: 0, gseal: 0, foil: 0, holo: 0, poly: 0, crim: 0, lucky: 0, luckyM: 0, luckyY: 0, retrig: {} };
   ctx.tileMult = 0;   // +Mult from tiles (Holographic, Crimson, Lucky) joins after the Han table
   tiles.forEach((t, ti) => {
@@ -235,7 +235,7 @@ function scoreCtxInner(S, kind, tiles, info) {
       if (t.ed === 'holo') { m += 10; agg.holo++; }
       if (t.ed === 'poly') { x *= 1.5; agg.poly++; }
       if (t.eng === 'mult') { m += 4; agg.crim++; }
-      if (t.eng === 'lucky') { agg.lucky++; if (!info.preview && rand() < 1 / 5) { m += 20; agg.luckyM++; } if (!info.preview && rand() < 1 / 15) { money += 20; agg.luckyY++; } }
+      if (t.eng === 'lucky') { agg.lucky++; if (!info.preview && rand() < chance(S, 1 / 5)) { m += 20; agg.luckyM++; } if (!info.preview && rand() < chance(S, 1 / 15)) { money += 20; agg.luckyY++; } }
       if (t.eng === 'stone') continue;
       if (t.red && S.boss !== 'censor') { h += redPer; agg.redHan += redPer; if (r === 0) { agg.red++; ctx.redCount++; } }
       for (const di of S.dora) if (idx(t) === di) { h += 1; agg.dora++; }
@@ -245,7 +245,7 @@ function scoreCtxInner(S, kind, tiles, info) {
       if (t.eng === 'glass') { x *= 2; agg.glass++; }
       if (t.seal === 'gold') { money += 3; agg.gseal++; }
     }
-    if (t.eng === 'glass' && (info.preview ? false : rand() < 0.25)) ctx.shatter.push(t.id);
+    if (t.eng === 'glass' && (info.preview ? false : rand() < chance(S, 0.25))) ctx.shatter.push(t.id);
     ctx.chips += c; ctx.han += h; ctx.xmult *= x; ctx.money += money; ctx.tileMult += m;
     ctx.hits.push({ id: t.id, chips: c, han: h, xmult: x, mult: m, money, times, who });
   });
@@ -283,7 +283,7 @@ function scoreCtxInner(S, kind, tiles, info) {
     const matches = win ? S.river.filter(t => t !== claimT && key(t) === key(win)).length + (claimT ? 1 : 0) : 0;
     ctx.winningTile = win ? tileName(win) : '';
     if (matches) {
-      if (S.talismans.includes('kappa')) { ctx.chips += 100 * matches; L(`Kappa (${ctx.winningTile} ×${matches} in River)`, `+${100 * matches} Chips`, { chips: 100 * matches, tal: 'Kappa' }); }
+      if (hasTal(S, 'kappa')) { ctx.chips += 100 * matches; L(`Kappa (${ctx.winningTile} ×${matches} in River)`, `+${100 * matches} Chips`, { chips: 100 * matches, tal: 'Kappa' }); }
       else ctx.furiten = true;
     }
   }
