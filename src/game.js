@@ -810,7 +810,24 @@ function goBackAnte() { if (S.ante <= 1) return; S.ante--; S.bossOrder[S.ante - 
 // Peony: reroll the Boss for ¥10, once per Ante (Tree Peony: any number of times).
 const canRerollBoss = () => hasF('peony') && S.money >= 10 && (hasF('peony2') || S.bossRerollAnte !== S.ante);
 function rerollBoss() { if (!canRerollBoss()) return; S.money -= 10; S.bossRerollAnte = S.ante; const old = S.bossOrder[S.ante - 1]; S.bossOrder[S.ante - 1] = rollBoss(S.ante, [old]); sfx('reroll'); setMsg(`${BOSSES[old].name} rerolled into ${BOSSES[S.bossOrder[S.ante - 1]].name}.`); render(); }
-function reroll() { const c = rerollPrice(); if (S.money < c) { setMsg(`Reroll costs ¥${c}.`, true); return render(); } S.money -= c; S.shop.firstFree = false; S.shop.rerolls = (S.shop.rerolls || 0) + 1; S.stats.rerolls = (S.stats.rerolls || 0) + 1; S.shop.cards = Array.from({ length: shopSlots() }, rollCard); sfx('reroll'); render(); }
+// Rerolling flips the cards: the old ones turn away one after another, then the new ones turn in from the other side.
+// Clicks on the Shop are ignored for the half second it takes.
+let rerolling = false;
+function reroll() {
+  const c = rerollPrice(); if (rerolling) return; if (S.money < c) { setMsg(`Reroll costs ¥${c}.`, true); return render(); }
+  S.money -= c; S.shop.firstFree = false; S.shop.rerolls = (S.shop.rerolls || 0) + 1; S.stats.rerolls = (S.stats.rerolls || 0) + 1; sfx('reroll');
+  const roll = () => { S.shop.cards = Array.from({ length: shopSlots() }, rollCard); render(); flipIn(); };
+  const old = [...document.querySelectorAll('#modal .cardshelf .shopcard')];
+  if (!motionOK || !old.length) return roll();
+  rerolling = true; const m = $('#modal'); m.style.pointerEvents = 'none'; let done = false;
+  const go = () => { if (done) return; done = true; rerolling = false; m.style.pointerEvents = ''; roll(); };
+  old.forEach((el, i) => el.animate([{ transform: 'perspective(700px) rotateY(0)', opacity: 1 }, { transform: 'perspective(700px) rotateY(90deg) scale(.96)', opacity: .5 }], { duration: 150, delay: i * 45, easing: 'ease-in', fill: 'forwards' }));
+  setTimeout(go, 150 + (old.length - 1) * 45 + 10);
+}
+function flipIn() {
+  if (!motionOK) return;
+  document.querySelectorAll('#modal .cardshelf .shopcard').forEach((el, i) => el.animate([{ transform: 'perspective(700px) rotateY(-90deg) scale(.96)', opacity: .5 }, { transform: 'perspective(700px) rotateY(0)', opacity: 1 }], { duration: 220, delay: i * 55, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' }));
+}
 function skipBlind() {
   if (S.phase !== 'select' || blindKind() === 'boss') return;
   const tag = (S.skipTags && S.skipTags[blindKind()]) || pick(Object.keys(TAGS)); S.stats.skipped++;
