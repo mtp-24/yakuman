@@ -889,8 +889,7 @@ html{scrollbar-gutter:stable} html.modallock{overflow:hidden}
 .shopfoot .railbtn{width:180px;height:46px;min-height:0;box-sizing:border-box;padding:0 14px}
 .overlay.shoptray{padding:0}
 /* A tray that is part of the page (the Shop, packs, a long cash-out) sits in the document and grows with its contents */
-.overlay.inflow{position:absolute;height:auto;display:block} .overlay.inflow .modal.traymodal{min-height:var(--trayMin,100%);max-height:none;overflow:visible;margin:0 auto}
-.receipt .rgroup.two{display:grid;grid-template-columns:1fr 1fr;column-gap:28px} .modal.cashmodal:has(.rgroup.two){max-width:720px} .overlay.shoptray .modal.shopmodal{padding-top:0} .overlay.shoptray .modal.packmodal{padding-top:20px}
+.overlay.inflow{position:absolute;height:auto;display:block} .overlay.inflow .modal.traymodal{min-height:var(--trayMin,100%);max-height:none;overflow:visible;margin:0 auto} .overlay.shoptray .modal.shopmodal{padding-top:0} .overlay.shoptray .modal.packmodal{padding-top:20px}
 /* Shop: the buttons in a bar under the banner, the shelves side by side. Each shelf is as wide as its cards (--n of them) and they wrap. */
 /* Compact buttons in the Shop banner and pack header; Reroll is a pill on the Cards shelf */
 .shopacts,.packacts{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
@@ -3844,10 +3843,7 @@ function cashoutHTML() {
   let h = `<div class="drawhead"><h2>${bossName ? bossName + ' beaten' : 'Blind cleared'}</h2></div>`;
   // Like Balatro, the Cash Out button sits on top and the reward rows fill in beneath it, so the button never moves.
   h += `<button id="mCashOut" class="primary cashbtn">Cash Out <span class="cashamt"><span class="coin" aria-hidden="true">${coinSVG()}</span><span class="num">${money(cur, r.total)}</span></span></button>`;
-  // More than five Talisman payouts sit in two columns (without the repeated "Talisman" note), so a long receipt stays on one screen.
-  const row = ([k, d, v]) => `<div class="rrow"><span class="rl">${k}</span>${d ? `<span class="rd muted">${d}</span>` : ''}<span class="rlead" aria-hidden="true"></span><b class="num${v < 0 ? ' neg' : ''}" data-v="${v}">${money('¥', v)}</b></div>`;
-  const two = talRows.length > 5, i0 = rows.indexOf(talRows[0]);
-  h += `<div class="receipt">${two ? rows.slice(0, i0).map(row).join('') + `<div class="rgroup two">${talRows.map(([k, , v]) => row([k, '', v])).join('')}</div>` + rows.slice(i0 + talRows.length).map(row).join('') : rows.map(row).join('')}</div>`;
+  h += `<div class="receipt">${rows.map(([k, d, v]) => `<div class="rrow"><span class="rl">${k}</span><span class="rd muted">${d}</span><span class="rlead" aria-hidden="true"></span><b class="num${v < 0 ? ' neg' : ''}" data-v="${v}">${money('¥', v)}</b></div>`).join('')}</div>`;
   return h;
 }
 // Same look as the play area's purse: the coin, the amount, and JPY or HKD underneath.

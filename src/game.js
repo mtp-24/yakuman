@@ -1842,10 +1842,7 @@ function cashoutHTML() {
   let h = `<div class="drawhead"><h2>${bossName ? bossName + ' beaten' : 'Blind cleared'}</h2></div>`;
   // Like Balatro, the Cash Out button sits on top and the reward rows fill in beneath it, so the button never moves.
   h += `<button id="mCashOut" class="primary cashbtn">Cash Out <span class="cashamt"><span class="coin" aria-hidden="true">${coinSVG()}</span><span class="num">${money(cur, r.total)}</span></span></button>`;
-  // More than five Talisman payouts sit in two columns (without the repeated "Talisman" note), so a long receipt stays on one screen.
-  const row = ([k, d, v]) => `<div class="rrow"><span class="rl">${k}</span>${d ? `<span class="rd muted">${d}</span>` : ''}<span class="rlead" aria-hidden="true"></span><b class="num${v < 0 ? ' neg' : ''}" data-v="${v}">${money('¥', v)}</b></div>`;
-  const two = talRows.length > 5, i0 = rows.indexOf(talRows[0]);
-  h += `<div class="receipt">${two ? rows.slice(0, i0).map(row).join('') + `<div class="rgroup two">${talRows.map(([k, , v]) => row([k, '', v])).join('')}</div>` + rows.slice(i0 + talRows.length).map(row).join('') : rows.map(row).join('')}</div>`;
+  h += `<div class="receipt">${rows.map(([k, d, v]) => `<div class="rrow"><span class="rl">${k}</span><span class="rd muted">${d}</span><span class="rlead" aria-hidden="true"></span><b class="num${v < 0 ? ' neg' : ''}" data-v="${v}">${money('¥', v)}</b></div>`).join('')}</div>`;
   return h;
 }
 // Same look as the play area's purse: the coin, the amount, and JPY or HKD underneath.
