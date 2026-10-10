@@ -2114,8 +2114,23 @@ const conSellValue = c => Math.max(1, Math.floor(CONS[c.key].cost / 2)) + (c.bon
 // Balatro's dissolve: a copy of the card burns away where it stood, then the board redraws without it.
 function dissolveTal(k) {
   if (!motionOK) return; const i = S.talismans.indexOf(k); const el = (document.querySelector(`[data-sell="${k}"]`) || {}).closest ? document.querySelector(`[data-sell="${k}"]`).closest('.shopcard') : [...document.querySelectorAll('#talismans .slot')][i];
-  if (!el) return; const r = el.getBoundingClientRect(), g = el.cloneNode(true); Object.assign(g.style, { position: 'fixed', left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px', margin: 0, zIndex: 60, pointerEvents: 'none' }); document.body.appendChild(g);
-  g.animate([{ opacity: 1, filter: 'none', transform: 'none' }, { opacity: .9, filter: 'brightness(1.6) sepia(.6) saturate(3) blur(.5px)', transform: 'scale(1.03)', offset: .3 }, { opacity: 0, filter: 'brightness(2) saturate(4) blur(6px)', transform: 'scale(.92) translateY(-10px)' }], { duration: 520, easing: 'ease-in' }).onfinish = () => g.remove(); setTimeout(() => g.remove(), 900);
+  holdRow('#talismans', i); dissolveEl(el);
+}
+const DISSOLVE_MS = 520;
+function dissolveEl(el) {
+  if (!el || !motionOK) return; const r = el.getBoundingClientRect(), g = el.cloneNode(true); Object.assign(g.style, { position: 'fixed', left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px', margin: 0, zIndex: 60, pointerEvents: 'none' }); document.body.appendChild(g);
+  g.animate([{ opacity: 1, filter: 'none', transform: 'none' }, { opacity: .9, filter: 'brightness(1.6) sepia(.6) saturate(3) blur(.5px)', transform: 'scale(1.03)', offset: .3 }, { opacity: 0, filter: 'brightness(2) saturate(4) blur(6px)', transform: 'scale(.92) translateY(-10px)' }], { duration: DISSOLVE_MS, easing: 'ease-in' }).onfinish = () => g.remove(); setTimeout(() => g.remove(), 900);
+}
+// When a card leaves a row (sold or destroyed), the cards after it wait where they were until the dissolve has burned out,
+// then slide into the gap, so they never pass over the burning card. Positions are taken before the redraw and played after it.
+let rowHolds = [];
+function holdRow(sel, gone) { if (motionOK && gone >= 0) rowHolds.push({ sel, gone, t: performance.now(), rects: [...document.querySelectorAll(`${sel} .slot.filled`)].map(e => e.getBoundingClientRect()) }); }
+function playRowHolds() {
+  const holds = rowHolds; rowHolds = [];
+  for (const h of holds) if (performance.now() - h.t < 1000) [...document.querySelectorAll(`${h.sel} .slot.filled`)].forEach((el, j) => {
+    const was = h.rects[j < h.gone ? j : j + 1]; if (!was) return; const now = el.getBoundingClientRect(), dx = was.left - now.left, dy = was.top - now.top;
+    if (Math.abs(dx) > 1 || Math.abs(dy) > 1) el.animate([{ transform: `translate(${dx}px,${dy}px)` }, { transform: 'none' }], { duration: 280, delay: DISSOLVE_MS - 60, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' });
+  });
 }
 function destroyTalisman(k) {
   if (!S.talismans.includes(k) || isEternal(k)) return false; dissolveTal(k);
@@ -2593,7 +2608,7 @@ function sellEffect(k) {
   return '';
 }
 function sellTalisman(k) { const i = S.talismans.indexOf(k); if (i < 0) return; if (isEternal(k)) { setMsg(`${TAL[k].name} is Eternal and can never be sold.`, true); return render(); } if (S.stickers) delete S.stickers[k]; if (S.phase === 'blind') S.leafCut = true; if (S.crimsonOff === k) S.crimsonOff = null; const v = talSellValue(k); dissolveTal(k); S.talismans.splice(i, 1); const eff = sellEffect(k); if (S.sellBonus) delete S.sellBonus[k]; S.money += v; sfx('sell'); delete S.editions[k]; S.selTal = null; for (const t of S.talismans) if (TAL[t].onSell) TAL[t].onSell(S); PROFILE.sold++; saveProfile(); setMsg(`Sold ${TAL[k].name} for ¥${v}.${eff}`); render(); }
-function sellConsumable(i) { const c = S.consumables[i]; if (!c) return; const v = conSellValue(c); S.consumables.splice(i, 1); S.money += v; sfx('sell'); setMsg(`Sold ${CONS[c.key].name} for ¥${v}.`); render(); }
+function sellConsumable(i) { const c = S.consumables[i]; if (!c) return; const v = conSellValue(c); const b = document.querySelector(`[data-sellcon="${i}"]`); holdRow('#consumables', i); dissolveEl(b && b.closest('.shopcard') || [...document.querySelectorAll('#consumables .slot')][i]); S.consumables.splice(i, 1); S.money += v; sfx('sell'); setMsg(`Sold ${CONS[c.key].name} for ¥${v}.`); render(); }
 
 // ===================== SHOP =====================
 function rollCard() {
@@ -2903,7 +2918,7 @@ function render() {
   translateDOM($('#app')); fitNumbers();
   if ($('#overlay').classList.contains('inflow')) placeOverlay(true, S.phase === 'shop' ? 'shop' : undefined);   // terms and fitted numbers can change the left column's height, so a tray that is part of the page is measured again
   if (S.placeholder && $('#overlay').hidden) showModal(menuHTML(false), true, 'menumodal');   // closing a screen opened from the title goes back to the title
-  tileMotion(motionBefore, freshTiles); syncEditions(); refreshTileTip(); animateWall(); animateSlots(); if (S.phase !== 'shop' && !S.quiet) walletShown = S.money;
+  tileMotion(motionBefore, freshTiles); syncEditions(); refreshTileTip(); animateWall(); animateSlots(); playRowHolds(); if (S.phase !== 'shop' && !S.quiet) walletShown = S.money;
   save();
 }
 // Tiles added to the Wall fly from where they were added to the Wall counter, which ticks up as each one lands. The counter is
