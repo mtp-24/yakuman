@@ -955,18 +955,9 @@ body.bganim::before{content:'';position:fixed;inset:-25%;z-index:-1;pointer-even
 /* Card hover tilt and shine (shop, pack and board Talismans), following the mouse */
 .tiltcard{transform-style:preserve-3d;transition:transform .12s ease-out} .shopcard.tiltcard.tilting,body.cardsopen .slot.tiltcard.tilting,body.descopen .slot.tiltcard.tilting{transform:perspective(700px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg)) translateY(-3px)!important}
 .tiltcard .cshine{position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:5;opacity:0;transition:opacity .15s;background:radial-gradient(circle at var(--mx,50%) var(--my,50%),rgba(255,255,255,.22),transparent 55%)} .tiltcard.tilting .cshine{opacity:1}
-/* CRT filter */
-body.crt::after{content:'';position:fixed;inset:0;z-index:90;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.14) 0 1px,transparent 1px 3px),radial-gradient(ellipse at center,transparent 60%,rgba(0,0,0,.45) 100%);mix-blend-mode:multiply}
 .shopbottom{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:16px;align-items:start} .shopbottom .vouchshelf .shelfrow{grid-template-columns:minmax(0,1fr)} .shopbottom .shelf:last-child .shelfrow{grid-template-columns:repeat(2,minmax(0,1fr))} .shopbottom .shelf{margin-top:0} .emptyvouch{width:100%;box-sizing:border-box;min-height:200px;display:flex;align-items:center;justify-content:center;text-align:center;border:1px dashed var(--line);border-radius:12px;padding:12px;font-size:12px} @media (max-width:720px){.shopbottom{grid-template-columns:1fr}}
 /* More than three shop cards (Lotus, Rare and Uncommon Tags, Voucher Tag): smaller cards, four or more to a row */
 .shelf.many .shelfrow{grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:10px} .shelf.many .shopcard{min-height:206px;padding:16px 8px 10px} .shelf.many .shopcard .n{font-size:15px} .shelf.many .shopcard .d{font-size:11px;line-height:1.35} .shelf.many .emblem{width:36px;height:36px} .shelf.many .lvline{font-size:10.5px}
-/* Full CRT: the SVG filter bends the picture; a dark rounded mask hides the bent-away edges like a tube's bezel */
-body.crt-full #app,body.crt-full #overlay{filter:url(#crtfx)} #crtbezel{display:none} body.crt-full #crtbezel{display:block;position:fixed;inset:0;z-index:91;pointer-events:none;border-radius:28px/22px;box-shadow:0 0 0 40px #050806,inset 0 0 60px 18px rgba(0,0,0,.65)}
-/* Full CRT stays light: a static phosphor glow instead of a blur-based bloom, and the always-running shimmer and glow loops
-   under the filter hold still (each frame they run would otherwise make the browser redo the whole filter) */
-body.crt-full #crtbezel::before{content:'';position:absolute;inset:0;border-radius:inherit;background:radial-gradient(ellipse at center,rgba(255,236,200,.07),transparent 70%);mix-blend-mode:screen}
-body.crt-full .slot[class*="ed-"]::before,body.crt-full .slot[class*="ed-"]::after,body.crt-full .shopcard[class*="ed-"]::before,body.crt-full .shopcard[class*="ed-"]::after,body.crt-full .shoprail .nextbtn.primary,body.crt-full .shoprail .nextbtn.primary::after{animation:none!important}
-@media (prefers-reduced-motion: reduce){body.crt-full #app,body.crt-full #overlay{filter:none}}
 /* ===== Tray Shop (and packs): rises from the bottom of the board; the Talisman row above stays clear ===== */
 /* Below the Talisman row the board darkens gradually, like the cash-out */
 .board.shopdim::after{background:linear-gradient(180deg,transparent 0,transparent var(--cut,0px),rgba(5,10,9,.3) calc(var(--cut,0px) + 6px),rgba(5,10,9,.62) calc(var(--cut,0px) + 70px))}

@@ -956,18 +956,9 @@ body.bganim::before{content:'';position:fixed;inset:-25%;z-index:-1;pointer-even
 /* Card hover tilt and shine (shop, pack and board Talismans), following the mouse */
 .tiltcard{transform-style:preserve-3d;transition:transform .12s ease-out} .shopcard.tiltcard.tilting,body.cardsopen .slot.tiltcard.tilting,body.descopen .slot.tiltcard.tilting{transform:perspective(700px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg)) translateY(-3px)!important}
 .tiltcard .cshine{position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:5;opacity:0;transition:opacity .15s;background:radial-gradient(circle at var(--mx,50%) var(--my,50%),rgba(255,255,255,.22),transparent 55%)} .tiltcard.tilting .cshine{opacity:1}
-/* CRT filter */
-body.crt::after{content:'';position:fixed;inset:0;z-index:90;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.14) 0 1px,transparent 1px 3px),radial-gradient(ellipse at center,transparent 60%,rgba(0,0,0,.45) 100%);mix-blend-mode:multiply}
 .shopbottom{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:16px;align-items:start} .shopbottom .vouchshelf .shelfrow{grid-template-columns:minmax(0,1fr)} .shopbottom .shelf:last-child .shelfrow{grid-template-columns:repeat(2,minmax(0,1fr))} .shopbottom .shelf{margin-top:0} .emptyvouch{width:100%;box-sizing:border-box;min-height:200px;display:flex;align-items:center;justify-content:center;text-align:center;border:1px dashed var(--line);border-radius:12px;padding:12px;font-size:12px} @media (max-width:720px){.shopbottom{grid-template-columns:1fr}}
 /* More than three shop cards (Lotus, Rare and Uncommon Tags, Voucher Tag): smaller cards, four or more to a row */
 .shelf.many .shelfrow{grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:10px} .shelf.many .shopcard{min-height:206px;padding:16px 8px 10px} .shelf.many .shopcard .n{font-size:15px} .shelf.many .shopcard .d{font-size:11px;line-height:1.35} .shelf.many .emblem{width:36px;height:36px} .shelf.many .lvline{font-size:10.5px}
-/* Full CRT: the SVG filter bends the picture; a dark rounded mask hides the bent-away edges like a tube's bezel */
-body.crt-full #app,body.crt-full #overlay{filter:url(#crtfx)} #crtbezel{display:none} body.crt-full #crtbezel{display:block;position:fixed;inset:0;z-index:91;pointer-events:none;border-radius:28px/22px;box-shadow:0 0 0 40px #050806,inset 0 0 60px 18px rgba(0,0,0,.65)}
-/* Full CRT stays light: a static phosphor glow instead of a blur-based bloom, and the always-running shimmer and glow loops
-   under the filter hold still (each frame they run would otherwise make the browser redo the whole filter) */
-body.crt-full #crtbezel::before{content:'';position:absolute;inset:0;border-radius:inherit;background:radial-gradient(ellipse at center,rgba(255,236,200,.07),transparent 70%);mix-blend-mode:screen}
-body.crt-full .slot[class*="ed-"]::before,body.crt-full .slot[class*="ed-"]::after,body.crt-full .shopcard[class*="ed-"]::before,body.crt-full .shopcard[class*="ed-"]::after,body.crt-full .shoprail .nextbtn.primary,body.crt-full .shoprail .nextbtn.primary::after{animation:none!important}
-@media (prefers-reduced-motion: reduce){body.crt-full #app,body.crt-full #overlay{filter:none}}
 /* ===== Tray Shop (and packs): rises from the bottom of the board; the Talisman row above stays clear ===== */
 /* Below the Talisman row the board darkens gradually, like the cash-out */
 .board.shopdim::after{background:linear-gradient(180deg,transparent 0,transparent var(--cut,0px),rgba(5,10,9,.3) calc(var(--cut,0px) + 6px),rgba(5,10,9,.62) calc(var(--cut,0px) + 70px))}
@@ -2257,11 +2248,11 @@ let SHOW_DOTS = false; try { SHOW_DOTS = localStorage.getItem('yakuman.dots') ==
 // Display settings: animated background (on by default) and high-contrast tiles (off by default).
 let BG_ANIM = true; try { BG_ANIM = localStorage.getItem('yakuman.bganim') !== 'off'; } catch (e) { }
 let HIGH_CONTRAST = false; try { HIGH_CONTRAST = localStorage.getItem('yakuman.hc') === 'on'; } catch (e) { }
-// Screen shake on big scores (on by default) and a CRT filter (off by default), like Balatro's options.
+// Screen shake on big scores (on by default), like Balatro's option.
 let SHAKE = true; try { SHAKE = localStorage.getItem('yakuman.shake') !== 'off'; } catch (e) { }
+// The CRT filter was removed; a choice stored by an older build is cleared.
+try { localStorage.removeItem('yakuman.crt'); } catch (e) { }
 let REDUCE_MOTION = false; try { REDUCE_MOTION = localStorage.getItem('yakuman.motion') === 'reduce'; } catch (e) { }   // Settings: Reduce motion
-// CRT: 'off', 'on' (light: scanlines and vignette) or 'full' (adds Balatro's screen curvature and a soft glow).
-let CRT = 'off'; try { CRT = localStorage.getItem('yakuman.crt') || 'off'; } catch (e) { }
 // Helper hints under the hand: tiles away / complete hand ready is on by default; waits and what a selected discard does are off.
 let HINTS = { away: true, waits: false, without: false };
 // Corner numbers on tiles: 'all', 'some' (Characters and Winds, the default) or 'none'. Dots and Bamboo can be counted by their pips.
@@ -2322,7 +2313,6 @@ function settingsHTML() {
   <div class="setsec">Display</div>
   <div class="setrow"><div><b>High-Contrast Tiles</b><div class="muted">One strong colour per suit (Characters red, Dots blue, Bamboo green), with the number on every suited tile. Red Fives stay red with a red corner number.</div></div><div class="setbtns"><button class="${HIGH_CONTRAST ? 'primary' : ''}" data-sethc="on">On</button><button class="${!HIGH_CONTRAST ? 'primary' : ''}" data-sethc="off">Off</button></div></div>
   <div class="setrow"><div><b>Tile Numbers</b><div class="muted">The small number or letter in a tile's corner. Characters and Winds is the default: Dots and Bamboo are counted by their pips. With All Tiles, some numbers sit over the Dots and Bamboo art.</div></div><div class="setbtns">${[['all', 'All Tiles'], ['some', 'Characters and Winds'], ['none', 'None']].map(([k, n]) => `<button class="${TILE_NUMS === k ? 'primary' : ''}" data-settilenums="${k}">${n}</button>`).join('')}</div></div>
-  <div class="setrow"><div><b>CRT Filter</b><div class="muted">Light adds faint scanlines and a soft vignette. Full also curves the screen like an old tube, with a soft glow at the edges, like Balatro's CRT; it is heavier and may slow older devices.</div></div><div class="setbtns">${[['off', 'Off'], ['on', 'Light'], ['full', 'Full']].map(([k, n]) => `<button class="${CRT === k ? 'primary' : ''}" data-setcrt="${k}">${n}</button>`).join('')}</div></div>
   <div class="setsec">Motion</div>
   <div class="setrow"><div><b>Reduce Motion</b><div class="muted">Turns off all animation: cards flying and dealing in, trays sliding, shimmer, the drifting background and the scoring effects. Everything happens instantly instead. Also on automatically if your device asks for reduced motion.</div></div><div class="setbtns"><button class="${REDUCE_MOTION ? 'primary' : ''}" data-setmotion="reduce">On</button><button class="${!REDUCE_MOTION ? 'primary' : ''}" data-setmotion="full">Off</button></div></div>
   <div class="setrow${noMotion ? ' setoff' : ''}"><div><b>Animation Speed</b><div class="muted">How fast everything moves: scoring, trays sliding, cards dealing in and flying to their slots. The drifting background and shimmer keep their pace.${noMotion ? `<div class="setnote">Off while ${deviceReduce && !REDUCE_MOTION ? 'your device asks for reduced motion' : 'Reduce motion is on'}.</div>` : ''}</div></div><div class="setbtns">${[['slow', 'Slow'], ['normal', 'Normal'], ['fast', 'Fast']].map(([k, n]) => `<button ${noMotion ? 'disabled ' : ''}class="${ANIM_SPEED === k ? 'primary' : ''}" data-setspeed="${k}">${n}</button>`).join('')}</div></div>
@@ -4935,7 +4925,7 @@ function fullRulesHTML() {
   <p><b>Setup.</b> A new run lets you choose a Wall (deck), a Stake (difficulty) and a seed. Sharing a seed replays the same Wall, shops and bosses for players with the same unlocks. Each Stake keeps every penalty of the ones below it: ${Object.values(STAKES).slice(1).map(s => `${s.name}: ${s.desc.replace(/^Everything in [^,]+, (and )?/, '').replace(/^./, c => c.toUpperCase())}`).join(' ')} Winning on a Stake with a Wall unlocks the next Stake for that Wall. From Black Stake, shop and pack Talismans can carry stickers: Eternal (can't be sold), Perishable (stops working after 5 Blinds, from Orange) and Rental (¥1 to buy, ¥3 every Blind, from Gold).</p>
   <p><b>Special Talismans.</b> Some fade: Kakigōri loses Chips with each play, Senbei loses Mult each Blind, Ramen weakens as you discard, and each leaves when it runs out. Daikoku doubles every listed chance. Yūrei saves a lost Blind once if you scored at least a quarter of the target. Selling Rikishi during a Boss Blind disables the Boss, selling Ramune gives a Double Tag, and selling Kakuremino after 2 Blinds copies another Talisman. With Kabuki, Talismans you already own can turn up again, so you can hold two copies; each copy works on its own.</p>
   <p><b>Walls.</b> Each Wall changes the run. ${Object.values(DECKS).filter(d => d !== DECKS.standard).map(d => `${d.name}: ${d.desc}`).join(' ')} Most Walls unlock through goals; the Collection shows them.</p>
-  <p><b>Settings.</b> Sound and Music are separate. The animated background, screen shake, CRT filter (Light or Full, with screen curvature and a soft glow), high-contrast tiles and dead-tile dots can each be switched on or off. Reduce motion turns off every animation (it is also on when your device asks for reduced motion). Reset to Defaults puts them all back. Sort by Suit or By Rank from the hand's header.</p>
+  <p><b>Settings.</b> Sound and Music are separate. The animated background, screen shake, high-contrast tiles and dead-tile dots can each be switched on or off. Reduce motion turns off every animation (it is also on when your device asks for reduced motion). Reset to Defaults puts them all back. Sort by Suit or By Rank from the hand's header.</p>
   <p><b>Challenges.</b> Fixed runs with special rules (${CHALLENGES.length} of them), from the title screen. Winning one is recorded on its own and doesn't count as a run, Stake or Wall win. Achievements on the Profile tab track long-term goals.</p>
   <h3>Help and Controls</h3>
   <p><b>Helper.</b> Under your hand the game shows how many tiles you are from a complete hand. Settings can turn that off, and can turn on two more hints: which tiles you are waiting on, and whether the tiles you select can go without setting you back. Against The Purist they only count your visible tiles. Another assist marks dead tiles with green dots.</p>
@@ -5031,7 +5021,7 @@ function profileHTML() {
 }
 // ===================== EXPORT / IMPORT =====================
 // One save = profile + settings + current run, as gzip + base64 text ("YKM1Z:...") or plain JSON.
-const SETTING_KEYS = ['yakuman.lastplay', 'yakuman.debug', 'yakuman.lang', 'yakuman.speed', 'yakuman.dots', 'yakuman.hints', 'yakuman.tilenums', 'yakuman.unlockall', 'yakuman.sound', 'yakuman.music', 'yakuman.bganim', 'yakuman.hc', 'yakuman.shake', 'yakuman.crt', 'yakuman.motion', 'yakuman.instantscore'];
+const SETTING_KEYS = ['yakuman.lastplay', 'yakuman.debug', 'yakuman.lang', 'yakuman.speed', 'yakuman.dots', 'yakuman.hints', 'yakuman.tilenums', 'yakuman.unlockall', 'yakuman.sound', 'yakuman.music', 'yakuman.bganim', 'yakuman.hc', 'yakuman.shake', 'yakuman.motion', 'yakuman.instantscore'];
 function exportPayload() { const settings = {}; for (const k of SETTING_KEYS) { try { const v = localStorage.getItem(k); if (v != null) settings[k] = v; } catch (e) { } } save(); let run = null; try { run = localStorage.getItem(SAVE_KEY); } catch (e) { } return { app: 'yakuman', v: 1, exported: new Date().toISOString(), profile: PROFILE, settings, run }; }
 async function toCode(obj) {
   const bytes = new TextEncoder().encode(JSON.stringify(obj)); let out = bytes, gz = false;
@@ -5296,27 +5286,6 @@ function copySeed(btn) {
   try { navigator.clipboard.writeText(txt).then(done, () => fallback()); } catch (e) { fallback(); }
   function fallback() { const r = document.createRange(); const code = btn.previousElementSibling; if (code) { r.selectNodeContents(code); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r); btn.textContent = 'Selected'; setTimeout(() => { btn.textContent = 'Copy'; }, 1200); } }
 }
-// ===================== CRT =====================
-// Full CRT is one SVG filter on the game and its overlays: the picture is bent outwards by a displacement map, strongest at
-// the corners. That is all it does: browsers run SVG filters on the CPU and redo them on every frame anything moves, so the
-// bloom blur and colour fringe were dropped for speed; the glow is a cheap static layer in CSS instead.
-function crtFilterSVG() {
-  const N = 128, c = document.createElement('canvas'); c.width = c.height = N; const g = c.getContext('2d'), img = g.createImageData(N, N);
-  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
-    const u = x / (N - 1) * 2 - 1, v = y / (N - 1) * 2 - 1, r2 = u * u + v * v, k = .5 * r2;   // pull pixels from further out near the edges
-    const i = (y * N + x) * 4; img.data[i] = 128 + Math.max(-127, Math.min(127, u * k * 127)); img.data[i + 1] = 128 + Math.max(-127, Math.min(127, v * k * 127)); img.data[i + 2] = 0; img.data[i + 3] = 255;
-  }
-  g.putImageData(img, 0, 0); const map = c.toDataURL();
-  return `<svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="crtfx" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
-    <feImage href="${map}" preserveAspectRatio="none" result="map"/>
-    <feDisplacementMap in="SourceGraphic" in2="map" scale="28" xChannelSelector="R" yChannelSelector="G"/>
-  </filter></svg>`;
-}
-function applyCRT() {
-  document.body.classList.toggle('crt', CRT === 'on' || CRT === 'full'); document.body.classList.toggle('crt-full', CRT === 'full');
-  if (CRT === 'full' && !document.getElementById('crtfx')) document.body.insertAdjacentHTML('beforeend', crtFilterSVG());
-  if (CRT === 'full' && !document.getElementById('crtbezel')) document.body.insertAdjacentHTML('beforeend', '<div id="crtbezel" aria-hidden="true"></div>');
-}
 // Balatro-style hover: shop and pack cards lift and tilt toward the mouse with a soft shine. Off while dragging or with
 // reduced motion. Talisman and consumable cards tilt too whenever they show their descriptions in full (outside a Blind,
 // or during one on a screen with room for them); otherwise they expand on hover instead.
@@ -5380,7 +5349,6 @@ function bindEvents() {
     if (t.id === 'mResetSettings') { if (t.dataset.armed) { save(); for (const k of SETTING_KEYS) { try { localStorage.removeItem(k); } catch (e) { } } location.reload(); return; } t.dataset.armed = '1'; t.textContent = 'Click again to reset'; t.classList.add('danger'); return; }
     if (t.dataset.setmotion) { REDUCE_MOTION = t.dataset.setmotion === 'reduce'; try { localStorage.setItem('yakuman.motion', t.dataset.setmotion); } catch (e) { } applyMotion(); showSettings(); return; }
     if (t.dataset.setshake) { SHAKE = t.dataset.setshake === 'on'; try { localStorage.setItem('yakuman.shake', SHAKE ? 'on' : 'off'); } catch (e) { } showSettings(); return; }
-    if (t.dataset.setcrt) { CRT = t.dataset.setcrt; try { localStorage.setItem('yakuman.crt', CRT); } catch (e) { } applyCRT(); showSettings(); return; }
     if (t.dataset.setmusic) { MUSIC = t.dataset.setmusic === 'on'; try { localStorage.setItem('yakuman.music', MUSIC ? 'on' : 'off'); } catch (e) { } if (MUSIC) musicStart(); else musicStop(); showSettings(); return; }
     if (t.dataset.setbg) { BG_ANIM = t.dataset.setbg === 'on'; try { localStorage.setItem('yakuman.bganim', BG_ANIM ? 'on' : 'off'); } catch (e) { } document.body.classList.toggle('bganim', BG_ANIM); showSettings(); return; }
     if (t.dataset.sethc) { HIGH_CONTRAST = t.dataset.sethc === 'on'; try { localStorage.setItem('yakuman.hc', HIGH_CONTRAST ? 'on' : 'off'); } catch (e) { } render(); showSettings(); return; }
@@ -5435,7 +5403,7 @@ function bindEvents() {
   });
 }
 function boot(saved) {
-  bindEvents(); document.body.classList.toggle('bganim', BG_ANIM); applyCRT(); applyMotion(); applyLastPlay();
+  bindEvents(); document.body.classList.toggle('bganim', BG_ANIM); applyMotion(); applyLastPlay();
   // the debug bar comes back if it was showing when the page was last open
   try { if (localStorage.getItem('yakuman.debug') === 'on') $('#debugBar').hidden = false; } catch (e) { }
   if (saved && saved.phase && saved.deck) { S = saved; S.talState = S.talState || {}; (S.talismans || []).forEach(k => { if (String(k).includes('#')) talAlias(k); });
