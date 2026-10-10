@@ -863,4 +863,8 @@ button.pulse{animation:btnpulse2 2.6s ease-out infinite}
 .emark-wild{background:conic-gradient(#e53e3e,#dd6b20,#38a169,#3182ce,#805ad5,#e53e3e)} .emark-lucky{background:#2f855a} .emark-mult{background:#c53030}
 .tile.eng-stone{background:linear-gradient(180deg,#a7a49c,#8f8c84)}
 .tile.debuffed{filter:grayscale(.7) brightness(.85)} .tile.debuffed::before{content:'';position:absolute;inset:0;border-radius:inherit;background:linear-gradient(45deg,transparent 46%,rgba(197,48,48,.85) 46%,rgba(197,48,48,.85) 54%,transparent 54%),linear-gradient(-45deg,transparent 46%,rgba(197,48,48,.85) 46%,rgba(197,48,48,.85) 54%,transparent 54%);pointer-events:none;z-index:2}
+/* Animated background: two soft lights drifting behind the table (transform only, so it stays cheap) */
+body.bganim::before{content:'';position:fixed;inset:-25%;z-index:-1;pointer-events:none;background:radial-gradient(35% 30% at 30% 35%,rgba(64,160,130,.22),transparent 70%),radial-gradient(30% 28% at 72% 65%,rgba(217,164,65,.14),transparent 70%),radial-gradient(28% 26% at 60% 20%,rgba(120,80,170,.12),transparent 70%);animation:bgswirl 70s ease-in-out infinite alternate;will-change:transform}
+@keyframes bgswirl{0%{transform:rotate(0deg) scale(1)}50%{transform:rotate(14deg) scale(1.08) translate(2%,-1%)}100%{transform:rotate(-10deg) scale(1.04) translate(-2%,1%)}}
+@media (prefers-reduced-motion: reduce){body.bganim::before{animation:none}}
 </style>
