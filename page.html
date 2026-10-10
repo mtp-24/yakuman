@@ -2763,7 +2763,7 @@ const PACK_CLOSE_MS = 900, PACK_USE_CLOSE_MS = 1400;
 let packClosing = null;
 function closePackSoon(ms) {
   S.pack.done = true; clearTimeout(packClosing);
-  packClosing = setTimeout(() => { packClosing = null; if (S.phase === 'shop' && S.pack && S.pack.done) { S.pack = null; render(); } }, motionOK ? ms : 0);
+  packClosing = setTimeout(() => trayOut(() => { packClosing = null; if (S.phase === 'shop' && S.pack && S.pack.done) { S.pack = null; render(); } }), motionOK ? ms : 0);
 }
 function takeFromPack(i) {
   const it = S.pack.choices[i]; if (!it || it.sold) return;
@@ -2784,7 +2784,7 @@ function buy(it) {
   const def = itemDef(it), p = itemPrice(it), card = $(`#modal [data-buy="${shopItems().indexOf(it)}"]`);
   if (S.money < p) { setMsg(`Not enough YEN: ${def.name} costs ¥${p}.`, true); return render(); }
   const inflate = () => { if (chal('inflation') && !S.quiet) S.inflation = (S.inflation || 0) + 1; };
-  if (it.kind === 'pack') { S.money -= p; it.sold = true; inflate(); if (!S.quiet) sfx('buy'); openPack(it.key, false); return render(); }
+  if (it.kind === 'pack') { if (trayLeaving) return; S.money -= p; it.sold = true; inflate(); if (!S.quiet) sfx('buy'); if (S.quiet) { openPack(it.key, false); return render(); } return trayOut(() => { openPack(it.key, false); render(); }); }
   if (it.kind === 'talisman') { if (S.talismans.length >= talSlots()) { setMsg(`All ${talSlots()} Talisman slots are full. Sell one first.`, true); return render(); } if (!S.quiet) bump(PROFILE, 'talsBought'); gainTalisman(it.key, it.sticker); if (it.edition) S.editions[it.key] = it.edition; }
   else if (it.kind === 'omikuji' || it.kind === 'kami') { if (S.consumables.length >= conSlots()) { setMsg('Consumable slots are full. Use one first.', true); return render(); } S.consumables.push({ kind: it.kind, key: it.key }); }
   else if (it.kind === 'scroll') { const [t, k] = it.key.split(':'); S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] = (S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] || 0) + 1; for (const tk of liveTals(S)) if (TAL[tk].onScroll) TAL[tk].onScroll(S); PROFILE.scrollsUsed++; saveProfile(); }
@@ -3770,7 +3770,16 @@ function decorateBanner(cls) {
 // mode 'shop': the tray fills the board below the Talisman row, which stays clear and clickable for selling.
 // The tray slides up once when the Shop opens (and when a pack opens), not on every redraw.
 let trayShown = '';
-function trayIn(kind) { const id = kind + ':' + S.ante + ':' + S.blindIndex + ':' + (S.pack ? S.pack.key : ''); if (trayShown === id || !motionOK || !$('#overlay').classList.contains('boardonly')) { trayShown = id; return; } trayShown = id; $('#modal').animate([{ transform: 'translateY(105%)' }, { transform: 'none' }], { duration: 340, easing: 'cubic-bezier(.2,.8,.2,1)' }); }
+// A tray that is leaving (a pack closing, the Shop giving way to a pack or the next Blind) slides down off the screen first,
+// quickly, and only then is the next screen drawn, which rises in its place. Clicks are ignored while it slides.
+let trayLeaving = false, traySlidOut = false;   // traySlidOut: the next tray rises even if it is the same one again (a second pack of the same kind)
+function trayOut(next) {
+  const ov = $('#overlay'), m = $('#modal');
+  if (trayLeaving) return; if (!motionOK || ov.hidden || !ov.classList.contains('boardonly')) { next(); return; }
+  trayLeaving = true; let done = false; const fin = () => { if (done) return; done = true; trayLeaving = false; traySlidOut = true; next(); };
+  m.animate([{ transform: 'none' }, { transform: 'translateY(105%)' }], { duration: 200, easing: 'cubic-bezier(.5,0,.75,0)', fill: 'forwards' }).onfinish = fin; setTimeout(fin, 450);
+}
+function trayIn(kind) { const id = kind + ':' + S.ante + ':' + S.blindIndex + ':' + (S.pack ? S.pack.key : ''); const after = traySlidOut; traySlidOut = false; if ((trayShown === id && !after) || !motionOK || !$('#overlay').classList.contains('boardonly')) { trayShown = id; return; } trayShown = id; $('#modal').animate([{ transform: 'translateY(105%)' }, { transform: 'none' }], { duration: 280, easing: 'cubic-bezier(.2,.8,.2,1)' }); }
 function placeOverlay(boardOnly, mode) {
   const ov = $('#overlay'); ov.classList.remove('boardonly', 'shoptray', 'inflow'); ['left', 'top', 'width', 'height'].forEach(k => ov.style[k] = '');
   const board = document.querySelector('.board'); if (board) board.classList.remove('cashdim', 'shopdim'); if (!boardOnly || !board || innerWidth <= 900 || (mode === 'shop' && !shopTray)) return;
@@ -3909,7 +3918,7 @@ function cashOut() {
   const r = S.reward; if (!r || r.paid) return; r.paid = true;
   const run = S, go = () => { if (S !== run || S.phase !== 'cashout' || S.reward !== r) return; S.phase = 'shop'; S.msg = ''; render(); };   // a run that has moved on (New Run, import) is left alone
   const m = $('#modal'), from = m.querySelector('.cashamt .coin'), purse = $('#purseVal'), cur = LANG === 'hk' ? '$' : '¥';
-  if (!motionOK || !from || !purse || r.total <= 0 || !$('#overlay').classList.contains('boardonly')) { if (r.total > 0) sfx('kaching'); go(); return; }
+  if (!motionOK || !from || !purse || r.total <= 0 || !$('#overlay').classList.contains('boardonly')) { if (r.total > 0) sfx('kaching'); trayOut(go); return; }
   const a = from.getBoundingClientRect(), p = purse.closest('.purse').querySelector('.coin').getBoundingClientRect();
   const sx = a.left + a.width / 2, sy = a.top + a.height / 2, ex = p.left + p.width / 2, ey = p.top + p.height / 2, lift = Math.min(160, Math.abs(sx - ex) * .25 + 60);
   m.animate([{ transform: 'none' }, { transform: 'translateY(110%)' }], { duration: 260, easing: 'ease-in', fill: 'forwards' });
@@ -4524,16 +4533,16 @@ function bindEvents() {
     else if (t.id === 'mCollection') { showModal(collectionHTML(), true, 'colmodal'); $('#mClose').onclick = () => { showModal(menuHTML(!!load()), true, 'menumodal'); }; }
     else if (t.id === 'mRules') { showModal(rulesHTML() + '', true); $('#mClose').onclick = () => { showModal(menuHTML(!!load()), true, 'menumodal'); }; }
     else if (t.id === 'mCashOut') cashOut();
-    else if (t.id === 'mNext') { S.shop = null; S.pack = null; S.msg = ''; S.phase = 'select'; render(); }
+    else if (t.id === 'mNext') trayOut(() => { S.shop = null; S.pack = null; S.msg = ''; S.phase = 'select'; render(); });
     else if (t.id === 'mPlayBlind') { S.msg = ''; startBlind(); render(); }
     else if (t.id === 'mRunInfo') { showModal(yakuHTML(), true); $('#mClose').onclick = () => { modalPinned = false; render(); }; }
     else if (t.id === 'mReroll') reroll();
     else if (t.id === 'mSkip') skipBlind();
     else if (t.id === 'mRerollBoss') rerollBoss();
-    else if (t.dataset.freepack != null) { const pk = S.shop.freePacks.splice(+t.dataset.freepack, 1)[0]; openPack(pk, true); render(); }
+    else if (t.dataset.freepack != null) { if (trayLeaving) return; const pk = S.shop.freePacks.splice(+t.dataset.freepack, 1)[0]; trayOut(() => { openPack(pk, true); render(); }); }
     else if (t.dataset.take != null) takeFromPack(+t.dataset.take);
     else if (t.dataset.packuse != null) usePackCard(+t.dataset.packuse);
-    else if (t.id === 'mPackDone') { S.pack = null; render(); }
+    else if (t.id === 'mPackDone') trayOut(() => { S.pack = null; render(); });
     else if (t.id === 'mDeck') { showModal(deckHTML(), true); $('#mClose').onclick = () => { modalPinned = false; render(); }; }
     else if (t.dataset.buy != null) buy(shopItems()[+t.dataset.buy]);
     else if (t.dataset.sell) sellTalisman(t.dataset.sell);
