@@ -1034,6 +1034,7 @@ body.reducemotion *,body.reducemotion *::before,body.reducemotion *::after,body.
 .blindbtns #mSkip{color:#d3e7f8;background:linear-gradient(180deg,rgba(127,179,224,.22),rgba(127,179,224,.08));border:1px solid rgba(127,179,224,.55);box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 3px 0 #1d3347,0 7px 14px rgba(0,0,0,.3)}
 .blindbtns button:hover{transform:translateY(-1px);filter:brightness(1.08)} .blindbtns button:active{transform:translateY(2px);box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 1px 0 rgba(0,0,0,.5)}
 .blindbtns button svg{flex:none}
+.usering{position:fixed;z-index:63;pointer-events:none;width:96px;height:96px;margin:-48px 0 0 -48px;border-radius:50%;border:2px solid rgba(var(--uc),.9);box-shadow:0 0 20px rgba(var(--uc),.8),inset 0 0 20px rgba(var(--uc),.55)}
 </style>
 </head><body>
 <div id="app">
@@ -2283,21 +2284,6 @@ function sellFx(el, v) {
   }
   setTimeout(() => { const el = $('#purseVal'); if (el) { el.textContent = money(cur, S.money); fitText(el); juice(el, .7); } }, spd(start + dur + (n - 1) * gap + 30));
 }
-// Using a consumable: an Omikuji slip folds into a thin strip and floats up, as if tied at a shrine; a Kami Spirit
-// rises away in a glow, leaving motes of light.
-function useFx(el, kind) {
-  if (!el || !motionOK) return; const r = el.getBoundingClientRect(); if (!r.width) return; const g = ghostOf(el);
-  const frames = kind === 'kami'
-    ? [{ opacity: 1, filter: 'none', transform: 'none' }, { opacity: 1, filter: 'brightness(1.5) drop-shadow(0 0 12px rgba(255,240,200,.9))', transform: 'scale(1.05)', offset: .3 }, { opacity: 0, filter: 'brightness(2.2) blur(5px)', transform: 'translateY(-56px) scale(1.12)' }]
-    : [{ opacity: 1, filter: 'none', transform: 'none' }, { opacity: 1, filter: 'brightness(1.3)', transform: 'translateY(-8px) scale(1.04)', offset: .25 }, { opacity: 1, filter: 'brightness(1.4)', transform: 'translateY(-14px) scaleX(.22) scaleY(.92)', offset: .6 }, { opacity: 0, filter: 'brightness(1.4)', transform: 'translateY(-64px) scaleX(.12) scaleY(.5)' }];
-  g.animate(frames, { duration: 620, easing: 'cubic-bezier(.3,.1,.4,1)', fill: 'forwards' }).onfinish = () => g.remove(); setTimeout(() => g.remove(), spd(1100));
-  if (kind !== 'kami') return;
-  for (let i = 0; i < 10; i++) {
-    const m = document.createElement('i'); m.className = 'mote'; m.style.cssText = `left:${r.left + r.width * (.15 + Math.random() * .7)}px;top:${r.top + r.height * (.3 + Math.random() * .6)}px`; document.body.appendChild(m);
-    m.animate([{ transform: 'translate(-50%,-50%) scale(.4)', opacity: 0 }, { transform: 'translate(-50%,-50%) scale(1)', opacity: 1, offset: .2 }, { transform: `translate(calc(-50% + ${(Math.random() - .5) * 30}px),calc(-50% - ${50 + Math.random() * 50}px)) scale(.5)`, opacity: 0 }], { duration: 700 + Math.random() * 300, delay: 120 + Math.random() * 200, easing: 'ease-out', fill: 'both' }).onfinish = () => m.remove();
-    setTimeout(() => m.remove(), spd(1500));
-  }
-}
 function dissolveEl(el) {
   if (!el || !motionOK) return; const r = el.getBoundingClientRect(), g = el.cloneNode(true); Object.assign(g.style, { position: 'fixed', left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px', margin: 0, zIndex: 60, pointerEvents: 'none' }); document.body.appendChild(g);
   g.animate([{ opacity: 1, filter: 'none', transform: 'none' }, { opacity: .9, filter: 'brightness(1.6) sepia(.6) saturate(3) blur(.5px)', transform: 'scale(1.03)', offset: .3 }, { opacity: 0, filter: 'brightness(2) saturate(4) blur(6px)', transform: 'scale(.92) translateY(-10px)' }], { duration: DISSOLVE_MS, easing: 'ease-in' }).onfinish = () => g.remove(); setTimeout(() => g.remove(), spd(900));
@@ -2797,7 +2783,68 @@ function doDeclareKan() {
   render();
 }
 // A used consumable burns away from its slot on the board (the cards after it wait, then slide in), like a sold one.
-function burnSlot(i) { if (i < 0 || compactScreen()) return; holdRow('#consumables .slot.filled', '#consumables', i); useFx([...document.querySelectorAll('#consumables .slot')][i], S.consumables[i] && S.consumables[i].kind); }
+// Using a consumable, like playing a Tarot in Balatro: the card lifts out of its slot and glides to just above its target
+// (the selected tiles, the hand, or above its own slot in the Shop), swells and glows in its colour, and bursts into a ring
+// of light. Sparks fly to the tiles it touched, which turn over to show what they became; tiles it destroyed burn away;
+// anything it created flies out of the burst into its slot while the other cards close up.
+const USE_MS = 900, USE_BURST = 620, USE_COL = { omikuji: '255,214,120', kami: '214,190,255' };
+let useCtx = null;
+function burnSlot(i) {
+  if (i < 0 || compactScreen() || !motionOK) return; const slot = [...document.querySelectorAll('#consumables .slot')][i]; if (!slot) return;
+  holdRow('#consumables .slot.filled', '#consumables', i);
+  const kind = (S.consumables[i] && S.consumables[i].kind) || 'omikuji', col = USE_COL[kind] || USE_COL.omikuji, r = slot.getBoundingClientRect();
+  const tiles = S.phase === 'blind' ? S.selected.map(id => document.querySelector(`#hand .tile[data-id="${id}"], #open .tile[data-id="${id}"]`)).filter(Boolean) : [];
+  let fx, fy;
+  if (tiles.length) { const rs = tiles.map(t => t.getBoundingClientRect()); fx = (Math.min(...rs.map(x => x.left)) + Math.max(...rs.map(x => x.right))) / 2; fy = Math.min(...rs.map(x => x.top)) - r.height * .55 - 12; }
+  else if (S.phase === 'blind' && $('#hand')) { const h = $('#hand').getBoundingClientRect(); fx = h.left + h.width / 2; fy = h.top - r.height * .55 - 12; }
+  else { fx = r.left + r.width / 2; fy = r.top + r.height / 2 - 70; }
+  fy = Math.max(r.height * .6 + 8, fy);
+  const g = ghostOf(slot), dx = fx - (r.left + r.width / 2), dy = fy - (r.top + r.height / 2), at = `translate(${dx}px,${dy}px)`;
+  g.style.zIndex = 62; g.style.setProperty('--uc', col);
+  g.animate([
+    { transform: 'none', filter: 'none', opacity: 1 },
+    { transform: 'translateY(-10px) scale(1.06)', filter: 'brightness(1.1)', opacity: 1, offset: .1 },
+    { transform: `${at} scale(1.16) rotate(-2deg)`, filter: 'brightness(1.15)', opacity: 1, offset: .45 },
+    { transform: `${at} scale(1.24) rotate(0)`, filter: `brightness(1.8) drop-shadow(0 0 16px rgba(${col},.95))`, opacity: 1, offset: .66 },
+    { transform: `${at} scale(1.1)`, filter: `brightness(2.2) drop-shadow(0 0 22px rgba(${col},1)) blur(1px)`, opacity: .85, offset: .74 },
+    { transform: `${at} scale(.55)`, filter: 'brightness(2.6) blur(4px)', opacity: 0 }], { duration: USE_MS, easing: 'cubic-bezier(.35,.1,.3,1)', fill: 'forwards' }).onfinish = () => g.remove();
+  setTimeout(() => g.remove(), spd(USE_MS + 500));
+  setTimeout(() => useBurst(fx, fy, col), spd(USE_BURST));
+  useCtx = { t: performance.now(), fx, fy, col, conBefore: document.querySelectorAll('#consumables .slot.filled').length, tiles: tiles.map(t => ({ id: +t.dataset.id, rect: t.getBoundingClientRect(), node: t.cloneNode(true) })) };
+}
+function useBurst(x, y, col) {
+  const ring = document.createElement('div'); ring.className = 'usering'; ring.style.cssText = `left:${x}px;top:${y}px;--uc:${col}`; document.body.appendChild(ring);
+  ring.animate([{ transform: 'scale(.2)', opacity: .95 }, { transform: 'scale(1.7)', opacity: 0 }], { duration: 460, easing: 'cubic-bezier(.2,.7,.3,1)' }).onfinish = () => ring.remove(); setTimeout(() => ring.remove(), spd(900));
+  for (let k = 0; k < 14; k++) {
+    const a = k / 14 * Math.PI * 2 + Math.random() * .3, d = 40 + Math.random() * 50, m = document.createElement('i'); m.className = 'mote';
+    m.style.cssText = `left:${x}px;top:${y}px;background:rgb(${col});box-shadow:0 0 8px 2px rgba(${col},.85)`; document.body.appendChild(m);
+    m.animate([{ transform: 'translate(-50%,-50%) scale(1)', opacity: 1 }, { transform: `translate(calc(-50% + ${Math.cos(a) * d}px),calc(-50% + ${Math.sin(a) * d}px)) scale(.4)`, opacity: 0 }], { duration: 520 + Math.random() * 200, easing: 'cubic-bezier(.15,.7,.3,1)' }).onfinish = () => m.remove();
+    setTimeout(() => m.remove(), spd(1200));
+  }
+}
+// After the redraw that follows a use: the touched tiles wait edge-on until their spark lands, then turn over; destroyed
+// tiles burn where they stood; new consumables fly from the burst into their slots.
+function afterUse() {
+  const u = useCtx; useCtx = null; if (!u || performance.now() - u.t > spd(400)) return;
+  const land = USE_BURST + 170;
+  for (const t of u.tiles) {
+    const tx = t.rect.left + t.rect.width / 2, ty = t.rect.top + t.rect.height / 2, sp = document.createElement('i'); sp.className = 'mote';
+    sp.style.cssText = `left:${u.fx}px;top:${u.fy}px;width:9px;height:9px;background:#fff;box-shadow:0 0 12px 4px rgba(${u.col},.95)`; document.body.appendChild(sp);
+    sp.animate([{ transform: 'translate(-50%,-50%)', opacity: 0 }, { transform: 'translate(-50%,-50%)', opacity: 1, offset: .01 }, { transform: `translate(calc(-50% + ${tx - u.fx}px),calc(-50% + ${ty - u.fy}px))`, opacity: 1 }], { duration: 170, delay: USE_BURST, easing: 'ease-in', fill: 'both' }).onfinish = () => sp.remove();
+    setTimeout(() => sp.remove(), spd(land + 400));
+    const el = document.querySelector(`#hand .tile[data-id="${t.id}"], #open .tile[data-id="${t.id}"]`);
+    if (el) el.animate([{ transform: 'perspective(500px) rotateY(90deg)', filter: 'brightness(1.9)' }, { transform: 'perspective(500px) rotateY(0)', filter: 'brightness(1.4)', offset: .6 }, { transform: 'none', filter: 'none' }], { duration: 340, delay: land, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' });
+    else {
+      const g = t.node; Object.assign(g.style, { position: 'fixed', left: t.rect.left + 'px', top: t.rect.top + 'px', width: t.rect.width + 'px', height: t.rect.height + 'px', margin: 0, zIndex: 61, pointerEvents: 'none' }); document.body.appendChild(g);
+      g.animate([{ opacity: 1, filter: 'none', transform: 'none' }, { opacity: 1, filter: 'none', transform: 'none', offset: land / (land + 480) }, { opacity: .9, filter: 'brightness(1.6) sepia(.6) saturate(3) blur(.5px)', transform: 'scale(1.04)', offset: (land + 150) / (land + 480) }, { opacity: 0, filter: 'brightness(2) saturate(4) blur(6px)', transform: 'scale(.9) translateY(-10px)' }], { duration: land + 480, easing: 'ease-in' }).onfinish = () => g.remove();
+      setTimeout(() => g.remove(), spd(land + 900));
+    }
+  }
+  [...document.querySelectorAll('#consumables .slot.filled:not(.rowghost)')].slice(Math.max(0, u.conBefore - 1)).forEach((el, k) => {
+    const r = el.getBoundingClientRect(), dx = u.fx - (r.left + r.width / 2), dy = u.fy - (r.top + r.height / 2);
+    el.animate([{ transform: `translate(${dx}px,${dy}px) scale(.3)`, opacity: 0, filter: 'brightness(2)' }, { transform: `translate(${dx * .45}px,${dy * .45 - 30}px) scale(.85)`, opacity: 1, filter: 'brightness(1.5)', offset: .5 }, { transform: 'none', opacity: 1, filter: 'none' }], { duration: 460, delay: USE_BURST + 90 + k * 110, easing: 'cubic-bezier(.3,.7,.3,1)', fill: 'backwards' });
+  });
+}
 function useConsumable(i) {
   if (S.busy) return;
   const c = S.consumables[i]; const def = CONS[c.key];
@@ -3211,7 +3258,7 @@ function render() {
   translateDOM($('#app')); fitNumbers(); fitHead('talSell'); fitHead('conSell');
   if ($('#overlay').classList.contains('inflow')) placeOverlay(true, S.phase === 'shop' ? 'shop' : undefined);   // terms and fitted numbers can change the left column's height, so a tray that is part of the page is measured again
   if (S.placeholder && $('#overlay').hidden) showModal(menuHTML(false), true, 'menumodal');   // closing a screen opened from the title goes back to the title
-  tileMotion(motionBefore, freshTiles); syncEditions(); refreshTileTip(); animateWall(); animateSlots(); playRowHolds(); growRows(grow); if (S.phase !== 'shop' && !S.quiet) walletShown = S.money;
+  tileMotion(motionBefore, freshTiles); syncEditions(); refreshTileTip(); animateWall(); animateSlots(); playRowHolds(); afterUse(); growRows(grow); if (S.phase !== 'shop' && !S.quiet) walletShown = S.money;
   save();
 }
 // Tiles added to the Wall fly from where they were added to the Wall counter, which ticks up as each one lands. The counter is
