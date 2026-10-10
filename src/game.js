@@ -955,7 +955,7 @@ function selectHTML() {
     // The Boss's rule sits at the bottom, where the other Blinds show their skip reward, so the score rows line up.
     const bossBox = k === 'boss' && state !== 'done' ? `<div class="skipbox bossbox"><div class="skiphead"><span class="label">Boss rule</span>${BOSSES[boss].showdown ? '<span class="tagchip showchip">Showdown</span>' : ''}</div><div class="skipdesc">${BOSSES[boss].desc}</div></div>` : '';
     const skipBox = bossBox || (tag && state !== 'done' ? `<div class="skipbox"><div class="skiphead"><span class="label">Skip reward</span><span class="tagchip" data-hc-kind="Tag" data-hc-title="${tag.name}" data-hc-body="${tag.desc.replace(/"/g, '&quot;')}">${tag.name}</span></div><div class="skipdesc">${tag.desc}</div></div>` : '');
-    if (state === 'current') h += `<div class="buy"><button id="mPlayBlind" class="primary">Play</button>${tag ? `<button id="mSkip" class="ghost" title="${tag.desc} No cash for this blind.">Skip for Tag</button>` : ''}</div>${skipBox}`;
+    if (state === 'current') h += `<div class="buy blindbtns${tag ? ' two' : ''}"><button id="mPlayBlind" class="primary"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M4 2.5v11l9.5-5.5z" fill="currentColor"/></svg>Play</button>${tag ? `<button id="mSkip" class="ghost" title="${tag.desc} No cash for this blind."><svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path d="M2 2.8v4.6l7 7 5.4-5.4-7-7H2.8z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="5.3" cy="5.3" r="1.3" fill="currentColor"/></svg>Skip for Tag</button>` : ''}</div>${skipBox}`;
     else h += skipBox;
     h += `</div>`;
   });
@@ -1453,7 +1453,7 @@ function renderBlind() {
   // The extras in one plate at the bottom, one labelled row each: the Dora (Bonus Tile) indicators, Tags held, and Flowers.
   const extras = [];
   if (S.indicators.length) extras.push(`<div class="sx-row"><span class="label">Dora</span><div class="sx-val" id="doraRow"></div></div>`);
-  if (S.tags && S.tags.length) extras.push(`<div class="sx-row"><span class="label">Tags</span><div class="sx-val flowers">${S.tags.map(t => `<span class="flowerchip" data-hc-kind="Tag" data-hc-title="${TAGS[t].name}" data-hc-body="${TAGS[t].desc.replace(/"/g, '&quot;')}">${TAGS[t].name}</span>`).join('')}</div></div>`);
+  if (S.tags && S.tags.length) extras.push(`<div class="sx-row"><span class="label">Tags</span><div class="sx-val tags">${S.tags.map(t => `<span class="tagchip" data-hc-kind="Tag" data-hc-title="${TAGS[t].name}" data-hc-body="${TAGS[t].desc.replace(/"/g, '&quot;')}">${TAGS[t].name}</span>`).join('')}</div></div>`);
   if (S.flowers.length) extras.push(`<div class="sx-row"><span class="label">Flowers</span><div class="sx-val flowers">${S.flowers.map(f => `<span class="flowerchip" data-hc-kind="Flower" data-hc-title="${FLW[f].name}" data-hc-body="${FLW[f].desc.replace(/"/g, '&quot;')}">${FLW[f].name}</span>`).join('')}</div></div>`);
   if (extras.length) h += `<div class="sidextra">${extras.join('')}</div>`;
   $('#blindCard').innerHTML = h;

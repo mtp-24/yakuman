@@ -1025,4 +1025,12 @@ body.reducemotion *,body.reducemotion *::before,body.reducemotion *::after,body.
 .modal.confirmmodal{position:relative} .modal.confirmmodal .modal-x{position:absolute;top:14px;right:14px;margin:0;float:none;z-index:5;background:rgba(0,0,0,.28);border-color:rgba(246,234,210,.35);color:#f6ead2}
 .sellpop{position:fixed;z-index:97;pointer-events:none;white-space:nowrap;padding:3px 11px;border-radius:999px;background:linear-gradient(180deg,#f3c768,#c99a3a);color:#2a1d0a;font-family:var(--display);font-size:16px;font-weight:600;box-shadow:0 6px 16px rgba(0,0,0,.45),0 0 14px rgba(243,199,104,.5)}
 .mote{position:fixed;z-index:61;pointer-events:none;width:6px;height:6px;border-radius:50%;background:#fff6dc;box-shadow:0 0 8px 2px rgba(255,236,180,.85)}
+.sidextra .tagchip{margin:0}
+/* The current Blind's buttons: Play is a raised gold key, Skip for Tag a blue one in the Tag's colour, side by side */
+.blindcard .buy.blindbtns{display:grid;grid-template-columns:1fr;gap:8px;padding-top:10px} .blindcard .buy.blindbtns.two{grid-template-columns:1.15fr 1fr}
+.blindbtns button{height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap;transition:transform .12s,filter .12s,box-shadow .12s}
+.blindbtns #mPlayBlind{font-family:var(--display);font-size:19px;font-weight:600;letter-spacing:.05em;color:#2a1d0a;background:linear-gradient(180deg,#f3cd72,#d29f3c);border:1px solid #f6d68a;box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 3px 0 #8e6420,0 7px 14px rgba(0,0,0,.35)}
+.blindbtns #mSkip{font-size:14px;font-weight:600;color:#d3e7f8;background:linear-gradient(180deg,rgba(127,179,224,.22),rgba(127,179,224,.08));border:1px solid rgba(127,179,224,.55);box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 3px 0 #1d3347,0 7px 14px rgba(0,0,0,.3)}
+.blindbtns button:hover{transform:translateY(-1px);filter:brightness(1.08)} .blindbtns button:active{transform:translateY(2px);box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 1px 0 rgba(0,0,0,.5)}
+.blindbtns button svg{flex:none}
 </style>
