@@ -873,6 +873,8 @@ body.bganim::before{content:'';position:fixed;inset:-25%;z-index:-1;pointer-even
 /* CRT filter */
 body.crt::after{content:'';position:fixed;inset:0;z-index:90;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.14) 0 1px,transparent 1px 3px),radial-gradient(ellipse at center,transparent 60%,rgba(0,0,0,.45) 100%);mix-blend-mode:multiply}
 .shopbottom{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:16px;align-items:start} .shopbottom .vouchshelf .shelfrow{grid-template-columns:minmax(0,1fr)} .shopbottom .shelf:last-child .shelfrow{grid-template-columns:repeat(2,minmax(0,1fr))} .shopbottom .shelf{margin-top:0} .emptyvouch{width:100%;box-sizing:border-box;min-height:200px;display:flex;align-items:center;justify-content:center;text-align:center;border:1px dashed var(--line);border-radius:12px;padding:12px;font-size:12px} @media (max-width:720px){.shopbottom{grid-template-columns:1fr}}
+/* More than three shop cards (Lotus, Rare and Uncommon Tags, Voucher Tag): smaller cards, four or more to a row */
+.shelf.many .shelfrow{grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:10px} .shelf.many .shopcard{min-height:206px;padding:16px 8px 10px} .shelf.many .shopcard .n{font-size:15px} .shelf.many .shopcard .d{font-size:11px;line-height:1.35} .shelf.many .emblem{width:36px;height:36px} .shelf.many .lvline{font-size:10.5px}
 </style>
 <div id="app">
 <header>
@@ -3734,7 +3736,7 @@ function shopHTML() {
     <button id="mReroll" class="ghost railbtn rerollbtn" ${canReroll ? '' : 'disabled title="Not enough money to reroll"'}><span class="rbl"><svg class="rbico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8M4 4v4h4M4 13a8 8 0 0 0 14.3 4.9L20 16M20 20v-4h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Reroll Cards</span><b class="num">${rerollPrice() ? '¥' + rerollPrice() : 'Free'}</b></button>
     <button id="mDeck" class="ghost railbtn"><span class="rbl"><span class="wallico" aria-hidden="true"><i></i><i></i><i></i></span>View Wall</span><b class="num">${(S.deck || []).length}</b></button>
     <button id="mRunInfo" class="ghost railbtn"><span class="rbl"><svg class="rbico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 11v6M12 7.5v.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>Run Info</span><b class="num"></b></button></aside>
-    <div class="shopmain"><div class="shelf"><div class="shelflabel">Cards</div><div class="shelfrow">${S.shop.cards.map(it => cardHTML(it, at(it))).join('')}</div></div>
+    <div class="shopmain"><div class="shelf${S.shop.cards.length > 3 ? ' many' : ''}"><div class="shelflabel">Cards</div><div class="shelfrow">${S.shop.cards.map(it => cardHTML(it, at(it))).join('')}</div></div>
     <div class="shopbottom"><div class="shelf vouchshelf"><div class="shelflabel">Flower · this Ante</div><div class="shelfrow">${S.shop.flower ? cardHTML(S.shop.flower, at(S.shop.flower)) : '<div class="emptyvouch muted">Bought. A new Flower arrives next Ante.</div>'}</div></div>
     <div class="shelf"><div class="shelflabel">Booster Packs</div><div class="shelfrow">${S.shop.packs.map(it => cardHTML(it, at(it))).join('')}</div></div></div>
     ${S.shop.freePacks.length ? `<div class="freepacks">${S.shop.freePacks.map((pk, i) => `<button class="primary" data-freepack="${i}">Open Free ${PACKS[pk].name}</button>`).join('')}</div>` : ''}</div></div>`;
