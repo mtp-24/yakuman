@@ -872,16 +872,49 @@ function audioBase() {
 ['pointerdown', 'keydown'].forEach(ev => document.addEventListener(ev, () => { if (SOUND) audioCtx(); if (MUSIC) musicStart(); }, true));
 // ===================== MUSIC =====================
 // Balatro-style: one laid-back synth groove whose layers crossfade with the game, rather than separate tracks.
-// D minor at 96 BPM over Dm7 – B♭maj7 – Gm7 – A7. Normal: wobbly electric piano, syncopated bass, soft drums and a lead.
+// D minor at 96 BPM; the main theme runs Dm7 – B♭maj7 – Gm7 – A7, and the song runs four minutes before it loops. Normal: wobbly electric piano, syncopated bass, soft drums and a lead.
 // Shop: adds a bouncy square arpeggio. Boss Blind: adds a driving distorted bass, four-on-the-floor kick and a dark drone.
 // Uses its own random numbers, never the run's, so seeds are unaffected. Starts after the first click, pauses in a hidden tab.
 let MUSIC = (() => { try { return localStorage.getItem('yakuman.music') !== 'off'; } catch (e) { return true; } })();
 let MUSIC_GAIN = null, musicTimer = 0, musicStep = 0, musicAt = 0, MUSIC_BUS = null, MUSIC_LFO = null, musicMode = 'normal';
 const BPM = 96, STEP = 60 / BPM / 4;   // one 16th note
 const mf = n => 440 * Math.pow(2, (n - 69) / 12);
-const PROG = [{ root: 38, chord: [50, 53, 57, 60] }, { root: 34, chord: [46, 50, 53, 57] }, { root: 31, chord: [43, 46, 50, 53] }, { root: 33, chord: [45, 49, 52, 55] }];
-// Lead melody over the 4 bars: [bar, step, midi, length in steps]
-const LEAD = [[0, 0, 69, 4], [0, 4, 72, 2], [0, 6, 74, 6], [0, 12, 72, 2], [0, 14, 69, 2], [1, 0, 70, 6], [1, 6, 69, 2], [1, 8, 65, 8], [2, 0, 67, 4], [2, 4, 70, 2], [2, 6, 74, 4], [2, 10, 72, 2], [2, 12, 70, 4], [3, 0, 69, 6], [3, 6, 67, 2], [3, 8, 64, 4], [3, 12, 61, 4]];
+// The song: twelve 8-bar sections (96 bars, about four minutes) before it loops, all in one groove so the feel stays the same.
+// Chords are [bass root, voicing] in MIDI notes. A is the main theme; B, C and the breakdown (D) bring new progressions.
+const CH = (root, chord) => ({ root, chord });
+const PROGS = {
+  A: [CH(38, [50, 53, 57, 60]), CH(34, [46, 50, 53, 57]), CH(31, [43, 46, 50, 53]), CH(33, [45, 49, 52, 55])],
+  B: [CH(31, [43, 46, 50, 53]), CH(36, [48, 52, 55, 58]), CH(29, [41, 45, 48, 52]), CH(34, [46, 50, 53, 57]), CH(40, [52, 55, 58, 62]), CH(33, [45, 49, 52, 55]), CH(38, [50, 53, 57, 60]), CH(38, [50, 53, 57, 62])],
+  C: [CH(34, [46, 50, 53, 57]), CH(33, [45, 48, 52, 55]), CH(31, [43, 46, 50, 53]), CH(33, [45, 49, 52, 55])],
+  D: [CH(38, [50, 53, 57, 64]), CH(38, [50, 53, 57, 64]), CH(34, [46, 50, 53, 57]), CH(34, [46, 50, 57, 60])],
+};
+// Lead melodies: [bar, step, midi, length in steps]. 4-bar phrases repeat across an 8-bar section.
+const MEL = {
+  M1: [[0, 0, 69, 4], [0, 4, 72, 2], [0, 6, 74, 6], [0, 12, 72, 2], [0, 14, 69, 2], [1, 0, 70, 6], [1, 6, 69, 2], [1, 8, 65, 8], [2, 0, 67, 4], [2, 4, 70, 2], [2, 6, 74, 4], [2, 10, 72, 2], [2, 12, 70, 4], [3, 0, 69, 6], [3, 6, 67, 2], [3, 8, 64, 4], [3, 12, 61, 4]],
+  M1b: [[0, 0, 74, 3], [0, 3, 72, 1], [0, 4, 69, 4], [0, 10, 72, 2], [0, 12, 74, 4], [1, 0, 77, 4], [1, 4, 74, 2], [1, 6, 72, 2], [1, 8, 70, 8], [2, 0, 70, 3], [2, 3, 69, 1], [2, 4, 67, 4], [2, 8, 70, 4], [2, 12, 74, 4], [3, 0, 73, 6], [3, 6, 72, 2], [3, 8, 69, 8]],
+  M2: [[0, 0, 70, 4], [0, 4, 74, 4], [0, 8, 77, 6], [0, 14, 74, 2], [1, 0, 76, 4], [1, 4, 72, 4], [1, 8, 70, 4], [1, 12, 67, 4], [2, 0, 69, 6], [2, 6, 72, 2], [2, 8, 76, 8], [3, 0, 74, 4], [3, 4, 70, 4], [3, 8, 69, 4], [3, 12, 65, 4],
+    [4, 0, 67, 4], [4, 4, 70, 4], [4, 8, 74, 6], [4, 14, 72, 2], [5, 0, 73, 6], [5, 6, 76, 2], [5, 8, 79, 4], [5, 12, 76, 4], [6, 0, 77, 8], [6, 8, 74, 4], [6, 12, 72, 4], [7, 0, 74, 12]],
+  M2b: [[0, 2, 74, 2], [0, 4, 77, 4], [0, 8, 79, 4], [0, 12, 77, 4], [1, 0, 76, 6], [1, 6, 79, 2], [1, 8, 82, 8], [2, 0, 81, 4], [2, 4, 77, 4], [2, 8, 76, 4], [2, 12, 72, 4], [3, 0, 74, 8], [3, 8, 70, 8],
+    [4, 0, 70, 2], [4, 2, 72, 2], [4, 4, 74, 4], [4, 8, 76, 4], [4, 12, 79, 4], [5, 0, 81, 6], [5, 6, 79, 2], [5, 8, 76, 8], [6, 0, 74, 4], [6, 4, 77, 4], [6, 8, 81, 8], [7, 0, 86, 4], [7, 4, 81, 8]],
+  M3: [[0, 0, 74, 2], [0, 2, 77, 2], [0, 4, 81, 6], [0, 10, 79, 2], [0, 12, 77, 4], [1, 0, 76, 4], [1, 4, 72, 4], [1, 8, 76, 4], [1, 12, 79, 4], [2, 0, 77, 6], [2, 6, 74, 2], [2, 8, 70, 4], [2, 12, 74, 4], [3, 0, 73, 4], [3, 4, 76, 4], [3, 8, 73, 4], [3, 12, 69, 4]],
+  M4: [[0, 0, 81, 8], [1, 8, 79, 8], [2, 0, 77, 8], [3, 4, 74, 12]],
+};
+// drums: 0 none, 'h' hats only, 1 groove, 2 busier groove. bass: 'soft' holds the root, otherwise the syncopated line.
+const SONG = [
+  { prog: 'A', drums: 0, bass: 'soft', lead: null },
+  { prog: 'A', drums: 1, lead: 'M1' },
+  { prog: 'A', drums: 1, lead: 'M1b', double: true },
+  { prog: 'B', drums: 1, lead: 'M2' },
+  { prog: 'D', drums: 'h', bass: 'soft', lead: 'M4' },
+  { prog: 'A', drums: 2, lead: 'M1' },
+  { prog: 'C', drums: 1, lead: 'M3' },
+  { prog: 'B', drums: 2, lead: 'M2b' },
+  { prog: 'A', drums: 1, lead: null, keysUp: true },
+  { prog: 'C', drums: 2, lead: 'M3', double: true },
+  { prog: 'A', drums: 1, lead: 'M1b' },
+  { prog: 'D', drums: 'h', bass: 'soft', lead: 'M4' },
+];
+const SONG_BARS = SONG.length * 8;
 const BASS_STEPS = [[0, 0], [3, 0], [6, 12], [8, 0], [10, 7], [11, 0], [14, 12]];
 const MIX = { normal: { base: 1, shop: 0, boss: 0 }, shop: { base: .85, shop: 1, boss: 0 }, boss: { base: .9, shop: 0, boss: 1 } };
 function musicLayer(name) { return MUSIC_BUS[name]; }
@@ -903,22 +936,31 @@ function musicTick() {
   if (!AC || !MUSIC_GAIN) return;
   const B = MUSIC_BUS;
   while (musicAt < AC.currentTime + .4) {
-    const t = musicAt, st = musicStep++, bar = Math.floor(st / 16) % 4, s16 = st % 16, P = PROG[bar];
-    // Normal layer: electric piano comping (tremolo through the shared wobble), bass, soft drums, the lead.
-    if (s16 === 0 || s16 === 6 || s16 === 10) { const len = s16 === 0 ? STEP * 5 : STEP * 2.5; P.chord.forEach((n, k) => { mOsc(B.base, t + k * .008, mf(n), 'sine', len, .045, { wobble: true, lp: 2400, sustain: .5, decay: .25 }); mOsc(B.base, t + k * .008, mf(n) * 2, 'triangle', len * .6, .012, { lp: 3000 }); }); }
-    for (const [bs, iv] of BASS_STEPS) if (s16 === bs) mOsc(B.base, t, mf(P.root + iv), 'sawtooth', STEP * 1.6, .11, { lp: 520, q: 4, sustain: .4, decay: .09 });
-    if (s16 === 0 || s16 === 8) mKick(B.base, t, .5);
-    if (s16 === 4 || s16 === 12) mNoise(B.base, t, .14, .07, 1800, 'bandpass');
-    if (s16 % 2 === 0) mNoise(B.base, t, .04, s16 % 4 === 2 ? .025 : .012, 7000);
-    for (const [lb, ls, ln, ll] of LEAD) if (lb === bar && ls === s16) mOsc(B.base, t, mf(ln), 'triangle', STEP * ll * .95, .05, { wobble: true, lp: 3200, attack: .02, sustain: .75, decay: .3 });
+    const t = musicAt, st = musicStep++, songBar = Math.floor(st / 16) % SONG_BARS, s16 = st % 16;
+    const sec = SONG[Math.floor(songBar / 8)], inSec = songBar % 8, prog = PROGS[sec.prog], P = prog[inSec % prog.length], fillBar = inSec === 7;
+    // Normal layer: electric piano comping (tremolo through the shared wobble), bass, drums, the lead.
+    const comp = sec.keysUp ? [0, 3, 6, 10, 13] : [0, 6, 10];
+    if (comp.includes(s16)) { const len = s16 === 0 ? STEP * 5 : STEP * 2.5, up = sec.keysUp && s16 % 2 ? 12 : 0; P.chord.forEach((n, k) => { mOsc(B.base, t + k * .008, mf(n + up), 'sine', len, .045, { wobble: true, lp: 2400, sustain: .5, decay: .25 }); mOsc(B.base, t + k * .008, mf(n + up) * 2, 'triangle', len * .6, .012, { lp: 3000 }); }); }
+    if (sec.bass === 'soft') { if (s16 === 0) mOsc(B.base, t, mf(P.root), 'sawtooth', STEP * 15, .07, { lp: 300, attack: .05, sustain: .7, decay: .6, release: .3 }); }
+    else { for (const [bs, iv] of BASS_STEPS) if (s16 === bs) mOsc(B.base, t, mf(P.root + iv), 'sawtooth', STEP * 1.6, .11, { lp: 520, q: 4, sustain: .4, decay: .09 });
+      if (s16 === 15 && Math.random() < .3) mOsc(B.base, t, mf(P.root + 10), 'sawtooth', STEP * .9, .08, { lp: 520, q: 4 }); }
+    if (sec.drums === 1 || sec.drums === 2) {
+      if (s16 === 0 || s16 === 8 || (sec.drums === 2 && s16 === 11)) mKick(B.base, t, .5);
+      if (s16 === 4 || s16 === 12) mNoise(B.base, t, .14, .07, 1800, 'bandpass');
+      if (sec.drums === 2 && (s16 === 7 || s16 === 15) && Math.random() < .5) mNoise(B.base, t, .06, .025, 1800, 'bandpass');
+      if (fillBar && s16 >= 12) mNoise(B.base, t, .08, .03 + (s16 - 12) * .015, 1500 + (s16 - 12) * 300, 'bandpass');
+    }
+    if (sec.drums && (s16 % 2 === 0 || sec.drums === 2)) mNoise(B.base, t, .04, s16 % 4 === 2 ? .025 : .012, 7000);
+    if (sec.lead) { const mel = MEL[sec.lead], span = Math.max(...mel.map(n => n[0])) + 1, mb = inSec % span;
+      for (const [lb, ls, ln, ll] of mel) if (lb === mb && ls === s16) { mOsc(B.base, t, mf(ln), 'triangle', STEP * ll * .95, .05, { wobble: true, lp: 3200, attack: .02, sustain: .75, decay: .3 }); if (sec.double) mOsc(B.base, t, mf(ln - 12), 'sine', STEP * ll * .9, .03, { lp: 1800, attack: .02 }); } }
     // Shop layer: a bouncy square arpeggio over the chord, an octave up, plus a little offbeat shaker.
-    if (s16 % 2 === 0) { const arp = P.chord.concat([P.chord[0] + 12, P.chord[2] + 12]); const n = arp[(s16 / 2 + bar) % arp.length] + 12; mOsc(B.shop, t, mf(n), 'square', STEP * 1.2, .022, { lp: 2800, sustain: .3, decay: .06 }); }
+    if (s16 % 2 === 0) { const arp = P.chord.concat([P.chord[0] + 12, P.chord[2] + 12]); const n = arp[(s16 / 2 + inSec) % arp.length] + 12; mOsc(B.shop, t, mf(n), 'square', STEP * 1.2, .022, { lp: 2800, sustain: .3, decay: .06 }); }
     if (s16 % 4 === 2) mNoise(B.shop, t, .06, .03, 5000);
     // Boss layer: driving distorted bass in 8ths, four-on-the-floor kick, and a dark drone a semitone above the root.
     if (s16 % 2 === 0) mOsc(B.boss, t, mf(P.root + (s16 % 8 === 6 ? 12 : 0)), 'sawtooth', STEP * 1.8, .07, { lp: 900, drive: 3, sustain: .5, decay: .1 });
     if (s16 % 4 === 0) mKick(B.boss, t, .55);
     if (s16 === 0) { mOsc(B.boss, t, mf(P.root + 25), 'sawtooth', STEP * 15, .018, { lp: 700, attack: .6, sustain: .9, decay: 1, release: .4 }); mOsc(B.boss, t, mf(P.root + 24), 'square', STEP * 15, .012, { lp: 600, attack: .8, sustain: .9, decay: 1, release: .4 }); }
-    if (s16 === 14 && bar === 3) mNoise(B.boss, t, .3, .06, 900, 'lowpass');
+    if (s16 === 14 && fillBar) mNoise(B.boss, t, .3, .06, 900, 'lowpass');
     musicAt += STEP;
   }
 }
