@@ -623,6 +623,8 @@ button.pulse{animation:btnpulse 1s ease-in-out infinite;box-shadow:0 0 0 0 rgba(
   --body:0 1.5px 0 #efe3c6,0 3px 0 #d9c79e,0 calc(var(--slab) - 1px) 0 var(--tile-back),0 var(--slab) 0 var(--tile-back2),0 calc(var(--slab) + 4px) 8px rgba(0,0,0,.45);
   border-radius:7px;border:1px solid #cdbb90;background:radial-gradient(130% 95% at 28% 12%,#fffcf3 0%,#f7efdc 42%,#ebdfc3 100%);box-shadow:var(--bev),var(--body)}
 .tile::before{content:'';position:absolute;inset:1px 1px 45% 1px;border-radius:6px 6px 40% 40%/6px 6px 14px 14px;background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,0));pointer-events:none;z-index:1}
+/* Marks sit above the tile's gloss (which would otherwise wash a seal out to pink) */
+.tile .seal,.tile .emark,.tile .dmark{z-index:2}
 .tile svg{position:relative;z-index:2;filter:drop-shadow(0 .7px 0 rgba(255,255,255,.9)) drop-shadow(0 -.5px .3px rgba(70,45,10,.35))}
 .tile.small{--slab:5px;box-shadow:var(--bev),var(--body)} .tile.tiny{--slab:3px;box-shadow:var(--bev),var(--body);border-radius:5px}
 .tile.sel{box-shadow:var(--bev),var(--body),0 0 0 2px var(--accent),0 16px 20px rgba(0,0,0,.4)}
