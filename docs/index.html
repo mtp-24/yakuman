@@ -3650,6 +3650,17 @@ function renderDebug() {
   <select id="dbgScr"><option value="">Add scroll…</option>${SCROLLS.map(t => `<option value="${t.key}">${t.name}</option>`).join('')}</select>
   <select id="dbgFlw"><option value="">Add flower…</option>${FLOWERS.map(t => `<option value="${t.key}">${t.name}</option>`).join('')}</select>
   <select id="dbgEd"><option value="">Edition for selected Talisman…</option>${Object.entries(EDITIONS).map(([k, e]) => `<option value="${k}">${e.name}</option>`).join('')}<option value="none">None</option></select>
+  <select id="dbgStk"><option value="">Sticker for selected Talisman…</option><option value="eternal">Eternal</option><option value="perish">Perishable (5)</option><option value="perish1">Perishable (1 left)</option><option value="rental">Rental</option><option value="none">None</option></select>
+  <button data-dbg="rmtal" title="Remove the selected Talisman, even an Eternal one">Remove Talisman</button>
+  <select id="dbgEng"><option value="">Engrave selected tiles…</option>${Object.entries(ENG).map(([k, e]) => `<option value="${k}">${e.name}</option>`).join('')}<option value="none">None</option></select>
+  <select id="dbgSeal"><option value="">Seal selected tiles…</option>${Object.entries(SEALS).map(([k, e]) => `<option value="${k}">${e.name}</option>`).join('')}<option value="none">None</option></select>
+  <select id="dbgRed"><option value="">Selected tiles become…</option><option value="red">Red Five</option>${Array.from({ length: 34 }, (_, i) => `<option value="${i}">${tileName(tileFromIdx(i))}</option>`).join('')}</select>
+  <select id="dbgTag"><option value="">Add tag…</option>${Object.entries(TAGS).map(([k, t]) => `<option value="${k}">${t.name}</option>`).join('')}</select>
+  <select id="dbgPack"><option value="">Open pack (shop)…</option>${Object.entries(PACKS).map(([k, p]) => `<option value="${k}">${p.name}</option>`).join('')}</select>
+  <select id="dbgAnte"><option value="">Set Ante…</option>${Array.from({ length: 16 }, (_, i) => `<option value="${i + 1}">Ante ${i + 1}${i + 1 > CFG.antes ? ' (Endless)' : ''}</option>`).join('')}</select>
+  <select id="dbgStake"><option value="">Set Stake…</option>${Object.entries(STAKES).map(([k, st]) => `<option value="${k}">${st.name}</option>`).join('')}</select>
+  <button data-dbg="reroll" title="Reroll the shop cards for free">Free reroll</button>
+  <button data-dbg="lose" class="ghost" title="End the run as a loss">Lose run</button>
   <button data-dbg="demo" title="Stage a complete hand full of retriggers (Red Seals, Hakutaku, Nekomata, Shikigami), then press Play to watch and listen">Demo hand</button>
   <button data-dbg="reset" class="ghost">Wipe save</button>`;
   bar.querySelectorAll('[data-dbg]').forEach(b => b.onclick = () => {
@@ -3658,6 +3669,9 @@ function renderDebug() {
     else if (a === 'win') { if (S.phase === 'blind') { S.score = S.target; winBlind(); } }
     else if (a === 'refill') { if (S.phase === 'blind') { S.wall.push(...S.hand); shuffle(S.wall); S.hand = []; S.selected = []; draw(); } }
     else if (a === 'demo') { stageDemoHand(); }
+    else if (a === 'rmtal') { const k = S.selTal; if (k) { S.talismans = S.talismans.filter(x => x !== k); delete S.editions[k]; if (S.stickers) delete S.stickers[k]; S.selTal = null; } }
+    else if (a === 'reroll') { if (S.phase === 'shop' && S.shop) S.shop.cards = Array.from({ length: shopSlots() }, rollCard); }
+    else if (a === 'lose') { if (S.phase !== 'gameover' && S.phase !== 'win') loseRun(); }
     else if (a === 'reset') { clearSave(); location.reload(); return; }
     render();
   });
@@ -3666,6 +3680,15 @@ function renderDebug() {
   $('#dbgCon').onchange = e => { const k = e.target.value; if (!k) return; if (S.consumables.length < conSlots()) S.consumables.push({ kind: CONS[k].kind, key: k }); e.target.value = ''; render(); };
   $('#dbgScr').onchange = e => { const k = e.target.value; if (!k) return; buyFree({ kind: 'scroll', key: k }); e.target.value = ''; render(); };
   $('#dbgEd').onchange = e => { const k = e.target.value; if (!k || !S.selTal) return; if (k === 'none') delete S.editions[S.selTal]; else S.editions[S.selTal] = k; e.target.value = ''; render(); };
+  const selHand = () => S.phase === 'blind' ? selTiles() : [];
+  $('#dbgStk').onchange = e => { const k = e.target.value, t = S.selTal; e.target.value = ''; if (!k || !t) return setMsg('Select a Talisman first.', true), render(); S.stickers = S.stickers || {}; if (k === 'none') delete S.stickers[t]; else S.stickers[t] = Object.assign({}, S.stickers[t], k === 'perish' ? { perish: 5 } : k === 'perish1' ? { perish: 1 } : { [k]: true }); render(); };
+  $('#dbgEng').onchange = e => { const k = e.target.value; e.target.value = ''; const sel = selHand(); if (!k || !sel.length) return setMsg('Select tiles in your hand first.', true), render(); for (const t of sel) t.eng = k === 'none' ? null : k; render(); };
+  $('#dbgSeal').onchange = e => { const k = e.target.value; e.target.value = ''; const sel = selHand(); if (!k || !sel.length) return setMsg('Select tiles in your hand first.', true), render(); for (const t of sel) t.seal = k === 'none' ? null : k; render(); };
+  $('#dbgRed').onchange = e => { const k = e.target.value; e.target.value = ''; const sel = selHand(); if (!k || !sel.length) return setMsg('Select tiles in your hand first.', true), render(); for (const t of sel) { if (k === 'red') { if (!isHonor(t)) { convertTile(t, t.suit, 5); t.red = true; } } else { const f = tileFromIdx(+k); convertTile(t, f.suit, f.rank); } } render(); };
+  $('#dbgTag').onchange = e => { const k = e.target.value; e.target.value = ''; if (!k) return; S.tags.push(k); setMsg(`Added ${TAGS[k].name}. Tags that act on a shop apply to the next one.`); render(); };
+  $('#dbgPack').onchange = e => { const k = e.target.value; e.target.value = ''; if (!k) return; if (S.phase !== 'shop') return setMsg('Packs open in the shop.', true), render(); openPack(k, true); render(); };
+  $('#dbgAnte').onchange = e => { const n = +e.target.value; e.target.value = ''; if (!n) return; S.ante = n; ensureBosses(); setMsg(`Now on Ante ${n}. Targets change from the next Blind.`); render(); };
+  $('#dbgStake').onchange = e => { const k = e.target.value; e.target.value = ''; if (!k) return; S.stake = k; setMsg(`Stake set to ${STAKES[k].name} for this run.`); render(); };
   $('#dbgFlw').onchange = e => { const k = e.target.value; if (!k) return; if (!S.flowers.includes(k)) S.flowers.push(k); e.target.value = ''; render(); };
 }
 // A staged complete hand that exercises every counter: chips (Obsidian tile, Daruma, Scroll chips), Han (four Yaku, Red Five, Dora,
