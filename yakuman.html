@@ -833,7 +833,7 @@ button.pulse{animation:btnpulse2 2.6s ease-out infinite}
 @media (prefers-reduced-motion:reduce){.slot[class*="ed-"]::before,.shopcard[class*="ed-"]::before,.slot[class*="ed-"]::after,.shopcard[class*="ed-"]::after{animation:none}}
 /* Edition overlays sit behind the card's text and contents, so names and descriptions stay crisp */
 .slot[class*="ed-"]::before,.shopcard[class*="ed-"]::before{z-index:0}
-.slot[class*="ed-"] > :not(.pricetag):not(.talpop):not(.offtag):not(.stkcorner):not(.cshine),.shopcard[class*="ed-"] > :not(.pricetag):not(.talpop):not(.stkcorner):not(.cshine){position:relative;z-index:1}
+.slot[class*="ed-"] > :not(.pricetag):not(.talpop):not(.bpop):not(.offtag):not(.stkcorner):not(.cshine),.shopcard[class*="ed-"] > :not(.pricetag):not(.talpop):not(.bpop):not(.stkcorner):not(.cshine){position:relative;z-index:1}
 .slot > .talpop{position:absolute;z-index:40}
 .shopcard[class*="ed-"] > .pricetag{z-index:2}
 /* The kind line (order, type, edition pill) stays on one row: the pill keeps its size at the right, the type label gives way */
@@ -1042,7 +1042,7 @@ body.reducemotion *,body.reducemotion *::before,body.reducemotion *::after,body.
 .bpop.below{bottom:auto;top:calc(100% - 4px);font-size:20px}
 .bpop .bg{position:absolute;left:40%;top:50%;width:2em;height:2em;margin:-1em 0 0 -1em;color:var(--c)} .bpop .bg svg{width:100%;height:100%;display:block}
 .bpop .txt{position:relative;display:inline-flex;color:#fff;text-shadow:.05em .09em 0 var(--s),-.03em .04em 0 var(--s),0 0 .3em rgba(0,0,0,.25)} .bpop .txt span{display:inline-block;transform-origin:50% 70%}
-.slot > .bpop{z-index:40}
+.slot > .bpop{position:absolute;z-index:40}
 .burnember{z-index:62;pointer-events:none;width:5px;height:5px;background:#ffb347;box-shadow:0 0 8px 2px rgba(255,140,40,.8)}
 /* ===== Title screen ===== */
 .modal.menumodal{max-width:600px;padding:34px 36px 22px;position:relative;overflow:hidden;border:1px solid rgba(217,164,65,.6);
