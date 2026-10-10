@@ -511,15 +511,6 @@ function bestSubPlay(tiles) {
   }
   return best;
 }
-// Beating a Blind stamps "Blind cleared" (or "<Boss> beaten") across the board for a moment before the cash-out rises.
-function clearedStamp() {
-  const board = document.querySelector('.board'); if (!motionOK || !board) return Promise.resolve();
-  const r = board.getBoundingClientRect(), el = document.createElement('div'); el.className = 'clearstamp' + (S.boss ? ' boss' : '');
-  el.innerHTML = `<b>${S.boss ? BOSSES[S.boss].name + ' beaten' : 'Blind cleared'}</b><small>${fmtN(S.score)} / ${fmtN(S.target)}</small>`;
-  el.style.cssText = `left:${r.left + r.width / 2}px;top:${Math.max(r.top, 0) + Math.min(r.height, innerHeight - Math.max(r.top, 0)) * .45}px`; document.body.appendChild(el); translateDOM(el);
-  el.animate([{ transform: 'translate(-50%,-50%) scale(1.8) rotate(-8deg)', opacity: 0 }, { transform: 'translate(-50%,-50%) scale(.94) rotate(-5deg)', opacity: 1, offset: .22 }, { transform: 'translate(-50%,-50%) scale(1) rotate(-5deg)', opacity: 1, offset: .32 }, { transform: 'translate(-50%,-50%) scale(1) rotate(-5deg)', opacity: 1, offset: .8 }, { transform: 'translate(-50%,-60%) scale(1) rotate(-5deg)', opacity: 0 }], { duration: 1050, easing: 'ease-out' });
-  return new Promise(res => setTimeout(() => { el.remove(); res(); }, 1050));
-}
 async function doPlay() {
   if (S.phase !== 'blind' || S.busy) return; setRules(S);
   let opt = playOption(), leftovers = [];
@@ -557,7 +548,7 @@ async function doPlay() {
   S.selected = []; S.selRiver = null;
 
   setMsg(`${leftovers.length ? `Not a valid play, so the best part scored and ${leftovers.map(tileName).join(', ')} went to the River. ` : ''}${ctx.desc}: ${fmtN(ctx.chips)} × ${fmtMult(ctx.mult)} = ${fmtN(ctx.total)}${ctx.furiten ? ' (Furiten!)' : ''}${ctx.shatter.length ? ` · ${ctx.shatter.length} Glass tile${ctx.shatter.length > 1 ? 's' : ''} shattered` : ''}`);
-  if (S.score >= S.target) { S.busy = true; await clearedStamp(); S.busy = false; winBlind(); return render(); }
+  if (S.score >= S.target) { S.busy = true; await wait(350); S.busy = false; winBlind(); return render(); }
   if (S.boss === 'pickpocket' && S.hand.length) { const lost = shuffle(S.hand.slice()).slice(0, 2); S.hand = S.hand.filter(t => !lost.includes(t)); S.river.push(...lost); setMsg(`${S.msg} The Pickpocket took ${lost.map(tileName).join(' and ')} to the River.`); }
   if (S.boss === 'crimson') rollCrimson();
   draw();
@@ -798,7 +789,7 @@ function takeFromPack(i) {
   else if (it.kind === 'tile') { queueWallFlight($(`#modal .packtileart[data-pt="${i}"]`), it.tile); S.deck.push(it.tile); PROFILE.tilesAdded = (PROFILE.tilesAdded || 0) + 1; saveProfile(); for (const k of liveTals(S)) if (TAL[k].onTileAdded) TAL[k].onTileAdded(S, 1); }
   else { if (S.consumables.length >= conSlots()) { setMsg('Consumable slots are full. Use or sell one first.', true); return render(); } S.consumables.push({ kind: it.kind, key: it.key }); }
   if (it.kind === 'talisman' || it.kind === 'omikuji' || it.kind === 'kami') { const b = $(`#modal [data-take="${i}"]`); if (b) queueSlotFlight(b.closest('.shopcard'), it.kind === 'talisman' ? 'tal' : 'con'); }
-  if (it.kind === 'scroll') { const b = $(`#modal [data-take="${i}"]`); if (b) queueLevelStamp(b.closest('.shopcard'), it.key); }   // a Manual stamps its new level over the card
+  if (it.kind === 'scroll') { const b = $(`#modal [data-take="${i}"]`); if (b) queueScrollFlight(b.closest('.shopcard'), it.key); }
   it.sold = true; S.pack.left--; setMsg(it.kind === 'tile' ? `Added ${itemDef(it).name} to your Wall.` : `Took ${itemDef(it).name}.`);
   if (S.pack.left <= 0) closePackSoon(PACK_CLOSE_MS);
   render();
@@ -816,7 +807,7 @@ function buy(it) {
   else if (it.kind === 'scroll') { const [t, k] = it.key.split(':'); S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] = (S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] || 0) + 1; for (const tk of liveTals(S)) if (TAL[tk].onScroll) TAL[tk].onScroll(S); PROFILE.scrollsUsed++; saveProfile(); }
   else if (it.kind === 'flower') { S.flowers.push(it.key); if (S.anteFlower && S.anteFlower.key === it.key) S.anteFlower.sold = true; if (it.key === 'wisteria' || it.key === 'wisteria2') goBackAnte(); }
   if (!S.quiet && card && (it.kind === 'talisman' || it.kind === 'omikuji' || it.kind === 'kami' || it.kind === 'flower')) queueSlotFlight(card.closest('.shopcard'), it.kind === 'talisman' ? 'tal' : it.kind === 'flower' ? 'flower' : 'con');
-  if (!S.quiet && card && it.kind === 'scroll') queueLevelStamp(card.closest('.shopcard'), it.key);
+  if (!S.quiet && card && it.kind === 'scroll') queueScrollFlight(card.closest('.shopcard'), it.key);
   S.money -= p; it.sold = true; inflate(); if (!S.quiet) { sfx('buy'); S.stats.bought = (S.stats.bought || 0) + 1; } setMsg(`Bought ${def.name}.`); render();
 }
 function itemPrice(it) { if (it.free) return 0; if (it.sticker && it.sticker.rental && it.kind === 'talisman') return S.shop && S.shop.coupon ? 0 : 1; const def = itemDef(it); let base = def.cost + (it.edition ? EDITIONS[it.edition].price : 0); if (it.kind === 'talisman') base += stakeTalCost(); if (S.shop && S.shop.coupon && (it.kind === 'talisman' || it.kind === 'omikuji' || it.kind === 'kami')) return 0; return price(base); }
@@ -897,10 +888,12 @@ function selectHTML() {
     const state = i < S.blindIndex ? 'done' : i === S.blindIndex ? 'current' : 'next';
     const reward = (k === 'small' && smallPaysNothing()) ? 0 : CFG.blindReward[k];
     const tag = k !== 'boss' && S.skipTags ? TAGS[S.skipTags[k]] : null;
-    h += `<div class="blindcard ${state}${k === 'boss' ? ' bosscard' : ''}${k === 'boss' && BOSSES[boss].showdown ? ' showdown' : ''}"><span class="blindchip" aria-hidden="true">${blindChipSVG(k)}</span><div class="kind">${state === 'done' ? 'Defeated' : state === 'current' ? 'Up next' : 'After that'}</div><div class="n">${k === 'boss' ? BOSSES[boss].name : names[k]}</div>${k === 'boss' && BOSSES[boss].showdown ? '<div class="showdowntag">Showdown Boss</div>' : ''}${k === 'boss' ? `<div class="d bossfx">${BOSSES[boss].desc}</div>` : ''}`;
+    h += `<div class="blindcard ${state}${k === 'boss' ? ' bosscard' : ''}${k === 'boss' && BOSSES[boss].showdown ? ' showdown' : ''}"><span class="blindchip" aria-hidden="true">${blindChipSVG(k)}</span><div class="kind">${state === 'done' ? 'Defeated' : state === 'current' ? 'Up next' : 'After that'}</div><div class="n">${k === 'boss' ? BOSSES[boss].name : names[k]}</div>`;
     h += `<div class="bc-plate"><div><div class="label">Score at least</div><div class="target num">${fmtN(blindTarget(k))}</div></div><div class="bp-reward" title="Plus ¥1 per unused Play and ¥1 interest per ¥5 held (max ¥5)"><div class="label">Reward</div><div class="num">¥${reward}<span class="muted" style="font-size:11px;font-family:var(--body)"> +extras</span></div></div></div>`;
     h += `<div class="bc-meta muted"><b class="num">${plays}</b> Plays · <b class="num">${discards}</b> Discards${S.nextBlindMods && S.nextBlindMods.handSize && state === 'current' ? ` · hand +${S.nextBlindMods.handSize}` : ''}</div>`;
-    const skipBox = tag && state !== 'done' ? `<div class="skipbox"><div class="skiphead"><span class="label">Skip reward</span><span class="tagchip" data-hc-kind="Tag" data-hc-title="${tag.name}" data-hc-body="${tag.desc.replace(/"/g, '&quot;')}">${tag.name}</span></div><div class="skipdesc">${tag.desc}</div></div>` : '';
+    // The Boss's rule sits at the bottom, where the other Blinds show their skip reward, so the score rows line up.
+    const bossBox = k === 'boss' && state !== 'done' ? `<div class="skipbox bossbox"><div class="skiphead"><span class="label">Boss rule</span>${BOSSES[boss].showdown ? '<span class="tagchip showchip">Showdown</span>' : ''}</div><div class="skipdesc">${BOSSES[boss].desc}</div></div>` : '';
+    const skipBox = bossBox || (tag && state !== 'done' ? `<div class="skipbox"><div class="skiphead"><span class="label">Skip reward</span><span class="tagchip" data-hc-kind="Tag" data-hc-title="${tag.name}" data-hc-body="${tag.desc.replace(/"/g, '&quot;')}">${tag.name}</span></div><div class="skipdesc">${tag.desc}</div></div>` : '');
     if (state === 'current') h += `<div class="buy"><button id="mPlayBlind" class="primary">Play</button>${tag ? `<button id="mSkip" class="ghost" title="${tag.desc} No cash for this blind.">Skip for Tag</button>` : ''}</div>${skipBox}`;
     else h += skipBox;
     h += `</div>`;
@@ -1072,16 +1065,29 @@ function animateWall() {
 // A Talisman or consumable bought or taken flies from its card into its new slot on the board, shrinking to fit, then the slot
 // pops in. The card is copied before the Shop redraws; the copy sits in a bare shelf so it keeps the shop card's look.
 let slotFlights = [];
-// A Manual has no slot to fly to: its new level is stamped over the card instead, rising and fading, as a confirmation.
-function queueLevelStamp(card, key) {
-  if (!card || !motionOK) return; const [t, k] = key.split(':'), n = (S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] || 0);
-  slotFlights.push({ stamp: true, rect: card.getBoundingClientRect(), text: t === 'y' ? `+${n} Han` : `Lv.${n + 1}`, name: itemDef({ kind: 'scroll', key }).name });
+// A Manual's scroll flies from its card into Run Info in the sidebar, where levels are listed. The button glows as it lands
+// and a small tag with the new level rises off it.
+function queueScrollFlight(card, key) {
+  if (!card || !motionOK || compactScreen()) return; const [t, k] = key.split(':'), n = (S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] || 0), em = card.querySelector('.emblem') || card;
+  const what = t === 'y' ? itemDef({ kind: 'scroll', key }).name.replace(/^Scroll of (the )?/, '') : k === 'hand' ? 'Complete Hand' : (MELD_LABEL[k] || k);
+  slotFlights.push({ scroll: true, rect: em.getBoundingClientRect(), text: `${what} <b>${t === 'y' ? '+' + n + ' Han' : 'Lv.' + (n + 1)}</b>` });
 }
-function playLevelStamp(f) {
-  const el = document.createElement('div'); el.className = 'lvstamp'; el.innerHTML = `<small>${f.name}</small><b>${f.text}</b>`;
-  el.style.cssText = `left:${f.rect.left + f.rect.width / 2}px;top:${f.rect.top + f.rect.height * .42}px`; document.body.appendChild(el); translateDOM(el);
-  const a = el.animate([{ transform: 'translate(-50%,-50%) scale(.6) rotate(-6deg)', opacity: 0 }, { transform: 'translate(-50%,-50%) scale(1.12) rotate(-6deg)', opacity: 1, offset: .25 }, { transform: 'translate(-50%,-50%) scale(1) rotate(-6deg)', opacity: 1, offset: .6 }, { transform: 'translate(-50%,-90%) scale(1) rotate(-6deg)', opacity: 0 }], { duration: 900, easing: 'ease-out' });
-  a.onfinish = () => el.remove(); setTimeout(() => el.remove(), 1500);
+function playScrollFlight(f) {
+  const dest = $('#sideRunInfo'); if (!dest || !dest.getClientRects().length) return;
+  const to = dest.getBoundingClientRect(), fly = document.createElement('div'), w = Math.min(56, f.rect.width);
+  fly.className = 'wallfly scrollfly'; fly.style.cssText = `left:${f.rect.left + f.rect.width / 2 - w / 2}px;top:${f.rect.top + f.rect.height / 2 - w / 2}px;width:${w}px;height:${w}px`; fly.innerHTML = emblem('scroll'); document.body.appendChild(fly);
+  const dx = to.left + 22 - (f.rect.left + f.rect.width / 2), dy = to.top + to.height / 2 - (f.rect.top + f.rect.height / 2);
+  let landed = false;
+  const land = () => {
+    if (landed) return; landed = true; fly.remove(); if (!dest.isConnected) return;
+    dest.animate([{ boxShadow: '0 0 0 0 rgba(111,207,151,0)', filter: 'none' }, { boxShadow: '0 0 0 3px rgba(111,207,151,.55), 0 0 18px rgba(111,207,151,.5)', filter: 'brightness(1.3)', offset: .3 }, { boxShadow: '0 0 0 0 rgba(111,207,151,0)', filter: 'none' }], { duration: 700, easing: 'ease-out' });
+    const r = dest.getBoundingClientRect(), tag = document.createElement('div'); tag.className = 'lvpop'; tag.innerHTML = f.text;
+    tag.style.cssText = `left:${r.left + r.width / 2}px;top:${r.top - 4}px`; document.body.appendChild(tag); translateDOM(tag);
+    tag.animate([{ transform: 'translate(-50%,-60%) scale(.8)', opacity: 0 }, { transform: 'translate(-50%,-100%) scale(1)', opacity: 1, offset: .2 }, { transform: 'translate(-50%,-110%)', opacity: 1, offset: .75 }, { transform: 'translate(-50%,-150%)', opacity: 0 }], { duration: 1400, easing: 'ease-out' }).onfinish = () => tag.remove();
+    setTimeout(() => tag.remove(), 2000);
+  };
+  fly.animate([{ transform: 'none', opacity: 1 }, { transform: `translate(${dx * .4}px,${dy * .4 - 70}px) rotate(-12deg) scale(.9)`, offset: .45 }, { transform: `translate(${dx}px,${dy}px) rotate(-20deg) scale(.4)`, opacity: .7 }], { duration: 650, easing: 'cubic-bezier(.45,0,.4,1)' }).onfinish = land;
+  setTimeout(land, 1200);
 }
 // In the compact (full-screen) layout the board is hidden behind the screen, so nothing flies there.
 const compactScreen = () => { const ov = $('#overlay'); return !ov.hidden && !ov.classList.contains('boardonly'); };
@@ -1090,7 +1096,7 @@ function animateSlots() {
   const flights = slotFlights; slotFlights = []; if (!flights.length || S.quiet) return;
   const filled = { tal: [...document.querySelectorAll('#talismans .slot.filled:not(.rowghost)')], con: [...document.querySelectorAll('#consumables .slot.filled:not(.rowghost)')] };
   flights.forEach((f, k) => {
-    if (f.stamp) return playLevelStamp(f);
+    if (f.scroll) return playScrollFlight(f);
     const dest = f.row === 'flower' ? [...document.querySelectorAll('main > aside .flowers .flowerchip')].pop() : filled[f.row].pop(); if (!dest) return;
     const to = dest.getBoundingClientRect(), fly = document.createElement('div');
     fly.className = 'slotfly shelf'; fly.style.cssText = `left:${f.rect.left}px;top:${f.rect.top}px;width:${f.rect.width}px;height:${f.rect.height}px`;
@@ -2026,7 +2032,7 @@ function emblem(kind) {
     kami: '<path d="M6 13c6 2 30 2 36 0l-1.5 5c-6 1.5-27 1.5-33 0z" fill="#c9453a"/><rect x="10" y="22" width="28" height="3.5" rx="1" fill="#c9453a"/><rect x="13" y="16" width="4" height="27" rx="1" fill="#a8362c"/><rect x="31" y="16" width="4" height="27" rx="1" fill="#a8362c"/><rect x="22.5" y="18" width="3" height="5" fill="#a8362c"/>',
     scroll: '<rect x="9" y="13" width="30" height="22" fill="#e9f3e9" stroke="#6fcf97"/><rect x="5" y="10" width="6" height="28" rx="3" fill="#4f9d69"/><rect x="37" y="10" width="6" height="28" rx="3" fill="#4f9d69"/><path d="M15 20h18M15 25h18M15 30h12" stroke="#2e7d4f" stroke-width="1.6" stroke-linecap="round"/>',
     flower: '<g transform="translate(24 24)">' + [0, 72, 144, 216, 288].map(a => `<ellipse cx="0" cy="-10" rx="6.5" ry="10" fill="#f0a3b8" stroke="#d97f99" transform="rotate(${a})"/>`).join('') + '<circle r="5" fill="#d9a441"/></g>',
-    shop: '<rect x="20" y="3" width="8" height="5" rx="1" fill="#3a2a1a"/><ellipse cx="24" cy="25" rx="14" ry="17" fill="currentColor" stroke="rgba(0,0,0,.35)"/><path d="M11 18h26M10 25h28M11 32h26" stroke="rgba(0,0,0,.25)" stroke-width="1.4"/><rect x="18" y="40" width="12" height="4" rx="1" fill="#3a2a1a"/><path d="M24 44v3" stroke="#d9a441" stroke-width="2"/>',
+    shop: '<defs><linearGradient id="lanG" x1="0" x2="1"><stop offset="0" stop-color="#9e2a1e"/><stop offset=".45" stop-color="#e2553f"/><stop offset="1" stop-color="#8a2318"/></linearGradient></defs><path d="M24 1v4" stroke="#d9a441" stroke-width="1.6"/><rect x="16" y="5" width="16" height="5" rx="1.5" fill="#2a1d12"/><path d="M17 10C7 13 5 20 5 25s2 12 12 15h14c10-3 12-10 12-15s-2-12-12-15z" fill="url(#lanG)" stroke="rgba(0,0,0,.4)"/><path d="M8 17h32M6 25h36M8 33h32" stroke="rgba(60,10,5,.45)" stroke-width="1.3"/><path d="M24 10v30M15 11c-4 6-4 23 0 29M33 11c4 6 4 23 0 29" stroke="rgba(60,10,5,.3)" stroke-width="1.1" fill="none"/><circle cx="24" cy="25" r="6.5" fill="#f3d58a" opacity=".9"/><circle cx="24" cy="25" r="3.2" fill="none" stroke="#9e2a1e" stroke-width="1.6"/><rect x="16" y="40" width="16" height="4" rx="1.5" fill="#2a1d12"/><path d="M24 44v3.5" stroke="#d9a441" stroke-width="2" stroke-linecap="round"/>',
     pack: '<path d="M10 7l3 3 3-3 3 3 3-3 3 3 3-3 3 3 3-3 3 3 1-1v34l-1-1-3 3-3-3-3 3-3-3-3 3-3-3-3 3-3-3-3 3-1-1z" fill="currentColor" stroke="rgba(0,0,0,.35)"/><rect x="10" y="19" width="28" height="10" fill="#1a2420" opacity=".35"/><circle cx="24" cy="24" r="4" fill="#efe6d2"/>',
   };
   return `<svg viewBox="0 0 48 48" aria-hidden="true">${E[kind] || E.pack}</svg>`;
@@ -2162,7 +2168,7 @@ function packButtons(it, i) {
 }
 function packHTML() {
   const pk = PACKS[S.pack.key], tray = shopTray = useTray();
-  const tone = { omikuji: 'omikuji', kami: 'kami', scroll: 'scroll', talisman: 'talisman' }[pk.type] || 'pack';
+  const tone = { omikuji: 'omikuji', kami: 'kami', scroll: 'scroll', talisman: 'talisman', tile: 'tile' }[pk.type] || 'pack';
   // Skip the Rest or Done sits in the header beside the picks left, so it is always in view.
   let h = `<div class="packhead ${tone}"><div class="packart">${emblem('pack')}</div><div class="packtitle"><div class="label">Booster pack${S.pack.free ? ' · free from a Tag' : ''}</div><h2>${pk.name}</h2><p>${pk.desc}</p></div><div class="packacts">${S.pack.done ? '<button class="ghost hbtn" disabled>All picks used</button>' : '<button id="mPackDone" class="ghost hbtn">Skip the Rest</button>'}</div><div class="packpicks"><b class="num">${S.pack.done ? 0 : S.pack.left}</b><span>${S.pack.done || S.pack.left !== 1 ? 'picks' : 'pick'} left</span></div></div>`;
   if (S.pack.hand) h += `<div class="packhandwrap"><div class="label">Your Tiles · ${(S.pack.view || S.pack.hand).length} random tiles from your Wall</div><div class="muted" style="font-size:12px;margin:2px 0 6px">${S.pack.done ? 'All picks used. Outlined tiles changed and stay that way in your Wall.' : 'Select tiles, then press Use on a card. The change stays in your Wall for the rest of the run. Keep puts the card in your consumable slots instead.'}</div><div class="packhand" id="packHand"></div></div>`;
@@ -2420,6 +2426,21 @@ async function saveCodeFile(btn) {
   try { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([EXPORT_CODE], { type: 'text/plain' })); a.download = filename; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); say('Saved'); } catch (e) { say('Could not save: copy the code'); }
 }
 // Screens opened from the title (New Run, Challenges, Collection, Rules) close back to the title, not to the run behind it.
+// A confirm screen: a pack-style header with an icon and what happens, a row of what you would lose, then Cancel and the action.
+const CONFIRM_ICONS = {
+  newrun: '<g transform="rotate(-12 18 26)"><rect x="6" y="10" width="20" height="28" rx="3" fill="#e9dfc6" stroke="#9c8f6c"/><circle cx="16" cy="24" r="5" fill="none" stroke="#c9453a" stroke-width="2.2"/></g><g transform="rotate(9 32 24)"><rect x="21" y="7" width="20" height="28" rx="3" fill="#f6eedc" stroke="#9c8f6c"/><path d="M27 14h8M27 20h8M27 26h8" stroke="#2e7d4f" stroke-width="2.2" stroke-linecap="round"/></g><circle cx="37" cy="37" r="8.5" fill="#d9a441" stroke="rgba(0,0,0,.35)"/><path d="M33.4 37a3.6 3.6 0 1 0 1.3-2.8" fill="none" stroke="#2a1d12" stroke-width="1.9" stroke-linecap="round"/><path d="M33.6 31.8v2.9h2.9" fill="none" stroke="#2a1d12" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>',
+  deleterun: '<rect x="12" y="6" width="24" height="33" rx="3.5" fill="#efe6d2" stroke="#9c8f6c"/><rect x="12" y="36" width="24" height="5" rx="2" fill="#2e7d4f"/><path d="M18.5 15.5l11 11M29.5 15.5l-11 11" stroke="#c9453a" stroke-width="3.2" stroke-linecap="round"/>',
+  resetprofile: '<rect x="9" y="5" width="26" height="35" rx="3" fill="#efe6d2" stroke="#9c8f6c"/><rect x="9" y="5" width="5" height="35" rx="2" fill="#a8362c"/><path d="M18 14h12M18 20h12M18 26h8" stroke="#8a7a5a" stroke-width="1.8" stroke-linecap="round"/><circle cx="35" cy="36" r="8.5" fill="#c9453a" stroke="rgba(0,0,0,.35)"/><path d="M31.4 36a3.6 3.6 0 1 0 1.3-2.8" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round"/><path d="M31.6 30.8v2.9h2.9" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>',
+};
+function confirmHTML(icon, title, text, stats, actId, actLabel) {
+  const st = stats && stats.length ? `<div class="confstats">${stats.map(([l, v]) => `<div class="stat"><span class="label">${l}</span><b class="v num">${v}</b></div>`).join('')}</div>` : '';
+  return `<div class="packhead confhd"><div class="packart"><svg viewBox="0 0 48 48" aria-hidden="true">${CONFIRM_ICONS[icon]}</svg></div><div class="packtitle"><h2>${title}</h2><p>${text}</p></div></div>${st}<div class="shopfoot"><button id="mClose" class="ghost">Cancel</button><span style="flex:1"></span><button id="${actId}" class="danger">${actLabel}</button></div>`;
+}
+// The run you would give up: how far it got, its money, Talismans and best play.
+function runAtStake() {
+  if (!S || ['gameover', 'win'].includes(S.phase)) return [];
+  return [['Ante', `${S.ante}<small> / ${CFG.antes}</small>`], ['Money', money('¥', S.money)], ['Talismans', `${S.talismans.length}`], ['Best play', fmtN(S.stats.best || 0)]];
+}
 function backToTitle() { const c = $('#mClose'); if (c) { c.dataset.back = '1'; c.onclick = () => { showModal(menuHTML(!!load()), true, 'menumodal'); }; } }
 function backToSettings() { $('#mClose').dataset.back = '1'; $('#mClose').onclick = () => { PENDING_IMPORT = null; showModal(settingsHTML(), true); }; }
 function yakuHTML() {
@@ -2644,7 +2665,7 @@ function bindEvents() {
   document.addEventListener('input', e => { if (e.target.id !== 'colSearch') return; const q = e.target.value.trim().toLowerCase(); let shown = 0; document.querySelectorAll('#modal .colcard').forEach(c => { const ok = !q || c.innerText.toLowerCase().includes(q); c.hidden = !ok; if (ok) shown++; }); const none = document.querySelector('#modal .colnone'); if (none) none.hidden = shown > 0; });
 
   $('#btnSettings').onclick = () => showModal(settingsHTML(), true);
-  $('#btnNewRun').onclick = () => showModal(`<div class="shophead"><h2>Start a New Run?</h2></div><p class="muted" style="margin:4px 0 0">Your current run will be lost.</p><div class="shopfoot"><button id="mClose" class="ghost">Cancel</button><span style="flex:1"></span><button id="mNewRun" class="danger">New Run</button></div>`, true, 'confirmmodal');
+  $('#btnNewRun').onclick = () => showModal(confirmHTML('newrun', 'Start a New Run?', 'Your current run ends here and cannot be continued.', runAtStake(), 'mNewRun', 'New Run'), true, 'confirmmodal');
   document.addEventListener('click', e => { const b = e.target.closest('[data-copyseed]'); if (b) copySeed(b); if (S && S.busy && skipArmed) skipAnim = true; });
   // Closing a screen (X, a click outside, Escape, Back or Cancel) plays the leave animation first, then runs the close.
   // Back to the board the dim fades too; back to another screen (the title, Settings, the Shop) it hands over with a pop.
@@ -2679,7 +2700,7 @@ function bindEvents() {
     if (t.dataset.setspeed) { ANIM_SPEED = t.dataset.setspeed; try { localStorage.setItem('yakuman.speed', ANIM_SPEED); } catch (e) { } showModal(settingsHTML(), true); return; }
     if (t.dataset.setdbg) { const b = $('#debugBar'); b.hidden = t.dataset.setdbg !== 'on'; if (!b.hidden) renderDebug(); showModal(settingsHTML(), true); return; }
     if (t.dataset.setunlock) { UNLOCK_ALL = t.dataset.setunlock === 'on'; try { localStorage.setItem(UNLOCK_ALL_KEY, UNLOCK_ALL ? 'on' : 'off'); } catch (e) { } render(); showModal(settingsHTML(), true); return; }
-    if (t.id === 'mDeleteRun') { showModal(`<div class="shophead"><h2>Delete Run?</h2></div><p class="muted" style="margin:4px 0 0">The run in progress ends and can't be continued. Your profile, unlocks and settings stay.</p><div class="shopfoot"><button id="mClose" class="ghost">Cancel</button><span style="flex:1"></span><button id="mConfirmDeleteRun" class="danger">Delete Run</button></div>`, true, 'confirmmodal'); backToSettings(); return; }
+    if (t.id === 'mDeleteRun') { showModal(confirmHTML('deleterun', 'Delete Run?', 'The run in progress ends and can\'t be continued. Your profile, unlocks and settings stay.', runAtStake(), 'mConfirmDeleteRun', 'Delete Run'), true, 'confirmmodal'); backToSettings(); return; }
     if (t.id === 'mConfirmDeleteRun') { clearSave(); S = null; location.reload(); return; }
     if (t.id === 'mExport') { (async () => { EXPORT_CODE = await toCode(exportPayload()); showModal(exportHTML(), true, 'datamodal'); backToSettings(); })(); return; }
     if (t.id === 'mImport') { PENDING_IMPORT = null; showModal(importHTML(), true, 'datamodal'); backToSettings(); return; }
@@ -2687,7 +2708,7 @@ function bindEvents() {
     if (t.id === 'mDownloadCode') { saveCodeFile(t); return; }
     if (t.id === 'mLoadSave') { (async () => { try { PENDING_IMPORT = checkSave(await fromCode(($('#importCode') || {}).value)); showModal(importHTML(), true, 'datamodal'); backToSettings(); } catch (e) { const code = ($('#importCode') || {}).value || ''; showModal(importHTML(e.message || 'That save could not be read.'), true, 'datamodal'); backToSettings(); $('#importCode').value = code; } })(); return; }
     if (t.id === 'mConfirmImport') { const o = PENDING_IMPORT; if (!o) return; try { localStorage.setItem(PROFILE_KEY, JSON.stringify(Object.assign(blankProfile(), o.profile))); for (const [k, v] of Object.entries(o.settings || {})) if (SETTING_KEYS.includes(k)) localStorage.setItem(k, v); if (o.run) localStorage.setItem(SAVE_KEY, o.run); else localStorage.removeItem(SAVE_KEY); } catch (e) { } location.reload(); return; }
-    if (t.id === 'mResetProfile') { showModal(`<div class="shophead"><h2>Reset Profile?</h2></div><p class="muted" style="margin:4px 0 0">Lifetime stats in this browser will be cleared and every unlock will lock again (${unlockedCount()} of ${UNLOCKS.length} unlocked). Your current run and settings stay. Export first if you want a copy.</p><div class="shopfoot"><button id="mClose" class="ghost">Cancel</button><span style="flex:1"></span><button id="mConfirmReset" class="danger">Reset Profile</button></div>`, true, 'confirmmodal'); backToSettings(); return; }
+    if (t.id === 'mResetProfile') { showModal(confirmHTML('resetprofile', 'Reset Profile?', 'Lifetime stats in this browser are cleared and every unlock locks again. Your current run and settings stay. Export first if you want a copy.', [['Runs', fmtN(PROFILE.runs)], ['Wins', fmtN(PROFILE.wins)], ['Best Ante', PROFILE.bestAnte || '—'], ['Unlocks', `${unlockedCount()}<small> / ${UNLOCKS.length}</small>`]], 'mConfirmReset', 'Reset Profile'), true, 'confirmmodal'); backToSettings(); return; }
     if (t.id === 'mConfirmReset') { PROFILE = blankProfile(); saveProfile(); showModal(settingsHTML(), true); return; }
     if (t.id === 'mClose') { if (!t.onclick) { hideModal(); render(); } }   // a custom back action (to the menu or Settings) has already run
     else if (t.id === 'mEndless') { S.endless = true; ensureBosses(); genShop(); S.phase = 'cashout'; setMsg(''); render(); }
