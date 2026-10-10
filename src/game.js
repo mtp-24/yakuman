@@ -1683,7 +1683,6 @@ let trayShown = '';
 function trayIn(kind) { const id = kind + ':' + S.ante + ':' + S.blindIndex + ':' + (S.pack ? S.pack.key : ''); if (trayShown === id || !motionOK || !$('#overlay').classList.contains('boardonly')) { trayShown = id; return; } trayShown = id; $('#modal').animate([{ transform: 'translateY(105%)' }, { transform: 'none' }], { duration: 340, easing: 'cubic-bezier(.2,.8,.2,1)' }); }
 function placeOverlay(boardOnly, mode) {
   const ov = $('#overlay'); ov.classList.remove('boardonly', 'shoptray'); ['left', 'top', 'width', 'height'].forEach(k => ov.style[k] = '');
-  document.documentElement.classList.remove('traylock');
   const board = document.querySelector('.board'); if (board) board.classList.remove('cashdim', 'shopdim'); if (!boardOnly || !board || innerWidth <= 900 || (mode === 'shop' && !shopTray)) return;
   const b = board.getBoundingClientRect(), top = Math.max(b.top, 0), bottom = innerHeight;   // runs to the screen's bottom edge, where the receipt rises from
   // The dimming sits on the board itself, so the page background below it keeps its colour. The Talismans stay lightly dimmed; the rest is darker.
@@ -1691,8 +1690,6 @@ function placeOverlay(boardOnly, mode) {
   board.classList.add('cashdim'); board.classList.toggle('shopdim', mode === 'shop'); board.style.setProperty('--cut', cut + 'px');
   // The Shop tray starts right under the Talisman row, measured on screen, so it stays snug when the page is scrolled.
   const otop = mode === 'shop' ? Math.max(0, tz ? tz.getBoundingClientRect().bottom + 6 : top + cut + 2) : top;
-  // While a tray is up only the tray scrolls: the page behind it holds still, so there is one scrollbar, not two.
-  document.documentElement.classList.add('traylock');
   ov.classList.add('boardonly'); ov.classList.toggle('shoptray', mode === 'shop'); Object.assign(ov.style, { left: b.left + 'px', top: otop + 'px', width: b.width + 'px', height: (bottom - otop) + 'px' });
   if (mode === 'shop') { ov.style.setProperty('--reach', '0px'); return; }   // the tray spans the board's full width, border to border
   // The tray grows up from the screen's bottom edge until its contents sit around the middle of the screen
@@ -1705,8 +1702,9 @@ function placeOverlay(boardOnly, mode) {
 ['resize', 'scroll'].forEach(ev => window.addEventListener(ev, () => { const ov = $('#overlay'); if (ev === 'resize' && !ov.hidden && /\b(shopmodal|packmodal)\b/.test($('#modal').className) && useTray() !== shopTray) { render(); return; } if (ov.classList.contains('boardonly')) placeOverlay(true, ov.classList.contains('shoptray') ? 'shop' : undefined); }));
 // Any leftover animation is cancelled first: the cash-out drawer's slide-down holds its end position, and the next modal must not inherit it.
 function showModal(html, pinned, cls) {
-  placeOverlay(false); modalPinned = !!pinned; $('#modal').getAnimations().forEach(an => an.cancel()); $('#modal').className = 'modal' + (cls ? ' ' + cls : ''); $('#modal').innerHTML = html; if ($('#modal #mClose')) $('#modal').insertAdjacentHTML('afterbegin', CLOSE_X); decorateBanner(cls); syncEditions(); fillHero($('#modal')); fillColTiles($('#modal')); fillTileArt($('#modal')); $('#overlay').hidden = false; fillExamples($('#modal')); translateDOM($('#modal')); }
-function hideModal() { modalPinned = false; $('#modal').getAnimations().forEach(an => an.cancel()); $('#overlay').hidden = true; placeOverlay(false); }
+  placeOverlay(false); modalPinned = !!pinned; $('#modal').getAnimations().forEach(an => an.cancel()); $('#modal').className = 'modal' + (cls ? ' ' + cls : ''); $('#modal').innerHTML = html; if ($('#modal #mClose')) $('#modal').insertAdjacentHTML('afterbegin', CLOSE_X); decorateBanner(cls); syncEditions(); fillHero($('#modal')); fillColTiles($('#modal')); fillTileArt($('#modal')); $('#overlay').hidden = false; document.documentElement.classList.add('modallock'); fillExamples($('#modal')); translateDOM($('#modal')); }
+// While any screen or tray is open only it scrolls: the page behind holds still, so there is one scrollbar, not two.
+function hideModal() { modalPinned = false; $('#modal').getAnimations().forEach(an => an.cancel()); $('#overlay').hidden = true; document.documentElement.classList.remove('modallock'); placeOverlay(false); }
 // A Talisman you gain starts fresh, like a Joker in Balatro: progress from an earlier copy you sold is gone.
 // Its state lives under its own key, or its key plus a capitalised suffix (kasaobake, shiroSuit).
 const ownsState = (k, x) => x === k || (x.startsWith(k) && /[A-Z]/.test(x[k.length] || ''));   // 'shiro' owns 'shiroSuit', but 'hoshi' does not own 'hoshizora'
