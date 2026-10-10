@@ -1870,8 +1870,22 @@ if (window.ResizeObserver) { const ro = new ResizeObserver(() => { clearTimeout(
   placeOverlay(true, shop ? 'shop' : undefined);
 }));
 // Any leftover animation is cancelled first: the cash-out drawer's slide-down holds its end position, and the next modal must not inherit it.
+// Moving from one full screen to the next (title, run setup, the Blind screen) plays a short hand-over: the screen shrinks
+// away and the next pops in. Starting a Blind (or continuing a run) also flashes the chosen Blind card and fades the whole
+// screen out to the table, where the hand deals in. Clicks are ignored meanwhile.
+let modalLeaving = false, modalPop = false;
+function modalOut(next, from, toBoard) {
+  const ov = $('#overlay'), m = $('#modal'); if (modalLeaving) return;
+  if (!motionOK || ov.hidden || ov.classList.contains('boardonly')) { next(); return; }
+  modalLeaving = true; m.style.pointerEvents = 'none'; let done = false; const lead = from ? 140 : 0;
+  const fin = () => { if (done) return; done = true; modalLeaving = false; m.style.pointerEvents = ''; modalPop = !toBoard; next(); };
+  if (from) from.animate([{ transform: 'none', filter: 'none' }, { transform: 'scale(1.04)', filter: 'brightness(1.35)', offset: .5 }, { transform: 'scale(1.02)', filter: 'brightness(1.1)' }], { duration: 240, easing: 'ease-out', fill: 'forwards' });
+  m.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: toBoard ? 'translateY(-24px) scale(.98)' : 'scale(.96)' }], { duration: toBoard ? 240 : 170, delay: lead, easing: 'ease-in', fill: 'forwards' }).onfinish = fin;
+  if (toBoard) ov.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 260, delay: lead, easing: 'ease-in', fill: 'forwards' });
+  setTimeout(fin, lead + 520);   // safety if animations are paused
+}
 function showModal(html, pinned, cls) {
-  placeOverlay(false); modalPinned = !!pinned; $('#modal').getAnimations().forEach(an => an.cancel()); $('#modal').className = 'modal' + (cls ? ' ' + cls : ''); $('#modal').innerHTML = html; if ($('#modal #mClose')) $('#modal').insertAdjacentHTML('afterbegin', CLOSE_X); decorateBanner(cls); syncEditions(); fillHero($('#modal')); fillColTiles($('#modal')); fillTileArt($('#modal')); $('#overlay').hidden = false; document.documentElement.classList.add('modallock'); fillExamples($('#modal')); translateDOM($('#modal')); }
+  placeOverlay(false); modalPinned = !!pinned; $('#modal').getAnimations().forEach(an => an.cancel()); $('#overlay').getAnimations().forEach(an => an.cancel()); $('#modal').className = 'modal' + (cls ? ' ' + cls : ''); $('#modal').innerHTML = html; if ($('#modal #mClose')) $('#modal').insertAdjacentHTML('afterbegin', CLOSE_X); decorateBanner(cls); syncEditions(); fillHero($('#modal')); fillColTiles($('#modal')); fillTileArt($('#modal')); $('#overlay').hidden = false; document.documentElement.classList.add('modallock'); fillExamples($('#modal')); translateDOM($('#modal'));  if (modalPop) { modalPop = false; if (motionOK) $('#modal').animate([{ opacity: 0, transform: 'scale(.96)' }, { opacity: 1, transform: 'none' }], { duration: 200, easing: 'cubic-bezier(.2,.8,.2,1)' }); } }
 // While any screen or tray is open only it scrolls: the page behind holds still, so there is one scrollbar, not two.
 function hideModal() { modalPinned = false; $('#modal').getAnimations().forEach(an => an.cancel()); $('#overlay').hidden = true; document.documentElement.classList.remove('modallock'); placeOverlay(false); }
 // A Talisman you gain starts fresh, like a Joker in Balatro: progress from an earlier copy you sold is gone.
@@ -2569,17 +2583,17 @@ function bindEvents() {
     if (t.id === 'mConfirmReset') { PROFILE = blankProfile(); saveProfile(); showModal(settingsHTML(), true); return; }
     if (t.id === 'mClose') { if (!t.onclick) { hideModal(); render(); } }   // a custom back action (to the menu or Settings) has already run
     else if (t.id === 'mEndless') { S.endless = true; ensureBosses(); genShop(); S.phase = 'cashout'; setMsg(''); render(); }
-    else if (t.id === 'mNewRun' || t.id === 'mStart') { showModal(setupHTML(), true, 'setupmodal'); }
+    else if (t.id === 'mNewRun' || t.id === 'mStart') modalOut(() => showModal(setupHTML(), true, 'setupmodal'));
     else if (t.id === 'mChallenges') { showModal(challengesHTML(), true, 'setupmodal'); }
     else if (t.dataset.chal) { hideModal(); newRun({ challenge: t.dataset.chal }); }
     else if (t.dataset.nav || t.dataset.goto) { const [name, d] = (t.dataset.nav || t.dataset.goto).split(':'); const seed = ($('#seedInput') || {}).value || ''; const before = setupKeys(name).indexOf(setupKey(name)); if (t.dataset.nav) setupSel[name] += +d; else setupSel[name] = +d; setupDir[name] = t.dataset.nav ? +d : Math.sign(+d - before); showModal(setupHTML(), true, 'setupmodal'); $('#seedInput').value = seed; }
-    else if (t.id === 'mStartRun') { if (lockOf('wall', setupKey('deck')) || stakeLock(setupKey('deck'), setupKey('stake'))) return; const deck = ($('#modal input[name=deck]') || {}).value, stake = ($('#modal input[name=stake]') || {}).value, seed = ($('#seedInput') || {}).value; hideModal(); newRun({ deck, stake, seed }); }
-    else if (t.id === 'mContinue') { hideModal(); render(); }
+    else if (t.id === 'mStartRun') { if (lockOf('wall', setupKey('deck')) || stakeLock(setupKey('deck'), setupKey('stake'))) return; const deck = ($('#modal input[name=deck]') || {}).value, stake = ($('#modal input[name=stake]') || {}).value, seed = ($('#seedInput') || {}).value; modalOut(() => { hideModal(); newRun({ deck, stake, seed }); }); }
+    else if (t.id === 'mContinue') modalOut(() => { hideModal(); render(); }, null, true);
     else if (t.id === 'mCollection') { showModal(collectionHTML(), true, 'colmodal'); $('#mClose').onclick = () => { showModal(menuHTML(!!load()), true, 'menumodal'); }; }
     else if (t.id === 'mRules') { showModal(rulesHTML() + '', true); $('#mClose').onclick = () => { showModal(menuHTML(!!load()), true, 'menumodal'); }; }
     else if (t.id === 'mCashOut') cashOut();
     else if (t.id === 'mNext') trayOut(() => { S.shop = null; S.pack = null; S.msg = ''; S.phase = 'select'; render(); });
-    else if (t.id === 'mPlayBlind') { S.msg = ''; startBlind(); render(); }
+    else if (t.id === 'mPlayBlind') modalOut(() => { S.msg = ''; startBlind(); render(); }, t.closest('.blindcard'), true);
     else if (t.id === 'mRunInfo') { showModal(yakuHTML(), true); $('#mClose').onclick = () => { modalPinned = false; render(); }; }
     else if (t.id === 'mReroll') reroll();
     else if (t.id === 'mSkip') skipBlind();
