@@ -1078,7 +1078,7 @@ body.reducemotion *,body.reducemotion *::before,body.reducemotion *::after,body.
 .menumodal .herobtn{height:auto;padding:12px 18px;font:700 18px/1.2 var(--body);color:#2a1d0a;background:linear-gradient(180deg,#f3cd72,#d29f3c);border:1px solid #f6d68a;border-radius:11px;box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 4px 0 #8e6420,0 10px 20px rgba(0,0,0,.4);transition:transform .12s,filter .12s}
 .menumodal .herobtn span{font-size:12px;font-weight:500;opacity:.75;margin-top:2px}
 .menumodal .herobtn:hover{transform:translateY(-1px);filter:brightness(1.06)} .menumodal .herobtn:active{transform:translateY(2px);box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 1px 0 #8e6420}
-.menumodal .herogrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
+.menumodal .herogrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px} .menumodal .herogrid.five{grid-template-columns:repeat(6,minmax(0,1fr))} .menumodal .herogrid.five button{grid-column:span 2} .menumodal .herogrid.five button:nth-child(-n+2){grid-column:span 3} .menumodal .herogrid button{padding:0 8px;white-space:nowrap}
 .menumodal .herogrid button{height:42px;border-radius:9px;font-weight:600;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,0)),rgba(10,18,15,.5);border:1px solid rgba(217,164,65,.32);transition:border-color .15s,background .15s,transform .12s}
 .menumodal .herogrid button:hover{border-color:rgba(243,199,104,.75);background:linear-gradient(180deg,rgba(243,199,104,.12),rgba(243,199,104,.03)),rgba(10,18,15,.5);transform:translateY(-1px)}
 .menumodal .herofoot{margin-top:18px;animation:herofade .6s ease-out 1.4s both}
@@ -4782,8 +4782,11 @@ function runAtStake() {
   if (!S || ['gameover', 'win'].includes(S.phase)) return [];
   return [['Ante', `${S.ante}<small> / ${CFG.antes}</small>`], ['Money', money('¥', S.money)], ['Talismans', `${S.talismans.length}`], ['Best play', fmtN(S.stats.best || 0)]];
 }
+// Settings opened from the title screen go back there when closed, also after a setting is changed (which redraws it).
+let settingsFromTitle = false;
+function showSettings() { showModal(settingsHTML(), true); if (settingsFromTitle) backToTitle(); }
 function backToTitle() { const c = $('#mClose'); if (c) { c.dataset.back = '1'; c.onclick = () => { showModal(menuHTML(!!load()), true, 'menumodal'); }; } }
-function backToSettings() { $('#mClose').dataset.back = '1'; $('#mClose').onclick = () => { PENDING_IMPORT = null; showModal(settingsHTML(), true); }; }
+function backToSettings() { $('#mClose').dataset.back = '1'; $('#mClose').onclick = () => { PENDING_IMPORT = null; showSettings(); }; }
 function yakuHTML() {
   const st = S.stats; const most = mostPlayedRung(); const yc = k => (S && S.stats.yaku[k]) || 0;
   const tabs = [['run', 'Run'], ['ladder', 'Play Ladder'], ['yaku', 'Yaku'], ['yakuman', 'Yakuman'], ['profile', 'Profile']];
@@ -4873,13 +4876,13 @@ function menuHTML(hasSave) {
   // honor tiles that deal in and float, the title in shimmering gold with its kanji on a vermilion seal, then the menu.
   const petals = Array.from({ length: 9 }, (_, i) => `<i style="left:${6 + i * 11}%;animation-delay:${(i * 1.7) % 9}s;animation-duration:${9 + (i % 4) * 2}s"></i>`).join('');
   const main = hasSave ? `<button id="mContinue" class="primary herobtn">Continue Run<span>${where}</span></button>` : `<button id="mStart" class="primary herobtn">New Run<span>Choose a Wall and Stake</span></button>`;
-  const rest = [hasSave ? '<button id="mStart" class="ghost">New Run</button>' : '', '<button id="mChallenges" class="ghost">Challenges</button>', '<button id="mRules" class="ghost">How to Play</button>', '<button id="mCollection" class="ghost">Collection</button>'].join('');
+  const rest = [hasSave ? '<button id="mStart" class="ghost">New Run</button>' : '', '<button id="mChallenges" class="ghost">Challenges</button>', '<button id="mRules" class="ghost">How to Play</button>', '<button id="mCollection" class="ghost">Collection</button>', '<button id="mSettingsT" class="ghost">Settings</button>'].join('');
   return `<div class="hero"><i class="hcorner tl"></i><i class="hcorner tr"></i><i class="hcorner bl"></i><i class="hcorner br"></i><div class="herorays" aria-hidden="true"></div><div class="heropetals" aria-hidden="true">${petals}</div>
   <div class="herotiles" id="heroTiles"></div>
   <h1 class="herotitle" data-notr>Tenpai</h1><div class="herokanji" data-notr>${LANG === 'hk' ? '聽牌' : '聴牌'}</div>
   <div class="herodiv" aria-hidden="true"><i></i></div>
   <p class="herotag">A Mahjong roguelite in the Balatro mould. Build hands, chase Yaku, stack Talismans, and outscore eight Antes of Yakuza bosses.</p>
-  <div class="heroacts">${main}<div class="herogrid">${rest}</div></div>
+  <div class="heroacts">${main}<div class="herogrid${hasSave ? ' five' : ''}">${rest}</div></div>
   <div class="herofoot muted">Playtest build · Riichi or Hong Kong terms in Settings</div></div>`;
 }
 // The intro screen's fan of honor tiles.
@@ -5014,7 +5017,7 @@ function bindEvents() {
   document.addEventListener('change', e => { if (e.target.id !== 'importFile' || !e.target.files[0]) return; const f = e.target.files[0]; const r = new FileReader(); r.onload = () => { $('#importCode').value = String(r.result || ''); $('#importFileName').textContent = f.name; }; r.readAsText(f); });
   document.addEventListener('input', e => { if (e.target.id !== 'colSearch') return; const q = e.target.value.trim().toLowerCase(); let shown = 0; document.querySelectorAll('#modal .colcard').forEach(c => { const ok = !q || c.innerText.toLowerCase().includes(q); c.hidden = !ok; if (ok) shown++; }); const none = document.querySelector('#modal .colnone'); if (none) none.hidden = shown > 0; });
 
-  $('#btnSettings').onclick = () => showModal(settingsHTML(), true);
+  $('#btnSettings').onclick = () => { settingsFromTitle = false; showSettings(); };
   $('#btnNewRun').onclick = () => showModal(confirmHTML('newrun', 'Start a New Run?', 'Your current run ends here and cannot be continued.', runAtStake(), 'mNewRun', 'New Run'), true, 'confirmmodal');
   document.addEventListener('click', e => { const b = e.target.closest('[data-copyseed]'); if (b) copySeed(b); if (S && S.busy && skipArmed) skipAnim = true; });
   // Closing a screen (X, a click outside, Escape, Back or Cancel) plays the leave animation first, then runs the close.
@@ -5034,23 +5037,23 @@ function bindEvents() {
     if (t.dataset.tab) { infoTab = t.dataset.tab; showModal(yakuHTML(), true); return; }
     if (t.dataset.ctab) { const prev = $('#mClose') && $('#mClose').onclick; colTab = t.dataset.ctab; showModal(collectionHTML(), true, 'colmodal'); if (prev) $('#mClose').onclick = prev; return; }
     if (t.dataset.rtab) { const prev = $('#mClose') && $('#mClose').onclick; rulesTab = t.dataset.rtab; showModal(rulesHTML(), true); if (prev) $('#mClose').onclick = prev; return; }
-    if (t.dataset.setlang) { setLang(t.dataset.setlang); showModal(settingsHTML(), true); return; }
-    if (t.dataset.settilenums) { TILE_NUMS = t.dataset.settilenums; try { localStorage.setItem('yakuman.tilenums', TILE_NUMS); } catch (e) { } render(); showModal(settingsHTML(), true); return; }
-    if (t.dataset.sethint) { HINTS[t.dataset.sethint] = !HINTS[t.dataset.sethint]; try { localStorage.setItem('yakuman.hints', JSON.stringify(HINTS)); } catch (e) { } render(); showModal(settingsHTML(), true); return; }
-    if (t.dataset.setsound) { SOUND = t.dataset.setsound === 'on'; try { localStorage.setItem('yakuman.sound', SOUND ? 'on' : 'off'); } catch (e) { } if (SOUND) { audioCtx(); setTimeout(() => sfx('select'), 30); } showModal(settingsHTML(), true); return; }
+    if (t.dataset.setlang) { setLang(t.dataset.setlang); showSettings(); return; }
+    if (t.dataset.settilenums) { TILE_NUMS = t.dataset.settilenums; try { localStorage.setItem('yakuman.tilenums', TILE_NUMS); } catch (e) { } render(); showSettings(); return; }
+    if (t.dataset.sethint) { HINTS[t.dataset.sethint] = !HINTS[t.dataset.sethint]; try { localStorage.setItem('yakuman.hints', JSON.stringify(HINTS)); } catch (e) { } render(); showSettings(); return; }
+    if (t.dataset.setsound) { SOUND = t.dataset.setsound === 'on'; try { localStorage.setItem('yakuman.sound', SOUND ? 'on' : 'off'); } catch (e) { } if (SOUND) { audioCtx(); setTimeout(() => sfx('select'), 30); } showSettings(); return; }
     // Reset settings: the first click asks, the second clears every saved setting and reloads with the defaults (the run is saved first).
     if (t.id === 'mResetSettings') { if (t.dataset.armed) { save(); for (const k of SETTING_KEYS) { try { localStorage.removeItem(k); } catch (e) { } } location.reload(); return; } t.dataset.armed = '1'; t.textContent = 'Click again to reset'; t.classList.add('danger'); return; }
-    if (t.dataset.setmotion) { REDUCE_MOTION = t.dataset.setmotion === 'reduce'; try { localStorage.setItem('yakuman.motion', t.dataset.setmotion); } catch (e) { } applyMotion(); showModal(settingsHTML(), true); return; }
-    if (t.dataset.setshake) { SHAKE = t.dataset.setshake === 'on'; try { localStorage.setItem('yakuman.shake', SHAKE ? 'on' : 'off'); } catch (e) { } showModal(settingsHTML(), true); return; }
-    if (t.dataset.setcrt) { CRT = t.dataset.setcrt; try { localStorage.setItem('yakuman.crt', CRT); } catch (e) { } applyCRT(); showModal(settingsHTML(), true); return; }
-    if (t.dataset.setmusic) { MUSIC = t.dataset.setmusic === 'on'; try { localStorage.setItem('yakuman.music', MUSIC ? 'on' : 'off'); } catch (e) { } if (MUSIC) musicStart(); else musicStop(); showModal(settingsHTML(), true); return; }
-    if (t.dataset.setbg) { BG_ANIM = t.dataset.setbg === 'on'; try { localStorage.setItem('yakuman.bganim', BG_ANIM ? 'on' : 'off'); } catch (e) { } document.body.classList.toggle('bganim', BG_ANIM); showModal(settingsHTML(), true); return; }
-    if (t.dataset.sethc) { HIGH_CONTRAST = t.dataset.sethc === 'on'; try { localStorage.setItem('yakuman.hc', HIGH_CONTRAST ? 'on' : 'off'); } catch (e) { } render(); showModal(settingsHTML(), true); return; }
-    if (t.dataset.setdots) { SHOW_DOTS = t.dataset.setdots === 'on'; try { localStorage.setItem('yakuman.dots', SHOW_DOTS ? 'on' : 'off'); } catch (e) { } render(); showModal(settingsHTML(), true); return; }
-    if (t.dataset.setinstant) { INSTANT_SCORE = t.dataset.setinstant === 'on'; try { localStorage.setItem('yakuman.instantscore', t.dataset.setinstant); } catch (e) { } showModal(settingsHTML(), true); return; }
-    if (t.dataset.setspeed) { ANIM_SPEED = t.dataset.setspeed; try { localStorage.setItem('yakuman.speed', ANIM_SPEED); } catch (e) { } showModal(settingsHTML(), true); return; }
-    if (t.dataset.setdbg) { const b = $('#debugBar'); b.hidden = t.dataset.setdbg !== 'on'; if (!b.hidden) renderDebug(); showModal(settingsHTML(), true); return; }
-    if (t.dataset.setunlock) { UNLOCK_ALL = t.dataset.setunlock === 'on'; try { localStorage.setItem(UNLOCK_ALL_KEY, UNLOCK_ALL ? 'on' : 'off'); } catch (e) { } render(); showModal(settingsHTML(), true); return; }
+    if (t.dataset.setmotion) { REDUCE_MOTION = t.dataset.setmotion === 'reduce'; try { localStorage.setItem('yakuman.motion', t.dataset.setmotion); } catch (e) { } applyMotion(); showSettings(); return; }
+    if (t.dataset.setshake) { SHAKE = t.dataset.setshake === 'on'; try { localStorage.setItem('yakuman.shake', SHAKE ? 'on' : 'off'); } catch (e) { } showSettings(); return; }
+    if (t.dataset.setcrt) { CRT = t.dataset.setcrt; try { localStorage.setItem('yakuman.crt', CRT); } catch (e) { } applyCRT(); showSettings(); return; }
+    if (t.dataset.setmusic) { MUSIC = t.dataset.setmusic === 'on'; try { localStorage.setItem('yakuman.music', MUSIC ? 'on' : 'off'); } catch (e) { } if (MUSIC) musicStart(); else musicStop(); showSettings(); return; }
+    if (t.dataset.setbg) { BG_ANIM = t.dataset.setbg === 'on'; try { localStorage.setItem('yakuman.bganim', BG_ANIM ? 'on' : 'off'); } catch (e) { } document.body.classList.toggle('bganim', BG_ANIM); showSettings(); return; }
+    if (t.dataset.sethc) { HIGH_CONTRAST = t.dataset.sethc === 'on'; try { localStorage.setItem('yakuman.hc', HIGH_CONTRAST ? 'on' : 'off'); } catch (e) { } render(); showSettings(); return; }
+    if (t.dataset.setdots) { SHOW_DOTS = t.dataset.setdots === 'on'; try { localStorage.setItem('yakuman.dots', SHOW_DOTS ? 'on' : 'off'); } catch (e) { } render(); showSettings(); return; }
+    if (t.dataset.setinstant) { INSTANT_SCORE = t.dataset.setinstant === 'on'; try { localStorage.setItem('yakuman.instantscore', t.dataset.setinstant); } catch (e) { } showSettings(); return; }
+    if (t.dataset.setspeed) { ANIM_SPEED = t.dataset.setspeed; try { localStorage.setItem('yakuman.speed', ANIM_SPEED); } catch (e) { } showSettings(); return; }
+    if (t.dataset.setdbg) { const b = $('#debugBar'); b.hidden = t.dataset.setdbg !== 'on'; if (!b.hidden) renderDebug(); showSettings(); return; }
+    if (t.dataset.setunlock) { UNLOCK_ALL = t.dataset.setunlock === 'on'; try { localStorage.setItem(UNLOCK_ALL_KEY, UNLOCK_ALL ? 'on' : 'off'); } catch (e) { } render(); showSettings(); return; }
     if (t.id === 'mDeleteRun') { showModal(confirmHTML('deleterun', 'Delete Run?', 'The run in progress ends and can\'t be continued. Your profile, unlocks and settings stay.', runAtStake(), 'mConfirmDeleteRun', 'Delete Run'), true, 'confirmmodal'); backToSettings(); return; }
     if (t.id === 'mConfirmDeleteRun') { clearSave(); S = null; location.reload(); return; }
     if (t.id === 'mExport') { (async () => { EXPORT_CODE = await toCode(exportPayload()); showModal(exportHTML(), true, 'datamodal'); backToSettings(); })(); return; }
@@ -5060,7 +5063,7 @@ function bindEvents() {
     if (t.id === 'mLoadSave') { (async () => { try { PENDING_IMPORT = checkSave(await fromCode(($('#importCode') || {}).value)); showModal(importHTML(), true, 'datamodal'); backToSettings(); } catch (e) { const code = ($('#importCode') || {}).value || ''; showModal(importHTML(e.message || 'That save could not be read.'), true, 'datamodal'); backToSettings(); $('#importCode').value = code; } })(); return; }
     if (t.id === 'mConfirmImport') { const o = PENDING_IMPORT; if (!o) return; try { localStorage.setItem(PROFILE_KEY, JSON.stringify(Object.assign(blankProfile(), o.profile))); for (const [k, v] of Object.entries(o.settings || {})) if (SETTING_KEYS.includes(k)) localStorage.setItem(k, v); if (o.run) localStorage.setItem(SAVE_KEY, o.run); else localStorage.removeItem(SAVE_KEY); } catch (e) { } location.reload(); return; }
     if (t.id === 'mResetProfile') { showModal(confirmHTML('resetprofile', 'Reset Profile?', 'Lifetime stats in this browser are cleared and every unlock locks again. Your current run and settings stay. Export first if you want a copy.', [['Runs', fmtN(PROFILE.runs)], ['Wins', fmtN(PROFILE.wins)], ['Best Ante', PROFILE.bestAnte || '—'], ['Unlocks', `${unlockedCount()}<small> / ${UNLOCKS.length}</small>`]], 'mConfirmReset', 'Reset Profile'), true, 'confirmmodal'); backToSettings(); return; }
-    if (t.id === 'mConfirmReset') { PROFILE = blankProfile(); saveProfile(); showModal(settingsHTML(), true); return; }
+    if (t.id === 'mConfirmReset') { PROFILE = blankProfile(); saveProfile(); showSettings(); return; }
     if (t.id === 'mClose') { if (!t.onclick) { hideModal(); render(); } }   // a custom back action (to the menu or Settings) has already run
     else if (t.id === 'mEndless') { S.endless = true; ensureBosses(); genShop(); S.phase = 'cashout'; setMsg(''); render(); }
     else if (t.id === 'mNewRun' || t.id === 'mStart') { const fromTitle = $('#modal').classList.contains('menumodal'); modalOut(() => { showModal(setupHTML(), true, 'setupmodal'); if (fromTitle) backToTitle(); }); }
@@ -5069,6 +5072,7 @@ function bindEvents() {
     else if (t.dataset.nav || t.dataset.goto) { const [name, d] = (t.dataset.nav || t.dataset.goto).split(':'); const seed = ($('#seedInput') || {}).value || ''; const before = setupKeys(name).indexOf(setupKey(name)); if (t.dataset.nav) setupSel[name] += +d; else setupSel[name] = +d; setupDir[name] = t.dataset.nav ? +d : Math.sign(+d - before); showModal(setupHTML(), true, 'setupmodal'); $('#seedInput').value = seed; }
     else if (t.id === 'mStartRun') { if (lockOf('wall', setupKey('deck')) || stakeLock(setupKey('deck'), setupKey('stake'))) return; const deck = ($('#modal input[name=deck]') || {}).value, stake = ($('#modal input[name=stake]') || {}).value, seed = ($('#seedInput') || {}).value; modalOut(() => { hideModal(); newRun({ deck, stake, seed }); }); }
     else if (t.id === 'mContinue') modalOut(() => { hideModal(); render(); }, null, true);
+    else if (t.id === 'mSettingsT') { settingsFromTitle = true; showSettings(); }
     else if (t.id === 'mCollection') { showModal(collectionHTML(), true, 'colmodal'); backToTitle(); }
     else if (t.id === 'mRules') { showModal(rulesHTML() + '', true); backToTitle(); }
     else if (t.id === 'mCashOut') cashOut();
