@@ -706,6 +706,7 @@ function takeFromPack(i) {
   else if (it.kind === 'scroll') { const [t, k] = it.key.split(':'); S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] = (S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] || 0) + 1; for (const tk of liveTals(S)) if (TAL[tk].onScroll) TAL[tk].onScroll(S); PROFILE.scrollsUsed++; saveProfile(); }
   else if (it.kind === 'tile') { queueWallFlight($(`#modal .packtileart[data-pt="${i}"]`), it.tile); S.deck.push(it.tile); PROFILE.tilesAdded = (PROFILE.tilesAdded || 0) + 1; saveProfile(); for (const k of liveTals(S)) if (TAL[k].onTileAdded) TAL[k].onTileAdded(S, 1); }
   else { if (S.consumables.length >= conSlots()) { setMsg('Consumable slots are full. Use or sell one first.', true); return render(); } S.consumables.push({ kind: it.kind, key: it.key }); }
+  if (it.kind === 'talisman' || it.kind === 'omikuji' || it.kind === 'kami') { const b = $(`#modal [data-take="${i}"]`); if (b) queueSlotFlight(b.closest('.shopcard'), it.kind === 'talisman' ? 'tal' : 'con'); }
   it.sold = true; S.pack.left--; setMsg(it.kind === 'tile' ? `Added ${itemDef(it).name} to your Wall.` : `Took ${itemDef(it).name}.`);
   if (S.pack.left <= 0) S.pack = null;
   render();
@@ -714,7 +715,7 @@ function takeFromPack(i) {
 function tileDef(t) { const parts = [t.eng && ENG[t.eng] ? `<b>${ENG[t.eng].name}:</b> ${ENG[t.eng].desc}` : '', t.seal && SEALS[t.seal] ? `<b>${SEALS[t.seal].name}:</b> ${SEALS[t.seal].desc}` : '', t.red ? 'A Red Five: +1 Han when it scores.' : ''].filter(Boolean); return { name: tileName(t), desc: parts.length ? parts.join(' ') : 'A plain tile.', cost: 0 }; }
 function itemDef(it) { return it.kind === 'tile' ? tileDef(it.tile) : it.kind === 'talisman' ? TAL[it.key] : it.kind === 'scroll' ? SCR[it.key] : it.kind === 'flower' ? FLW[it.key] : it.kind === 'pack' ? PACKS[it.key] : CONS[it.key]; }
 function buy(it) {
-  const def = itemDef(it), p = itemPrice(it);
+  const def = itemDef(it), p = itemPrice(it), card = $(`#modal [data-buy="${shopItems().indexOf(it)}"]`);
   if (S.money < p) { setMsg(`Not enough YEN: ${def.name} costs ¥${p}.`, true); return render(); }
   const inflate = () => { if (chal('inflation') && !S.quiet) S.inflation = (S.inflation || 0) + 1; };
   if (it.kind === 'pack') { S.money -= p; it.sold = true; inflate(); if (!S.quiet) sfx('buy'); openPack(it.key, false); return render(); }
@@ -722,6 +723,7 @@ function buy(it) {
   else if (it.kind === 'omikuji' || it.kind === 'kami') { if (S.consumables.length >= conSlots()) { setMsg('Consumable slots are full. Use one first.', true); return render(); } S.consumables.push({ kind: it.kind, key: it.key }); }
   else if (it.kind === 'scroll') { const [t, k] = it.key.split(':'); S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] = (S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] || 0) + 1; for (const tk of liveTals(S)) if (TAL[tk].onScroll) TAL[tk].onScroll(S); PROFILE.scrollsUsed++; saveProfile(); }
   else if (it.kind === 'flower') { S.flowers.push(it.key); if (S.anteFlower && S.anteFlower.key === it.key) S.anteFlower.sold = true; if (it.key === 'wisteria' || it.key === 'wisteria2') goBackAnte(); }
+  if (!S.quiet && card && (it.kind === 'talisman' || it.kind === 'omikuji' || it.kind === 'kami')) queueSlotFlight(card.closest('.shopcard'), it.kind === 'talisman' ? 'tal' : 'con');
   S.money -= p; it.sold = true; inflate(); if (!S.quiet) { sfx('buy'); S.stats.bought = (S.stats.bought || 0) + 1; } setMsg(`Bought ${def.name}.`); render();
 }
 function itemPrice(it) { if (it.free) return 0; if (it.sticker && it.sticker.rental && it.kind === 'talisman') return S.shop && S.shop.coupon ? 0 : 1; const def = itemDef(it); let base = def.cost + (it.edition ? EDITIONS[it.edition].price : 0); if (it.kind === 'talisman') base += stakeTalCost(); if (S.shop && S.shop.coupon && (it.kind === 'talisman' || it.kind === 'omikuji' || it.kind === 'kami')) return 0; return price(base); }
@@ -899,7 +901,7 @@ function render() {
   document.querySelectorAll('.zhead > .muted').forEach(e => { e.title = e.textContent; });   // full text on hover when a header is truncated
   translateDOM($('#app')); fitNumbers();
   if (S.placeholder && $('#overlay').hidden) showModal(menuHTML(false), true, 'menumodal');   // closing a screen opened from the title goes back to the title
-  tileMotion(motionBefore, freshTiles); syncEditions(); refreshTileTip(); animateWall(); if (S.phase !== 'shop' && !S.quiet) walletShown = S.money;
+  tileMotion(motionBefore, freshTiles); syncEditions(); refreshTileTip(); animateWall(); animateSlots(); if (S.phase !== 'shop' && !S.quiet) walletShown = S.money;
   save();
 }
 // Tiles added to the Wall fly from where they were added to the Wall counter, which ticks up as each one lands. The counter is
@@ -927,6 +929,26 @@ function animateWall() {
   });
   // Safety if animations are paused (a hidden tab): the count still ends right and no tile is left hanging.
   setTimeout(() => { flies.forEach(f => f.remove()); if (v.isConnected && shown < n) v.textContent = shown = n; }, 700 + flights.length * 120 + 600);
+}
+// A Talisman or consumable bought or taken flies from its card into its new slot on the board, shrinking to fit, then the slot
+// pops in. The card is copied before the Shop redraws; the copy sits in a bare shelf so it keeps the shop card's look.
+let slotFlights = [];
+function queueSlotFlight(card, row) { if (card && motionOK) slotFlights.push({ rect: card.getBoundingClientRect(), node: card.cloneNode(true), row }); }
+function animateSlots() {
+  const flights = slotFlights; slotFlights = []; if (!flights.length || S.quiet) return;
+  const filled = { tal: [...document.querySelectorAll('#talismans .slot.filled')], con: [...document.querySelectorAll('#consumables .slot.filled')] };
+  flights.forEach((f, k) => {
+    const dest = filled[f.row].pop(); if (!dest) return;
+    const to = dest.getBoundingClientRect(), fly = document.createElement('div');
+    fly.className = 'slotfly shelf'; fly.style.cssText = `left:${f.rect.left}px;top:${f.rect.top}px;width:${f.rect.width}px;height:${f.rect.height}px`;
+    f.node.style.cssText = 'width:100%;height:100%;margin:0;box-sizing:border-box'; f.node.querySelectorAll('.buy,.pricetag').forEach(e => e.remove());
+    fly.appendChild(f.node); document.body.appendChild(fly); dest.style.visibility = 'hidden';
+    const dx = to.left - f.rect.left, dy = to.top - f.rect.top, sx = to.width / f.rect.width, sy = to.height / f.rect.height;
+    const land = () => { fly.remove(); if (!dest.isConnected) return; dest.style.visibility = ''; dest.animate([{ transform: 'scale(.86)', filter: 'brightness(1.6)' }, { transform: 'scale(1.04)', filter: 'brightness(1.2)', offset: .6 }, { transform: 'none', filter: 'none' }], { duration: 320, easing: 'ease-out' }); };
+    const a = fly.animate([{ transform: 'none', opacity: 1 }, { transform: `translate(${dx * .4}px,${dy * .4 - 40}px) scale(${(1 + sx) / 2},${(1 + sy) / 2}) rotate(-3deg)`, opacity: 1, offset: .45 }, { transform: `translate(${dx}px,${dy}px) scale(${sx},${sy})`, opacity: .4 }],
+      { duration: 620, delay: k * 120, easing: 'cubic-bezier(.45,0,.4,1)', fill: 'backwards' });
+    a.onfinish = land; setTimeout(() => { if (fly.isConnected) land(); }, 620 + k * 120 + 600);   // safety if animations are paused
+  });
 }
 // Edition effects run on one shared 15 s clock: each newly drawn edition card gets a negative delay matching the
 // clock, so a redraw picks up mid-cycle and all cards stay in step.
@@ -1666,7 +1688,8 @@ function placeOverlay(boardOnly, mode) {
   // The dimming sits on the board itself, so the page background below it keeps its colour. The Talismans stay lightly dimmed; the rest is darker.
   const tz = board.querySelector('.talzone'), cut = tz ? Math.max(0, tz.getBoundingClientRect().bottom + 4 - b.top) : 0;
   board.classList.add('cashdim'); board.classList.toggle('shopdim', mode === 'shop'); board.style.setProperty('--cut', cut + 'px');
-  const otop = mode === 'shop' ? Math.max(0, top + cut + 2) : top;
+  // The Shop tray starts right under the Talisman row, measured on screen, so it stays snug when the page is scrolled.
+  const otop = mode === 'shop' ? Math.max(0, tz ? tz.getBoundingClientRect().bottom + 6 : top + cut + 2) : top;
   ov.classList.add('boardonly'); ov.classList.toggle('shoptray', mode === 'shop'); Object.assign(ov.style, { left: b.left + 'px', top: otop + 'px', width: b.width + 'px', height: (bottom - otop) + 'px' });
   if (mode === 'shop') { ov.style.setProperty('--reach', '0px'); return; }   // the tray spans the board's full width, border to border
   // The tray grows up from the screen's bottom edge until its contents sit around the middle of the screen
