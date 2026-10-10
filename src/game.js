@@ -1634,7 +1634,7 @@ let trayShown = '';
 function trayIn(kind) { const id = kind + ':' + S.ante + ':' + S.blindIndex + ':' + (S.pack ? S.pack.key : ''); if (trayShown === id || !motionOK || !$('#overlay').classList.contains('boardonly')) { trayShown = id; return; } trayShown = id; $('#modal').animate([{ transform: 'translateY(105%)' }, { transform: 'none' }], { duration: 340, easing: 'cubic-bezier(.2,.8,.2,1)' }); }
 function placeOverlay(boardOnly, mode) {
   const ov = $('#overlay'); ov.classList.remove('boardonly', 'shoptray'); ['left', 'top', 'width', 'height'].forEach(k => ov.style[k] = '');
-  const board = document.querySelector('.board'); if (board) board.classList.remove('cashdim', 'shopdim'); if (!boardOnly || !board || innerWidth <= 900) return;
+  const board = document.querySelector('.board'); if (board) board.classList.remove('cashdim', 'shopdim'); if (!boardOnly || !board || innerWidth <= 900 || (mode === 'shop' && !shopTray)) return;
   const b = board.getBoundingClientRect(), top = Math.max(b.top, 0), bottom = innerHeight;   // runs to the screen's bottom edge, where the receipt rises from
   // The dimming sits on the board itself, so the page background below it keeps its colour. The Talismans stay lightly dimmed; the rest is darker.
   const tz = board.querySelector('.talzone'), cut = tz ? Math.max(0, tz.getBoundingClientRect().bottom + 4 - b.top) : 0;
@@ -1649,7 +1649,7 @@ function placeOverlay(boardOnly, mode) {
   let trayTop = innerHeight / 2 - contentH / 2; if (ac) trayTop = Math.min(trayTop, ac.getBoundingClientRect().top - 14);
   ov.style.setProperty('--reach', Math.max(0, trayTop - top) + 'px');
 }
-['resize', 'scroll'].forEach(ev => window.addEventListener(ev, () => { const ov = $('#overlay'); if (ov.classList.contains('boardonly')) placeOverlay(true, ov.classList.contains('shoptray') ? 'shop' : undefined); }));
+['resize', 'scroll'].forEach(ev => window.addEventListener(ev, () => { const ov = $('#overlay'); if (ev === 'resize' && !ov.hidden && /\b(shopmodal|packmodal)\b/.test($('#modal').className) && useTray() !== shopTray) { render(); return; } if (ov.classList.contains('boardonly')) placeOverlay(true, ov.classList.contains('shoptray') ? 'shop' : undefined); }));
 // Any leftover animation is cancelled first: the cash-out drawer's slide-down holds its end position, and the next modal must not inherit it.
 function showModal(html, pinned, cls) {
   placeOverlay(false); modalPinned = !!pinned; $('#modal').getAnimations().forEach(an => an.cancel()); $('#modal').className = 'modal' + (cls ? ' ' + cls : ''); $('#modal').innerHTML = html; if ($('#modal #mClose')) $('#modal').insertAdjacentHTML('afterbegin', CLOSE_X); decorateBanner(cls); syncEditions(); fillHero($('#modal')); fillColTiles($('#modal')); fillTileArt($('#modal')); $('#overlay').hidden = false; fillExamples($('#modal')); translateDOM($('#modal')); }
@@ -1777,7 +1777,7 @@ const walletHTML = () => `<span class="wallet purse"><span class="coin" aria-hid
 // Everything on sale, in display order: the card slots, the Flower, then the Booster Packs. Older saves had one pack and a Scroll slot.
 function shopItems() { const sh = S.shop; if (!sh.packs) { sh.packs = sh.pack ? [sh.pack] : []; if (sh.scroll) sh.cards.push(sh.scroll); delete sh.pack; delete sh.scroll; } return [...sh.cards, sh.flower, ...sh.packs].filter(Boolean); }
 function shopHTML() {
-  const items = shopItems(), at = it => items.indexOf(it), tray = useTray();
+  const items = shopItems(), at = it => items.indexOf(it), tray = shopTray = useTray();
   const next = ({ small: 'Small Blind', big: 'Big Blind', boss: 'Boss Blind' })[blindKind()];
   const nextBoss = blindKind() === 'boss' ? BOSSES[S.bossOrder[S.ante - 1]] : null;
   const canReroll = rerollPrice() <= S.money;
@@ -1799,8 +1799,11 @@ function shopHTML() {
   if (!tray) h += ownedHTML();   // on narrow screens the Shop covers the board, so your items are listed here
   return h;
 }
-// The Shop and packs open as a tray over the board on wide screens; on narrow ones (900px or less) they stay full screen.
-const useTray = () => innerWidth > 900;
+// The Shop and packs open as a tray over the board on wide screens. On narrow ones (900px or less), or when the window is too
+// short to fit the tray below your Talismans, they open full screen and list your items so you can still sell them.
+const TRAY_MIN_H = 400;
+const useTray = () => { if (innerWidth <= 900) return false; const tz = document.querySelector('.board .talzone'); return !tz || innerHeight - (tz.getBoundingClientRect().bottom + scrollY) >= TRAY_MIN_H; };
+let shopTray = null;   // which layout the open Shop or pack was drawn in, so a resize across the line redraws it
 function ownedHTML() {
   const tal = S.talismans.map((k, i) => { const ed = S.editions[k]; const tgt = TAL[k].copies ? talTarget(S, k) : null; return `<div class="shopcard talisman owned-card${ed ? ' ed-' + ed : ''}">${stickerBadges(S.stickers && S.stickers[k])}<div class="kind">${talKindRow(k, ed, i + 1, 'owned')}</div><div class="n">${TAL[k].name}</div><div class="d">${TAL[k].desc}${tgt ? ` <b>Now: ${tgt.name}.</b>` : ''}${ed ? ` <b>${EDITIONS[ed].desc}.</b>` : ''}${TAL[k].status ? ' <b>(' + TAL[k].status(S) + ')</b>' : ''}</div><div class="buy"><span></span>${isEternal(k) ? '<span class="muted" style="font-size:11px">Eternal</span>' : `<button class="ghost" data-sell="${k}">Sell ¥${talSellValue(k)}</button>`}</div></div>`; });
   const con = S.consumables.map((c, i) => { const d = CONS[c.key]; return `<div class="shopcard ${c.kind} owned-card"><div class="kind">${c.kind === 'kami' ? 'Kami Spirit' : 'Omikuji'}</div><div class="n">${d.name}</div><div class="d">${d.desc}</div><div class="buy"><span class="muted">${d.anywhere ? 'Usable now' : 'Use during a Blind'}</span><span style="display:flex;gap:6px">${d.anywhere ? `<button class="ghost" data-usecon="${i}">Use</button>` : ''}<button class="ghost" data-sellcon="${i}">Sell ¥${conSellValue(c)}</button></span></div></div>`; });
@@ -1816,7 +1819,7 @@ function packButtons(it, i) {
   return `<span style="display:flex;gap:6px;align-items:center">${use}<button class="ghost" data-take="${i}"${dis}>Keep</button></span>`;
 }
 function packHTML() {
-  const pk = PACKS[S.pack.key], left = S.pack.done ? 0 : S.pack.left, tray = useTray();
+  const pk = PACKS[S.pack.key], left = S.pack.done ? 0 : S.pack.left, tray = shopTray = useTray();
   // Same tray as the Shop: a slim header, then one felt panel with your dealt tiles (Omikuji and Kami packs), the cards, and the buttons.
   let h = `<div class="tshead"><div class="tstitle"><span class="tspackart" aria-hidden="true">${emblem('pack')}</span><h2>${pk.name}</h2>${S.pack.free ? '<span class="tscoupon">Free from a Tag</span>' : ''}</div><div class="tspicks"><b class="num">${left}</b><span>${left === 1 ? 'pick' : 'picks'} left</span></div></div>`;
   h += `<div class="tsbody packbody${S.pack.hand ? ' withhand' : ''}">`;
