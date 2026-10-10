@@ -1035,7 +1035,7 @@ function render() {
   if (S.phase === 'cashout') { showModal(cashoutHTML(), false, 'cashmodal traymodal'); placeOverlay(true); animateCashout(); } else if (S.phase === 'shop' && S.pack) { showModal(packHTML(), false, 'packmodal traymodal'); placeOverlay(true, 'shop'); fillPackTiles(); fillPackHand(); trayIn('pack'); } else if (S.phase === 'shop') { showModal(shopHTML(), false, 'shopmodal traymodal'); placeOverlay(true, 'shop'); tweenWallet(); trayIn('shop'); } else if (S.phase === 'select') { showModal(selectHTML(), false, 'selectmodal'); anteUp(); } else if (S.phase === 'gameover') { showModal(overHTML(false), false, 'overmodal'); tallyOver(); } else if (S.phase === 'win') { showModal(overHTML(true), false, 'overmodal winmodal'); tallyOver(); } else if (!modalPinned) hideModal();
   $('#btnYaku').textContent = 'Run Info';
   document.querySelectorAll('.zhead > .muted').forEach(e => { e.title = e.textContent; });   // full text on hover when a header is truncated
-  translateDOM($('#app')); fitNumbers();
+  translateDOM($('#app')); fitNumbers(); fitHead('talSell'); fitHead('conSell');
   if ($('#overlay').classList.contains('inflow')) placeOverlay(true, S.phase === 'shop' ? 'shop' : undefined);   // terms and fitted numbers can change the left column's height, so a tray that is part of the page is measured again
   if (S.placeholder && $('#overlay').hidden) showModal(menuHTML(false), true, 'menumodal');   // closing a screen opened from the title goes back to the title
   tileMotion(motionBefore, freshTiles); syncEditions(); refreshTileTip(); animateWall(); animateSlots(); playRowHolds(); growRows(grow); if (S.phase !== 'shop' && !S.quiet) walletShown = S.money;
@@ -1389,7 +1389,7 @@ function renderTalismans() {
   const box = $('#talismans'); box.innerHTML = '';
   // Column widths follow the slot counts (a Negative edition or Spring adds a slot); ignored when the columns stack.
   $('.talcols').style.gridTemplateColumns = `minmax(0,${talSlots()}fr) minmax(0,${conSlots()}fr)`;
-  $('#talCount').textContent = `${S.talismans.length} / ${talSlots()} · fire left to right, drag to reorder`;
+  $('#talCount').textContent = `${S.talismans.length} / ${talSlots()}`;
   for (let i = 0; i < talSlots(); i++) {
     const k = S.talismans[i]; const el = document.createElement('div');
     if (k) { const ed = S.editions[k]; el.className = 'slot filled' + (S.selTal === k ? ' sel' : '') + (ed ? ' ed-' + ed : '') + (talOff(S).includes(k) ? ' off' : ''); el.dataset.tal = TAL[k].name; const tgt = TAL[k].copies ? talTarget(S, k) : null; el.innerHTML = `${stickerBadges(S.stickers && S.stickers[k])}<div class="kind">${talKindRow(k, ed, i + 1, 'slot')}</div><div class="n">${TAL[k].name}</div><div class="d">${TAL[k].desc}${tgt ? ` <b>Now: ${tgt.name}.</b>` : TAL[k].copies ? ' <b>Nothing to copy.</b>' : ''}${ed ? ` <b>${EDITIONS[ed].desc}.</b>` : ''}${TAL[k].status ? ' <b>(' + TAL[k].status(S) + ')</b>' : ''}</div>`; bindSlotDrag(el, k); }
@@ -1401,7 +1401,7 @@ function renderTalismans() {
   if (S.selTal && S.talismans.includes(S.selTal)) { const b = document.createElement('button'); b.className = 'ghost'; b.style.cssText = 'padding:3px 8px;font-size:12px'; b.textContent = isEternal(S.selTal) ? 'Eternal' : `Sell ¥${talSellValue(S.selTal)}`; b.title = `${TAL[S.selTal].name}${isEternal(S.selTal) ? ' is Eternal and can never be sold' : ''}`; if (isEternal(S.selTal)) b.disabled = true; b.onclick = () => sellTalisman(S.selTal); ts.appendChild(b); }
 }
 function renderConsumables() {
-  const box = $('#consumables'); box.innerHTML = ''; $('#conCount').textContent = `${S.consumables.length} / ${conSlots()} · click one to use or sell it`;
+  const box = $('#consumables'); box.innerHTML = ''; $('#conCount').textContent = `${S.consumables.length} / ${conSlots()}`;
   for (let i = 0; i < conSlots(); i++) {
     const c = S.consumables[i]; const el = document.createElement('div');
     if (c) { const d = CONS[c.key]; el.className = 'slot filled ' + c.kind; el.innerHTML = `<div class="kind">${c.kind === 'kami' ? 'Kami Spirit' : 'Omikuji'}</div><div class="n">${d.name}</div><div class="d">${d.desc}</div>`; if (S.selCon === i) el.classList.add('sel'); el.onclick = () => { S.selCon = S.selCon === i ? null : i; render(); }; }
@@ -1414,10 +1414,17 @@ function renderConsumables() {
   if (canUse) { const u = document.createElement('button'); u.className = 'primary'; u.style.cssText = 'padding:3px 10px;font-size:12px'; u.textContent = 'Use'; u.title = `Use ${d.name}`; u.onclick = () => { const i = S.selCon; S.selCon = null; useConsumable(i); }; cs.appendChild(u); }
   const sl = document.createElement('button'); sl.className = 'ghost'; sl.style.cssText = 'padding:3px 10px;font-size:12px;margin-left:6px'; sl.textContent = `Sell ¥${conSellValue(c)}`; sl.onclick = () => { const i = S.selCon; S.selCon = null; sellConsumable(i); }; cs.appendChild(sl);
 }
+// A row's header makes room for a selected card's Use / Sell buttons when the column is narrow: first the count goes, then
+// the label, so the buttons always stay inside the row. Everything comes back once nothing is selected.
+function fitHead(id) {
+  const cs = document.getElementById(id), z = cs && cs.closest('.zhead'); if (!z) return; z.classList.remove('tight', 'tighter');
+  if (!cs.children.length) return; const over = () => cs.lastElementChild.getBoundingClientRect().right > z.getBoundingClientRect().right + .5;
+  if (over()) z.classList.add('tight'); if (over()) z.classList.add('tighter');
+}
 function renderOpen() {
   const box = $('#open'); box.innerHTML = '';
   const allClosed = S.open.every(m => m.closed);
-  $('#openInfo').textContent = S.open.length ? (allClosed ? `${S.open.length} declared · hand is still closed for Yaku` : `${S.open.length} on the table · hand is Open for Yaku`) : 'Hand is closed.';
+  $('#openInfo').textContent = S.open.length ? (allClosed ? `${S.open.length} declared · hand is still closed for Yaku` : `${S.open.length} on the table · hand is Open for Yaku`) : '';
   if (!S.open.length) box.innerHTML = '<span class="muted empty">No melds on the table</span>';
   for (const m of S.open) { const w = document.createElement('div'); w.className = 'meld' + (m.closed ? ' closedmeld' : ''); w.innerHTML = `<span class="mt">${m.closed ? 'Concealed ' : ''}${MELD_LABEL[m.type]}</span>`; if (m.closed) w.title = 'Concealed Kan: declared from your hand, so your hand stays closed. Shown like real Mahjong, with the two end tiles face down.';
     // A concealed Kan is shown as in real Mahjong: the two end tiles face down, the middle two face up.
@@ -1425,7 +1432,7 @@ function renderOpen() {
 }
 function renderRiver() {
   const box = $('#river'); box.innerHTML = '';
-  $('#riverInfo').textContent = S.boss === 'fisherman' ? 'The Fisherman forbids Calls and claims this Blind.' : canClaim() ? `Select one plus 2–3 hand tiles to Call, or plus the other ${neededConcealed() - 1} of a complete hand to claim it with Kawauso.` : 'Select one plus 2–3 hand tiles to Call. Discards stay here all Blind.';
+  $('#riverInfo').textContent = S.boss === 'fisherman' ? 'The Fisherman forbids Calls and claims this Blind.' : canClaim() ? `Select one plus 2–3 hand tiles to Call, or plus the other ${neededConcealed() - 1} of a complete hand to claim it with Kawauso.` : '';
   for (const t of S.river) { const e = tileEl(t, { small: true, sel: S.selRiver === t.id }); e.onclick = () => { if (S.phase !== 'blind') return; S.selRiver = S.selRiver === t.id ? null : t.id; render(); }; box.appendChild(e); }
   if (!S.river.length) box.innerHTML = '<span class="muted empty">No discards yet</span>';
 }
