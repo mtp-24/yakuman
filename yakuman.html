@@ -403,7 +403,7 @@ button.pulse{animation:btnpulse 1s ease-in-out infinite;box-shadow:0 0 0 0 rgba(
 @media (max-width:820px){.chipbox,.multbox{min-width:54px;font-size:18px;padding:3px 10px}}
 .handbox.scoring{position:relative;overflow:visible;border-color:var(--accent)}
 .handbox .hb-total{display:flex;align-items:baseline;gap:8px;font-family:var(--display);font-size:24px;margin-top:4px} .handbox .hb-total .eq{color:var(--muted);font-size:16px} .handbox .hb-total .tot{color:var(--accent);margin-left:auto}
-.lastplay .lp-lines .row{animation:slidein .18s ease-out}
+.lastplay .lp-lines .row.sline{animation:slidein .18s ease-out}
 .handbox.hot .tot{color:#ff9f43;text-shadow:0 0 12px #ff6b1a,0 0 28px #ff3d00;animation:flame .5s ease-in-out infinite alternate}
 
 .handbox .tot.final{animation:pulse .5s ease-out}
@@ -3687,7 +3687,26 @@ function renderActions() {
 const lineCls = l => (l.zero ? ' bad' : '') + (l.yaku ? ' yaku' : '') + (l.tal ? ' tal' : '') + (l.convert ? ' convert' : '');
 // The result frame: how the multiplier was built (a small caption), the Chips × Mult sum, then the score on its own big line.
 const lastSummaryHTML = c => `<div class="total"><div class="formula num">${c.han} Han → ${c.tier} ×${c.baseMult}${c.xmult !== 1 ? ` · tiles ×${fmtMult(c.xmult)}` : ''}${c.mult !== c.baseMult * c.xmult ? ` → ×${fmtMult(c.mult)} after Talismans${c.furiten ? ' and Furiten' : ''}` : ''}</div><div class="lp-calc num">${fmtN(c.chips)} × ${fmtMult(c.mult)} =</div><div class="lp-result num">${fmtN(c.total)}</div></div>`;
-const LP_FOLD = 4; let lpOpen = false, lpFor = null;
+const LP_FOLD = 4; let lpOpen = false, lpFor = null, lpBusy = false;
+// Show all / Show less: the plate's height eases open while the hidden lines fade in one by one, or the extra lines fade out
+// and the plate eases shut before the panel redraws. Nothing else in the panel moves or replays.
+function lpToggle() {
+  const lp = $('#lastPlay'), box = lp && lp.querySelector('.lp-lines'), redraw = () => { renderLast(); translateDOM(lp); fitNumbers(lp); };
+  if (lpBusy) return; if (!box || !motionOK) { lpOpen = !lpOpen; return redraw(); }
+  box.getAnimations({ subtree: true }).forEach(an => an.finish());   // a click mid-animation measures the settled plate
+  const h0 = box.getBoundingClientRect().height, ease = 'cubic-bezier(.2,.8,.2,1)';
+  if (!lpOpen) {
+    lpOpen = true; redraw(); const nb = lp.querySelector('.lp-lines'), h1 = nb.getBoundingClientRect().height;
+    nb.style.overflow = 'hidden'; nb.animate([{ height: h0 + 'px' }, { height: h1 + 'px' }], { duration: 260, easing: ease }).onfinish = () => { nb.style.overflow = ''; };
+    [...nb.querySelectorAll('.row')].slice(LP_FOLD).forEach((r, i) => r.animate([{ opacity: 0, transform: 'translateY(-4px)' }, { opacity: 1, transform: 'none' }], { duration: 200, delay: 60 + i * 35, easing: 'ease-out', fill: 'backwards' }));
+    return;
+  }
+  const extra = [...box.querySelectorAll('.row')].slice(LP_FOLD);
+  extra.forEach(r => { r.style.display = 'none'; }); const h1 = box.getBoundingClientRect().height; extra.forEach(r => { r.style.display = ''; });   // the exact folded height
+  lpBusy = true; extra.forEach(r => r.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 140, easing: 'ease-in', fill: 'forwards' }));
+  box.style.overflow = 'hidden'; let done = false; const fin = () => { if (done) return; done = true; lpBusy = false; lpOpen = false; redraw(); };
+  box.animate([{ height: h0 + 'px' }, { height: h1 + 'px' }], { duration: 260, delay: 80, easing: ease, fill: 'forwards' }).onfinish = fin; setTimeout(fin, 700);
+}
 function renderLast() {
   const c = S.lastPlay; const box = $('#lastPlay');
   if (!c) { box.innerHTML = `<div class="label">Last Play</div><div class="lp-empty"><div class="muted">No play yet this Blind.</div><div class="lp-best"><span class="label">Best this run</span><b class="num">${fmtN(S.stats.best)}</b></div>${S.stats.bestDesc ? `<div class="muted lp-bestdesc">${S.stats.bestDesc}</div>` : ''}</div>`; return; }
@@ -4721,7 +4740,7 @@ function bindEvents() {
   $('#btnSortMode').onclick = () => { S.sortMode = S.sortMode === 'rank' ? 'suit' : 'rank'; S.sortHand = true; S.hand = sortHandTiles(S.hand); render(); };
 
   // The Wall tile-stack in the side panel opens the Wall screen (the panel is redrawn on render, so the click is delegated).
-  document.addEventListener('click', e => { if (e.target.closest('#wallBtn')) showModal(deckHTML(), true); else if (e.target.closest('#sideRunInfo')) showModal(yakuHTML(), true); else if (e.target.closest('[data-lpmore]')) { lpOpen = !lpOpen; renderLast(); translateDOM($('#lastPlay')); } });
+  document.addEventListener('click', e => { if (e.target.closest('#wallBtn')) showModal(deckHTML(), true); else if (e.target.closest('#sideRunInfo')) showModal(yakuHTML(), true); else if (e.target.closest('[data-lpmore]')) lpToggle(); });
   $('#btnRules').onclick = () => showModal(rulesHTML(), true);
   $('#btnCollection').onclick = () => showModal(collectionHTML(), true, 'colmodal');
   // Collection search filters the current tab by the cards' visible text (works in both terminologies).
