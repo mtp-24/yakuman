@@ -1355,7 +1355,6 @@ function renderBlind() {
   if (offBoss) h += `<div class="boss-desc"><b>Disabled by Tamamo-no-Mae.</b></div>`;
   if (bossShown) h += `<div class="boss-desc">${BOSSES[S.boss].desc}${S.boss === 'collector' && S.bossSuit ? ` <b>This Blind: ${SUIT_EN[S.bossSuit]}.</b>` : ''}${S.boss === 'gatekeeper' ? (S.firstPlayDone ? ' <b>First Play done.</b>' : '') : ''}</div>`;
   h += `<div class="bp-row"><div><div class="label">Score at least</div><div class="target num">${fmtN(targetVal)}</div></div><div class="bp-reward" title="Plus ¥1 per unused Play and ¥1 interest per ¥5 held (max ¥5)"><div class="label">Reward</div><div class="num">¥${reward}<span class="muted" style="font-size:11px;font-family:var(--body)"> +extras</span></div></div></div></div>`;
-  if (S.tags && S.tags.length) h += `<div class="label" style="margin-top:8px">Tags</div><div class="flowers">${S.tags.map(t => `<span class="flowerchip" data-hc-kind="Tag" data-hc-title="${TAGS[t].name}" data-hc-body="${TAGS[t].desc.replace(/"/g, '&quot;')}">${TAGS[t].name}</span>`).join('')}</div>`;
   if (show) h += `<div class="roundscore"><div class="label">Round Score</div><div class="rs num${S.score >= S.target ? ' met' : ''}" id="roundScore">${fmtN(S.score)}</div><div class="rsbar"><i id="roundBar" style="width:${pct}%"></i></div></div>`;
   if (inBlind) {
     const pv = PREVIEW;
@@ -1380,10 +1379,14 @@ function renderBlind() {
   const wallN = S.phase === 'blind' ? S.wall.length : unpaid && S.reward.wallLeft != null ? S.reward.wallLeft : (S.deck || []).length;
   h += `<div class="stats"><div class="stat plays"><div class="label">Plays</div><div class="v num">${S.plays}</div></div><div class="stat discards"><div class="label">Discards</div><div class="v num">${S.discards}</div></div></div>`;
   h += `<div class="stats purserow"><div class="purse" title="Interest: +¥${interest} at the next cash-out (¥1 for every ¥${CFG.interestPer} you hold, up to ¥${interestCap()})"><span class="coin" aria-hidden="true">${coinSVG()}</span><span class="wtx"><span class="pv num" id="purseVal">¥${unpaid ? (S.reward.before ?? S.money - S.reward.total) : S.money}</span><span class="wl" data-notr>${LANG === 'hk' ? 'HKD' : 'JPY'}</span></span></div><button class="wallbtn" id="wallBtn" title="${S.phase === 'blind' ? 'Tiles still face down in the Wall. Click to see every tile.' : 'Tiles in your Wall. Click to see every tile.'}"><span class="wallico" aria-hidden="true"><i></i><i></i><i></i></span><span class="wtx"><span class="wv num">${wallN}</span><span class="wl">Wall</span></span></button></div>`;
-  if (S.indicators.length) { h += `<div class="label" style="margin-top:8px">Dora Indicators</div><div class="dora-ind" id="doraRow"></div>`; }
-  if (S.flowers.length) h += `<div class="label" style="margin-top:8px">Flowers &amp; Seasons</div><div class="flowers">${S.flowers.map(f => `<span class="flowerchip" data-hc-kind="Flower" data-hc-title="${FLW[f].name}" data-hc-body="${FLW[f].desc.replace(/"/g, '&quot;')}">${FLW[f].name}</span>`).join('')}</div>`;
+  // The extras in one plate at the bottom, one labelled row each: the Dora (Bonus Tile) indicators, Tags held, and Flowers.
+  const extras = [];
+  if (S.indicators.length) extras.push(`<div class="sx-row"><span class="label">Dora</span><div class="sx-val" id="doraRow"></div></div>`);
+  if (S.tags && S.tags.length) extras.push(`<div class="sx-row"><span class="label">Tags</span><div class="sx-val flowers">${S.tags.map(t => `<span class="flowerchip" data-hc-kind="Tag" data-hc-title="${TAGS[t].name}" data-hc-body="${TAGS[t].desc.replace(/"/g, '&quot;')}">${TAGS[t].name}</span>`).join('')}</div></div>`);
+  if (S.flowers.length) extras.push(`<div class="sx-row"><span class="label">Flowers</span><div class="sx-val flowers">${S.flowers.map(f => `<span class="flowerchip" data-hc-kind="Flower" data-hc-title="${FLW[f].name}" data-hc-body="${FLW[f].desc.replace(/"/g, '&quot;')}">${FLW[f].name}</span>`).join('')}</div></div>`);
+  if (extras.length) h += `<div class="sidextra">${extras.join('')}</div>`;
   $('#blindCard').innerHTML = h;
-  if (S.indicators.length) { const row = $('#doraRow'); for (const t of S.indicators) { const e = tileEl(t, { small: true }); e.style.cursor = 'default'; const d = tileFromIdx(nextDora(idx(t))); e.title = 'Indicator: ' + tileName(t) + ' → Dora is ' + tileName(d); row.appendChild(e); } row.insertAdjacentHTML('beforeend', `<span class="muted" style="font-size:11px">Dora: ${S.dora.map(i => tileName(tileFromIdx(i))).join(', ')}</span>`); }
+  if (S.indicators.length) { const row = $('#doraRow'); for (const t of S.indicators) { const e = tileEl(t, { small: true }); e.style.cursor = 'default'; const d = tileFromIdx(nextDora(idx(t))); e.title = 'Indicator: ' + tileName(t) + ' → Dora is ' + tileName(d); row.appendChild(e); } row.insertAdjacentHTML('beforeend', `<span class="sx-note">→ ${S.dora.map(i => tileName(tileFromIdx(i))).join(', ')}</span>`); }
 }
 function renderTalismans() {
   const box = $('#talismans'); box.innerHTML = '';
