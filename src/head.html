@@ -1043,4 +1043,43 @@ body.reducemotion *,body.reducemotion *::before,body.reducemotion *::after,body.
 .bpop .txt{position:relative;display:inline-flex;color:#fff;text-shadow:.05em .09em 0 var(--s),-.03em .04em 0 var(--s),0 0 .3em rgba(0,0,0,.25)} .bpop .txt span{display:inline-block;transform-origin:50% 70%}
 .slot > .bpop{z-index:40}
 .burnember{z-index:62;pointer-events:none;width:5px;height:5px;background:#ffb347;box-shadow:0 0 8px 2px rgba(255,140,40,.8)}
+/* ===== Title screen ===== */
+.modal.menumodal{max-width:600px;padding:34px 36px 22px;position:relative;overflow:hidden;border:1px solid rgba(217,164,65,.6);
+  background:radial-gradient(ellipse 70% 45% at 50% 16%,rgba(243,199,104,.2),transparent 70%),radial-gradient(ellipse 80% 50% at 50% 115%,rgba(46,125,79,.28),transparent 70%),linear-gradient(180deg,#1d2a24,#141e1a);
+  box-shadow:0 0 0 1px rgba(0,0,0,.6),inset 0 0 0 7px rgba(217,164,65,.07),inset 0 0 0 8px rgba(217,164,65,.38),0 30px 80px rgba(0,0,0,.65)}
+.menumodal .hero{position:relative}
+.menumodal .hero > *:not(.herorays):not(.heropetals):not(.hcorner){position:relative;z-index:1}
+.menumodal .hcorner{position:absolute;width:26px;height:26px;border:2px solid #d9a441;z-index:2;pointer-events:none;opacity:.85}
+.menumodal .hcorner.tl{left:-22px;top:-20px;border-right:0;border-bottom:0;border-radius:6px 0 0 0} .menumodal .hcorner.tr{right:-22px;top:-20px;border-left:0;border-bottom:0;border-radius:0 6px 0 0}
+.menumodal .hcorner.bl{left:-22px;bottom:-8px;border-right:0;border-top:0;border-radius:0 0 0 6px} .menumodal .hcorner.br{right:-22px;bottom:-8px;border-left:0;border-top:0;border-radius:0 0 6px 0}
+.menumodal .herorays{position:absolute;left:50%;top:70px;width:760px;height:760px;margin:-380px 0 0 -380px;border-radius:50%;pointer-events:none;
+  background:repeating-conic-gradient(from 0deg,rgba(243,199,104,.09) 0 5deg,transparent 5deg 15deg);-webkit-mask:radial-gradient(circle,#000 0,rgba(0,0,0,.6) 28%,transparent 62%);mask:radial-gradient(circle,#000 0,rgba(0,0,0,.6) 28%,transparent 62%);animation:herospin 80s linear infinite}
+@keyframes herospin{to{transform:rotate(360deg)}}
+.menumodal .heropetals{position:absolute;inset:-34px -36px -22px;pointer-events:none;overflow:hidden}
+.menumodal .heropetals i{position:absolute;top:-20px;width:10px;height:8px;border-radius:80% 10% 80% 10%;background:linear-gradient(135deg,#ffd3e0,#f08aa8);opacity:0;animation:heropetal 10s linear infinite}
+@keyframes heropetal{0%{opacity:0;transform:translate(0,0) rotate(0)}8%{opacity:.75}50%{transform:translate(40px,320px) rotate(220deg)}92%{opacity:.6}100%{opacity:0;transform:translate(-10px,680px) rotate(480deg)}}
+.menumodal .herotiles{height:112px;margin:0 0 18px} .menumodal .herotiles .tile{--tw:58px;--th:calc(58px * 1.36);animation:herobob 3.2s ease-in-out var(--bob,0s) infinite}
+@keyframes herobob{0%,100%{translate:0 0}50%{translate:0 -6px}}
+.menumodal .herotitle{font-size:86px;font-weight:700;letter-spacing:.03em;line-height:1;color:transparent;
+  background:linear-gradient(105deg,transparent 42%,rgba(255,250,230,.85) 50%,transparent 58%) -150% 0/250% 100% no-repeat,linear-gradient(180deg,#fff0bf 0%,#f3c768 38%,#c18f30 70%,#f6d68a 100%);
+  -webkit-background-clip:text;background-clip:text;filter:drop-shadow(0 3px 0 rgba(40,24,4,.85)) drop-shadow(0 0 26px rgba(217,164,65,.35));
+  animation:herotitle .9s cubic-bezier(.2,.8,.2,1) .35s both,heroshine 5.5s ease-in-out 1.6s infinite}
+@keyframes herotitle{from{opacity:0;letter-spacing:.32em;transform:scale(1.08)}to{opacity:1;letter-spacing:.03em;transform:none}}
+@keyframes heroshine{0%{background-position:-150% 0,0 0}35%,100%{background-position:250% 0,0 0}}
+.menumodal .herokanji{display:inline-block;margin:12px 0 0;padding:5px 7px 5px 13px;letter-spacing:.45em;font-size:19px;color:#fbe9d0;background:#b8322a;border-radius:4px;box-shadow:inset 0 0 0 2px rgba(251,233,208,.55),0 3px 8px rgba(0,0,0,.4);transform:rotate(-3deg);animation:heroseal .45s cubic-bezier(.2,1.4,.4,1) 1s both}
+@keyframes heroseal{from{opacity:0;transform:rotate(-12deg) scale(1.8)}to{opacity:1;transform:rotate(-3deg) scale(1)}}
+.menumodal .herodiv{display:flex;align-items:center;justify-content:center;gap:0;margin:16px auto 2px;max-width:320px;animation:herofade .6s ease-out 1.1s both}
+.menumodal .herodiv::before,.menumodal .herodiv::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,transparent,rgba(217,164,65,.7))} .menumodal .herodiv::after{background:linear-gradient(90deg,rgba(217,164,65,.7),transparent)}
+.menumodal .herodiv i{width:8px;height:8px;margin:0 10px;background:#d9a441;transform:rotate(45deg);box-shadow:0 0 8px rgba(243,199,104,.6)}
+.menumodal .herotag{font-size:14.5px;margin:10px auto 20px;animation:herofade .6s ease-out 1.2s both}
+.menumodal .heroacts{max-width:340px;gap:10px;animation:herofade .6s ease-out 1.3s both}
+@keyframes herofade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.menumodal .herobtn{height:auto;padding:12px 18px;font:700 18px/1.2 var(--body);color:#2a1d0a;background:linear-gradient(180deg,#f3cd72,#d29f3c);border:1px solid #f6d68a;border-radius:11px;box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 4px 0 #8e6420,0 10px 20px rgba(0,0,0,.4);transition:transform .12s,filter .12s}
+.menumodal .herobtn span{font-size:12px;font-weight:500;opacity:.75;margin-top:2px}
+.menumodal .herobtn:hover{transform:translateY(-1px);filter:brightness(1.06)} .menumodal .herobtn:active{transform:translateY(2px);box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 1px 0 #8e6420}
+.menumodal .herogrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
+.menumodal .herogrid button{height:42px;border-radius:9px;font-weight:600;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,0)),rgba(10,18,15,.5);border:1px solid rgba(217,164,65,.32);transition:border-color .15s,background .15s,transform .12s}
+.menumodal .herogrid button:hover{border-color:rgba(243,199,104,.75);background:linear-gradient(180deg,rgba(243,199,104,.12),rgba(243,199,104,.03)),rgba(10,18,15,.5);transform:translateY(-1px)}
+.menumodal .herofoot{margin-top:18px;animation:herofade .6s ease-out 1.4s both}
+@media (max-width:520px){.menumodal .herotitle{font-size:64px} .menumodal .herotiles .tile{--tw:44px;--th:calc(44px * 1.36)} .menumodal .herotiles{height:92px}}
 </style>

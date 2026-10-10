@@ -2703,14 +2703,23 @@ function challengesHTML() {
 }
 function menuHTML(hasSave) {
   const where = hasSave && S ? `${S.ante > CFG.antes ? `Endless Ante ${S.ante}` : `Ante ${S.ante}`} · ${S.phase === 'blind' ? ({ small: 'Small Blind', big: 'Big Blind', boss: S.boss ? BOSSES[S.boss].name : 'Boss Blind' })[blindKind()] : S.phase === 'shop' ? 'Shop' : 'Blind Select'} · ¥${S.money}` : '';
-  return `<div class="hero"><div class="herotiles" id="heroTiles"></div>
+  // The title screen: a gold frame with corner brackets, a slow sunburst and drifting blossom petals behind a fan of
+  // honor tiles that deal in and float, the title in shimmering gold with its kanji on a vermilion seal, then the menu.
+  const petals = Array.from({ length: 9 }, (_, i) => `<i style="left:${6 + i * 11}%;animation-delay:${(i * 1.7) % 9}s;animation-duration:${9 + (i % 4) * 2}s"></i>`).join('');
+  const main = hasSave ? `<button id="mContinue" class="primary herobtn">Continue Run<span>${where}</span></button>` : `<button id="mStart" class="primary herobtn">New Run<span>Choose a Wall and Stake</span></button>`;
+  const rest = [hasSave ? '<button id="mStart" class="ghost">New Run</button>' : '', '<button id="mChallenges" class="ghost">Challenges</button>', '<button id="mRules" class="ghost">How to Play</button>', '<button id="mCollection" class="ghost">Collection</button>'].join('');
+  return `<div class="hero"><i class="hcorner tl"></i><i class="hcorner tr"></i><i class="hcorner bl"></i><i class="hcorner br"></i><div class="herorays" aria-hidden="true"></div><div class="heropetals" aria-hidden="true">${petals}</div>
+  <div class="herotiles" id="heroTiles"></div>
   <h1 class="herotitle" data-notr>Tenpai</h1><div class="herokanji" data-notr>${LANG === 'hk' ? '聽牌' : '聴牌'}</div>
+  <div class="herodiv" aria-hidden="true"><i></i></div>
   <p class="herotag">A Mahjong roguelite in the Balatro mould. Build hands, chase Yaku, stack Talismans, and outscore eight Antes of Yakuza bosses.</p>
-  <div class="heroacts">${hasSave ? `<button id="mContinue" class="primary herobtn">Continue Run<span>${where}</span></button>` : ''}<button id="mStart" class="${hasSave ? 'ghost' : 'primary herobtn'}">New Run</button><button id="mChallenges" class="ghost">Challenges</button><button id="mRules" class="ghost">How to Play</button><button id="mCollection" class="ghost">Collection</button></div>
+  <div class="heroacts">${main}<div class="herogrid">${rest}</div></div>
   <div class="herofoot muted">Playtest build · Riichi or Hong Kong terms in Settings</div></div>`;
 }
 // The intro screen's fan of honor tiles.
-function fillHero(root) { const box = root && root.querySelector('#heroTiles'); if (!box || box.children.length) return; [[4, 1], [4, 2], [4, 3], [4, 7], [4, 4], [4, 5], [4, 6]].forEach(([, r], i, arr) => { const e = tileEl({ id: 0, suit: 'z', rank: r, red: false, eng: null }); const k = i - (arr.length - 1) / 2; e.style.transform = `rotate(${k * 7}deg) translateY(${Math.abs(k) * 5}px)`; e.style.cursor = 'default'; box.appendChild(e); }); }
+function fillHero(root) { const box = root && root.querySelector('#heroTiles'); if (!box || box.children.length) return; [[4, 1], [4, 2], [4, 3], [4, 7], [4, 4], [4, 5], [4, 6]].forEach(([, r], i, arr) => { const e = tileEl({ id: 0, suit: 'z', rank: r, red: false, eng: null }); const k = i - (arr.length - 1) / 2; e.style.transform = `rotate(${k * 7}deg) translateY(${Math.abs(k) * 5}px)`; e.style.cursor = 'default'; box.appendChild(e);
+  // on the title screen the tiles deal in one by one from above, then float gently, each on its own beat
+  if (box.closest('.menumodal')) { e.style.setProperty('--bob', `${(i * .37) % 2.2}s`); if (motionOK) e.animate([{ opacity: 0, transform: `rotate(${k * 7 - 18}deg) translateY(-70px) scale(.8)` }, { opacity: 1, transform: `rotate(${k * 7 + 2}deg) translateY(${Math.abs(k) * 5 + 4}px) scale(1.04)`, offset: .7 }, { opacity: 1, transform: e.style.transform }], { duration: 460, delay: 120 + i * 70, easing: 'cubic-bezier(.2,.8,.3,1)', fill: 'backwards' }); } }); }
 
 // ===================== DEBUG =====================
 function renderDebug() {
@@ -2780,10 +2789,10 @@ function stageDemoHand() {
   S.selected = tiles.slice(0, 14).map(t => t.id);
   for (let i = 0; i < 5; i++) S.river.push(mk('z', 2 + (i % 3)));
   const ind = mk('p', 1); S.indicators = [ind]; S.dora = [nextDora(idx(ind))];       // indicator 1 Pin makes the 2 Pin pair Dora
-  S.talismans = ['hakutaku', 'nekomata', 'shikigami', 'kitsune', 'hannya']; S.editions = { hannya: 'poly' }; S.talState = {};
+  S.talismans = ['hakutaku', 'nekomata', 'shikigami', 'maneki', 'hannya']; S.consumables = [{ kind: 'omikuji', key: 'tosou' }, { kind: 'kami', key: 'susanoo' }]; S.editions = { hannya: 'poly' }; S.talState = {};
   S.scrolls.meld.chi = Math.max(S.scrolls.meld.chi || 0, 2); S.scrolls.meld.hand = Math.max(S.scrolls.meld.hand || 0, 1);
   if (S.target < 5000) S.target = 5000;
-  setMsg('Demo hand staged with retriggers: Red Seals, Hakutaku, Nekomata and Shikigami make tiles score 2–4 times. Press Play to watch and listen.'); render();
+  setMsg('Demo hand staged with retriggers: Red Seals, Hakutaku, Nekomata and Shikigami make tiles score 2–4 times, and Maneki-neko pays at the Cash Out. To try the Use animation, select 1–3 tiles and use Slip of Bamboo (tiles flip) or Susanoo (tiles burn). Press Play to watch and listen.'); render();
 }
 // Free picks (Tags) buy with a stand-in balance; 'quiet' keeps that from sounding or counting on the wallet.
 function buyFree(it) { const m = S.money; S.money = 999; S.quiet = true; buy(it); S.quiet = false; S.money = m; render(); }
