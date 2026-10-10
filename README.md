@@ -173,6 +173,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 162: Collection engravings use wide cards: the sample tile sits on a felt pad at the left, the name and effect beside it, an accent edge in each engraving's colour, two or three cards per row.
 - Build 163: Engraving cards drop the coloured accent edge.
 - Build 164: Flowers in the side panel use the same hover card as tiles (a Flower label, the name and the effect) instead of the plain tooltip; the hover card now works for any element with data-hc-title.
+- Build 207: After a sale the list keeps its height while the card burns, then eases to its new height as the cards slide, so the panel no longer jumps when a row empties (or the last card goes and "None yet." shows).
 - Build 206: The wait-then-slide after selling also covers the card lists in the full-screen Shop and packs (Your Charms, Your Consumables), including cards that move up from the next row.
 - Build 205: The View Wall and Run Info buttons (Blind screen, and the bottom of the full-screen Shop and packs) have matching line icons (two stacked tiles, an info circle) drawn at their real size, so nothing crowds the labels.
 - Build 204: A bought Flower flies into its new pill in the left panel. A Manual (from the Shop or a pack) stamps its new level over the card ("Lv.2", "+1 Han") instead of flying to Run Info. On the Blind screen, View Wall and Run Info are small quiet buttons on the Wall · Stake line, away from Play and Skip for Tag; the bottom row only appears for Peony's Reroll Boss.

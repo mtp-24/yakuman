@@ -113,7 +113,7 @@ const conSellValue = c => Math.max(1, Math.floor(CONS[c.key].cost / 2)) + (c.bon
 // Balatro's dissolve: a copy of the card burns away where it stood, then the board redraws without it.
 function dissolveTal(k) {
   if (!motionOK) return; const i = S.talismans.indexOf(k); const el = (document.querySelector(`[data-sell="${k}"]`) || {}).closest ? document.querySelector(`[data-sell="${k}"]`).closest('.shopcard') : [...document.querySelectorAll('#talismans .slot')][i];
-  holdRow('#talismans .slot.filled', i); holdRow('#modal .owned-card.talisman', i); dissolveEl(el);
+  holdRow('#talismans .slot.filled', '#talismans', i); holdRow('#modal .owned-card.talisman', '#modal .owned-grid.otal', i); dissolveEl(el);
 }
 const DISSOLVE_MS = 520;
 function dissolveEl(el) {
@@ -123,13 +123,23 @@ function dissolveEl(el) {
 // When a card leaves a row (sold or destroyed), the cards after it wait where they were until the dissolve has burned out,
 // then slide into the gap, so they never pass over the burning card. Positions are taken before the redraw and played after it.
 let rowHolds = [];
-function holdRow(sel, gone) { if (motionOK && gone >= 0) rowHolds.push({ sel, gone, t: performance.now(), rects: [...document.querySelectorAll(sel)].map(e => e.getBoundingClientRect()) }); }
+function holdRow(sel, box, gone) {
+  if (!motionOK || gone < 0) return; const b = document.querySelector(box);
+  rowHolds.push({ sel, box, gone, t: performance.now(), rects: [...document.querySelectorAll(sel)].map(e => e.getBoundingClientRect()), h: b ? b.getBoundingClientRect().height : 0 });
+}
 function playRowHolds() {
   const holds = rowHolds; rowHolds = [];
-  for (const h of holds) if (performance.now() - h.t < 1000) [...document.querySelectorAll(h.sel)].forEach((el, j) => {
-    const was = h.rects[j < h.gone ? j : j + 1]; if (!was) return; const now = el.getBoundingClientRect(), dx = was.left - now.left, dy = was.top - now.top;
-    if (Math.abs(dx) > 1 || Math.abs(dy) > 1) el.animate([{ transform: `translate(${dx}px,${dy}px)` }, { transform: 'none' }], { duration: 280, delay: DISSOLVE_MS - 60, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' });
-  });
+  for (const h of holds) {
+    if (performance.now() - h.t > 1000) continue;
+    // The row's box keeps its old height while the card burns (a list that loses a whole row would otherwise jump),
+    // then eases to its new height as the cards slide.
+    const box = document.querySelector(h.box), nowH = box ? box.getBoundingClientRect().height : 0, total = DISSOLVE_MS - 60 + 280;
+    if (box && h.h - nowH > 1) box.animate([{ height: h.h + 'px' }, { height: h.h + 'px', offset: (DISSOLVE_MS - 60) / total }, { height: nowH + 'px' }], { duration: total, easing: 'ease-in-out' });
+    [...document.querySelectorAll(h.sel)].forEach((el, j) => {
+      const was = h.rects[j < h.gone ? j : j + 1]; if (!was) return; const now = el.getBoundingClientRect(), dx = was.left - now.left, dy = was.top - now.top;
+      if (Math.abs(dx) > 1 || Math.abs(dy) > 1) el.animate([{ transform: `translate(${dx}px,${dy}px)` }, { transform: 'none' }], { duration: 280, delay: DISSOLVE_MS - 60, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' });
+    });
+  }
 }
 function destroyTalisman(k) {
   if (!S.talismans.includes(k) || isEternal(k)) return false; dissolveTal(k);
@@ -607,7 +617,7 @@ function sellEffect(k) {
   return '';
 }
 function sellTalisman(k) { const i = S.talismans.indexOf(k); if (i < 0) return; if (isEternal(k)) { setMsg(`${TAL[k].name} is Eternal and can never be sold.`, true); return render(); } if (S.stickers) delete S.stickers[k]; if (S.phase === 'blind') S.leafCut = true; if (S.crimsonOff === k) S.crimsonOff = null; const v = talSellValue(k); dissolveTal(k); S.talismans.splice(i, 1); const eff = sellEffect(k); if (S.sellBonus) delete S.sellBonus[k]; S.money += v; sfx('sell'); delete S.editions[k]; S.selTal = null; for (const t of S.talismans) if (TAL[t].onSell) TAL[t].onSell(S); PROFILE.sold++; saveProfile(); setMsg(`Sold ${TAL[k].name} for ¥${v}.${eff}`); render(); }
-function sellConsumable(i) { const c = S.consumables[i]; if (!c) return; const v = conSellValue(c); const b = document.querySelector(`[data-sellcon="${i}"]`); holdRow('#consumables .slot.filled', i); holdRow('#modal .owned-card:not(.talisman)', i); dissolveEl(b && b.closest('.shopcard') || [...document.querySelectorAll('#consumables .slot')][i]); S.consumables.splice(i, 1); S.money += v; sfx('sell'); setMsg(`Sold ${CONS[c.key].name} for ¥${v}.`); render(); }
+function sellConsumable(i) { const c = S.consumables[i]; if (!c) return; const v = conSellValue(c); const b = document.querySelector(`[data-sellcon="${i}"]`); holdRow('#consumables .slot.filled', '#consumables', i); holdRow('#modal .owned-card:not(.talisman)', '#modal .owned-grid.ocon', i); dissolveEl(b && b.closest('.shopcard') || [...document.querySelectorAll('#consumables .slot')][i]); S.consumables.splice(i, 1); S.money += v; sfx('sell'); setMsg(`Sold ${CONS[c.key].name} for ¥${v}.`); render(); }
 
 // ===================== SHOP =====================
 function rollCard() {
@@ -1937,7 +1947,7 @@ let shopTray = null;   // which layout the open Shop or pack was drawn in, so a 
 function ownedHTML() {
   const tal = S.talismans.map((k, i) => { const ed = S.editions[k]; const tgt = TAL[k].copies ? talTarget(S, k) : null; return `<div class="shopcard talisman owned-card${ed ? ' ed-' + ed : ''}">${stickerBadges(S.stickers && S.stickers[k])}<div class="kind">${talKindRow(k, ed, i + 1, 'owned')}</div><div class="n">${TAL[k].name}</div><div class="d">${TAL[k].desc}${tgt ? ` <b>Now: ${tgt.name}.</b>` : ''}${ed ? ` <b>${EDITIONS[ed].desc}.</b>` : ''}${TAL[k].status ? ' <b>(' + TAL[k].status(S) + ')</b>' : ''}</div><div class="buy"><span></span>${isEternal(k) ? '<span class="muted" style="font-size:11px">Eternal</span>' : `<button class="ghost" data-sell="${k}">Sell ¥${talSellValue(k)}</button>`}</div></div>`; });
   const con = S.consumables.map((c, i) => { const d = CONS[c.key]; return `<div class="shopcard ${c.kind} owned-card"><div class="kind">${c.kind === 'kami' ? 'Kami Spirit' : 'Omikuji'}</div><div class="n">${d.name}</div><div class="d">${d.desc}</div><div class="buy"><span class="muted">${d.anywhere ? 'Usable now' : 'Use during a Blind'}</span><span style="display:flex;gap:6px">${d.anywhere ? `<button class="ghost" data-usecon="${i}">Use</button>` : ''}<button class="ghost" data-sellcon="${i}">Sell ¥${conSellValue(c)}</button></span></div></div>`; });
-  return `<div class="label" style="margin:10px 0 4px">Your Talismans · ${S.talismans.length}/${talSlots()} · fire left to right · sell to make room</div>` + (tal.length ? `<div class="shop-grid owned-grid">${tal.join('')}</div>` : `<div class="muted" style="font-size:12px">None yet.</div>`) + `<div class="label" style="margin:10px 0 4px">Your Consumables · ${S.consumables.length}/${conSlots()}</div>` + (con.length ? `<div class="muted" style="font-size:12px;margin:-2px 0 4px">Most consumables are used on tiles during a Blind. Ones that don't need tiles have a Use button here.</div><div class="shop-grid owned-grid">${con.join('')}</div>` : `<div class="muted" style="font-size:12px">None yet.</div>`);
+  return `<div class="label" style="margin:10px 0 4px">Your Talismans · ${S.talismans.length}/${talSlots()} · fire left to right · sell to make room</div>` + `<div class="shop-grid owned-grid otal">${tal.join('') || '<div class="muted" style="font-size:12px">None yet.</div>'}</div>` + `<div class="label" style="margin:10px 0 4px">Your Consumables · ${S.consumables.length}/${conSlots()}</div>` + (con.length ? `<div class="muted" style="font-size:12px;margin:-2px 0 4px">Most consumables are used on tiles during a Blind. Ones that don't need tiles have a Use button here.</div><div class="shop-grid owned-grid ocon">${con.join('')}</div>` : `<div class="shop-grid owned-grid ocon"><div class="muted" style="font-size:12px">None yet.</div></div>`);
 }
 function packButtons(it, i) {
   if (S.pack.done) return `<span class="muted" style="font-size:11px">No picks left</span>`;
