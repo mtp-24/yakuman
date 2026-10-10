@@ -160,6 +160,7 @@ function bestHand(concealed, open, S) {
 function tileChips(t, S) {
   let c = (isHonor(t) || isTerminal(t)) ? 10 : t.rank;
   if (S.boss === 'verdant' && !S.leafCut) return 0;
+  if (t.eng === 'stone') return 50;   // Stone: flat Chips, no rank, so rank-based Talisman bonuses do not apply
   if (S.boss === 'typhoon' && isWind(t)) c = 0;
   if (S.boss === 'censor' && t.red) c = 0;
   if (S.boss === 'collector' && t.suit === S.bossSuit) c = 0;
@@ -218,14 +219,20 @@ function scoreCtxInner(S, kind, tiles, info) {
   }
   // ---- per-tile loop with retriggers
   const redPer = S.talismans.includes('koi') ? 2 : 1;
-  const agg = { chips: 0, red: 0, redHan: 0, dora: 0, dm: 0, jade: 0, gold: 0, glass: 0, gseal: 0, retrig: {} };
+  const agg = { chips: 0, red: 0, redHan: 0, dora: 0, dm: 0, jade: 0, gold: 0, glass: 0, gseal: 0, foil: 0, holo: 0, poly: 0, crim: 0, lucky: 0, luckyM: 0, luckyY: 0, retrig: {} };
+  ctx.tileMult = 0;   // +Mult from tiles (Holographic, Crimson, Lucky) joins after the Han table
   tiles.forEach((t, ti) => {
     let extra = 0; const who = [];
     if (t.seal === 'red' || t.eng === 'redseal') { extra += 1; who.push('Red Seal'); agg.retrig['Red Seal'] = (agg.retrig['Red Seal'] || 0) + 1; }
     for (const k of S.talismans) { const d = talTarget(S, k); if (d && d.retrigger) { const n = d.retrigger(t, ctx, S, ti); if (n) { extra += n; for (let q = 0; q < n; q++) who.push(TAL[k].name); agg.retrig[TAL[k].name] = (agg.retrig[TAL[k].name] || 0) + n; } } }
-    const times = 1 + extra; let c = 0, h = 0, x = 1, money = 0;
+    const times = 1 + extra; let c = 0, h = 0, x = 1, money = 0, m = 0;
     for (let r = 0; r < times; r++) {
-      const tc = tileChips(t, S); c += tc; agg.chips += tc;
+      const tc = tileChips(t, S) + (t.ed === 'foil' ? 50 : 0); c += tc; agg.chips += tc; if (t.ed === 'foil') agg.foil++;
+      if (t.ed === 'holo') { m += 10; agg.holo++; }
+      if (t.ed === 'poly') { x *= 1.5; agg.poly++; }
+      if (t.eng === 'mult') { m += 4; agg.crim++; }
+      if (t.eng === 'lucky') { agg.lucky++; if (!info.preview && rand() < 1 / 5) { m += 20; agg.luckyM++; } if (!info.preview && rand() < 1 / 15) { money += 20; agg.luckyY++; } }
+      if (t.eng === 'stone') continue;
       if (t.red && S.boss !== 'censor') { h += redPer; agg.redHan += redPer; if (r === 0) { agg.red++; ctx.redCount++; } }
       for (const di of S.dora) if (idx(t) === di) { h += 1; agg.dora++; }
       if (t.eng === 'dragonmark') { h += 1; agg.dm++; }
@@ -235,8 +242,8 @@ function scoreCtxInner(S, kind, tiles, info) {
       if (t.seal === 'gold') { money += 3; agg.gseal++; }
     }
     if (t.eng === 'glass' && (info.preview ? false : rand() < 0.25)) ctx.shatter.push(t.id);
-    ctx.chips += c; ctx.han += h; ctx.xmult *= x; ctx.money += money;
-    ctx.hits.push({ id: t.id, chips: c, han: h, xmult: x, times, who });
+    ctx.chips += c; ctx.han += h; ctx.xmult *= x; ctx.money += money; ctx.tileMult += m;
+    ctx.hits.push({ id: t.id, chips: c, han: h, xmult: x, mult: m, money, times, who });
   });
   L(`${tiles.length} tile${tiles.length === 1 ? '' : 's'}`, `+${agg.chips} Chips`, { chips: agg.chips, tiles: true });
   for (const [name, n] of Object.entries(agg.retrig)) L(`${name}: retrigger ×${n}`, 'tiles scored again', { info: true, tal: name });
@@ -246,6 +253,11 @@ function scoreCtxInner(S, kind, tiles, info) {
   if (agg.jade) { const x = Math.pow(1.5, agg.jade); L(`Jade ×${agg.jade}`, `×${x} Mult`, { xmult: x, info: true }); }
   if (agg.gold) L(`Gold Foil ×${agg.gold}`, `+¥${agg.gold}`, { info: true });
   if (agg.gseal) L(`Gold Seal ×${agg.gseal}`, `+¥${3 * agg.gseal}`, { info: true });
+  if (agg.foil) L(`Foil tile ×${agg.foil}`, `+${50 * agg.foil} Chips`, { info: true });
+  if (agg.holo) L(`Holo tile ×${agg.holo}`, `+${10 * agg.holo} Mult`, { info: true });
+  if (agg.poly) { const x = +Math.pow(1.5, agg.poly).toFixed(3); L(`Poly tile ×${agg.poly}`, `×${x} Mult`, { info: true }); }
+  if (agg.crim) L(`Crimson ×${agg.crim}`, `+${4 * agg.crim} Mult`, { info: true });
+  if (agg.lucky) L(`Lucky ×${agg.lucky}`, info.preview ? 'chance of +20 Mult or ¥20' : (agg.luckyM || agg.luckyY ? [agg.luckyM ? `+${20 * agg.luckyM} Mult` : '', agg.luckyY ? `+¥${20 * agg.luckyY}` : ''].filter(Boolean).join(', ') : 'no luck this time'), { info: true });
   if (agg.glass) { const x = Math.pow(2, agg.glass); L(`Glass ×${agg.glass}`, `×${x} Mult`, { xmult: x, info: true }); }
   if (ctx.shatter.length) L(`Glass shattered ×${ctx.shatter.length}`, 'gone from your Wall', { info: true, bad: true });
   // ---- Yaku (complete hands)
@@ -284,8 +296,8 @@ function scoreCtxInner(S, kind, tiles, info) {
   }
   // ---- Han table: Han becomes the starting Mult. Tile multipliers (Jade, Glass) apply here.
   ctx.baseMult = hanMult(ctx.han); ctx.tier = tierName(ctx.han);
-  ctx.mult = ctx.baseMult * ctx.xmult;
-  L(`${ctx.han} Han → ×${ctx.baseMult}${ctx.xmult !== 1 ? ` · tiles ×${fmtX(ctx.xmult)}` : ''}`, `Mult ${fmtX(ctx.mult)}`, { convert: true });
+  ctx.mult = ctx.baseMult * ctx.xmult + ctx.tileMult;
+  L(`${ctx.han} Han → ×${ctx.baseMult}${ctx.xmult !== 1 ? ` · tiles ×${fmtX(ctx.xmult)}` : ''}${ctx.tileMult ? ` · tiles +${ctx.tileMult}` : ''}`, `Mult ${fmtX(ctx.mult)}`, { convert: true });
   // ---- Talismans, pass 2: Chips, +Mult and ×Mult in slot order. Order matters: +Mult before ×Mult scores more.
   for (const { d, r, ed } of results) {
     const parts = []; const line = { chips: 0, mult: 0, xmult: 1, tal: d.name };

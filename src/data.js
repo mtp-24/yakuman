@@ -53,7 +53,7 @@ function rungLabel(k) { return MELD_LABEL[k] || (CFG.rungs[String(k).replace('ru
 function topEntry(obj) { let best = null, n = 0; for (const [k, v] of Object.entries(obj || {})) if (v > n) { n = v; best = k; } return best ? [best, n] : null; }
 const ORPHANS = [0, 8, 9, 17, 18, 26, 27, 28, 29, 30, 31, 32, 33];
 let tileSeq = 0;
-function mkTile(suit, rank, red = false) { return { id: ++tileSeq, suit, rank, red, eng: null, seal: null }; }
+function mkTile(suit, rank, red = false) { return { id: ++tileSeq, suit, rank, red, eng: null, seal: null, ed: null }; }
 function key(t) { return t.suit + t.rank; }
 function isHonor(t) { return t.suit === 'z'; }
 function isWind(t) { return t.suit === 'z' && t.rank <= 4; }
@@ -61,7 +61,7 @@ function isDragon(t) { return t.suit === 'z' && t.rank >= 5; }
 function isTerminal(t) { return t.suit !== 'z' && (t.rank === 1 || t.rank === 9); }
 function idx(t) { return SUITS.indexOf(t.suit) * 9 + t.rank - 1; }
 function tileFromIdx(i) { return { id: 0, suit: SUITS[Math.floor(i / 9)], rank: i % 9 + 1, red: false, eng: null, seal: null }; }
-function tileName(t) { return isHonor(t) ? HONOR_EN[t.rank] + (t.rank <= 4 ? ' Wind' : ' Dragon') : `${t.red ? 'Red ' : ''}${t.rank} ${SUIT_EN[t.suit]}`; }
+function tileName(t) { if (t && t.eng === 'stone') return 'Stone tile'; return isHonor(t) ? HONOR_EN[t.rank] + (t.rank <= 4 ? ' Wind' : ' Dragon') : `${t.red ? 'Red ' : ''}${t.rank} ${SUIT_EN[t.suit]}`; }
 // ===================== DECKS & STAKES =====================
 const DECKS = {
   standard: { name: 'Standard Wall', desc: '136 tiles: four of every tile, four Red Fives.' },
@@ -120,7 +120,27 @@ const ENG = {
   jade: { name: 'Jade Inlay', short: 'J', desc: 'x1.5 Mult when this tile scores.' },
   glass: { name: 'Glass', short: 'Gl', desc: 'x2 Mult when this tile scores, but a 1 in 4 chance it shatters and leaves your Wall.' },
   steel: { name: 'Steel Inlay', short: 'St', desc: 'x1.5 Mult on every play while this tile stays in your hand (it scores nothing when played).' },
+  // Balatro's Wild, Lucky, Mult and Stone cards.
+  wild: { name: 'Wild Inlay', short: 'W', desc: 'Counts as any suit (Characters, Dots or Bamboo) when you play it. Hints ignore this.' },
+  lucky: { name: 'Lucky Inlay', short: 'L', desc: '1 in 5 chance of +20 Mult and 1 in 15 chance of ¥20 each time this tile scores.' },
+  mult: { name: 'Crimson Inlay', short: 'M', desc: '+4 Mult when this tile scores.' },
+  stone: { name: 'Stone', short: 'Sn', desc: '+50 Chips when it scores. It has no rank or suit, never forms a meld, and can join any play.' },
 };
+// Tile editions, like Balatro's editions on playing cards. They stack with an engraving and a Seal.
+const TILE_EDS = {
+  foil: { name: 'Foil', desc: '+50 Chips when this tile scores.' },
+  holo: { name: 'Holographic', desc: '+10 Mult when this tile scores.' },
+  poly: { name: 'Polychrome', desc: 'x1.5 Mult when this tile scores.' },
+};
+const isStone = t => t && t.eng === 'stone';
+// A Wild tile's suit is chosen when it is played: every suit assignment of the Wild tiles is tried (at most 4 Wilds).
+function wildVariants(tiles) {
+  const wi = tiles.map((t, i) => t.eng === 'wild' && t.suit !== 'z' ? i : -1).filter(i => i >= 0).slice(0, 4);
+  if (!wi.length) return [tiles];
+  const out = []; const n = Math.pow(3, wi.length);
+  for (let m = 0; m < n; m++) { const v = tiles.map(t => t); let x = m; for (const i of wi) { v[i] = Object.assign({}, tiles[i], { suit: ['m', 'p', 's'][x % 3] }); x = Math.floor(x / 3); } out.push(v); }
+  return out;
+}
 // Seals sit beside an engraving, like Balatro's Seals beside an Enhancement, so a tile can carry one of each.
 const SEALS = {
   red: { name: 'Red Seal', desc: 'This tile scores twice.' },
@@ -333,6 +353,18 @@ const OMIKUJI = [
   { key: 'redseal', name: 'Slip of the Red Seal', cost: 4, sel: [1, 1], desc: 'Put a Red Seal on 1 selected tile: it scores twice whenever it scores. Keeps any engraving.', use: (S, sel) => { sel[0].seal = 'red'; } },
   { key: 'glass', name: 'Slip of Glass', cost: 3, sel: [1, 2], desc: 'Turn up to 2 selected tiles into Glass: x2 Mult whenever they score, with a 1 in 4 chance each time of shattering for good.', use: (S, sel) => { for (const t of sel) t.eng = 'glass'; } },
   { key: 'steel', name: 'Slip of Steel', cost: 3, sel: [1, 1], desc: 'Engrave 1 selected tile with Steel Inlay: x1.5 Mult on every play while it stays in your hand. Keep it as a spare.', use: (S, sel) => { sel[0].eng = 'steel'; } },
+  // Balatro's Lovers, Magician, Empress and Tower, then the Fool, Judgement, Emperor, High Priestess, Hermit, Temperance and Wheel of Fortune.
+  { key: 'wild', name: 'Slip of the Wild', cost: 3, sel: [1, 1], desc: 'Engrave 1 selected suited tile with a Wild Inlay: it counts as any suit when played.', use: (S, sel) => { if (isHonor(sel[0])) return false; sel[0].eng = 'wild'; } },
+  { key: 'lucky', name: 'Slip of Luck', cost: 3, sel: [1, 2], desc: 'Engrave up to 2 selected tiles with a Lucky Inlay: 1 in 5 for +20 Mult and 1 in 15 for ¥20 each time they score.', use: (S, sel) => { for (const t of sel) t.eng = 'lucky'; } },
+  { key: 'crimson', name: 'Slip of Fervour', cost: 3, sel: [1, 2], desc: 'Engrave up to 2 selected tiles with a Crimson Inlay: +4 Mult when they score.', use: (S, sel) => { for (const t of sel) t.eng = 'mult'; } },
+  { key: 'stone', name: 'Slip of Stone', cost: 3, sel: [1, 1], desc: 'Turn 1 selected tile into Stone: +50 Chips when it scores, no rank or suit, and it can join any play.', use: (S, sel) => { sel[0].eng = 'stone'; sel[0].red = false; } },
+  { key: 'echo', name: 'Slip of Echoes', cost: 3, sel: [0, 0], anywhere: true, desc: 'Create a copy of the last Omikuji or Kami you used (not Slip of Echoes).', use: S => { if (!S.lastCons || !CONS[S.lastCons]) return false; S.consumables.push({ kind: CONS[S.lastCons].kind, key: S.lastCons }); } },
+  { key: 'judgement', name: 'Slip of Judgement', cost: 3, sel: [0, 0], anywhere: true, desc: 'Create a random Talisman. Needs a free Talisman slot.', use: S => { if (typeof talPool !== 'function' || S.talismans.length >= talSlots()) return false; const t = pickTalisman(talPool()); if (!t) return false; gainTalisman(t.key); } },
+  { key: 'emperor', name: 'Slip of the Emperor', cost: 3, sel: [0, 0], anywhere: true, desc: 'Create up to 2 random Omikuji (room permitting, counting this slot).', use: S => { const room = (typeof conSlots === 'function' ? conSlots() : 2) - S.consumables.length + 1; for (let i = 0; i < Math.min(2, room); i++) S.consumables.push({ kind: 'omikuji', key: pick(OMIKUJI.filter(o => o.key !== 'emperor')).key }); } },
+  { key: 'priestess', name: 'Slip of the Priestess', cost: 3, sel: [0, 0], anywhere: true, desc: '2 random Scrolls of Mastery level up by 1.', use: S => { for (const sc of shuffle(SCROLLS.slice()).slice(0, 2)) { const [t, k] = sc.key.split(':'); const b = S.scrolls[t === 'm' ? 'meld' : 'yaku']; b[k] = (b[k] || 0) + 1; } } },
+  { key: 'hermit', name: 'Slip of the Hermit', cost: 3, sel: [0, 0], anywhere: true, desc: 'Double your money (at most +¥20).', use: S => { S.money += Math.min(20, S.money); } },
+  { key: 'temperance', name: 'Slip of Temperance', cost: 3, sel: [0, 0], anywhere: true, desc: 'Gain the total sell value of your Talismans (at most ¥50).', use: S => { if (typeof talSellValue !== 'function') return false; S.money += Math.min(50, S.talismans.reduce((a, k) => a + talSellValue(k), 0)); } },
+  { key: 'fortune', name: 'Slip of Fortune', cost: 3, sel: [0, 0], anywhere: true, desc: '1 in 4 chance: a random Talisman with no edition becomes Foil, Holographic or Polychrome.', use: S => { const pool = S.talismans.filter(k => !S.editions[k]); if (!pool.length) return false; if (rand() < 0.25) { const k = pick(pool); S.editions[k] = pick(['foil', 'holo', 'poly']); S.fortuneHit = k; } else S.fortuneHit = null; } },
 ];
 const KAMI = [
   { key: 'susanoo', name: 'Susanoo', cost: 4, sel: [1, 5], desc: 'Destroy all selected tiles (up to 5). Complete Hands permanently gain +1 level (+10 Chips, +1 Han).',
@@ -350,10 +382,27 @@ const KAMI = [
   { key: 'hachiman', name: 'Hachiman', cost: 4, sel: [1, 1], desc: 'Put a Blue Seal on 1 selected tile: if it is still in your hand when you win a Blind, the Scroll for your final play levels up.', use: (S, sel) => { sel[0].seal = 'blue'; } },
   { key: 'fujin', name: 'Fūjin', cost: 4, sel: [1, 1], desc: 'Put a Purple Seal on 1 selected tile: discarding it gives you a random Omikuji.', use: (S, sel) => { sel[0].seal = 'purple'; } },
 ];
-KAMI.push({ key: 'hitodama', name: 'Hitodama', cost: 4, sel: [0, 0], anywhere: true, soul: true, desc: 'Create a Legendary Talisman. Needs a free Talisman slot.',
+KAMI.push({ key: 'hitodama', name: 'Hitodama', cost: 4, sel: [0, 0], anywhere: true, soul: true, rare: true, desc: 'Create a Legendary Talisman. Needs a free Talisman slot.',
   use: S => { if (S.challenge === 'shrine') return false; const pool = TALISMANS.filter(t => talRarity(t.key) === 'legendary' && !S.talismans.includes(t.key)); const slots = typeof talSlots === 'function' ? talSlots(S) : CFG.talismanSlots; if (!pool.length || S.talismans.length >= slots) return false; const t = pick(pool); S.talState = Object.fromEntries(Object.entries(S.talState || {}).filter(([x]) => x !== t.key)); S.talismans.push(t.key); S.gotLegend = t.key; if (typeof PROFILE !== 'undefined') PROFILE.legendaries = (PROFILE.legendaries || 0) + 1; } });
 // A Kami roll: Hitodama is rare, like Balatro's The Soul.
-function pickKami() { return rand() < CFG.soulOdds ? KAMI.find(k => k.soul) : pick(KAMI.filter(k => !k.soul)); }
+// Balatro's Ankh, Hex, Ectoplasm, Black Hole, Cryptid and Aura. Talismans are unique here, so Izanagi cannot copy one:
+// it gambles every Talisman you have on a new Rare one instead.
+KAMI.push(
+  { key: 'izanagi', name: 'Izanagi', cost: 4, sel: [0, 0], anywhere: true, desc: 'Create a random Rare Talisman, but destroy every other Talisman (Eternal ones stay).',
+    use: S => { if (typeof talPool !== 'function') return false; const pool = talPool().filter(t => talRarity(t.key) === 'rare'); if (!pool.length) return false; for (const k of S.talismans.slice()) destroyTalisman(k); if (S.talismans.length >= talSlots()) return; gainTalisman(pick(pool).key); } },
+  { key: 'izanami', name: 'Izanami', cost: 4, sel: [0, 0], anywhere: true, desc: 'A random Talisman with no edition becomes Polychrome. Destroy every other Talisman (Eternal ones stay).',
+    use: S => { const pool = S.talismans.filter(k => !S.editions[k]); if (!pool.length || typeof destroyTalisman !== 'function') return false; const k = pick(pool); S.editions[k] = 'poly'; for (const o of S.talismans.slice()) if (o !== k) destroyTalisman(o); } },
+  { key: 'okuninushi', name: 'Ōkuninushi', cost: 4, sel: [0, 0], anywhere: true, desc: 'A random Talisman with no edition becomes Negative (+1 slot). −1 hand size for the rest of the run.',
+    use: S => { const pool = S.talismans.filter(k => !S.editions[k]); if (!pool.length) return false; S.editions[pick(pool)] = 'neg'; S.handMod = (S.handMod || 0) - 1; } },
+  { key: 'minakanushi', name: 'Minakanushi', cost: 4, sel: [0, 0], anywhere: true, rare: true, desc: 'Every Scroll of Mastery levels up by 1.',
+    use: S => { for (const sc of SCROLLS) { const [t, k] = sc.key.split(':'); const b = S.scrolls[t === 'm' ? 'meld' : 'yaku']; b[k] = (b[k] || 0) + 1; } } },
+  { key: 'hiruko', name: 'Hiruko', cost: 4, sel: [1, 1], desc: 'Create 2 copies of 1 selected tile, engraving, Seal and edition included. They join your hand and stay in your Wall.',
+    use: (S, sel) => { const t = sel[0]; for (let i = 0; i < 2; i++) { const c = mkTile(t.suit, t.rank, t.red); c.eng = t.eng; c.seal = t.seal; c.ed = t.ed; S.hand.push(c); } } },
+  { key: 'uzume', name: 'Uzume', cost: 4, sel: [1, 1], desc: 'Give 1 selected tile a random edition: Foil (+50 Chips), Holographic (+10 Mult) or Polychrome (x1.5 Mult).',
+    use: (S, sel) => { sel[0].ed = pick(Object.keys(TILE_EDS)); } },
+);
+// A Kami roll: Hitodama and Minakanushi are rare, like Balatro's The Soul and Black Hole.
+function pickKami() { return rand() < CFG.soulOdds ? pick(KAMI.filter(k => k.rare)) : pick(KAMI.filter(k => !k.rare)); }
 const CONS = {}; OMIKUJI.forEach(o => CONS[o.key] = Object.assign({ kind: 'omikuji' }, o)); KAMI.forEach(k => CONS[k.key] = Object.assign({ kind: 'kami' }, k));
 
 // ===================== SCROLLS OF MASTERY (Planets) =====================
@@ -462,6 +511,7 @@ function packTile(deckKey) {
   const t = mkTile(suit, rank, suit !== 'z' && rank === 5 && rand() < 0.3);
   if (rand() < 0.3) t.eng = pick(Object.keys(ENG));
   if (rand() < 0.15) t.seal = pick(Object.keys(SEALS));
+  if (rand() < 0.08) t.ed = pick(Object.keys(TILE_EDS));
   return t;
 }
 // ===================== CHALLENGES =====================
@@ -518,7 +568,7 @@ const YAKUMAN_SHEET = [
 // ===================== TERMINOLOGY: Riichi (default) vs Hong Kong =====================
 // Display strings are translated at render time by whole-word replacement. Logic and saves never change.
 const HK_TALISMAN = { miko: '巫女 Shrine Maiden', hyakki: '百鬼夜行 Night Parade', tsuchinoko: '槌之子 Mallet Snake', otoshidama: '利是 Red Packet', kamikiri: '剪髮鬼 Hair Cutter', kotodama: '言靈 Word Spirit', itako: '問米婆 Spirit Medium', takarabune: '寶船 Treasure Ship', binbogami: '窮神 God of Poverty', fukusuke: '福助 Fortune Doll', ebisu: '惠比壽 Fisherman God', kamaitachi: '鐮鼬 Sickle Weasel', orochi: '八岐大蛇 Eight-headed Serpent', shuten: '酒吞童子 Drunken Demon', tamamo: '九尾狐 Nine-tailed Fox', hoo: '鳳凰 Phoenix', hashi: '橋 Bridge', nopperabo: '無面鬼 Faceless Ghost', sekito: '石塔 Stone Pagoda', aobozu: '青僧 Blue Monk', shiro: '城 Castle', takibi: '篝火 Bonfire', hoshizora: '星空 Starry Sky', mabo: '魔寶 Phantom Treasure', chochin: '燈籠 Lantern', hoshi: '星 Star', hatsumode: '頭炷香 First Incense', oshi: '偶像 Idol', daimyo: '大名 Lord', utsushi: '影印 Mirror Copy', kagami: '鏡 Mirror', kasaobake: '傘妖 Umbrella Ghost', ittanmomen: '布妖 Cloth Ghost', kappa: '水鬼 Water Ghost', kitsune: '狐仙 Fox Spirit', tanuki: '貔貅 Pixiu', maneki: '招財貓 Lucky Cat', tengu: '雷震子 Leizhenzi', oni: '牛魔王 Bull Demon King', daruma: '達摩 Bodhidharma', tsuru: '仙鶴 Crane', koi: '錦鯉 Golden Carp', ryu: '龍王 Dragon King', jizo: '地藏 Dizang', komainu: '石獅 Stone Lion', yukionna: '雪妖 Snow Demon', baku: '貘 Mo', nue: '四不像 Sibuxiang', kodama: '樹精 Tree Spirit', hannya: '夜叉 Yaksha', tsukumogami: '器靈 Object Spirit', nurikabe: '門神 Door God', tengoku: '馬騮精 Monkey Spirit', hitotsume: '獨眼鬼 One-eyed Ghost', nekomata: '貓妖 Cat Demon', shikigami: '紙人 Paper Effigy', kirin: '麒麟 Qilin', hakutaku: '白澤 Bai Ze', yatagarasu: '金烏 Golden Crow', gashadokuro: '骷髏精 Skeleton Spirit', jorogumo: '蜘蛛精 Spider Spirit', rokurokubi: '長頸鬼 Long-neck Ghost', ushioni: '牛頭 Ox-Head', nurarihyon: '無常 Wuchang', zashiki: '福童 Fortune Child', nureonna: '白蛇 White Snake', ryujin: '龍母 Dragon Mother', namazu: '鯉魚精 Carp Spirit', funayurei: '鬼船 Ghost Ship', sazaeoni: '螺精 Conch Spirit', amabie: '人魚 Mermaid', mizuchi: '蛟 Flood Dragon', kawauso: '水獺精 Otter Spirit', omagatoki: '黃昏 Twilight Hour', shojo: '猩猩 Wine Ape', azukiarai: '洗豆妖 Bean Washer' };
-const HK_CONS = { hitodama: '鬼火 Ghost Fire', benzaiten: '辯才天 Goddess of Fortune', hachiman: '八幡 God of War', fujin: '風神 Wind God', steel: '鋼籤 Steel', redseal: '紅印籤 Red Seal', glass: '玻璃籤 Glass', dup: '分身籤 Duplication', ascend: '升籤 Ascension', descend: '降籤 Descent', toman: '萬子籤 Characters', topin: '筒子籤 Dots', tosou: '索子籤 Bamboo', destroy: '化灰籤 Dust', dragon: '紅中籤 Red Dragon', redfive: '紅五籤 Red Five', indicator: '寶牌籤 Bonus Tile Slip', wealth: '橫財籤 Windfall', gold: '金箔籤 Gold Foil', obsidian: '黑曜籤 Obsidian', dragonmark: '龍紋籤 Dragon Mark', jade: '翡翠籤 Jade', susanoo: '哪吒 Nezha', inari: '財神 God of Wealth', raijin: '雷公 Lei Gong', tsukuyomi: '嫦娥 Chang’e', amaterasu: '媽祖 Mazu' };
+const HK_CONS = { wild: '百搭籤 Wild', lucky: '幸運籤 Luck', crimson: '熱鬧籤 Fervour', stone: '石籤 Stone', echo: '回響籤 Echoes', judgement: '審判籤 Judgement', emperor: '皇帝籤 Emperor', priestess: '女祭司籤 Priestess', hermit: '隱士籤 Hermit', temperance: '節制籤 Temperance', fortune: '命運籤 Fortune', izanagi: '伊邪那岐 Creator God', izanami: '伊邪那美 Creator Goddess', okuninushi: '大國主 Lord of the Land', minakanushi: '天之御中主 First God', hiruko: '水蛭子 Leech Child', uzume: '天宇受賣 Dawn Goddess', hitodama: '鬼火 Ghost Fire', benzaiten: '辯才天 Goddess of Fortune', hachiman: '八幡 God of War', fujin: '風神 Wind God', steel: '鋼籤 Steel', redseal: '紅印籤 Red Seal', glass: '玻璃籤 Glass', dup: '分身籤 Duplication', ascend: '升籤 Ascension', descend: '降籤 Descent', toman: '萬子籤 Characters', topin: '筒子籤 Dots', tosou: '索子籤 Bamboo', destroy: '化灰籤 Dust', dragon: '紅中籤 Red Dragon', redfive: '紅五籤 Red Five', indicator: '寶牌籤 Bonus Tile Slip', wealth: '橫財籤 Windfall', gold: '金箔籤 Gold Foil', obsidian: '黑曜籤 Obsidian', dragonmark: '龍紋籤 Dragon Mark', jade: '翡翠籤 Jade', susanoo: '哪吒 Nezha', inari: '財神 God of Wealth', raijin: '雷公 Lei Gong', tsukuyomi: '嫦娥 Chang’e', amaterasu: '媽祖 Mazu' };
 const HK_SCROLL = { 'm:pair': '對子秘笈 Pairs Manual', 'm:chi': '上牌秘笈 Chow Manual', 'm:pon': '碰牌秘笈 Pung Manual', 'm:kan': '槓牌秘笈 Kong Manual', 'm:hand': '食糊秘笈 Winning Manual', 'y:tanyao': '斷幺九秘笈 All Simples Manual', 'y:pinfu': '平糊秘笈 All Chows Manual', 'y:yakuhai': '番牌秘笈 Honor Set Manual', 'y:honitsu': '混一色秘笈 Mixed Suit Manual', 'y:chinitsu': '清一色秘笈 Pure Suit Manual', 'y:toitoi': '對對糊秘笈 All Pungs Manual', 'y:chiitoitsu': '七對子秘笈 Seven Pairs Manual', 'y:sanshoku': '三色同順秘笈 Triple Chow Manual', 'y:ittsu': '一條龍秘笈 Straight Manual', 'y:chanta': '混全帶幺秘笈 Outside Hand Manual' };
 const HK_FLOWER = { plum: '梅 Plum', orchid: '蘭 Orchid', chrysanthemum: '菊 Chrysanthemum', bamboo: '竹 Bamboo', spring: '春 Spring', summer: '夏 Summer', autumn: '秋 Autumn', winter: '冬 Winter' };
 const HK_ENG = { steel: '鋼 Steel Inlay', glass: '玻璃 Glass', gold: '金箔 Gold Foil', obsidian: '黑曜 Obsidian Inlay', dragonmark: '龍紋 Dragon Mark', jade: '翡翠 Jade Inlay' };

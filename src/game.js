@@ -76,7 +76,7 @@ function newState(opts = {}) {
 }
 const blindKind = () => ['small', 'big', 'boss'][S.blindIndex];
 const hasF = k => S.flowers.includes(k);
-const handSize = () => Math.max(8, CFG.handSize + (hasF('plum') ? 1 : 0) + (hasF('plum2') ? 1 : 0) + (S.deckKey === 'abundant' ? 2 : 0) + (S.blindMods && S.blindMods.handSize || 0) - (S.boss === 'miser' && S.phase === 'blind' ? 3 : 0));
+const handSize = () => Math.max(8, CFG.handSize + (S.handMod || 0) + (hasF('plum') ? 1 : 0) + (hasF('plum2') ? 1 : 0) + (S.deckKey === 'abundant' ? 2 : 0) + (S.blindMods && S.blindMods.handSize || 0) - (S.boss === 'miser' && S.phase === 'blind' ? 3 : 0));
 const capacity = () => handSize() - 3 * S.open.length;
 const neededConcealed = () => 14 - 3 * S.open.length;
 // The Purist: is a face-down tile selected? Then the scoring box and the Play button must not reveal what the tiles make.
@@ -351,25 +351,31 @@ function bossPlayCheck(o) {
   return o;
 }
 function playOption() { const o = playOptionBase(); return o.err ? o : bossPlayCheck(o); }
+// Wild tiles: every suit assignment is tried and the best one is used (the copies carry the chosen suits for scoring).
+function bestWild(tiles) { let out = null; for (const v of wildVariants(tiles)) { const b = bestHand(v, S.open, S); if (b && (!out || b.yaku.han > out.best.yaku.han)) out = { best: b, tiles: v }; } return out; }
+function partWild(tiles) { let out = null, top = -1; for (const v of wildVariants(tiles)) { const p = partitionPlay(v); if (!p) continue; const r = rungInfo(p), val = r.chips + 20 * r.han; if (val > top) { top = val; out = { part: p, tiles: v }; } } return out; }
 function playOptionBase() {
   if (S.pendingDiscard) return { err: `Settle your Call first: discard ${S.pendingDiscard} tile.` };
   if (S.plays <= 0) return { err: 'No Plays left.' };
-  const sel = selTiles(); if (!sel.length) return { err: 'Select tiles to play.' };
+  const all = selTiles(); if (!all.length) return { err: 'Select tiles to play.' };
+  // Stone tiles never form melds: they join any play and score their Chips.
+  const stones = all.filter(isStone), sel = all.filter(t => !isStone(t));
+  if (!sel.length) return { type: 'meld', part: { single: true, melds: [], pairs: [] }, meldType: 'single', label: 'Play Stone tiles', tiles: stones };
   const need = neededConcealed();
   const rt = claimTile();
   if (!rt && S.selRiver && S.boss === 'fisherman' && S.talismans.some(k => TAL[k].riverClaim) && sel.length === need - 1) return { err: 'The Fisherman forbids claiming tiles from the River.' };
   if (rt && sel.length === need - 1) {
-    const best = bestHand(sel.concat([rt]), S.open, S);
-    if (best) return { type: 'hand', best, claim: rt.id, label: 'Claim and Play Complete Hand: ' + (best.yaku.list.length ? best.yaku.list.map(y => y.name).join(', ') : 'no Yaku') };
+    const w = bestWild(sel.concat([rt]));
+    if (w) return { type: 'hand', best: w.best, tiles: w.tiles.concat(stones), claim: rt.id, label: 'Claim and Play Complete Hand: ' + (w.best.yaku.list.length ? w.best.yaku.list.map(y => y.name).join(', ') : 'no Yaku') };
     return { err: `With ${tileName(rt)} from the River these ${need - 1} tiles are not a complete hand.` };
   }
   if (sel.length === need) {
-    const best = bestHand(sel, S.open, S);
-    if (best) return { type: 'hand', best, label: 'Play Complete Hand: ' + (best.yaku.list.length ? best.yaku.list.map(y => y.name).join(', ') : 'no Yaku') };
+    const w = bestWild(sel);
+    if (w) return { type: 'hand', best: w.best, tiles: w.tiles.concat(stones), label: 'Play Complete Hand: ' + (w.best.yaku.list.length ? w.best.yaku.list.map(y => y.name).join(', ') : 'no Yaku') };
     return { err: `${need} tiles selected, but they are not a complete hand (${4 - S.open.length} melds + pair).` };
   }
-  const part = partitionPlay(sel);
-  if (part) { const r = rungInfo(part); return { type: 'meld', part, meldType: r.key, label: `Play ${r.name}` }; }
+  const pw = partWild(sel);
+  if (pw) { const r = rungInfo(pw.part); return { type: 'meld', part: pw.part, tiles: pw.tiles.concat(stones), meldType: r.key, label: `Play ${r.name}` }; }
   if (sel.length === 2) return { err: 'Two tiles must be identical to play as a Pair.' };
   if (sel.length === 4) return { err: 'Four tiles must be a Kan or Two Pair.' };
   return { err: `Selection must split into melds (Chi, Pon, Kan) plus at most one pair, up to 4 melds. Or select ${need} tiles for a complete hand.` };
@@ -400,8 +406,9 @@ async function doPlay() {
   // A claimed tile leaves the River before scoring, so River Talismans do not count it.
   const claimed = opt.claim ? S.river.find(t => t.id === opt.claim) : null;
   if (claimed) { S.river = S.river.filter(t => t !== claimed); sel.push(claimed); S.stats.claims = (S.stats.claims || 0) + 1; }
-  if (opt.type === 'hand') { ctx = scoreCtx(S, 'hand', sel.concat(openTiles()), { yaku: opt.best.yaku, dec: opt.best.dec, claim: opt.claim }); S.stats.hands++; }
-  else { ctx = scoreCtx(S, 'meld', sel, { part: opt.part }); S.stats.melds++; }
+  // opt.tiles: the selection with Wild suits chosen and Stone tiles included (the real tiles otherwise).
+  if (opt.type === 'hand') { ctx = scoreCtx(S, 'hand', (opt.tiles || sel).concat(openTiles()), { yaku: opt.best.yaku, dec: opt.best.dec, claim: opt.claim }); S.stats.hands++; }
+  else { ctx = scoreCtx(S, 'meld', opt.tiles || sel, { part: opt.part }); S.stats.melds++; }
   S.busy = true; setMsg(''); render();
   await animateScore(ctx);
   S.busy = false;
@@ -472,6 +479,7 @@ function doCall() {
   if (!freeCall && S.plays <= 1) { setMsg(S.plays <= 0 ? 'No Plays left.' : 'Calling would use your last Play and leave nothing to score with.', true); return render(); }
   const rt = S.river.find(t => t.id === S.selRiver); if (!rt) { setMsg('Select a tile in the River to call.', true); return render(); }
   const sel = selTiles(); if (sel.length < 2 || sel.length > 3) { setMsg('Select 2 or 3 hand tiles to meld with the River tile.', true); return render(); }
+  if (sel.some(isStone)) { setMsg('Stone tiles cannot be part of a meld.', true); return render(); }
   if (S.open.length >= 4) { setMsg('You already have 4 open melds.', true); return render(); }
   const type = meldType([rt, ...sel]); if (!type) { setMsg('That River tile and your selection do not form a Chi, Pon or Kan.', true); return render(); }
   if (freeCall) S.freeCallsUsed = (S.freeCallsUsed || 0) + 1; else S.plays--; S.river = S.river.filter(t => t !== rt); S.hand = S.hand.filter(t => !sel.includes(t));
@@ -486,7 +494,7 @@ function doCall() {
 function declareOption() {
   if (S.phase !== 'blind' || S.busy) return { err: '' };
   if (S.pendingDiscard) return { err: 'Settle your Call first.' };
-  const sel = selTiles(); if (sel.length !== 4 || !sel.every(t => key(t) === key(sel[0]))) return { err: 'Select 4 identical tiles to declare a closed Kan.' };
+  const sel = selTiles(); if (sel.length !== 4 || sel.some(isStone) || !sel.every(t => key(t) === key(sel[0]))) return { err: 'Select 4 identical tiles to declare a closed Kan.' };
   if (S.open.length >= 4) return { err: 'You already have 4 melds on the table.' };
   return { ok: true, sel };
 }
@@ -506,9 +514,10 @@ function useConsumable(i) {
     const before = S.deck ? S.deck.length : 0; S.gotLegend = null;
     const after = useOnWallTiles(def, S.deck || [], []);
     if (!after) { setMsg(def.soul ? 'Hitodama needs a free Talisman slot.' : 'That cannot be used right now.', true); return render(); }
-    S.consumables.splice(i, 1);
+    if (c.key !== 'echo') S.lastCons = c.key;
+    S.consumables.splice(S.consumables.indexOf(c), 1);
     const lost = before - S.deck.length;
-    setMsg(`${def.name} used.${S.gotLegend ? ` ${TAL[S.gotLegend].name} joins your Talismans.` : ''}${lost > 0 ? ` ${lost} tile${lost > 1 ? 's' : ''} left your Wall.` : ''}`); S.gotLegend = null; return render();
+    setMsg(`${def.name} used.${c.key === 'fortune' ? (S.fortuneHit ? ` ${TAL[S.fortuneHit].name} is now ${EDITIONS[S.editions[S.fortuneHit]].name}!` : ' Nothing this time.') : ''}${S.gotLegend ? ` ${TAL[S.gotLegend].name} joins your Talismans.` : ''}${lost > 0 ? ` ${lost} tile${lost > 1 ? 's' : ''} left your Wall.` : ''}`); S.gotLegend = null; return render();
   }
   const sel = selTiles();
   if (sel.length < def.sel[0] || sel.length > def.sel[1]) { setMsg(def.sel[0] === def.sel[1] ? (def.sel[0] === 0 ? 'Clear your selection first.' : `Select exactly ${def.sel[0]} tile${def.sel[0] > 1 ? 's' : ''}.`) : `Select ${def.sel[0]}–${def.sel[1]} tiles.`, true); return render(); }
@@ -518,8 +527,10 @@ function useConsumable(i) {
   for (const t of S.hand) if (t.d === undefined) t.d = ++S.drawSeq;
   if (S.hand.length > before) for (const k of liveTals(S)) if (TAL[k].onTileAdded) TAL[k].onTileAdded(S, S.hand.length - before);
   if (S.pendingDiscard) { S.pendingDiscard = Math.max(0, S.hand.length - capacity()); if (!S.pendingDiscard) { draw(); setMsg(`${def.name} used. Your Call is settled.`); render(); return; } }
-  S.consumables.splice(i, 1); S.selected = []; if (S.phase === 'blind') draw();
-  setMsg(`${def.name} used.${S.gotLegend ? ` ${TAL[S.gotLegend].name} joins your Talismans.` : ''}`); S.gotLegend = null; render();
+  if (c.key !== 'echo') S.lastCons = c.key;
+  S.consumables.splice(S.consumables.indexOf(c), 1); S.selected = []; if (S.phase === 'blind') draw();
+  const fortune = c.key === 'fortune' ? (S.fortuneHit ? ` ${TAL[S.fortuneHit].name} is now ${EDITIONS[S.editions[S.fortuneHit]].name}!` : ' Nothing this time.') : '';
+  setMsg(`${def.name} used.${S.gotLegend ? ` ${TAL[S.gotLegend].name} joins your Talismans.` : ''}${fortune}`); S.gotLegend = null; render();
 }
 function talValue(k) { return TAL[k].cost + (S.editions[k] ? EDITIONS[S.editions[k]].price : 0); }
 function sellTalisman(k) { const i = S.talismans.indexOf(k); if (i < 0) return; if (isEternal(k)) { setMsg(`${TAL[k].name} is Eternal and can never be sold.`, true); return render(); } if (S.stickers) delete S.stickers[k]; if (S.phase === 'blind') S.leafCut = true; if (S.crimsonOff === k) S.crimsonOff = null; const v = talSellValue(k); S.talismans.splice(i, 1); if (S.sellBonus) delete S.sellBonus[k]; S.money += v; sfx('sell'); delete S.editions[k]; S.selTal = null; for (const t of S.talismans) if (TAL[t].onSell) TAL[t].onSell(S); PROFILE.sold++; saveProfile(); setMsg(`Sold ${TAL[k].name} for ¥${v}.`); render(); }
@@ -602,7 +613,7 @@ function usePackCard(i) {
   // Row to display: the previous order with removed tiles left in place (greyed), new tiles at the end.
   S.pack.view = order.map(id => after.some(t => t.id === id) ? { id } : { id, gone: snap.get(id) }).concat(after.filter(t => !snap.has(t.id)).map(t => ({ id: t.id })));
   S.pack.marks = marks; S.pack.hand = after.map(t => t.id); S.pack.sel = [];
-  it.sold = true; it.used = true; S.pack.left--;
+  it.sold = true; it.used = true; S.pack.left--; if (it.key !== 'echo') S.lastCons = it.key;
   const gained = S.money - m0, list = a0 => { const c = {}; for (const n of a0) c[n] = (c[n] || 0) + 1; const a = Object.entries(c).map(([n, k]) => k > 1 ? `${n} ×${k}` : n); return a.length > 1 ? a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1] : a[0]; };
   const parts = []; if (changed.length) parts.push(`used on ${list(changed)}`); if (added.length) parts.push(`added ${list(added)}`); if (gone.length) parts.push(`removed ${list(gone.map(g => g.name))}`); if (gained) parts.push(`+¥${gained}`);
   setMsg(`${def.name}${parts.length ? ': ' + parts.join('; ') : (sel.length ? ' used: no tiles changed' : ' used')}.`);
@@ -721,12 +732,16 @@ const anteLabel = (a = S.ante) => a > CFG.antes ? `Ante ${a} · Endless` : `Ante
 // Endless Antes draw a fresh Boss each time, never one of the last three.
 function ensureBosses() { while (S.bossOrder.length < S.ante) S.bossOrder.push(rollBoss(S.bossOrder.length + 1, S.bossOrder.slice(-3))); }
 function fmtMult(m) { return Number.isInteger(m) ? m : (+m.toFixed(2)); }
+// A Stone tile shows a grey slab: it has no rank or suit.
+const STONE_SVG = '<svg viewBox="0 0 54 74" aria-hidden="true"><rect x="8" y="10" width="38" height="54" rx="6" fill="#8d8a82"/><path d="M14 22l9 6 4-9 8 12 6-4M16 46l7-5 6 8 9-6M20 56l5-3" fill="none" stroke="#5f5c56" stroke-width="1.6" stroke-linecap="round"/><circle cx="36" cy="20" r="2" fill="#a9a69e"/><circle cx="18" cy="36" r="1.6" fill="#a9a69e"/></svg>';
 function tileEl(t, o = {}) {
   const el = document.createElement('div');
   el.dataset.id = t.id;
-  el.className = 'tile ' + t.suit + (t.red ? ' red' : '') + (t.eng ? ' eng-' + t.eng : '') + (t.seal ? ' seal-' + t.seal : '') + (o.sel ? ' sel' : '') + (o.small ? ' small' : '') + (o.back ? ' back' : '') + (o.called ? ' called' : '');
+  el.className = 'tile ' + t.suit + (t.red ? ' red' : '') + (t.eng ? ' eng-' + t.eng : '') + (t.seal ? ' seal-' + t.seal : '') + (t.ed ? ' ted-' + t.ed : '') + (o.sel ? ' sel' : '') + (o.small ? ' small' : '') + (o.back ? ' back' : '') + (o.called ? ' called' : '');
   if (!o.back) {
-    el.innerHTML = tileSVG(t);
+    el.innerHTML = t.eng === 'stone' ? STONE_SVG : tileSVG(t);
+    if (t.ed) el.innerHTML += '<span class="tedfx"></span>';
+    if (t.eng === 'wild' || t.eng === 'lucky' || t.eng === 'mult') el.innerHTML += `<span class="emark emark-${t.eng}">${{ wild: '✱', lucky: '♣', mult: '+' }[t.eng]}</span>`;
     if (t.seal || t.eng === 'redseal') el.innerHTML += `<span class="seal seal-${t.seal || 'red'}"></span>`;
     if (t.eng === 'dragonmark') el.innerHTML += '<span class="dmark"></span>';
     else if (t.eng === 'gold') el.innerHTML += '<span class="shine"></span>';
@@ -747,7 +762,8 @@ function tileTipHTML(t, back) {
   if (inRun && S.phase === 'blind' && (S.dora || []).includes(idx(t))) rows.push(`<span class="hp han">+1</span><span>Han · Dora</span>`);
   const eng = t.eng && ENG[t.eng] ? `<div class="tt-e"><b>${ENG[t.eng].name}</b> ${ENG[t.eng].desc}</div>` : '';
   const seal = t.seal && SEALS[t.seal] ? `<div class="tt-e"><b>${SEALS[t.seal].name}</b> ${SEALS[t.seal].desc}</div>` : '';
-  return `<div class="tt-n">${tileName(t)}</div>${rows.map(r => `<div class="tt-r">${r}</div>`).join('')}${eng}${seal}`;
+  const ted = t.ed && TILE_EDS[t.ed] ? `<div class="tt-e"><b>${TILE_EDS[t.ed].name}</b> ${TILE_EDS[t.ed].desc}</div>` : '';
+  return `<div class="tt-n">${tileName(t)}</div>${rows.map(r => `<div class="tt-r">${r}</div>`).join('')}${eng}${seal}${ted}`;
 }
 function showTileTip(el, html) {
   if (!tipEl) { tipEl = document.createElement('div'); tipEl.id = 'tiletip'; tipEl.setAttribute('role', 'tooltip'); document.body.appendChild(tipEl); }
@@ -943,7 +959,7 @@ function computePreview() {
   const opt = playOption(); if (!opt.type) { PREVIEW = { err: opt.err }; return; }
   const sel = S.hand.filter(t => S.selected.includes(t.id));
   const claimed = opt.claim ? [S.river.find(t => t.id === opt.claim)] : [];
-  const ctx = opt.type === 'hand' ? scoreCtx(S, 'hand', sel.concat(claimed, openTiles()), { yaku: opt.best.yaku, dec: opt.best.dec, preview: true, claim: opt.claim }) : scoreCtx(S, 'meld', sel, { part: opt.part, preview: true });
+  const ctx = opt.type === 'hand' ? scoreCtx(S, 'hand', (opt.tiles || sel.concat(claimed)).concat(openTiles()), { yaku: opt.best.yaku, dec: opt.best.dec, preview: true, claim: opt.claim }) : scoreCtx(S, 'meld', opt.tiles || sel, { part: opt.part, preview: true });
   PREVIEW = { ctx, label: opt.type === 'hand' ? (ctx.yaku.length ? ctx.yaku.map(y => y.name).join(', ') : 'Complete Hand') : ctx.rungName, kind: opt.type, claim: !!opt.claim };
 }
 function renderBlind() {
@@ -1281,8 +1297,8 @@ async function animateScore(ctx) {
   const lp = $('#lastPlay'); lp.innerHTML = `<div class="label">Last Play</div><div style="font-family:var(--display);font-size:15px;margin:2px 0 6px">${tr(ctx.desc)}</div><div class="lp-lines"></div>`;
   const chipsBox = box.querySelector('.chipbox'), multBox = box.querySelector('.multbox'), chipsEl = chipsBox.querySelector('.nv'), multEl = multBox.querySelector('.nv'), totEl = box.querySelector('.hb-tot'), totWrap = totEl, nameEl = box.querySelector('.hb-title'), linesBox = lp.querySelector('.lp-lines'), mathEl = box.querySelector('.hb-math'), hanEl = box.querySelector('.hanval'), hanPill = box.querySelector('.hanfoot'), tierEl = box.querySelector('.hanfoot .hantier');
   const tileEls = new Map(); document.querySelectorAll('#hand .tile[data-id], #open .tile[data-id]').forEach(e => tileEls.set(+e.dataset.id, e));
-  let chips = 0, han = 0, tileX = 1, mult = null;
-  const curMult = () => mult === null ? hanMult(han) * tileX : mult;
+  let chips = 0, han = 0, tileX = 1, tileM = 0, mult = null;
+  const curMult = () => mult === null ? hanMult(han) * tileX + tileM : mult;
   let lastChips = null, lastMult = null, lastHan = null; const fitLen = { c: 0, m: 0 }; let chipN = 0, multN = 0;
   const bump = (el, cls) => { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); };
   const setMath = () => {
@@ -1299,7 +1315,7 @@ async function animateScore(ctx) {
   const showLine = l => { const d = document.createElement('div'); d.className = 'row sline' + lineCls(l); d.dataset.li = ctx.lines.indexOf(l); d.innerHTML = `<span>${tr(l.label)}</span><span class="num">${tr(l.val)}</span>`; linesBox.appendChild(d); if (l.tal && !/retrigger/.test(l.label)) { const slot = document.querySelector(`.slot[data-tal="${l.tal}"]`); if (slot) { slot.classList.remove('bounce'); void slot.offsetWidth; slot.classList.add('bounce');
       // the Talisman's effect pops under its slot, coloured like the tile badges
       const v = /retrigger/.test(l.label) ? '' : tr(l.val || ''); if (v) { const kind = /×|^x/i.test(v) ? 'x' : /Mult/.test(v) ? 'mult' : /Chip/.test(v) ? 'chips' : /Han|Faan/.test(v) ? 'han' : /[¥$]/.test(v) ? 'money' : 'info'; const f = document.createElement('div'); f.className = 'talpop num'; f.innerHTML = `<span class="hp ${kind}">${v}</span>`; slot.appendChild(f); setTimeout(() => f.remove(), 1100); } } } };
-  const applyLine = l => { if (l.zero) chips = 0; else { chips += l.chips || 0; han += l.han || 0; if (l.convert) mult = hanMult(han) * tileX; if (l.mult) mult = (mult === null ? hanMult(han) * tileX : mult) + l.mult; if (l.xmult && mult !== null) mult *= l.xmult; } setMath(); };
+  const applyLine = l => { if (l.zero) chips = 0; else { chips += l.chips || 0; han += l.han || 0; if (l.convert) mult = hanMult(han) * tileX + tileM; if (l.mult) mult = (mult === null ? hanMult(han) * tileX + tileM : mult) + l.mult; if (l.xmult && mult !== null) mult *= l.xmult; } setMath(); };
   let fire = 0;
   // Hanabi: once a play beats the target, rockets shoot up from below the Chips and Mult boxes and burst above them.
   // One rocket at 1x the target, two more at 3x, three more at 10x and then one every 0.7 s until scoring ends.
@@ -1343,14 +1359,14 @@ async function animateScore(ctx) {
   // Like Balatro: every tile scores once in order (a Red Seal replays its tile straight away), then the retrigger
   // Talismans fire left to right, each popping with Again! and replaying the tiles it affects. Only the order of the
   // reveal changes; the totals are the engine's.
-  const perOf = h => ({ chips: h.chips / h.times, han: h.han / h.times, x: Math.pow(h.xmult, 1 / h.times) });
+  const perOf = h => ({ chips: h.chips / h.times, han: h.han / h.times, x: Math.pow(h.xmult, 1 / h.times), m: (h.mult || 0) / h.times, money: (h.money || 0) / h.times });
   const popSlot = (el, text, cls) => { if (!el) return; el.classList.remove('bounce'); void el.offsetWidth; el.classList.add('bounce'); const g = document.createElement('div'); g.className = 'talpop num'; g.innerHTML = `<span class="hp ${cls}">${text}</span>`; el.appendChild(g); setTimeout(() => g.remove(), 900); };
   const hitOnce = async (h, again) => {
     const e = tileEls.get(h.id), per = perOf(h);
     if (e) { e.classList.remove('hit'); void e.offsetWidth; e.classList.add('hit');
-      const pills = [again ? ['again', 'Again!'] : null, per.chips ? ['chips', `+${Math.round(per.chips)}`] : null, per.han ? ['han', tr(`+${per.han} Han`)] : null, per.x !== 1 ? ['x', `×${fmtMult(per.x)}`] : null].filter(Boolean);
+      const pills = [again ? ['again', 'Again!'] : null, per.chips ? ['chips', `+${Math.round(per.chips)}`] : null, per.han ? ['han', tr(`+${per.han} Han`)] : null, per.m ? ['mult', `+${fmtMult(per.m)} Mult`] : null, per.x !== 1 ? ['x', `×${fmtMult(per.x)}`] : null, per.money >= 1 ? ['money', `+¥${Math.round(per.money)}`] : null].filter(Boolean);
       const f = document.createElement('div'); f.className = 'hitpop num'; f.innerHTML = pills.map(([c, t]) => `<span class="hp ${c}">${t}</span>`).join(''); e.appendChild(f); setTimeout(() => f.remove(), 950); }
-    chips += per.chips; han += per.han; tileX *= per.x; setMath(); heat(); logHit(h, per);
+    chips += per.chips; han += per.han; tileX *= per.x; tileM += per.m; setMath(); heat(); logHit(h, per);
     await wait(again ? 220 : 150);
   };
   const charmNames = new Set(S.talismans.map(k => TAL[k].name));
@@ -1358,18 +1374,20 @@ async function animateScore(ctx) {
   // Glass) and Red Seal replays appear as they happen and count up live; each retrigger Talisman's line appears when
   // it fires. Values are scaled from the engine's final lines, which are restored exactly at the end.
   const live = new Map();
-  const keyOf = l => l.tiles ? 'tiles' : /: retrigger ×/.test(l.label) ? l.label.split(':')[0] : (/^(Red Five|Dora|Dragon Mark|Jade|Gold Foil|Glass) ×/.exec(l.label) || [])[1];
+  const EFF_RE = '(Red Five|Dora|Dragon Mark|Jade|Gold Foil|Glass|Gold Seal|Foil tile|Holo tile|Poly tile|Crimson|Lucky)';
+  const keyOf = l => l.tiles ? 'tiles' : /: retrigger ×/.test(l.label) ? l.label.split(':')[0] : (new RegExp('^' + EFF_RE + ' ×').exec(l.label) || [])[1];
   const liveRow = (key, label, val, cls) => { let o = live.get(key); if (!o) { const d = document.createElement('div'); d.className = 'row sline' + (cls ? ' ' + cls : ''); const li = ctx.lines.findIndex(l => keyOf(l) === key); if (li >= 0) d.dataset.li = li; d.innerHTML = '<span></span><span class="num"></span>'; linesBox.appendChild(d); o = { d }; live.set(key, o); } o.d.children[0].textContent = tr(label); o.d.children[1].textContent = tr(val); };
   const tilesLine = ctx.lines.find(l => l.tiles), EFFECTS = ['Red Five', 'Dora', 'Dragon Mark', 'Jade', 'Gold Foil', 'Glass'];
-  const finalEff = {}; for (const l of ctx.lines) { const m = /^(Red Five|Dora|Dragon Mark|Jade|Gold Foil|Glass) ×(\d+)$/.exec(l.label); if (m) finalEff[m[1]] = { n: +m[2], line: l }; }
-  const effOf = id => { const t = ctx.tiles.find(x => x.id === id); if (!t) return []; const out = []; if (t.red) out.push('Red Five'); const nd = (S.dora || []).filter(d => d === idx(t)).length; for (let q = 0; q < nd; q++) out.push('Dora'); if (t.eng === 'dragonmark') out.push('Dragon Mark'); if (t.eng === 'jade') out.push('Jade'); if (t.eng === 'gold') out.push('Gold Foil'); if (t.eng === 'glass') out.push('Glass'); return out.filter(e => finalEff[e]); };
+  const finalEff = {}; for (const l of ctx.lines) { const m = new RegExp('^' + EFF_RE + ' ×(\\d+)$').exec(l.label); if (m) finalEff[m[1]] = { n: +m[2], line: l }; }
+  const effOf = id => { const t = ctx.tiles.find(x => x.id === id); if (!t) return []; const out = []; if (t.red) out.push('Red Five'); const nd = (S.dora || []).filter(d => d === idx(t)).length; for (let q = 0; q < nd; q++) out.push('Dora'); if (t.eng === 'dragonmark') out.push('Dragon Mark'); if (t.eng === 'jade') out.push('Jade'); if (t.eng === 'gold') out.push('Gold Foil'); if (t.eng === 'glass') out.push('Glass'); if (t.seal === 'gold') out.push('Gold Seal'); if (t.ed === 'foil') out.push('Foil tile'); if (t.ed === 'holo') out.push('Holo tile'); if (t.ed === 'poly') out.push('Poly tile'); if (t.eng === 'mult') out.push('Crimson'); if (t.eng === 'lucky') out.push('Lucky'); return out.filter(e => finalEff[e]); };
   // Each effect's share is measured in scored occurrences (replays included), since the engine counts some effects
   // per tile and some per occurrence; the label count and the value both grow in proportion.
   const totOcc = {}; for (const h of ctx.hits) for (const e of effOf(h.id)) totOcc[e] = (totOcc[e] || 0) + h.times;
   const effVal = (e, occ) => { const f = finalEff[e], v = f.line.val, k = occ / (totOcc[e] || 1); let m;
     if ((m = /^\+(\d+) Han$/.exec(v))) return `+${Math.round(+m[1] * k)} Han`;
     if ((m = /^×([\d.]+) Mult$/.exec(v))) return `×${fmtMult(Math.pow(+m[1], k))} Mult`;
-    if ((m = /^\+¥(\d+)$/.exec(v))) return `+¥${Math.round(+m[1] * k)}`; return v; };
+    if ((m = /^\+¥(\d+)$/.exec(v))) return `+¥${Math.round(+m[1] * k)}`;
+    if ((m = /^\+(\d+) (Chips|Mult)$/.exec(v))) return `+${Math.round(+m[1] * k)} ${m[2]}`; return v; };
   const effCount = {}; let tileChipSum = 0;
   const logHit = (h, per) => {
     tileChipSum += per.chips; if (tilesLine) liveRow('tiles', tilesLine.label, `+${Math.round(tileChipSum)} Chips`);
@@ -1573,7 +1591,8 @@ function shopHTML() {
   h += `<div class="shoplayout"><aside class="shoprail">
     <button id="mNext" class="primary nextbtn"><span class="nb-main">Next Blind <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M3 8h9M8.5 3.5 13 8l-4.5 4.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><small>Ante ${S.ante} · ${nextBoss ? nextBoss.name : next}</small></button>
     <button id="mReroll" class="ghost railbtn rerollbtn" ${canReroll ? '' : 'disabled title="Not enough money to reroll"'}><span class="rbl"><svg class="rbico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8M4 4v4h4M4 13a8 8 0 0 0 14.3 4.9L20 16M20 20v-4h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Reroll Cards</span><b class="num">${rerollPrice() ? '¥' + rerollPrice() : 'Free'}</b></button>
-    <button id="mDeck" class="ghost railbtn"><span class="rbl"><span class="wallico" aria-hidden="true"><i></i><i></i><i></i></span>View Wall</span><b class="num">${(S.deck || []).length}</b></button></aside>
+    <button id="mDeck" class="ghost railbtn"><span class="rbl"><span class="wallico" aria-hidden="true"><i></i><i></i><i></i></span>View Wall</span><b class="num">${(S.deck || []).length}</b></button>
+    <button id="mRunInfo" class="ghost railbtn"><span class="rbl"><svg class="rbico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 11v6M12 7.5v.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>Run Info</span><b class="num"></b></button></aside>
     <div class="shopmain"><div class="shelf"><div class="shelflabel">Cards</div><div class="shelfrow">${[...S.shop.cards, S.shop.scroll].map(it => cardHTML(it, at(it))).join('')}</div></div>
     <div class="shelf"><div class="shelflabel">${S.shop.flower ? 'Flower and Booster Pack' : 'Booster Pack'}</div><div class="shelfrow">${[S.shop.flower, S.shop.pack].filter(Boolean).map(it => cardHTML(it, at(it))).join('')}</div></div>
     ${S.shop.freePacks.length ? `<div class="freepacks">${S.shop.freePacks.map((pk, i) => `<button class="primary" data-freepack="${i}">Open Free ${PACKS[pk].name}</button>`).join('')}</div>` : ''}</div></div>`;
@@ -1603,7 +1622,7 @@ function packHTML() {
   h += `<div class="shelf packshelf"><div class="shelflabel">${S.pack.done ? 'Cards · all picks used' : `Cards · choose ${S.pack.left} more`}</div><div class="shop-grid">${S.pack.choices.map((it, i) => { const d = itemDef(it); const ed = it.edition ? EDITIONS[it.edition] : null; return `<div class="shopcard ${it.kind === 'tile' ? 'tilecard' : it.kind}${it.sold ? ' sold' : ''}${ed ? ' ed-' + it.edition : ''}"><div class="${it.kind === 'tile' ? 'packtileart' : 'emblem'}" data-pt="${i}">${it.kind === 'tile' ? '' : emblem(it.kind)}</div>${it.kind === 'talisman' ? stickerBadges(it.sticker) : ''}<div class="kind">${it.kind === 'talisman' ? talKindRow(it.key, it.edition) : { omikuji: 'Omikuji', kami: 'Kami Spirit', scroll: 'Scroll of Mastery', tile: 'Tile' }[it.kind] + (ed ? `<span class="edtag ed-${it.edition}">${ed.name}</span>` : '')}</div><div class="n">${d.name}</div><div class="d">${d.desc}${ed ? ` <b>${ed.name}: ${ed.desc}.</b>` : ''}</div>${it.kind === 'scroll' && !it.sold ? scrollLevelHTML(it.key) : it.kind === 'talisman' && !it.sold ? talPreview(it.key) : ''}<div class="buy"><span></span>${it.sold ? `<span class="muted">${it.used ? 'Used' : 'Taken'}</span>` : packButtons(it, i)}</div></div>`; }).join('')}</div></div>`;
   h += `<div class="msg${S.msgErr ? ' err' : ''}" style="min-height:18px;margin:2px 0 6px">${S.msg || ''}</div>`;
   h += ownedHTML();
-  h += `<div class="shopfoot"><button id="mDeck" class="ghost">View Wall</button><span style="flex:1"></span>${S.pack.done ? '<button id="mPackDone" class="primary">Done</button>' : '<button id="mPackDone" class="ghost">Skip the Rest</button>'}</div>`;
+  h += `<div class="shopfoot"><button id="mDeck" class="ghost">View Wall</button><button id="mRunInfo" class="ghost">Run Info</button><span style="flex:1"></span>${S.pack.done ? '<button id="mPackDone" class="primary">Done</button>' : '<button id="mPackDone" class="ghost">Skip the Rest</button>'}</div>`;
   return h;
 }
 function overHTML(won) {
@@ -1624,10 +1643,10 @@ function deckHTML() {
   const all = inBlind ? [...S.hand, ...S.wall, ...S.river, ...openTiles(), ...S.played, ...S.indicators] : S.deck;
   const counts = new Array(34).fill(0), inWall = new Array(34).fill(0), reds = new Array(34).fill(0);
   for (const t of all) { counts[idx(t)]++; if (t.red) reds[idx(t)]++; } for (const t of S.wall) inWall[idx(t)]++;
-  const eng = all.filter(t => t.eng), sealed = all.filter(t => t.seal), redTotal = all.filter(t => t.red).length;
+  const eng = all.filter(t => t.eng), sealed = all.filter(t => t.seal), edTiles = all.filter(t => t.ed), redTotal = all.filter(t => t.red).length;
   const stat = (label, v) => `<div class="stat"><div class="label">${label}</div><div class="v num">${v}</div></div>`;
   let h = `<div class="shophead"><h2>The Wall</h2></div><p class="muted" style="margin:2px 0 10px">${inBlind ? 'Under each tile: copies still face down in the Wall, out of copies in your deck.' : 'Under each tile: how many copies are in your deck.'}</p>`;
-  h += `<div class="overstats wallstats">${stat('Tiles', all.length)}${inBlind ? stat('Still in the Wall', S.wall.length) : ''}${stat('Red Fives', redTotal)}${stat('Engraved', eng.length)}${sealed.length ? stat('Sealed', sealed.length) : ''}</div>`;
+  h += `<div class="overstats wallstats">${stat('Tiles', all.length)}${inBlind ? stat('Still in the Wall', S.wall.length) : ''}${stat('Red Fives', redTotal)}${stat('Engraved', eng.length)}${sealed.length ? stat('Sealed', sealed.length) : ''}${edTiles.length ? stat('Editions', edTiles.length) : ''}</div>`;
   for (const [label, from, to] of [['Manzu', 0, 9], ['Pinzu', 9, 18], ['Souzu', 18, 27], ['Honors', 27, 34]]) h += `<div class="label" style="margin:12px 0 6px">${label}</div><div class="wallrow" data-from="${from}" data-to="${to}"></div>`;
   if (eng.length) { const byEng = {}; for (const t of eng) byEng[t.eng] = (byEng[t.eng] || 0) + 1; h += `<div class="label" style="margin:12px 0 6px">Engravings</div><div class="overtals">${Object.entries(byEng).map(([k, n]) => `<span class="tagchip" title="${eng.filter(t => t.eng === k).map(tileName).join(', ')}">${ENG[k].name} ×${n}</span>`).join('')}</div>`; }
   if (sealed.length) { const by = {}; for (const t of sealed) by[t.seal] = (by[t.seal] || 0) + 1; h += `<div class="label" style="margin:12px 0 6px">Seals</div><div class="overtals">${Object.entries(by).map(([k, n]) => `<span class="tagchip" title="${sealed.filter(t => t.seal === k).map(tileName).join(', ')}">${SEALS[k].name} ×${n}</span>`).join('')}</div>`; }
@@ -1726,7 +1745,7 @@ function collectionHTML() {
   else if (colTab === 'eng') body = Object.entries(ENG).map(([k, e]) => card(`omikuji engcard eng-${k}`, 'Engraving', e.name, e.desc, `<div class="coltile" data-eng="${k}"></div>`)).join('');
   else if (colTab === 'stk') body = Object.entries(STICKERS).map(([k, e]) => card('talisman', `Sticker · from ${{ eternal: 'Black', perish: 'Orange', rental: 'Gold' }[k]} Stake`, `${stickerBadges({ [k]: k === 'perish' ? 5 : true }).replace('stkcorner', 'stkcorner inline')}${e.name}`, e.desc)).join('');
   else if (colTab === 'seal') body = Object.entries(SEALS).map(([k, e]) => card(`omikuji engcard seal-${k}`, 'Seal', e.name, e.desc, `<div class="coltile" data-seal="${k}"></div>`)).join('');
-  else if (colTab === 'ed') body = Object.entries(EDITIONS).map(([k, e]) => card(`talisman ed-${k}`, `Edition · +¥${e.price}`, `<span class="edtag ed-${k}">${e.name}</span>`, `${e.desc}${k === 'neg' ? '' : ' on every play'}.`, `<div class="muted" style="font-size:11px;margin-top:4px">${Math.round(e.odds * 100)}% of shop Talismans</div>`)).join('');
+  else if (colTab === 'ed') body = Object.entries(EDITIONS).map(([k, e]) => card(`talisman ed-${k}`, `Edition · +¥${e.price}`, `<span class="edtag ed-${k}">${e.name}</span>`, `${e.desc}${k === 'neg' ? '' : ' on every play'}.`, `<div class="muted" style="font-size:11px;margin-top:4px">${Math.round(e.odds * 100)}% of shop Talismans</div>`)).join('') + Object.entries(TILE_EDS).map(([k, e]) => card(`omikuji engcard`, 'Tile edition', e.name, e.desc, `<div class="coltile" data-ted="${k}"></div>`)).join('');
   else if (colTab === 'tag') body = Object.entries(TAGS).map(([k, t]) => !isSeen('tag', k) ? hidden('pack', 'Tag') : card('pack', 'Tag', t.name, t.desc, '', run && S.tags.includes(k) ? 'Held' : '')).join('');
   else if (colTab === 'boss') body = Object.entries(BOSSES).map(([k, b]) => !isSeen('boss', k) ? hidden('bosscol', 'Boss Blind') : card('bosscol' + (b.showdown ? ' showdown' : ''), b.showdown ? 'Showdown Boss · Ante 8' : `Boss Blind${(b.minAnte || 1) > 1 ? ` · from Ante ${b.minAnte}` : ''}`, b.name, b.desc, '', run && S.stats && S.stats.bosses.includes(k) ? 'Met this run' : '')).join('');
   else if (colTab === 'wall') body = Object.entries(DECKS).map(([k, d]) => card('flower', 'Wall', d.name, d.desc, '', run && S.deckKey === k ? 'This run' : '', lockOf('wall', k))).join('');
@@ -1735,7 +1754,7 @@ function collectionHTML() {
   <div class="tabs coltabs">${tabs.map(([k, n, c]) => `<button class="tab${colTab === k ? ' on' : ''}" data-ctab="${k}">${n} <span class="muted">${c}</span></button>`).join('')}</div>
   <div class="shop-grid colgrid${colTab === 'eng' || colTab === 'seal' ? ' enggrid' : ''}">${body}</div><div class="muted colnone" hidden>Nothing matches.</div><button id="mClose" hidden>Close</button>`;
 }
-function fillColTiles(root) { root && root.querySelectorAll('.coltile').forEach(b => { if (!b.children.length) b.appendChild(tileEl({ id: 0, suit: 'p', rank: 5, red: false, eng: b.dataset.eng || null, seal: b.dataset.seal || null }, { small: true })); }); }
+function fillColTiles(root) { root && root.querySelectorAll('.coltile').forEach(b => { if (!b.children.length) b.appendChild(tileEl({ id: 0, suit: 'p', rank: 5, red: false, eng: b.dataset.eng || null, seal: b.dataset.seal || null, ed: b.dataset.ted || null }, { small: true })); }); }
 let rulesTab = 'quick';
 function parseHand(str) { const out = []; for (const grp of str.split(' ')) { const m = grp.match(/^(\d+)([mpsz])$/); if (!m) continue; const tiles = [...m[1]].map(d => ({ id: 0, suit: m[2], rank: +d, red: false, eng: null })); out.push(tiles); } return out; }
 function exampleHTML(ex) { return `<div class="exrow" data-ex="${ex}"></div>`; }
