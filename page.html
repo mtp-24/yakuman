@@ -2441,7 +2441,10 @@ function rollCard() {
   return { kind: 'kami', key: pickKami().key };
 }
 function genShop() {
-  const fl = flowerPool(S.flowers).filter(f => S.ante > 1 || !f.key.startsWith('wisteria'));   // Wisteria cannot go back from Ante 1
+  // Like Balatro's Vouchers: one Flower is drawn per Ante and waits in every shop of that Ante until you buy it.
+  if (!S.anteFlower || S.anteFlower.ante !== S.ante) { const pool = flowerPool(S.flowers).filter(f => S.ante > 1 || !f.key.startsWith('wisteria'));   // Wisteria cannot go back from Ante 1
+    S.anteFlower = { ante: S.ante, key: pool.length ? pick(pool).key : null, sold: false }; }
+  const fl = S.anteFlower.key && !S.anteFlower.sold && !S.flowers.includes(S.anteFlower.key) ? [FLW[S.anteFlower.key]] : [];
   // Normal packs are the most common, Jumbo less so, Mega rarest; Kami packs are rarer than the rest.
   const PACK_ODDS = ['omikuji', 'omikuji', 'omikuji', 'jumboomikuji', 'mega', 'scroll', 'scroll', 'scroll', 'jumboscroll', 'megascroll', 'talisman', 'talisman', 'jumbotalisman', 'megatalisman', 'kami', 'jumbokami', 'megakami', 'tile', 'tile', 'tile', 'jumbotile', 'megatile'];
   const packKey = pick(PACK_ODDS.filter(k => PACKS[k].type !== 'talisman' || !chal('noTalismans')));
@@ -2554,7 +2557,7 @@ function buy(it) {
   if (it.kind === 'talisman') { if (S.talismans.length >= talSlots()) { setMsg(`All ${talSlots()} Talisman slots are full. Sell one first.`, true); return render(); } gainTalisman(it.key, it.sticker); if (it.edition) S.editions[it.key] = it.edition; }
   else if (it.kind === 'omikuji' || it.kind === 'kami') { if (S.consumables.length >= conSlots()) { setMsg('Consumable slots are full. Use one first.', true); return render(); } S.consumables.push({ kind: it.kind, key: it.key }); }
   else if (it.kind === 'scroll') { const [t, k] = it.key.split(':'); S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] = (S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] || 0) + 1; for (const tk of liveTals(S)) if (TAL[tk].onScroll) TAL[tk].onScroll(S); PROFILE.scrollsUsed++; saveProfile(); }
-  else if (it.kind === 'flower') { S.flowers.push(it.key); if (it.key === 'wisteria' || it.key === 'wisteria2') goBackAnte(); }
+  else if (it.kind === 'flower') { S.flowers.push(it.key); if (S.anteFlower && S.anteFlower.key === it.key) S.anteFlower.sold = true; if (it.key === 'wisteria' || it.key === 'wisteria2') goBackAnte(); }
   S.money -= p; it.sold = true; inflate(); if (!S.quiet) sfx('buy'); setMsg(`Bought ${def.name}.`); render();
 }
 function itemPrice(it) { if (it.free) return 0; if (it.sticker && it.sticker.rental && it.kind === 'talisman') return S.shop && S.shop.coupon ? 0 : 1; const def = itemDef(it); let base = def.cost + (it.edition ? EDITIONS[it.edition].price : 0); if (it.kind === 'talisman') base += stakeTalCost(); if (S.shop && S.shop.coupon && (it.kind === 'talisman' || it.kind === 'omikuji' || it.kind === 'kami')) return 0; return price(base); }
