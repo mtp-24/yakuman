@@ -173,6 +173,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 162: Collection engravings use wide cards: the sample tile sits on a felt pad at the left, the name and effect beside it, an accent edge in each engraving's colour, two or three cards per row.
 - Build 163: Engraving cards drop the coloured accent edge.
 - Build 164: Flowers in the side panel use the same hover card as tiles (a Flower label, the name and the effect) instead of the plain tooltip; the hover card now works for any element with data-hc-title.
+- Build 218: The Shop's cards are dealt in one after another as it opens (once per Shop: coming back from a pack does not re-deal), and a pack's cards are dealt in when it opens; the compact layout deals too. Each Shop has its own id, so a new run's first Shop always rises and deals. Hover cards near the screen edge (a Flower in the left panel) stay fully on screen.
 - Build 217: Rerolling flips the Shop's cards: the old ones turn away one after another, then the new ones turn in from the other side (about half a second, clicks ignored meanwhile, so a double-click rerolls once).
 - Build 216: Shop header checked from 375 to 900 px wide (Hong Kong currency, the longest Boss name): it stays on one line down to about 480 px; on phones the wallet and Next Blind share one full-width line under the title instead of stacking.
 - Build 215: The pack header wraps properly between 560 and 720 px wide: title and picks left on the first line, Skip the Rest below (the title no longer collapses into a narrow column).

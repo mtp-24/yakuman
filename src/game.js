@@ -677,7 +677,7 @@ function genShop() {
   // Two Booster Packs per shop by Balatro's weights; the run's first shop always has a Talisman pack, like Balatro's Buffoon pack.
   const noTal = chal('noTalismans') ? 'talisman' : null, packs = [rollPack(noTal), rollPack(noTal)];
   if (!S.firstShopDone && !noTal) packs[0] = 'talisman'; S.firstShopDone = true;
-  S.shop = { cards: Array.from({ length: shopSlots() }, rollCard), firstFree: hasF('autumn2'), flower: fl.length ? { kind: 'flower', key: pick(fl).key } : S.anteFlower.sold && FLW[S.anteFlower.key] ? { kind: 'flower', key: S.anteFlower.key, sold: true } : null, packs: packs.map(k => ({ kind: 'pack', key: k })), coupon: false, freeReroll: false, freePacks: [] };
+  S.shop = { uid: Math.random().toString(36).slice(2, 8), cards: Array.from({ length: shopSlots() }, rollCard), firstFree: hasF('autumn2'), flower: fl.length ? { kind: 'flower', key: pick(fl).key } : S.anteFlower.sold && FLW[S.anteFlower.key] ? { kind: 'flower', key: S.anteFlower.key, sold: true } : null, packs: packs.map(k => ({ kind: 'pack', key: k })), coupon: false, freeReroll: false, freePacks: [] };
   // consume tags that act on this shop
   const take = t => { const i = S.tags.indexOf(t); if (i >= 0) { S.tags.splice(i, 1); return true; } return false; };
   if (take('coupon')) S.shop.coupon = true;
@@ -938,7 +938,7 @@ function showTileTip(el, html) {
   if (!tipEl) { tipEl = document.createElement('div'); tipEl.id = 'tiletip'; tipEl.setAttribute('role', 'tooltip'); document.body.appendChild(tipEl); }
   tipEl.innerHTML = html || tileTipHTML(el._t, el.classList.contains('back')); translateDOM(tipEl);
   const r = el.getBoundingClientRect(), h = tipEl.offsetHeight, below = r.top - h - 10 < 4;
-  tipEl.classList.toggle('below', below); tipEl.style.left = Math.max(80, Math.min(innerWidth - 80, r.left + r.width / 2)) + 'px'; tipEl.style.top = (below ? r.bottom + 10 : r.top - 10) + 'px';
+  tipEl.classList.toggle('below', below); const hw = tipEl.offsetWidth / 2 + 8; tipEl.style.left = Math.max(hw, Math.min(innerWidth - hw, r.left + r.width / 2)) + 'px';   // kept on screen by its real width tipEl.style.top = (below ? r.bottom + 10 : r.top - 10) + 'px';
   tipEl.classList.add('on'); const z = el.closest('#hand, #river, #open'); tipAnchor = z ? { id: el.dataset.id, zone: '#' + z.id } : null;
 }
 function hideTileTip() { if (tipEl) tipEl.classList.remove('on'); tipAnchor = null; }
@@ -1805,11 +1805,25 @@ let trayShown = '';
 let trayLeaving = false, traySlidOut = false;   // traySlidOut: the next tray rises even if it is the same one again (a second pack of the same kind)
 function trayOut(next) {
   const ov = $('#overlay'), m = $('#modal');
-  if (trayLeaving) return; if (!motionOK || ov.hidden || !ov.classList.contains('boardonly')) { next(); return; }
+  if (trayLeaving) return; if (!motionOK || ov.hidden || !ov.classList.contains('boardonly')) { traySlidOut = !ov.hidden; next(); return; }
   trayLeaving = true; let done = false; const fin = () => { if (done) return; done = true; trayLeaving = false; traySlidOut = true; next(); };
   m.animate([{ transform: 'none' }, { transform: 'translateY(105%)' }], { duration: 200, easing: 'cubic-bezier(.5,0,.75,0)', fill: 'forwards' }).onfinish = fin; setTimeout(fin, 450);
 }
-function trayIn(kind) { const id = kind + ':' + S.ante + ':' + S.blindIndex + ':' + (S.pack ? S.pack.key : ''); const after = traySlidOut; traySlidOut = false; if ((trayShown === id && !after) || !motionOK || !$('#overlay').classList.contains('boardonly')) { trayShown = id; return; } trayShown = id; $('#modal').animate([{ transform: 'translateY(105%)' }, { transform: 'none' }], { duration: 280, easing: 'cubic-bezier(.2,.8,.2,1)' }); }
+// A tray rises when it first appears (or again after one slid away), and its cards are dealt in one after another: the Shop's
+// once per Shop (coming back from a pack does not deal them again), a pack's every time it opens. The compact full-screen
+// layout has no tray to raise but still deals.
+let shopDealt = null;
+function trayIn(kind) {
+  const id = kind + ':' + S.ante + ':' + S.blindIndex + ':' + ((S.shop && S.shop.uid) || '') + ':' + (S.pack ? S.pack.key : ''), after = traySlidOut;   // each Shop has its own uid, so a new run's first Shop is new too traySlidOut = false;
+  const fresh = trayShown !== id || after; trayShown = id; if (!fresh || !motionOK) return;
+  const tray = $('#overlay').classList.contains('boardonly');
+  if (tray) $('#modal').animate([{ transform: 'translateY(105%)' }, { transform: 'none' }], { duration: 280, easing: 'cubic-bezier(.2,.8,.2,1)' });
+  if (kind === 'shop' && shopDealt === id) return; if (kind === 'shop') shopDealt = id;
+  dealIn(kind === 'pack' ? '#modal .packshelf .shopcard' : '#modal .shopshelves .shopcard', tray ? 150 : 0);
+}
+function dealIn(sel, start) {
+  document.querySelectorAll(sel).forEach((el, i) => el.animate([{ transform: 'translateY(46px) rotate(-5deg) scale(.9)', opacity: 0 }, { transform: 'translateY(-4px) rotate(.5deg) scale(1.01)', opacity: 1, offset: .7 }, { transform: 'none', opacity: 1 }], { duration: 340, delay: start + i * 70, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' }));
+}
 function placeOverlay(boardOnly, mode) {
   const ov = $('#overlay'); ov.classList.remove('boardonly', 'shoptray', 'inflow'); ['left', 'top', 'width', 'height'].forEach(k => ov.style[k] = '');
   const board = document.querySelector('.board'); if (board) board.classList.remove('cashdim', 'shopdim'); if (!boardOnly || !board || innerWidth <= 900 || (mode === 'shop' && !shopTray)) return;
