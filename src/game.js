@@ -537,7 +537,6 @@ function fitBoard() {
     }
   };
   sizeRows(40);
-  aside.style.maxHeight = Math.max(200, fitHeight() - aside.getBoundingClientRect().top - scrollY - 10) + 'px';
   const first = hand.querySelector('.tile');
   const pads = [], need = first ? Math.max(S ? capacity() : 0, hand.children.length) - hand.children.length : 0;
   for (let i = 0; i < need; i++) { const g = first.cloneNode(false); g.style.visibility = 'hidden'; g.removeAttribute('data-id'); hand.appendChild(g); pads.push(g); }
@@ -565,8 +564,14 @@ function fitBoard() {
     const f = parseFloat(getComputedStyle(n).fontSize), fit = Math.floor(f * w / need() * 10) / 10 - 0.2;
     if (fit >= 11) n.style.fontSize = fit + 'px'; else n.classList.add('twoline');
   }
-  if (first) { const base = first.offsetWidth; if (!fits(0)) { let lo = 36, hi = base; for (let i = 0; i < 7; i++) { const m = (lo + hi) / 2; if (fits(m)) lo = m; else hi = m; } size(Math.floor(lo)); } }
+  // A window too short for the board even with the smallest tiles (a phone on its side, a very short desktop window) scrolls
+  // as a normal page instead: the hand keeps its usual size and the left column its full height, so there is one scrollbar.
+  const base = first ? first.offsetWidth : 0; let fitted = fits(0);
+  if (first && !fitted && fits(36)) { let lo = 36, hi = base; for (let i = 0; i < 7; i++) { const m = (lo + hi) / 2; if (fits(m)) lo = m; else hi = m; } size(Math.floor(lo)); fitted = true; }
+  else if (!fitted) { hand.style.removeProperty('--tw'); hand.style.removeProperty('--th'); }
   pads.forEach(g => g.remove());
+  // the left column scrolls inside itself (Last Play shown) only while the board fits the window
+  if (fitted) aside.style.maxHeight = Math.max(200, room - aside.getBoundingClientRect().top - scrollY - 10) + 'px';
 }
 let fitTimer = 0, fitWidth = innerWidth; const refit = () => { clearTimeout(fitTimer); fitTimer = setTimeout(() => { if (S) fitBoard(); }, 60); };
 // a change of height alone (Safari's toolbar shrinking or growing as the page scrolls) only refits when the window is
