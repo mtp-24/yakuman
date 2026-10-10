@@ -1,5 +1,5 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Yakuman</title>
+<title>Tenpai</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
 /* Layout: a dark felt table. Left rail = blind status, right = the board (talismans, open melds, river, hand). Shop and menus are full overlays. */
@@ -877,7 +877,7 @@ body.crt::after{content:'';position:fixed;inset:0;z-index:90;pointer-events:none
 </head><body>
 <div id="app">
 <header>
-  <h1 data-notr>Yakuman<span>MAHJONG ROGUELITE · PLAYTEST BUILD</span></h1>
+  <h1 data-notr>Tenpai<span>MAHJONG ROGUELITE · PLAYTEST BUILD</span></h1>
   <div class="spacer"></div>
   <nav class="hdr-nav">
     <button id="btnYaku" data-notr>Run Info</button>
@@ -1575,7 +1575,7 @@ const HK_TERMS = {
   'Scrolls of Mastery': '秘笈 Manuals', 'Scroll of Mastery': '秘笈 Manual', 'Scrolls': 'Manuals', 'Scroll': 'Manual', 'Flowers & Seasons': '花牌 Flowers', 'Flower / Season': '花牌 Flower', 'Flowers': '花牌 Flowers',
   'Kami Spirit': '神 Deity', 'Kami': '神 Deity', 'Omikuji': '求籤 Fortune Stick', 'Talismans': '符 Charms', 'Talisman': '符 Charm',
   'Complete Hands': '食糊 Winning Hands', 'Complete Hand': '食糊 Winning Hand', 'Complete hands': 'Winning hands', 'Complete hand': 'Winning hand', 'complete hands': 'winning hands', 'complete hand': 'winning hand', 'Ready Hand': '聽牌 Listening Hand',
-  'Red Fives': '紅五 Red Fives', 'Red Five': '紅五 Red Five', 'Yakuhai': '番牌 Honor Set', 'Yakuman': '限糊 Limit Hand', 'Yaku': 'Faan Patterns', 'Han': 'Faan', 'Dora': '寶牌 Bonus Tile', 'Furiten': '振聽 Discard Lock', 'tenpai': '聽牌 listening',
+  'Red Fives': '紅五 Red Fives', 'Red Five': '紅五 Red Five', 'Yakuhai': '番牌 Honor Set', 'Yakuman': '限糊 Limit Hand', 'Yaku': 'Faan Patterns', 'Han': 'Faan', 'Dora': '寶牌 Bonus Tile', 'Furiten': '振聽 Discard Lock', 'tenpai': '聽牌 teng paai',
   'Chis': 'Chows', 'Chi': 'Chow 上', 'Pons': 'Pungs', 'Pon': 'Pung 碰', 'Kans': 'Kongs', 'Kan': 'Kong 槓', 'Manzu': '萬子 Characters', 'Pinzu': '筒子 Dots', 'Souzu': '索子 Bamboo', 'Man': 'Characters', 'Pin': 'Dots', 'Sou': 'Bamboo',
   'East Wind': '東風 East', 'South Wind': '南風 South', 'West Wind': '西風 West', 'North Wind': '北風 North', 'White Dragon': '白板 White Dragon', 'Green Dragon': '發財 Green Dragon', 'Red Dragon': '紅中 Red Dragon',
   '¥': '$', 'Rinshan Kaihou': '槓上開花 Flower on the Kong', 'The River': '牌河 The River', 'Open melds': '落地 Exposed sets', 'YEN': 'HKD', 'Mangan': '滿糊 Full Win', 'Haneman': '跳滿 Jump Win', 'Baiman': '倍滿 Double Win', 'Sanbaiman': '三倍滿 Triple Win', 'Yakuza': 'Triad', 'Open 3 Omikuji': 'Open 3 Fortune Sticks', 'Open 5 Omikuji': 'Open 5 Fortune Sticks', 'Kami Spirits': 'Deities', 'Omikuji and Kami': 'Fortune Sticks and Deities', 'Standard': '一番', 'Advanced': '二番', 'Master': '三番',
@@ -3937,12 +3937,12 @@ async function toCode(obj) {
 async function fromCode(text) {
   text = (text || '').trim(); if (!text) throw new Error('Paste a save code or choose a file first.');
   if (text.startsWith('{')) return JSON.parse(text);
-  const m = text.match(/^YKM1(Z?):([\s\S]+)$/); if (!m) throw new Error('That is not a Yakuman save code.');
+  const m = text.match(/^YKM1(Z?):([\s\S]+)$/); if (!m) throw new Error('That is not a Tenpai save code.');
   const bin = atob(m[2].replace(/\s+/g, '')); let bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
   if (m[1]) { const ds = new DecompressionStream('gzip'); const w = ds.writable.getWriter(); w.write(bytes); w.close(); bytes = new Uint8Array(await new Response(ds.readable).arrayBuffer()); }
   return JSON.parse(new TextDecoder().decode(bytes));
 }
-function checkSave(o) { if (!o || o.app !== 'yakuman' || typeof o.profile !== 'object') throw new Error('That save is not from Yakuman.'); if (o.v !== 1) throw new Error('That save is from a different version of Yakuman.'); if (o.run) JSON.parse(o.run); return o; }
+function checkSave(o) { if (!o || o.app !== 'yakuman' || typeof o.profile !== 'object') throw new Error('That save is not from Tenpai.'); if (o.v !== 1) throw new Error('That save is from a different version of Yakuman.'); if (o.run) JSON.parse(o.run); return o; }
 let PENDING_IMPORT = null, EXPORT_CODE = '';
 function exportHTML() {
   return `<div class="shophead"><h2>Export Save</h2></div><p class="muted" style="margin:2px 0 10px">Your profile, settings and current run in one code. Copy it or save it as a file, then use Import on your other device or browser.</p>
@@ -4063,7 +4063,7 @@ function challengesHTML() {
 function menuHTML(hasSave) {
   const where = hasSave && S ? `${S.ante > CFG.antes ? `Endless Ante ${S.ante}` : `Ante ${S.ante}`} · ${S.phase === 'blind' ? ({ small: 'Small Blind', big: 'Big Blind', boss: S.boss ? BOSSES[S.boss].name : 'Boss Blind' })[blindKind()] : S.phase === 'shop' ? 'Shop' : 'Blind Select'} · ¥${S.money}` : '';
   return `<div class="hero"><div class="herotiles" id="heroTiles"></div>
-  <h1 class="herotitle" data-notr>Yakuman</h1><div class="herokanji" data-notr>${LANG === 'hk' ? '役滿' : '役満'}</div>
+  <h1 class="herotitle" data-notr>Tenpai</h1><div class="herokanji" data-notr>${LANG === 'hk' ? '聽牌' : '聴牌'}</div>
   <p class="herotag">A Mahjong roguelite in the Balatro mould. Build hands, chase Yaku, stack Talismans, and outscore eight Antes of Yakuza bosses.</p>
   <div class="heroacts">${hasSave ? `<button id="mContinue" class="primary herobtn">Continue Run<span>${where}</span></button>` : ''}<button id="mStart" class="${hasSave ? 'ghost' : 'primary herobtn'}">New Run</button><button id="mChallenges" class="ghost">Challenges</button><button id="mRules" class="ghost">How to Play</button><button id="mCollection" class="ghost">Collection</button></div>
   <div class="herofoot muted">Playtest build · Riichi or Hong Kong terms in Settings</div></div>`;

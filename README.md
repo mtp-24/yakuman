@@ -1,6 +1,6 @@
-# Yakuman — playtest build
+# Tenpai — playtest build
 
-Single-file browser game built from the Yakuman design document.
+Single-file browser game built from the Yakuman design document (the game was called Yakuman until build 179; files and save keys keep the old name so saves still load).
 
 - `yakuman.html` — the playable game. Open it directly in a browser, no server needed. `docs/index.html` is the same file, served by GitHub Pages.
 - `src/data.js` — all tunable numbers (the `CFG` block at the top) and the item catalogue: Talismans, Omikuji, Kami, Scrolls, Flowers, bosses.
@@ -173,6 +173,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 162: Collection engravings use wide cards: the sample tile sits on a felt pad at the left, the name and effect beside it, an accent edge in each engraving's colour, two or three cards per row.
 - Build 163: Engraving cards drop the coloured accent edge.
 - Build 164: Flowers in the side panel use the same hover card as tiles (a Flower label, the name and the effect) instead of the plain tooltip; the hover card now works for any element with data-hc-title.
+- Build 179: The game is now called Tenpai (聴牌 in Riichi mode, 聽牌 in Hong Kong mode on the title screen). Hong Kong hints say "teng paai" instead of "listening". Save keys, the repo and file names are unchanged.
 - Build 178: Third Balatro batch (first-draft names and numbers).
   - Music is a four-minute song in twelve sections before it loops (intro, four A themes, two B and two C progressions, a breakdown and an outro), with fills and small random variations; Shop and Boss layers still crossfade on top.
   - Duplicate Talismans ('tanuki#2' keys that inherit the original). Nine new Talismans: Kakigōri, Senbei and Ramen fade away; Daikoku doubles every chance; Yūrei saves a lost Blind once at 25%; Rikishi, Ramune and Kakuremino act when sold; Kabuki lets owned Talismans turn up again.

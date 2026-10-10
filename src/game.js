@@ -1985,12 +1985,12 @@ async function toCode(obj) {
 async function fromCode(text) {
   text = (text || '').trim(); if (!text) throw new Error('Paste a save code or choose a file first.');
   if (text.startsWith('{')) return JSON.parse(text);
-  const m = text.match(/^YKM1(Z?):([\s\S]+)$/); if (!m) throw new Error('That is not a Yakuman save code.');
+  const m = text.match(/^YKM1(Z?):([\s\S]+)$/); if (!m) throw new Error('That is not a Tenpai save code.');
   const bin = atob(m[2].replace(/\s+/g, '')); let bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
   if (m[1]) { const ds = new DecompressionStream('gzip'); const w = ds.writable.getWriter(); w.write(bytes); w.close(); bytes = new Uint8Array(await new Response(ds.readable).arrayBuffer()); }
   return JSON.parse(new TextDecoder().decode(bytes));
 }
-function checkSave(o) { if (!o || o.app !== 'yakuman' || typeof o.profile !== 'object') throw new Error('That save is not from Yakuman.'); if (o.v !== 1) throw new Error('That save is from a different version of Yakuman.'); if (o.run) JSON.parse(o.run); return o; }
+function checkSave(o) { if (!o || o.app !== 'yakuman' || typeof o.profile !== 'object') throw new Error('That save is not from Tenpai.'); if (o.v !== 1) throw new Error('That save is from a different version of Yakuman.'); if (o.run) JSON.parse(o.run); return o; }
 let PENDING_IMPORT = null, EXPORT_CODE = '';
 function exportHTML() {
   return `<div class="shophead"><h2>Export Save</h2></div><p class="muted" style="margin:2px 0 10px">Your profile, settings and current run in one code. Copy it or save it as a file, then use Import on your other device or browser.</p>
@@ -2111,7 +2111,7 @@ function challengesHTML() {
 function menuHTML(hasSave) {
   const where = hasSave && S ? `${S.ante > CFG.antes ? `Endless Ante ${S.ante}` : `Ante ${S.ante}`} · ${S.phase === 'blind' ? ({ small: 'Small Blind', big: 'Big Blind', boss: S.boss ? BOSSES[S.boss].name : 'Boss Blind' })[blindKind()] : S.phase === 'shop' ? 'Shop' : 'Blind Select'} · ¥${S.money}` : '';
   return `<div class="hero"><div class="herotiles" id="heroTiles"></div>
-  <h1 class="herotitle" data-notr>Yakuman</h1><div class="herokanji" data-notr>${LANG === 'hk' ? '役滿' : '役満'}</div>
+  <h1 class="herotitle" data-notr>Tenpai</h1><div class="herokanji" data-notr>${LANG === 'hk' ? '聽牌' : '聴牌'}</div>
   <p class="herotag">A Mahjong roguelite in the Balatro mould. Build hands, chase Yaku, stack Talismans, and outscore eight Antes of Yakuza bosses.</p>
   <div class="heroacts">${hasSave ? `<button id="mContinue" class="primary herobtn">Continue Run<span>${where}</span></button>` : ''}<button id="mStart" class="${hasSave ? 'ghost' : 'primary herobtn'}">New Run</button><button id="mChallenges" class="ghost">Challenges</button><button id="mRules" class="ghost">How to Play</button><button id="mCollection" class="ghost">Collection</button></div>
   <div class="herofoot muted">Playtest build · Riichi or Hong Kong terms in Settings</div></div>`;
