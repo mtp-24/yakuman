@@ -173,6 +173,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 162: Collection engravings use wide cards: the sample tile sits on a felt pad at the left, the name and effect beside it, an accent edge in each engraving's colour, two or three cards per row.
 - Build 163: Engraving cards drop the coloured accent edge.
 - Build 164: Flowers in the side panel use the same hover card as tiles (a Flower label, the name and the effect) instead of the plain tooltip; the hover card now works for any element with data-hc-title.
+- Build 174: Debug menu: Add Talisman is grouped by rarity, and Shop rarity forces every shop and Talisman pack roll to one rarity (Legendary included) until set back to normal odds.
 - Build 173: Debug menu covers the new systems: stickers, remove a Talisman, engrave, seal or convert selected tiles, add any Tag, open any pack, set the Ante and Stake, free shop reroll, lose the run.
 - Build 172: Balatro feature batch (first-draft names and numbers, open to playtest tuning).
   - Seals get their own slot beside an engraving: Red, Gold (¥3 when scored), Blue (levels up your final play's Scroll if held at a win) and Purple (an Omikuji when discarded). New Kami Benzaiten, Hachiman and Fūjin add them. Old Red Seal engravings convert on load.

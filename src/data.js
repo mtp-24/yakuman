@@ -278,7 +278,7 @@ function talRarity(k) { const t = TAL[k]; return t.rarity || (t.cost <= 5 ? 'com
 // One weighted pick from a pool, like Balatro: roll a rarity first, then a Talisman of that rarity (any rarity if none is left).
 function pickTalisman(pool) {
   if (!pool.length) return null; const w = CFG.rarityWeights, r = rand();
-  const want = r < w.common ? 'common' : r < w.common + w.uncommon ? 'uncommon' : 'rare';
+  const want = (typeof S !== 'undefined' && S && S.dbgRarity) || (r < w.common ? 'common' : r < w.common + w.uncommon ? 'uncommon' : 'rare');   // Debug can force one rarity
   const tier = pool.filter(t => talRarity(t.key) === want); return pick(tier.length ? tier : pool);
 }
 // Every tile in the run, wherever it is right now.

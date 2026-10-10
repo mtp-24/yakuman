@@ -1190,7 +1190,7 @@ function talRarity(k) { const t = TAL[k]; return t.rarity || (t.cost <= 5 ? 'com
 // One weighted pick from a pool, like Balatro: roll a rarity first, then a Talisman of that rarity (any rarity if none is left).
 function pickTalisman(pool) {
   if (!pool.length) return null; const w = CFG.rarityWeights, r = rand();
-  const want = r < w.common ? 'common' : r < w.common + w.uncommon ? 'uncommon' : 'rare';
+  const want = (typeof S !== 'undefined' && S && S.dbgRarity) || (r < w.common ? 'common' : r < w.common + w.uncommon ? 'uncommon' : 'rare');   // Debug can force one rarity
   const tier = pool.filter(t => talRarity(t.key) === want); return pick(tier.length ? tier : pool);
 }
 // Every tile in the run, wherever it is right now.
@@ -2015,7 +2015,7 @@ function toast(html) {
   setTimeout(() => el.classList.add('out'), 4200); setTimeout(() => el.remove(), 4700);
 }
 const unlockedCount = () => UNLOCKS.filter(u => PROFILE.unlocked.includes(`${u.kind}:${u.key}`)).length;
-const talPool = () => chal('noTalismans') ? [] : TALISMANS.filter(t => !S.talismans.includes(t.key) && isUnlocked('tal', t.key) && talRarity(t.key) !== 'legendary');
+const talPool = () => chal('noTalismans') ? [] : TALISMANS.filter(t => !S.talismans.includes(t.key) && isUnlocked('tal', t.key) && (talRarity(t.key) !== 'legendary' || S.dbgRarity === 'legendary'));
 // Rarity label for a Talisman card, coloured like Balatro's (blue Common, green Uncommon, red Rare, purple Legendary).
 const rarityTag = k => { const r = talRarity(k); return `<span class="rar rar-${r}">${RARITIES[r]}</span>`; };
 // Hō-ō grows each time tiles are destroyed (Slip of Dust, Raijin, Susanoo, Tsukuyomi, shattered Glass).
@@ -3645,7 +3645,8 @@ function renderDebug() {
   const bar = $('#debugBar');
   bar.innerHTML = `<span class="label">Debug</span><button data-dbg="money">+¥25</button><button data-dbg="play">+1 Play</button><button data-dbg="discard">+1 Discard</button><button data-dbg="win">Win blind</button><button data-dbg="refill">Redraw hand</button>
   <select id="dbgBoss"><option value="">Set next boss…</option>${Object.entries(BOSSES).map(([k, b]) => `<option value="${k}">${b.name}</option>`).join('')}</select>
-  <select id="dbgTal"><option value="">Add talisman…</option>${TALISMANS.map(t => `<option value="${t.key}">${t.name}</option>`).join('')}</select>
+  <select id="dbgTal"><option value="">Add talisman…</option>${Object.entries(RARITIES).map(([r, rn]) => `<optgroup label="${rn}">${TALISMANS.filter(t => talRarity(t.key) === r).map(t => `<option value="${t.key}">${t.name}</option>`).join('')}</optgroup>`).join('')}</select>
+  <select id="dbgRar"><option value="">Shop rarity: ${S.dbgRarity ? RARITIES[S.dbgRarity] : 'normal odds'}…</option>${Object.entries(RARITIES).map(([r, rn]) => `<option value="${r}">Only ${rn}</option>`).join('')}<option value="off">Normal odds</option></select>
   <select id="dbgCon"><option value="">Add consumable…</option>${[...OMIKUJI, ...KAMI].map(t => `<option value="${t.key}">${t.name}</option>`).join('')}</select>
   <select id="dbgScr"><option value="">Add scroll…</option>${SCROLLS.map(t => `<option value="${t.key}">${t.name}</option>`).join('')}</select>
   <select id="dbgFlw"><option value="">Add flower…</option>${FLOWERS.map(t => `<option value="${t.key}">${t.name}</option>`).join('')}</select>
@@ -3681,6 +3682,7 @@ function renderDebug() {
   $('#dbgScr').onchange = e => { const k = e.target.value; if (!k) return; buyFree({ kind: 'scroll', key: k }); e.target.value = ''; render(); };
   $('#dbgEd').onchange = e => { const k = e.target.value; if (!k || !S.selTal) return; if (k === 'none') delete S.editions[S.selTal]; else S.editions[S.selTal] = k; e.target.value = ''; render(); };
   const selHand = () => S.phase === 'blind' ? selTiles() : [];
+  $('#dbgRar').onchange = e => { const r = e.target.value; if (!r) return; S.dbgRarity = r === 'off' ? null : r; if (S.phase === 'shop' && S.shop) S.shop.cards = Array.from({ length: shopSlots() }, rollCard); setMsg(S.dbgRarity ? `Shops and Talisman packs now roll only ${RARITIES[S.dbgRarity]} Talismans.` : 'Shop rarity back to normal odds.'); renderDebug(); render(); };
   $('#dbgStk').onchange = e => { const k = e.target.value, t = S.selTal; e.target.value = ''; if (!k || !t) return setMsg('Select a Talisman first.', true), render(); S.stickers = S.stickers || {}; if (k === 'none') delete S.stickers[t]; else S.stickers[t] = Object.assign({}, S.stickers[t], k === 'perish' ? { perish: 5 } : k === 'perish1' ? { perish: 1 } : { [k]: true }); render(); };
   $('#dbgEng').onchange = e => { const k = e.target.value; e.target.value = ''; const sel = selHand(); if (!k || !sel.length) return setMsg('Select tiles in your hand first.', true), render(); for (const t of sel) t.eng = k === 'none' ? null : k; render(); };
   $('#dbgSeal').onchange = e => { const k = e.target.value; e.target.value = ''; const sel = selHand(); if (!k || !sel.length) return setMsg('Select tiles in your hand first.', true), render(); for (const t of sel) t.seal = k === 'none' ? null : k; render(); };
