@@ -914,7 +914,7 @@ html{scrollbar-gutter:stable} html.modallock{overflow:hidden}
 .shopshelves .shelf{--w:164px;flex:var(--n) 1 calc(var(--n) * var(--w) + (var(--n) - 1) * 16px + 30px);min-width:0}
 .shopshelves .shelf.many{--w:132px}
 .shopshelves .shelfrow,.shopshelves .shelf.many .shelfrow{grid-template-columns:repeat(var(--n),minmax(0,230px));justify-content:center}
-.shopshelves .emptyvouch{width:var(--w)}
+.shopshelves .emptyvouch{width:100%;min-height:248px;box-sizing:border-box}
 .overlay.shoptray .packhand{padding-top:4px} .overlay.shoptray .packhand .tile{--tw:min(54px,calc((100cqw - 42px) / 8))} .overlay.shoptray .packhandwrap > .muted{min-height:0}
 .packmodal .packshelf{margin-top:22px}
 .packshelf .shop-grid:not(.owned-grid){grid-template-columns:repeat(var(--n,3),minmax(0,200px));justify-content:center} @media (max-width:720px){.packshelf .shop-grid:not(.owned-grid){grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}}

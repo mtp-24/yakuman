@@ -914,7 +914,7 @@ html{scrollbar-gutter:stable} html.modallock{overflow:hidden}
 .shopshelves .shelf{--w:164px;flex:var(--n) 1 calc(var(--n) * var(--w) + (var(--n) - 1) * 16px + 30px);min-width:0}
 .shopshelves .shelf.many{--w:132px}
 .shopshelves .shelfrow,.shopshelves .shelf.many .shelfrow{grid-template-columns:repeat(var(--n),minmax(0,230px));justify-content:center}
-.shopshelves .emptyvouch{width:var(--w)}
+.shopshelves .emptyvouch{width:100%;min-height:248px;box-sizing:border-box}
 .overlay.shoptray .packhand{padding-top:4px} .overlay.shoptray .packhand .tile{--tw:min(54px,calc((100cqw - 42px) / 8))} .overlay.shoptray .packhandwrap > .muted{min-height:0}
 .packmodal .packshelf{margin-top:22px}
 .packshelf .shop-grid:not(.owned-grid){grid-template-columns:repeat(var(--n,3),minmax(0,200px));justify-content:center} @media (max-width:720px){.packshelf .shop-grid:not(.owned-grid){grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}}
@@ -2607,11 +2607,11 @@ function genShop() {
   // Like Balatro's Vouchers: one Flower is drawn per Ante and waits in every shop of that Ante until you buy it.
   if (!S.anteFlower || S.anteFlower.ante !== S.ante) { const pool = flowerPool(S.flowers).filter(f => S.ante > 1 || !f.key.startsWith('wisteria'));   // Wisteria cannot go back from Ante 1
     S.anteFlower = { ante: S.ante, key: pool.length ? pick(pool).key : null, sold: false }; }
-  const fl = S.anteFlower.key && !S.anteFlower.sold && !S.flowers.includes(S.anteFlower.key) ? [FLW[S.anteFlower.key]] : [];
+  const fl = S.anteFlower.key && !S.anteFlower.sold && !S.flowers.includes(S.anteFlower.key) ? [FLW[S.anteFlower.key]] : [];   // once bought it stays on its shelf, marked Sold, for the rest of the Ante
   // Two Booster Packs per shop by Balatro's weights; the run's first shop always has a Talisman pack, like Balatro's Buffoon pack.
   const noTal = chal('noTalismans') ? 'talisman' : null, packs = [rollPack(noTal), rollPack(noTal)];
   if (!S.firstShopDone && !noTal) packs[0] = 'talisman'; S.firstShopDone = true;
-  S.shop = { cards: Array.from({ length: shopSlots() }, rollCard), firstFree: hasF('autumn2'), flower: fl.length ? { kind: 'flower', key: pick(fl).key } : null, packs: packs.map(k => ({ kind: 'pack', key: k })), coupon: false, freeReroll: false, freePacks: [] };
+  S.shop = { cards: Array.from({ length: shopSlots() }, rollCard), firstFree: hasF('autumn2'), flower: fl.length ? { kind: 'flower', key: pick(fl).key } : S.anteFlower.sold && FLW[S.anteFlower.key] ? { kind: 'flower', key: S.anteFlower.key, sold: true } : null, packs: packs.map(k => ({ kind: 'pack', key: k })), coupon: false, freeReroll: false, freePacks: [] };
   // consume tags that act on this shop
   const take = t => { const i = S.tags.indexOf(t); if (i >= 0) { S.tags.splice(i, 1); return true; } return false; };
   if (take('coupon')) S.shop.coupon = true;
@@ -2901,6 +2901,7 @@ function render() {
   $('#btnYaku').textContent = 'Run Info';
   document.querySelectorAll('.zhead > .muted').forEach(e => { e.title = e.textContent; });   // full text on hover when a header is truncated
   translateDOM($('#app')); fitNumbers();
+  if ($('#overlay').classList.contains('inflow')) placeOverlay(true, S.phase === 'shop' ? 'shop' : undefined);   // terms and fitted numbers can change the left column's height, so a tray that is part of the page is measured again
   if (S.placeholder && $('#overlay').hidden) showModal(menuHTML(false), true, 'menumodal');   // closing a screen opened from the title goes back to the title
   tileMotion(motionBefore, freshTiles); syncEditions(); refreshTileTip(); animateWall(); animateSlots(); if (S.phase !== 'shop' && !S.quiet) walletShown = S.money;
   save();
@@ -3715,6 +3716,10 @@ function placeOverlay(boardOnly, mode) {
     ov.style.setProperty('--trayMin', Math.max(innerHeight - top, pageBottom - top - scrollY) + 'px'); ov.style.setProperty('--reach', '0px');
   }
 }
+// A tray that is part of the page runs to the page's bottom, measured when it opens. The left column and the board can still
+// grow a little afterwards (fonts finishing loading, numbers being fitted), so it is measured again whenever either changes size.
+let reflowTray = 0;
+if (window.ResizeObserver) { const ro = new ResizeObserver(() => { clearTimeout(reflowTray); reflowTray = setTimeout(() => { const ov = $('#overlay'); if (!ov.hidden && ov.classList.contains('inflow')) placeOverlay(true, ov.classList.contains('shoptray') ? 'shop' : undefined); }, 30); }); ['main > aside', '.board'].forEach(q => { const el = document.querySelector(q); if (el) ro.observe(el); }); }
 // On resize or scroll, a tray screen (cash-out, Shop, pack) is placed again from scratch, so it can go back to being a tray
 // after the window was narrow; the Shop and packs redraw when they cross between tray and full screen.
 ['resize', 'scroll'].forEach(ev => window.addEventListener(ev, () => {
@@ -3867,7 +3872,7 @@ function shopHTML() {
   const at = it => items.indexOf(it);
   const canReroll = rerollPrice() <= S.money;
   h += `<div class="shopshelves"><div class="shelf cardshelf${S.shop.cards.length > 3 ? ' many' : ''}" style="--n:${Math.max(1, S.shop.cards.length)}"><div class="shelflabel">Cards</div><button id="mReroll" class="shelfbtn" ${canReroll ? '' : 'disabled title="Not enough money to reroll"'}><svg class="rbico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8M4 4v4h4M4 13a8 8 0 0 0 14.3 4.9L20 16M20 20v-4h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Reroll <b class="num">${rerollPrice() ? '¥' + rerollPrice() : 'Free'}</b></button><div class="shelfrow">${S.shop.cards.map(it => cardHTML(it, at(it))).join('')}</div></div>
-    <div class="shelf vouchshelf" style="--n:1"><div class="shelflabel">Flower · this Ante</div><div class="shelfrow">${S.shop.flower ? cardHTML(S.shop.flower, at(S.shop.flower)) : '<div class="emptyvouch muted">Bought. A new Flower arrives next Ante.</div>'}</div></div>
+    <div class="shelf vouchshelf" style="--n:1"><div class="shelflabel">Flower · this Ante</div><div class="shelfrow">${S.shop.flower ? cardHTML(S.shop.flower, at(S.shop.flower)) : '<div class="emptyvouch muted">No Flower this Ante.</div>'}</div></div>
     <div class="shelf packsshelf" style="--n:${Math.max(1, S.shop.packs.length)}"><div class="shelflabel">Booster Packs</div><div class="shelfrow">${S.shop.packs.map(it => cardHTML(it, at(it))).join('')}</div></div></div>
     ${S.shop.freePacks.length ? `<div class="freepacks">${S.shop.freePacks.map((pk, i) => `<button class="primary" data-freepack="${i}">Open Free ${PACKS[pk].name}</button>`).join('')}</div>` : ''}`;
   h += `<div class="msg${S.msgErr ? ' err' : ''}" style="min-height:18px;margin:6px 0">${S.msg || (tray ? 'Select a Talisman or consumable on the board above to sell or use it.' : '')}</div>`;
