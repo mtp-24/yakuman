@@ -157,7 +157,10 @@ function bestHand(concealed, open, S) {
 }
 
 // ===================== SCORING PIPELINE =====================
+// Debuffed tiles (The Pillar, The Plant) still count toward melds and Yaku but score nothing themselves.
+function tileDebuffed(t, S) { return (S.boss === 'pillar' && !!S.antePlayed && S.antePlayed.includes(t.id)) || (S.boss === 'plant' && isHonor(t)); }
 function tileChips(t, S) {
+  if (tileDebuffed(t, S)) return 0;
   let c = (isHonor(t) || isTerminal(t)) ? 10 : t.rank;
   if (S.boss === 'verdant' && !S.leafCut) return 0;
   if (t.eng === 'stone') return 50;   // Stone: flat Chips, no rank, so rank-based Talisman bonuses do not apply
@@ -222,6 +225,7 @@ function scoreCtxInner(S, kind, tiles, info) {
   const agg = { chips: 0, red: 0, redHan: 0, dora: 0, dm: 0, jade: 0, gold: 0, glass: 0, gseal: 0, foil: 0, holo: 0, poly: 0, crim: 0, lucky: 0, luckyM: 0, luckyY: 0, retrig: {} };
   ctx.tileMult = 0;   // +Mult from tiles (Holographic, Crimson, Lucky) joins after the Han table
   tiles.forEach((t, ti) => {
+    if (tileDebuffed(t, S)) { ctx.hits.push({ id: t.id, chips: 0, han: 0, xmult: 1, mult: 0, money: 0, times: 1, who: [], debuff: true }); agg.debuffed = (agg.debuffed || 0) + 1; return; }
     let extra = 0; const who = [];
     if (t.seal === 'red' || t.eng === 'redseal') { extra += 1; who.push('Red Seal'); agg.retrig['Red Seal'] = (agg.retrig['Red Seal'] || 0) + 1; }
     for (const k of S.talismans) { const d = talTarget(S, k); if (d && d.retrigger) { const n = d.retrigger(t, ctx, S, ti); if (n) { extra += n; for (let q = 0; q < n; q++) who.push(TAL[k].name); agg.retrig[TAL[k].name] = (agg.retrig[TAL[k].name] || 0) + n; } } }
@@ -252,6 +256,7 @@ function scoreCtxInner(S, kind, tiles, info) {
   if (agg.dm) L(`Dragon Mark ×${agg.dm}`, `+${agg.dm} Han`, { han: agg.dm, info: true });
   if (agg.jade) { const x = Math.pow(1.5, agg.jade); L(`Jade ×${agg.jade}`, `×${x} Mult`, { xmult: x, info: true }); }
   if (agg.gold) L(`Gold Foil ×${agg.gold}`, `+¥${agg.gold}`, { info: true });
+  if (agg.debuffed) L(`Debuffed ×${agg.debuffed}`, 'score nothing', { info: true, bad: true });
   if (agg.gseal) L(`Gold Seal ×${agg.gseal}`, `+¥${3 * agg.gseal}`, { info: true });
   if (agg.foil) L(`Foil tile ×${agg.foil}`, `+${50 * agg.foil} Chips`, { info: true });
   if (agg.holo) L(`Holo tile ×${agg.holo}`, `+${10 * agg.holo} Mult`, { info: true });

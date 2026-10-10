@@ -182,6 +182,11 @@ const BOSSES = {
   pickpocket: { name: 'The Pickpocket', desc: 'After every Play, 2 random tiles from your hand go to the River.' },
   ascetic: { name: 'The Ascetic', desc: 'Every Play must use at least 5 tiles.' },
   ox: { name: 'The Ox', desc: 'Playing your most-played play type sets your money to ¥0.', minAnte: 6 },
+  house: { name: 'The House', desc: 'Your first hand of the Blind is dealt face down.', minAnte: 2 },
+  wheel: { name: 'The Wheel', desc: '1 in 7 tiles are drawn face down.', minAnte: 2 },
+  mark: { name: 'The Mark', desc: 'Honor tiles are dealt face down.' },
+  pillar: { name: 'The Pillar', desc: 'Tiles you already played this Ante score nothing.' },
+  plant: { name: 'The Plant', desc: 'Honor tiles score nothing: 0 Chips and no Han.', minAnte: 4 },
   // Showdown Bosses guard Ante 8 (and every 8th Ante in Endless), like Balatro's finishers.
   violet: { name: 'The Violet Dragon', desc: 'A huge Blind: the target score is tripled.', showdown: true, target: 3 },
   crimson: { name: 'The Crimson Oni', desc: 'One random Talisman is disabled, and a different one after every Play.', showdown: true },

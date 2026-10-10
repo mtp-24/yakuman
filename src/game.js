@@ -80,7 +80,10 @@ const handSize = () => Math.max(8, CFG.handSize + (S.handMod || 0) + (hasF('plum
 const capacity = () => handSize() - 3 * S.open.length;
 const neededConcealed = () => 14 - 3 * S.open.length;
 // The Purist: is a face-down tile selected? Then the scoring box and the Play button must not reveal what the tiles make.
-const hiddenSelected = () => S.boss === 'purist' && !S.revealed && S.phase === 'blind' && selTiles().some(t => isHonor(t) || isTerminal(t));
+// Face-down tiles: The Purist (1s, 9s and Honors), The Mark (Honors), The House and The Wheel (tiles marked when drawn)
+// and the Blindfold Challenge. They are revealed when played or discarded; Amaterasu reveals them for the Blind.
+const isFaceDown = t => S.phase === 'blind' && !S.revealed && (t.down || chal('blindfold') || (S.boss === 'purist' && (isHonor(t) || isTerminal(t))) || (S.boss === 'mark' && isHonor(t)));
+const hiddenSelected = () => S.phase === 'blind' && selTiles().some(isFaceDown);
 // Kawauso: one River tile may complete a hand as its winning tile. The Fisherman forbids taking tiles from the River.
 const canClaim = () => S.boss !== 'fisherman' && liveTals(S).some(k => TAL[k].riverClaim);
 const claimTile = () => (S.selRiver && canClaim()) ? S.river.find(t => t.id === S.selRiver) || null : null;
@@ -294,15 +297,15 @@ function startBlind() {
   if (S.boss === 'needle') S.plays = 1;
   if (S.boss === 'drought') S.discards = 0;
   if (S.boss === 'crimson') rollCrimson();
-  draw();
+  draw(); if (S.boss === 'house') for (const t of S.hand) t.down = true;
   for (const k of liveTals(S).slice()) if (S.talismans.includes(k) && TAL[k].onBlindStart) TAL[k].onBlindStart(S);   // a copy: Kamikiri and Hyakki change the list
   setMsg(S.bossOff ? `Tamamo-no-Mae disables ${BOSSES[S.bossOff].name}.` : S.boss ? `${BOSSES[S.boss].name}: ${BOSSES[S.boss].desc}` : `${kind === 'small' ? 'Small' : 'Big'} Blind. Score ${S.target} to win.`);
 }
-function draw() { S.newIds = []; while (S.hand.length < capacity() && S.wall.length) { const t = S.wall.pop(); t.d = ++S.drawSeq; S.hand.push(t); S.newIds.push(t.id); } }
+function draw() { S.newIds = []; while (S.hand.length < capacity() && S.wall.length) { const t = S.wall.pop(); t.d = ++S.drawSeq; if (S.boss === 'wheel' && rand() < 1 / 7) t.down = true; S.hand.push(t); S.newIds.push(t.id); } }
 function drawReplacement() { if (!S.wall.length) return null; const t = S.wall.pop(); t.d = ++S.drawSeq; t.rinshan = true; S.hand.push(t); S.newIds.push(t.id); return t; }
 function collectDeck() {
   S.deck = [...S.hand, ...S.wall, ...S.river, ...openTiles(), ...S.played, ...S.indicators];
-  for (const t of S.deck) delete t.rinshan;
+  for (const t of S.deck) { delete t.rinshan; delete t.down; }
   S.hand = []; S.wall = []; S.river = []; S.open = []; S.played = []; S.indicators = []; S.dora = []; S.selected = []; S.selRiver = null;
 }
 function winBlind() {
@@ -324,7 +327,7 @@ function winBlind() {
   const blue = blueSeals(); if (blue) setTimeout(() => toast(`<div class="label">Blue Seal${blue.n > 1 ? ' ×' + blue.n : ''}</div><b>${SCR[blue.key].name}</b><div class="muted" style="font-size:11px">levelled up by ${blue.n}</div>`), 300);
   collectDeck();
   const finished = S.ante === CFG.antes && S.blindIndex === 2 && !S.endless;
-  S.blindIndex++; if (S.blindIndex > 2) { S.blindIndex = 0; S.ante++; rollAnteTags(); ensureBosses(); if (!finished) PROFILE.bestAnte = Math.max(PROFILE.bestAnte, S.ante); }
+  S.blindIndex++; if (S.blindIndex > 2) { S.blindIndex = 0; S.ante++; S.antePlayed = []; rollAnteTags(); ensureBosses(); if (!finished) PROFILE.bestAnte = Math.max(PROFILE.bestAnte, S.ante); }
   PROFILE.blinds++; if (kind === 'boss' && (S.boss || S.bossOff)) bump(PROFILE.bosses, S.boss || S.bossOff);
   if (finished && S.challenge) { PROFILE.challengesWon = PROFILE.challengesWon || {}; bump(PROFILE.challengesWon, S.challenge); setTimeout(() => toast(`<div class="label">Challenge complete</div><b>${CHAL[S.challenge].name}</b>`), 200); }
   if (finished && !S.challenge) { PROFILE.wins++; bump(PROFILE.stakesWon, S.stake); bump(PROFILE.wallsWon, S.deckKey); PROFILE.bestAnte = Math.max(PROFILE.bestAnte, CFG.antes);
@@ -422,6 +425,7 @@ async function doPlay() {
   if (ctx.total > S.stats.best) { S.stats.best = ctx.total; S.stats.bestDesc = ctx.desc; }
   if (ctx.kind === 'hand') { PROFILE.hands++; if (ctx.furiten) PROFILE.furitenHands++; if (S.open.length >= 3) PROFILE.openHands3++; } for (const yk of ctx.yaku) bump(PROFILE.yaku, yk.key); if (ctx.total > PROFILE.bestPlay) { PROFILE.bestPlay = ctx.total; PROFILE.bestPlayDesc = ctx.desc; } saveProfile();
   const keep = t => !ctx.shatter.includes(t.id);
+  S.antePlayed = (S.antePlayed || []).concat(sel.map(t => t.id));
   S.played.push(...sel.filter(keep)); S.hand = S.hand.filter(t => !sel.includes(t));
   if (opt.type === 'hand') { S.played.push(...openTiles().filter(keep)); S.open = []; }
   if (leftovers.length) { S.hand = S.hand.filter(t => !leftovers.includes(t)); S.river.push(...leftovers); }
@@ -1045,11 +1049,11 @@ function renderRiver() {
 }
 function renderHand() {
   const box = $('#hand'); box.innerHTML = '';
-  const hidden = S.boss === 'purist' && !S.revealed && S.phase === 'blind';
+  const hidden = S.hand.some(isFaceDown);
   // Sorting works against The Purist too: face-down tiles keep their true sorted spot, a slight hint of what they are.
   if (S.sortHand) S.hand = sortTiles(S.hand);
   const tiles = S.hand;
-  for (const t of tiles) { const e = tileEl(t, { sel: S.selected.includes(t.id), back: hidden && (isHonor(t) || isTerminal(t)) }); e.dataset.id = t.id; bindTileDrag(e, t); box.appendChild(e); }
+  for (const t of tiles) { const e = tileEl(t, { sel: S.selected.includes(t.id), back: isFaceDown(t) }); if (tileDebuffed(t, S) && S.phase === 'blind') e.classList.add('debuffed'); e.dataset.id = t.id; bindTileDrag(e, t); box.appendChild(e); }
   S.newIds = [];
   $('#handZone').classList.toggle('pending', !!S.pendingDiscard);
   $('#callBanner').hidden = !S.pendingDiscard; if (S.pendingDiscard) $('#callBanner').textContent = `Call made. Discard ${S.pendingDiscard} tile to settle it before you can Play again.`;
@@ -1074,7 +1078,7 @@ function renderHint(hidden) {
   const box = $('#hint');
   if (S.phase !== 'blind' || !S.hand.length) { box.innerHTML = ''; return; }
   // Under The Purist only the visible (simple) tiles are counted; hidden tiles are treated as unknown, so this is a "no better than" estimate.
-  const vis = hidden ? S.hand.filter(t => !(isHonor(t) || isTerminal(t))) : S.hand;
+  const vis = hidden ? S.hand.filter(t => !isFaceDown(t)) : S.hand;
   const sh = handShanten(vis, S.open.length);
   const markDots = () => { if (SHOW_DOTS && !hidden) { const dead = deadTiles(vis, S.open.length, sh, CFG.maxDiscardTiles); const els = $('#hand').children; for (let i = 0; i < S.hand.length; i++) if (dead.includes(S.hand[i])) els[i].classList.add('safe'); } };
   const parts = [];
@@ -1089,7 +1093,7 @@ function renderHint(hidden) {
   const away = n => n === -1 ? 'Complete hand ready' : n === 0 ? '1 tile away (tenpai)' : `${n + 1} tiles away`;
   if (HINTS.away) {
     parts.push(`<span class="hint-main ${sh <= 0 ? 'good' : ''}">${hidden ? 'Visible tiles: at least ' + away(sh).toLowerCase() : away(sh)}</span>`);
-    if (hidden) parts.push('<span class="hint-sel muted">face-down tiles are 1s, 9s, Winds or Dragons and are not counted</span>');
+    if (hidden) parts.push(`<span class="hint-sel muted">face-down tiles are not counted${S.boss === 'purist' ? ' (they are 1s, 9s, Winds or Dragons)' : S.boss === 'mark' ? ' (they are Winds or Dragons)' : ''}</span>`);
   }
   if (HINTS.waits && !hidden && sh === 0) {
     const waits = waitsOf(S.hand, S.open.length); const riverKeys = new Set(S.river.map(key));
