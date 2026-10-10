@@ -173,6 +173,16 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 162: Collection engravings use wide cards: the sample tile sits on a felt pad at the left, the name and effect beside it, an accent edge in each engraving's colour, two or three cards per row.
 - Build 163: Engraving cards drop the coloured accent edge.
 - Build 164: Flowers in the side panel use the same hover card as tiles (a Flower label, the name and the effect) instead of the plain tooltip; the hover card now works for any element with data-hc-title.
+- Build 175: Second Balatro batch (first-draft names and numbers).
+  - Talisman labels redesigned with one shared renderer: rarity as coloured text, edition on the right, stickers as small corner badges (∞ Eternal, a number for Perishable, ✕ Perished, ¥ Rental). Board slots colour the order circle by rarity and use short edition names.
+  - Normal, Jumbo and Mega sizes for every pack type. Eight new Tags: Uncommon, Rare, Double, Orbital, Top-up, D6, Handy, Garbage.
+  - Seven maker and grower Talismans (Miko, Hyakki Yagyō, Tsuchinoko, Otoshidama, Kamikiri, Kotodama, Itako) and sell-value bonuses.
+  - Engravings Wild (any suit), Lucky, Crimson (+4 Mult) and Stone; tile editions Foil, Holographic and Polychrome. Tile +Mult joins after the Han table.
+  - Eleven Omikuji (Wild, Luck, Fervour, Stone, Echoes, Judgement, Emperor, Priestess, Hermit, Temperance, Fortune) and six Kami (Izanagi, Izanami, Ōkuninushi, Minakanushi, Hiruko, Uzume). Izanagi creates a Rare Talisman instead of copying one, since Talismans are unique.
+  - Five more Bosses (House, Wheel, Mark, Pillar, Plant) with one face-down helper and debuffed tiles.
+  - One Flower per Ante that waits in the shop until bought, like Balatro's Vouchers.
+  - Twelve more Challenges (20 in all).
+  - Music, animated background and high-contrast tiles, each with a Settings toggle; sort by suit or by rank; dead-tile dots moved to Advanced; Run Info in the Shop and packs.
 - Build 174: Debug menu: Add Talisman is grouped by rarity, and Shop rarity forces every shop and Talisman pack roll to one rarity (Legendary included) until set back to normal odds.
 - Build 173: Debug menu covers the new systems: stickers, remove a Talisman, engrave, seal or convert selected tiles, add any Tag, open any pack, set the Ante and Stake, free shop reroll, lose the run.
 - Build 172: Balatro feature batch (first-draft names and numbers, open to playtest tuning).
