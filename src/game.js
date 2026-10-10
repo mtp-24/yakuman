@@ -816,6 +816,13 @@ function ensureBosses() { while (S.bossOrder.length < S.ante) S.bossOrder.push(r
 function fmtMult(m) { return Number.isInteger(m) ? m : (+m.toFixed(2)); }
 // A Stone tile shows a grey slab: it has no rank or suit.
 const STONE_SVG = '<svg viewBox="0 0 54 74" aria-hidden="true"><rect x="8" y="10" width="38" height="54" rx="6" fill="#8d8a82"/><path d="M14 22l9 6 4-9 8 12 6-4M16 46l7-5 6 8 9-6M20 56l5-3" fill="none" stroke="#5f5c56" stroke-width="1.6" stroke-linecap="round"/><circle cx="36" cy="20" r="2" fill="#a9a69e"/><circle cx="18" cy="36" r="1.6" fill="#a9a69e"/></svg>';
+// Engraving marks in a tile's corner, drawn as icons (text glyphs like ♣ sit off-centre in many fonts): a sparkle for Wild,
+// a four-leaf clover for Lucky, a plus for Mult.
+const EMARK_SVG = {
+  wild: '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M6 1.2v9.6M1.85 3.6l8.3 4.8M1.85 8.4l8.3-4.8" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/></svg>',
+  lucky: '<svg viewBox="0 0 12 12" aria-hidden="true"><g fill="#fff"><circle cx="6" cy="3.3" r="1.95"/><circle cx="6" cy="8.7" r="1.95"/><circle cx="3.3" cy="6" r="1.95"/><circle cx="8.7" cy="6" r="1.95"/></g><circle cx="6" cy="6" r=".85" fill="#2f855a"/></svg>',
+  mult: '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M6 2.2v7.6M2.2 6h7.6" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>',
+};
 function tileEl(t, o = {}) {
   const el = document.createElement('div');
   el.dataset.id = t.id;
@@ -823,7 +830,7 @@ function tileEl(t, o = {}) {
   if (!o.back) {
     el.innerHTML = t.eng === 'stone' ? STONE_SVG : tileSVG(t);
     if (t.ed) el.innerHTML += '<span class="tedfx"></span>';
-    if (t.eng === 'wild' || t.eng === 'lucky' || t.eng === 'mult') el.innerHTML += `<span class="emark emark-${t.eng}">${{ wild: '✱', lucky: '♣', mult: '+' }[t.eng]}</span>`;
+    if (t.eng === 'wild' || t.eng === 'lucky' || t.eng === 'mult') el.innerHTML += `<span class="emark emark-${t.eng}">${EMARK_SVG[t.eng]}</span>`;
     if (t.seal || t.eng === 'redseal') el.innerHTML += `<span class="seal seal-${t.seal || 'red'}"></span>`;
     if (t.eng === 'dragonmark') el.innerHTML += '<span class="dmark"></span>';
     else if (t.eng === 'gold') el.innerHTML += '<span class="shine"></span>';
