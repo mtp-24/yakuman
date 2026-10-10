@@ -2425,7 +2425,7 @@ function doDeclareKan() {
   const sel = o.sel; S.hand = S.hand.filter(t => !sel.includes(t));
   S.open.push({ type: 'kan', tiles: sortTiles(sel), calledId: null, closed: true }); S.selected = []; S.stats.kans++; sfx('kan');
   const rep = drawReplacement(); draw();
-  setMsg(`Declared a closed Kan of ${isHonor(sel[0]) ? HONOR_EN[sel[0].rank] : sel[0].rank + ' ' + SUIT_EN[sel[0].suit]}. Hand stays closed.${rep ? ' Replacement tile drawn: ' + tileName(rep) + '.' : ''}`);
+  setMsg(`Declared a concealed Kan of ${isHonor(sel[0]) ? HONOR_EN[sel[0].rank] : sel[0].rank + ' ' + SUIT_EN[sel[0].suit]}. Hand stays closed.${rep ? ' Replacement tile drawn: ' + tileName(rep) + '.' : ''}`);
   render();
 }
 function useConsumable(i) {
@@ -3032,7 +3032,9 @@ function renderOpen() {
   const allClosed = S.open.every(m => m.closed);
   $('#openInfo').textContent = S.open.length ? (allClosed ? `${S.open.length} declared · hand is still closed for Yaku` : `${S.open.length} on the table · hand is Open for Yaku`) : 'Hand is closed.';
   if (!S.open.length) box.innerHTML = '<span class="muted empty">No melds on the table</span>';
-  for (const m of S.open) { const w = document.createElement('div'); w.className = 'meld' + (m.closed ? ' closedmeld' : ''); w.innerHTML = `<span class="mt">${m.closed ? 'Closed ' : ''}${MELD_LABEL[m.type]}</span>`; for (const t of m.tiles) w.appendChild(tileEl(t, { small: true, called: t.id === m.calledId })); box.appendChild(w); }
+  for (const m of S.open) { const w = document.createElement('div'); w.className = 'meld' + (m.closed ? ' closedmeld' : ''); w.innerHTML = `<span class="mt">${m.closed ? 'Concealed ' : ''}${MELD_LABEL[m.type]}</span>`; if (m.closed) w.title = 'Concealed Kan: declared from your hand, so your hand stays closed. Shown like real Mahjong, with the two end tiles face down.';
+    // A concealed Kan is shown as in real Mahjong: the two end tiles face down, the middle two face up.
+    m.tiles.forEach((t, k) => w.appendChild(tileEl(t, { small: true, called: t.id === m.calledId, back: m.closed && m.type === 'kan' && (k === 0 || k === 3) }))); box.appendChild(w); }
 }
 function renderRiver() {
   const box = $('#river'); box.innerHTML = '';
