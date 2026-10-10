@@ -2165,7 +2165,8 @@ function growRows(was) {
 let rowHolds = [];
 function holdRow(sel, box, gone) {
   if (!motionOK || gone < 0) return; const b = document.querySelector(box);
-  rowHolds.push({ sel, box, gone, t: performance.now(), rects: [...document.querySelectorAll(sel)].filter(e => !e.classList.contains('rowghost')).map(e => e.getBoundingClientRect()), h: b ? b.getBoundingClientRect().height : 0 });
+  const ov = $('#overlay');
+  rowHolds.push({ sel, box, gone, top: ov.classList.contains('inflow') ? ov.style.top : null, t: performance.now(), rects: [...document.querySelectorAll(sel)].filter(e => !e.classList.contains('rowghost')).map(e => e.getBoundingClientRect()), h: b ? b.getBoundingClientRect().height : 0 });
 }
 function playRowHolds() {
   const holds = rowHolds; rowHolds = [];
@@ -2177,6 +2178,8 @@ function playRowHolds() {
     // eases to its new height as the cards slide. Rows stay packed at the top meanwhile instead of stretching to fill it.
     box.classList.add('reflowing'); setTimeout(() => box.classList.remove('reflowing'), total + 80);
     if (h.h - nowH > 1) box.animate([{ height: h.h + 'px' }, { height: h.h + 'px', offset: wait / total }, { height: nowH + 'px' }], { duration: total, easing: 'ease-in-out' });
+    // A Shop tray under the board's row moves with it: it waits at its old place, then rises as the row shrinks.
+    const ov = $('#overlay'); if (h.top && ov.classList.contains('inflow') && parseFloat(ov.style.top) < parseFloat(h.top) - 1) ov.animate([{ top: h.top }, { top: h.top, offset: wait / total }, { top: ov.style.top }], { duration: total, easing: 'ease-in-out' });
     // Each card that has to move or change size (cards in a grid stretch to their row's tallest, so rows re-pairing resizes
     // them) is played by a stand-in copy laid over the list, out of the layout, so nothing reflows while it moves. The real
     // list is already in its final shape underneath, hidden until the copies land.
