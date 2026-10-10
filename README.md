@@ -173,6 +173,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 162: Collection engravings use wide cards: the sample tile sits on a felt pad at the left, the name and effect beside it, an accent edge in each engraving's colour, two or three cards per row.
 - Build 163: Engraving cards drop the coloured accent edge.
 - Build 164: Flowers in the side panel use the same hover card as tiles (a Flower label, the name and the effect) instead of the plain tooltip; the hover card now works for any element with data-hc-title.
+- Build 196: In the full-screen Shop the wallet lines up with Next Blind: same height, same rounded corners, no downward nudge.
 - Build 195: The View Wall and Run Info buttons at the bottom of the full-screen Shop and packs, and on the Blind screen, are a matched pair: same size, icon and label on the left, the Wall count on the right.
 - Build 194: Resizing the window while the cash-out is up (or the Shop or a pack) always places it again, so after being narrow it goes back to rising from the bottom of the board instead of staying stuck as a centred box.
 - Build 193: Every screen (Settings, Rules, Collection, Run Info, the title menu and the rest), not just the trays, now stops the page behind it from scrolling, so there is one scrollbar.
