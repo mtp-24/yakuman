@@ -886,9 +886,10 @@ body.crt::after{content:'';position:fixed;inset:0;z-index:90;pointer-events:none
 body.crt-full #app,body.crt-full #overlay{filter:url(#crtfx)} #crtbezel{display:none} body.crt-full #crtbezel{display:block;position:fixed;inset:0;z-index:91;pointer-events:none;border-radius:28px/22px;box-shadow:0 0 0 40px #050806,inset 0 0 60px 18px rgba(0,0,0,.65)}
 /* Full CRT stays light: a static phosphor glow instead of a blur-based bloom, and the always-running shimmer and glow loops
    under the filter hold still (each frame they run would otherwise make the browser redo the whole filter) */
+body.crt-full.scoring #app,body.crt-full.scoring #overlay{filter:url(#crtfxlite)}
 body.crt-full #crtbezel::before{content:'';position:absolute;inset:0;border-radius:inherit;background:radial-gradient(ellipse at center,rgba(255,236,200,.07),transparent 70%);mix-blend-mode:screen}
 body.crt-full .slot[class*="ed-"]::before,body.crt-full .slot[class*="ed-"]::after,body.crt-full .shopcard[class*="ed-"]::before,body.crt-full .shopcard[class*="ed-"]::after,body.crt-full .shoprail .nextbtn.primary,body.crt-full .shoprail .nextbtn.primary::after{animation:none!important}
-@media (prefers-reduced-motion: reduce){body.crt-full #app,body.crt-full #overlay{filter:none}}
+@media (prefers-reduced-motion: reduce){body.crt-full #app,body.crt-full #overlay,body.crt-full.scoring #app,body.crt-full.scoring #overlay{filter:none}}
 /* ===== Tray Shop (and packs): rises from the bottom of the board; the Talisman row above stays clear ===== */
 /* Below the Talisman row the board darkens gradually, like the cash-out */
 .board.shopdim::after{background:linear-gradient(180deg,transparent 0,transparent var(--cut,0px),rgba(5,10,9,.3) calc(var(--cut,0px) + 6px),rgba(5,10,9,.62) calc(var(--cut,0px) + 70px))}
@@ -2027,7 +2028,7 @@ let BG_ANIM = true; try { BG_ANIM = localStorage.getItem('yakuman.bganim') !== '
 let HIGH_CONTRAST = false; try { HIGH_CONTRAST = localStorage.getItem('yakuman.hc') === 'on'; } catch (e) { }
 // Screen shake on big scores (on by default) and a CRT filter (off by default), like Balatro's options.
 let SHAKE = true; try { SHAKE = localStorage.getItem('yakuman.shake') !== 'off'; } catch (e) { }
-// CRT: 'off', 'on' (light: scanlines and vignette) or 'full' (adds Balatro's screen curvature, bloom and chromatic aberration).
+// CRT: 'off', 'on' (light: scanlines and vignette) or 'full' (adds Balatro's screen curvature, a soft glow and chromatic aberration).
 let CRT = 'off'; try { CRT = localStorage.getItem('yakuman.crt') || 'off'; } catch (e) { }
 // Helper hints under the hand: tiles away / complete hand ready is on by default; waits and what a selected discard does are off.
 let HINTS = { away: true, waits: false, without: false };
@@ -2075,7 +2076,7 @@ function settingsHTML() {
   <div class="setsec">Display</div>
   <div class="setrow"><div><b>Animated background</b><div class="muted">Slowly drifting light behind the table, like Balatro's swirl. Turned off automatically if your device asks for reduced motion.</div></div><div class="setbtns"><button class="${BG_ANIM ? 'primary' : ''}" data-setbg="on">On</button><button class="${!BG_ANIM ? 'primary' : ''}" data-setbg="off">Off</button></div></div>
   <div class="setrow"><div><b>Screen shake</b><div class="muted">The table shakes a little when a play scores three times the target or more.</div></div><div class="setbtns"><button class="${SHAKE ? 'primary' : ''}" data-setshake="on">On</button><button class="${!SHAKE ? 'primary' : ''}" data-setshake="off">Off</button></div></div>
-  <div class="setrow"><div><b>CRT filter</b><div class="muted">Light adds faint scanlines and a soft vignette. Full also curves the screen like an old tube, with a slight bloom and colour fringing at the edges, like Balatro's CRT; it is heavier and may slow older devices.</div></div><div class="setbtns">${[['off', 'Off'], ['on', 'Light'], ['full', 'Full']].map(([k, n]) => `<button class="${CRT === k ? 'primary' : ''}" data-setcrt="${k}">${n}</button>`).join('')}</div></div>
+  <div class="setrow"><div><b>CRT filter</b><div class="muted">Light adds faint scanlines and a soft vignette. Full also curves the screen like an old tube, with a soft glow and colour fringing at the edges, like Balatro's CRT; it is heavier and may slow older devices.</div></div><div class="setbtns">${[['off', 'Off'], ['on', 'Light'], ['full', 'Full']].map(([k, n]) => `<button class="${CRT === k ? 'primary' : ''}" data-setcrt="${k}">${n}</button>`).join('')}</div></div>
   <div class="setrow"><div><b>High-contrast tiles</b><div class="muted">One strong colour per suit (Characters red, Dots blue, Bamboo green), with the number on every suited tile. Red Fives stay red with a red corner number.</div></div><div class="setbtns"><button class="${HIGH_CONTRAST ? 'primary' : ''}" data-sethc="on">On</button><button class="${!HIGH_CONTRAST ? 'primary' : ''}" data-sethc="off">Off</button></div></div>
   <div class="setrow"><div><b>Terminology</b><div class="muted" data-notr>Riichi uses Japanese names (Chi, Pon, Kan, Han, Yaku, ¥). Hong Kong uses English names (Chow, Pung, Kong, Faan, $).</div></div><div class="setbtns"><button class="${LANG === 'ja' ? 'primary' : ''}" data-setlang="ja">Riichi</button><button class="${LANG === 'hk' ? 'primary' : ''}" data-setlang="hk">Hong Kong</button></div></div>
   <div class="setrow"><div><b>Tile numbers</b><div class="muted">The small number or letter in a tile's corner. Characters and Winds is the default: Dots and Bamboo are counted by their pips. With All Tiles, some numbers sit over the Dots and Bamboo art.</div></div><div class="setbtns">${[['all', 'All Tiles'], ['some', 'Characters and Winds'], ['none', 'None']].map(([k, n]) => `<button class="${TILE_NUMS === k ? 'primary' : ''}" data-settilenums="${k}">${n}</button>`).join('')}</div></div>
@@ -2545,7 +2546,8 @@ async function doPlay() {
   if (opt.type === 'hand') { ctx = scoreCtx(S, 'hand', (opt.tiles || sel).concat(openTiles()), { yaku: opt.best.yaku, dec: opt.best.dec, claim: opt.claim }); S.stats.hands++; }
   else { ctx = scoreCtx(S, 'meld', opt.tiles || sel, { part: opt.part }); S.stats.melds++; }
   S.busy = true; setMsg(''); render();
-  await animateScore(ctx);
+  document.body.classList.add('scoring');   // Full CRT drops to its light filter while the play scores (see crtFilterSVG)
+  try { await animateScore(ctx); } finally { document.body.classList.remove('scoring'); }
   S.busy = false;
   for (const k of liveTals(S).slice()) if (TAL[k].afterScore) TAL[k].afterScore(ctx, S);
   if (S.spent && S.spent.length) { S.spent.forEach(k => toast(`<div class="label">Used up</div><b>${TAL[k].name}</b><div class="muted" style="font-size:11px">left your board after its last play</div>`)); S.spent = []; }
@@ -4193,7 +4195,7 @@ function fullRulesHTML() {
   <p><b>Setup.</b> A new run lets you choose a Wall (deck), a Stake (difficulty) and a seed. Sharing a seed replays the same Wall, shops and bosses for players with the same unlocks. Each Stake keeps every penalty of the ones below it. Winning on a Stake with a Wall unlocks the next Stake for that Wall. From Black Stake, shop Talismans can carry stickers: Eternal (can't be sold), Perishable (stops working after 5 Blinds, from Orange) and Rental (¥1 to buy, ¥3 every Blind, from Gold).</p>
   <p><b>Special Talismans.</b> Some fade: Kakigōri loses Chips with each play, Senbei loses Mult each Blind, Ramen weakens as you discard, and each leaves when it runs out. Daikoku doubles every listed chance. Yūrei saves a lost Blind once if you scored at least a quarter of the target. Selling Rikishi during a Boss Blind disables the Boss, selling Ramune gives a Double Tag, and selling Kakuremino after 2 Blinds copies another Talisman. With Kabuki, Talismans you already own can turn up again, so you can hold two copies; each copy works on its own.</p>
   <p><b>Walls.</b> Each Wall changes the run: the Plasma Wall averages Chips and Mult before they multiply (targets ×2), the Erratic Wall is 136 random tiles, the Ghost Wall brings Kami to the shop, the Magic Wall starts with Spring and two Slips of Echoes, the Anaglyph Wall gives a Double Tag after every Boss, and the Painted Wall trades a Talisman slot for +2 hand size. Most Walls unlock through goals; the Collection shows them.</p>
-  <p><b>Settings.</b> Sound and Music are separate. The animated background, screen shake, CRT filter (Light or Full, with screen curvature, bloom and colour fringing), high-contrast tiles and dead-tile dots can each be switched on or off, and Reset to Defaults puts them all back. Sort by Suit or By Rank from the hand's header.</p>
+  <p><b>Settings.</b> Sound and Music are separate. The animated background, screen shake, CRT filter (Light or Full, with screen curvature, a soft glow and colour fringing), high-contrast tiles and dead-tile dots can each be switched on or off, and Reset to Defaults puts them all back. Sort by Suit or By Rank from the hand's header.</p>
   <p><b>Challenges.</b> Fixed runs with special rules (${CHALLENGES.length} of them), from the title screen. Winning one is recorded on its own and doesn't count toward Stakes or unlocks. Achievements on the Profile tab track long-term goals.</p>
   <h3>Help and Controls</h3>
   <p><b>Helper.</b> Under your hand the game shows how many tiles you are from a complete hand. Settings can turn that off, and can turn on two more hints: which tiles you are waiting on, and whether the tiles you select can go without setting you back. Against The Purist they only count your visible tiles. Another assist marks dead tiles with green dots.</p>
@@ -4515,11 +4517,10 @@ function copySeed(btn) {
   function fallback() { const r = document.createRange(); const code = btn.previousElementSibling; if (code) { r.selectNodeContents(code); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r); btn.textContent = 'Selected'; setTimeout(() => { btn.textContent = 'Copy'; }, 1200); } }
 }
 // ===================== CRT =====================
-// Full CRT is one SVG filter on the game and its overlays: a barrel bend (a displacement map, strongest at the corners),
-// the red and blue channels nudged apart (chromatic aberration, more toward the edges), and a soft glow added back (bloom).
-// Full CRT: the picture is bent outwards by a displacement map, and its red channel is nudged right for a colour fringe.
-// Kept to five steps (the bloom blur and the three-way channel split were dropped: browsers run SVG filters on the CPU and
-// redo them on every frame anything moves); the glow is a cheap static layer in CSS instead.
+// Full CRT is one SVG filter on the game and its overlays: the picture is bent outwards by a displacement map (strongest at
+// the corners), and its red channel is nudged right for a colour fringe. Kept to five steps (the bloom blur and the three-way channel split were dropped: browsers run SVG filters on the CPU and
+// redo them on every frame anything moves); the glow is a cheap static layer in CSS instead. While a play scores (the
+// busiest moments: tiles hitting, boxes pumping, counters running), a lighter twin keeps only the bend.
 function crtFilterSVG() {
   const N = 128, c = document.createElement('canvas'); c.width = c.height = N; const g = c.getContext('2d'), img = g.createImageData(N, N);
   for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
@@ -4534,6 +4535,9 @@ function crtFilterSVG() {
     <feColorMatrix in="sh" type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="r"/>
     <feColorMatrix in="bent" type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0" result="gb"/>
     <feComposite in="r" in2="gb" operator="arithmetic" k1="0" k2="1" k3="1" k4="0"/>
+  </filter><filter id="crtfxlite" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+    <feImage href="${map}" preserveAspectRatio="none" result="map"/>
+    <feDisplacementMap in="SourceGraphic" in2="map" scale="28" xChannelSelector="R" yChannelSelector="G"/>
   </filter></svg>`;
 }
 function applyCRT() {
