@@ -920,6 +920,8 @@ html{scrollbar-gutter:stable} html.modallock{overflow:hidden}
 /* The banner's buttons share one height; View Wall and Run Info share one width */
 .shopacts > button,.packacts > button{height:46px;box-sizing:border-box} .shopacts .hbtn,.packacts .hbtn{min-width:146px;justify-content:center} .packacts .hbtn:disabled{opacity:.55;cursor:default}
 .hnext{justify-content:center;padding:0 18px;min-width:170px}
+/* Phone widths: under the title, the wallet and Next Blind share one full-width line; Next Blind takes the rest of it */
+@media (max-width:480px){.shopacts{width:100%;flex-wrap:nowrap} .shopacts .hnext{flex:1 1 auto;min-width:0} .shopacts .hnext small{max-width:100%;overflow:hidden;text-overflow:ellipsis} .shopacts .wallet{flex:0 0 auto}}
 /* The wallet beside Next Blind (full-screen Shop) is the same height and corner shape, on the same line */
 .shopacts .wallet{transform:none;height:46px;box-sizing:border-box;border-radius:9px;padding:0 16px 0 8px;align-self:center}
 @media (max-width:720px){.norenbar{flex-wrap:wrap} .shopacts{justify-content:flex-start} .packhead{flex-wrap:wrap} .packhead .packacts{order:5;width:100%;justify-content:flex-start}}

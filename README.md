@@ -173,6 +173,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 162: Collection engravings use wide cards: the sample tile sits on a felt pad at the left, the name and effect beside it, an accent edge in each engraving's colour, two or three cards per row.
 - Build 163: Engraving cards drop the coloured accent edge.
 - Build 164: Flowers in the side panel use the same hover card as tiles (a Flower label, the name and the effect) instead of the plain tooltip; the hover card now works for any element with data-hc-title.
+- Build 216: Shop header checked from 375 to 900 px wide (Hong Kong currency, the longest Boss name): it stays on one line down to about 480 px; on phones the wallet and Next Blind share one full-width line under the title instead of stacking.
 - Build 215: The pack header wraps properly between 560 and 720 px wide: title and picks left on the first line, Skip the Rest below (the title no longer collapses into a narrow column).
 - Build 214: Selling in the wide layout: when the board's Charm or consumable row gets shorter, the Shop tray waits at its old place while the card burns, then rises together with the row instead of jumping up first.
 - Build 213: After a pack's last pick, Skip the Rest turns into a greyed-out "All picks used" of the same size while the pack closes, so the screen no longer jumps up.
