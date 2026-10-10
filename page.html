@@ -136,13 +136,15 @@ aside{display:flex;flex-direction:column;gap:10px;min-width:0}
 .tile.eng-steel{background:linear-gradient(160deg,#eef2f6 0%,#c3ccd5 45%,#8f9ca8 100%);border-color:#56657a;box-shadow:0 3px 0 #3d4a57,0 4px 8px rgba(0,0,0,.45)}
 .tile.eng-steel .brush{position:absolute;inset:0;border-radius:6px;background:repeating-linear-gradient(0deg,rgba(255,255,255,.18) 0 1px,transparent 1px 3px);pointer-events:none}
 .tile.eng-glass{background:linear-gradient(160deg,rgba(238,247,255,.95) 0%,rgba(198,223,242,.9) 55%,rgba(169,203,230,.9) 100%);border-color:#86aecd;box-shadow:0 3px 0 #6f93ad,0 4px 6px rgba(0,0,0,.4),inset 0 0 12px rgba(255,255,255,.7)}
-.tile .seal{position:absolute;top:-5px;left:50%;transform:translateX(-50%);width:15px;height:15px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#ff7b6e,#b3140a 70%);border:2px solid #fff3e0;box-shadow:0 1px 3px rgba(0,0,0,.55)}
-.tile .seal::after{content:'';position:absolute;inset:4px;border-radius:50%;border:1px solid rgba(255,255,255,.7)}
-.tile .seal.seal-gold{background:radial-gradient(circle at 35% 35%,#ffe08a,#b8860b 70%)} .tile .seal.seal-blue{background:radial-gradient(circle at 35% 35%,#8cc8ff,#1f5fa8 70%)} .tile .seal.seal-purple{background:radial-gradient(circle at 35% 35%,#d6a6ff,#6a2fa0 70%)}
+/* Seals: a small wax seal pressed on the tile's top edge, sized with the tile: a solid disc in the seal's colour with a cream
+   rim, a darker pressed edge and a small cream star stamped in the middle */
+.tile .seal{--s1:#e2463a;--s2:#9c1409;position:absolute;top:calc(var(--tw,48px) * -.08);left:50%;transform:translateX(-50%);width:clamp(10px,calc(var(--tw,48px) * .24),20px);aspect-ratio:1;height:auto;border-radius:50%;background:var(--s1);border:1.5px solid #f6ead2;box-shadow:0 1px 3px rgba(0,0,0,.5),inset 0 0 0 1.5px var(--s2),inset 1px 1px 1px rgba(255,255,255,.35)}
+.tile .seal::after{content:'';position:absolute;inset:24%;background:#fff3e0;opacity:.9;clip-path:polygon(50% 0,61% 39%,100% 50%,61% 61%,50% 100%,39% 61%,0 50%,39% 39%)}
+.tile .seal.seal-gold{--s1:#f0c040;--s2:#9a6a08} .tile .seal.seal-blue{--s1:#4a95e0;--s2:#184f8e} .tile .seal.seal-purple{--s1:#a965e0;--s2:#5a2290}
 .tile .dmark{position:absolute;top:4px;right:4px;width:11px;height:11px;transform:rotate(45deg);background:#c9281c;border:1.5px solid #ffd27a;box-shadow:0 0 4px rgba(201,40,28,.7)}
 .tile .dmark::after{content:'';position:absolute;inset:3px;background:#ffd27a;transform:rotate(45deg);border-radius:1px}
-.tile.small .seal{width:12px;height:12px;top:-4px} .tile.small .dmark{width:9px;height:9px;top:3px;right:3px}
-.tile.tiny .seal{width:10px;height:10px;top:-3px;border-width:1.5px} .tile.tiny .dmark{width:7px;height:7px;top:2px;right:2px}
+.tile.small .seal{width:12px;top:-4px} .tile.small .dmark{width:9px;height:9px;top:3px;right:3px}
+.tile.tiny .seal{width:10px;top:-3px;border-width:1px} .tile.tiny .dmark{width:7px;height:7px;top:2px;right:2px}
 .tile.safe::after{content:'';position:absolute;bottom:3px;left:50%;transform:translateX(-50%);width:6px;height:6px;border-radius:50%;background:var(--good);box-shadow:0 0 4px var(--good)}
 .hint{font-size:12px;color:var(--muted);margin-top:8px;min-height:16px}
 .hint .hint-main{color:var(--fg);font-weight:600}
