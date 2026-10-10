@@ -554,7 +554,7 @@ async function doPlay() {
   if (leftovers.length) { S.hand = S.hand.filter(t => !leftovers.includes(t)); S.river.push(...leftovers); }
   S.selected = []; S.selRiver = null;
 
-  setMsg(`${leftovers.length ? `Not a valid play, so the best part scored and ${leftovers.map(tileName).join(', ')} went to the River. ` : ''}${ctx.desc}: ${ctx.chips} × ${fmtMult(ctx.mult)} = ${ctx.total}${ctx.furiten ? ' (Furiten!)' : ''}${ctx.shatter.length ? ` · ${ctx.shatter.length} Glass tile${ctx.shatter.length > 1 ? 's' : ''} shattered` : ''}`);
+  setMsg(`${leftovers.length ? `Not a valid play, so the best part scored and ${leftovers.map(tileName).join(', ')} went to the River. ` : ''}${ctx.desc}: ${fmtN(ctx.chips)} × ${fmtMult(ctx.mult)} = ${fmtN(ctx.total)}${ctx.furiten ? ' (Furiten!)' : ''}${ctx.shatter.length ? ` · ${ctx.shatter.length} Glass tile${ctx.shatter.length > 1 ? 's' : ''} shattered` : ''}`);
   if (S.score >= S.target) { S.busy = true; await clearedStamp(); S.busy = false; winBlind(); return render(); }
   if (S.boss === 'pickpocket' && S.hand.length) { const lost = shuffle(S.hand.slice()).slice(0, 2); S.hand = S.hand.filter(t => !lost.includes(t)); S.river.push(...lost); setMsg(`${S.msg} The Pickpocket took ${lost.map(tileName).join(' and ')} to the River.`); }
   if (S.boss === 'crimson') rollCrimson();
@@ -925,7 +925,8 @@ function fmtN(n) { return !isFinite(n) ? '∞' : Math.abs(n) < 1e11 ? Math.round
 const anteLabel = (a = S.ante) => a > CFG.antes ? `Ante ${a} · Endless` : `Ante ${a} of ${CFG.antes}`;
 // Endless Antes draw a fresh Boss each time, never one of the last three.
 function ensureBosses() { while (S.bossOrder.length < S.ante) S.bossOrder.push(rollBoss(S.bossOrder.length + 1, S.bossOrder.slice(-3))); }
-function fmtMult(m) { return Number.isInteger(m) ? m : (+m.toFixed(2)); }
+// Mult for display: small ones keep up to two decimals (×5.06); from 1,000 up they get commas and no decimals (×1,104,972).
+function fmtMult(m) { return Math.abs(m) >= 1000 ? fmtN(m) : Number.isInteger(m) ? m : (+m.toFixed(2)); }
 // A Stone tile shows a grey slab: it has no rank or suit.
 const STONE_SVG = '<svg viewBox="0 0 54 74" aria-hidden="true"><rect x="8" y="10" width="38" height="54" rx="6" fill="#8d8a82"/><path d="M14 22l9 6 4-9 8 12 6-4M16 46l7-5 6 8 9-6M20 56l5-3" fill="none" stroke="#5f5c56" stroke-width="1.6" stroke-linecap="round"/><circle cx="36" cy="20" r="2" fill="#a9a69e"/><circle cx="18" cy="36" r="1.6" fill="#a9a69e"/></svg>';
 // Engraving marks in a tile's corner, drawn as icons (text glyphs like ♣ sit off-centre in many fonts): a sparkle for Wild,
@@ -1318,7 +1319,7 @@ function tileMotion(before, fresh) {
 }
 // Big numbers shrink to fit their box instead of wrapping onto a second line (targets, chips, Mult, totals, Round Score).
 function fitText(el, min) { if (!el) return; el.style.fontSize = ''; let fs = parseFloat(getComputedStyle(el).fontSize); while (el.scrollWidth > el.clientWidth + 1 && fs > (min || 11)) { fs -= 1; el.style.fontSize = fs + 'px'; } }
-function fitNumbers(root) { (root || document).querySelectorAll('.handbox .chipbox, .handbox .multbox, .bp-row .target, .roundscore .rs, .hb-total .tot, #purseVal').forEach(e => fitText(e)); (root || document).querySelectorAll('.hanfoot').forEach(fitFoot); (root || document).querySelectorAll('.hb-head .hb-title').forEach(fitTitle); }
+function fitNumbers(root) { (root || document).querySelectorAll('.handbox .chipbox, .handbox .multbox, .bp-row .target, .roundscore .rs, .hb-total .tot, #purseVal, .lastplay .lp-result').forEach(e => fitText(e)); (root || document).querySelectorAll('.hanfoot').forEach(fitFoot); (root || document).querySelectorAll('.hb-head .hb-title').forEach(fitTitle); }
 // The Han caption always shows the tier name (Baiman, ...) on its second line; the tooltip has both.
 function fitFoot(el) { if (!el) return; const t = el.querySelector('.hantier').textContent; el.title = el.querySelector('.hanline').textContent + (t ? ' · ' + t : ''); }
 // Chips × Mult boxes for the scoring summary. Han lives in a caption strip under Mult, because Han only exists to become Mult.
@@ -1577,8 +1578,8 @@ function renderActions() {
 }
 // Breakdown line styling, shared by the live log and the finished Last Play.
 const lineCls = l => (l.zero ? ' bad' : '') + (l.yaku ? ' yaku' : '') + (l.tal ? ' tal' : '') + (l.convert ? ' convert' : '');
-// The result frame: how the multiplier was built, as a small caption, over the final Chips × Mult = score.
-const lastSummaryHTML = c => `<div class="total"><div class="formula num">${c.han} Han → ${c.tier} ×${c.baseMult}${c.xmult !== 1 ? ` · tiles ×${fmtMult(c.xmult)}` : ''}${c.mult !== c.baseMult * c.xmult ? ` → ×${fmtMult(c.mult)} after Talismans${c.furiten ? ' and Furiten' : ''}` : ''}</div><div class="lp-result num">${c.chips} × ${fmtMult(c.mult)} = ${fmtN(c.total)}</div></div>`;
+// The result frame: how the multiplier was built (a small caption), the Chips × Mult sum, then the score on its own big line.
+const lastSummaryHTML = c => `<div class="total"><div class="formula num">${c.han} Han → ${c.tier} ×${c.baseMult}${c.xmult !== 1 ? ` · tiles ×${fmtMult(c.xmult)}` : ''}${c.mult !== c.baseMult * c.xmult ? ` → ×${fmtMult(c.mult)} after Talismans${c.furiten ? ' and Furiten' : ''}` : ''}</div><div class="lp-calc num">${fmtN(c.chips)} × ${fmtMult(c.mult)} =</div><div class="lp-result num">${fmtN(c.total)}</div></div>`;
 const LP_FOLD = 4; let lpOpen = false, lpFor = null;
 function renderLast() {
   const c = S.lastPlay; const box = $('#lastPlay');
