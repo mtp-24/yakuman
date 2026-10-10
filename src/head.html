@@ -675,7 +675,7 @@ aside .card{background:linear-gradient(180deg,#2a1d10,#1d140a);border:1px solid 
 .act:disabled{opacity:.5;filter:saturate(.6)}
 .act-sep{width:1px;align-self:stretch;margin:4px 2px;background:rgba(255,230,180,.25)}
 .actions .msg{align-self:center;margin-left:4px;color:#f0cf7f;flex:1 1 220px;min-width:0}
-.zone .zhead button{white-space:nowrap;flex:none}
+.zone .zhead button{white-space:nowrap;flex:none} #conSell,#talSell{display:flex;align-items:center;gap:6px;flex:0 1 auto;min-width:0} #conSell button,#talSell button{height:24px;line-height:1;padding:0 10px!important;margin:0!important;max-width:150px;overflow:hidden;text-overflow:ellipsis}
 @media (max-width:900px){.act{flex:1 1 150px;max-width:none} .act-sep{display:none}}
 .purse{display:flex;align-items:center;justify-content:center;gap:10px;background:linear-gradient(180deg,#3a2a14,#24190b);border:1px solid #8a6a3e;border-radius:8px;padding:8px 12px;box-shadow:inset 0 1px 0 rgba(255,220,160,.2);min-width:0}
 .purse .coin{flex:0 0 auto;width:32px;height:32px;display:inline-block;filter:drop-shadow(0 2px 3px rgba(0,0,0,.5))} .purse .coin svg{width:100%;height:100%;display:block}
@@ -885,10 +885,9 @@ body.crt::after{content:'';position:fixed;inset:0;z-index:90;pointer-events:none
 body.crt-full #app,body.crt-full #overlay{filter:url(#crtfx)} #crtbezel{display:none} body.crt-full #crtbezel{display:block;position:fixed;inset:0;z-index:91;pointer-events:none;border-radius:28px/22px;box-shadow:0 0 0 40px #050806,inset 0 0 60px 18px rgba(0,0,0,.65)}
 /* Full CRT stays light: a static phosphor glow instead of a blur-based bloom, and the always-running shimmer and glow loops
    under the filter hold still (each frame they run would otherwise make the browser redo the whole filter) */
-body.crt-full.scoring #app,body.crt-full.scoring #overlay{filter:url(#crtfxlite)}
 body.crt-full #crtbezel::before{content:'';position:absolute;inset:0;border-radius:inherit;background:radial-gradient(ellipse at center,rgba(255,236,200,.07),transparent 70%);mix-blend-mode:screen}
 body.crt-full .slot[class*="ed-"]::before,body.crt-full .slot[class*="ed-"]::after,body.crt-full .shopcard[class*="ed-"]::before,body.crt-full .shopcard[class*="ed-"]::after,body.crt-full .shoprail .nextbtn.primary,body.crt-full .shoprail .nextbtn.primary::after{animation:none!important}
-@media (prefers-reduced-motion: reduce){body.crt-full #app,body.crt-full #overlay,body.crt-full.scoring #app,body.crt-full.scoring #overlay{filter:none}}
+@media (prefers-reduced-motion: reduce){body.crt-full #app,body.crt-full #overlay{filter:none}}
 /* ===== Tray Shop (and packs): rises from the bottom of the board; the Talisman row above stays clear ===== */
 /* Below the Talisman row the board darkens gradually, like the cash-out */
 .board.shopdim::after{background:linear-gradient(180deg,transparent 0,transparent var(--cut,0px),rgba(5,10,9,.3) calc(var(--cut,0px) + 6px),rgba(5,10,9,.62) calc(var(--cut,0px) + 70px))}
@@ -896,7 +895,9 @@ body.crt-full .slot[class*="ed-"]::before,body.crt-full .slot[class*="ed-"]::aft
 .overlay.shoptray .modal.traymodal{min-height:var(--trayMin,100%);max-height:none;overflow:visible;margin:0;max-width:none;width:100%;box-sizing:border-box;background:var(--panel);border:1px solid var(--line);border-bottom:0;border-radius:12px 12px 0 0;box-shadow:0 -12px 34px rgba(0,0,0,.6)}
 .slot.filled.sel{outline:2px solid var(--accent);outline-offset:1px}
 html{scrollbar-gutter:stable} html.modallock{overflow:hidden}
-.wallfly{position:fixed;z-index:95;pointer-events:none} .reflowing{align-content:start} .rowghost{box-sizing:border-box}
+.wallfly{position:fixed;z-index:95;pointer-events:none}
+.clearstamp{position:fixed;z-index:96;pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:4px;padding:14px 30px 16px;border:3px solid #f3c768;border-radius:14px;background:rgba(26,18,6,.9);color:#f3c768;box-shadow:0 14px 40px rgba(0,0,0,.6),0 0 30px rgba(243,199,104,.4);white-space:nowrap}
+.clearstamp b{font-family:var(--display);font-size:34px;font-weight:600;line-height:1} .clearstamp small{font-size:12px;letter-spacing:.12em;color:rgba(246,234,210,.8)} .clearstamp.boss{border-color:#ff8a7a;color:#ffb3a6;box-shadow:0 14px 40px rgba(0,0,0,.6),0 0 30px rgba(255,120,100,.4)} .reflowing{align-content:start} .rowghost{box-sizing:border-box}
 .lvstamp{position:fixed;z-index:96;pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 16px 10px;border:2px solid #f3c768;border-radius:10px;background:rgba(26,18,6,.88);color:#f3c768;box-shadow:0 8px 22px rgba(0,0,0,.5),0 0 18px rgba(243,199,104,.45);white-space:nowrap}
 .lvstamp small{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:rgba(246,234,210,.8)} .lvstamp b{font-family:var(--display);font-size:26px;font-weight:600;line-height:1}
 /* Blind screen: View Wall and Run Info are quiet buttons on the subtitle line, out of the way of Play and Skip */
@@ -937,4 +938,23 @@ html{scrollbar-gutter:stable} html.modallock{overflow:hidden}
 .overlay.shoptray .packhand{padding-top:4px} .overlay.shoptray .packhand .tile{--tw:min(54px,calc((100cqw - 42px) / 8))} .overlay.shoptray .packhandwrap > .muted{min-height:0}
 .packmodal .packshelf{margin-top:22px}
 .packshelf .shop-grid:not(.owned-grid){grid-template-columns:repeat(var(--n,3),minmax(0,200px));justify-content:center} @media (max-width:720px){.packshelf .shop-grid:not(.owned-grid){grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}}
+
+/* Settings > Reduce motion: the device's reduced-motion rules, plus every other animation and transition stopped */
+body.reducemotion .tile{transition:none}
+body.reducemotion .score-pop{animation:none;opacity:1}
+body.reducemotion .sline,body.reducemotion .tile.arrive,body.reducemotion .slot.bounce,body.reducemotion .stage-math .tot.final,body.reducemotion .stage-tiles .float{animation:none}
+body.reducemotion .stage-tiles .tile{transition:none}
+body.reducemotion .stage-math.hot .tot,body.reducemotion .stage-math.blazing,body.reducemotion .ember{animation:none}
+body.reducemotion button.pulse,body.reducemotion .callbanner{animation:none}
+body.reducemotion .chipbox.bump,body.reducemotion .multbox.bump{animation:none}
+body.reducemotion .boxwrap.bump{animation:none}
+body.reducemotion .shoprail .nextbtn.primary,body.reducemotion .shoprail .nextbtn.primary::after{animation:none}
+body.reducemotion .tile.fresh{animation:none}
+body.reducemotion .slot[class*="ed-"]::before,body.reducemotion .shopcard[class*="ed-"]::before,body.reducemotion .slot.ed-poly::after,body.reducemotion .shopcard.ed-poly::after{animation:none}
+body.reducemotion .slot.ed-holo::before,body.reducemotion .shopcard.ed-holo::before,body.reducemotion .slot.ed-holo::after,body.reducemotion .shopcard.ed-holo::after,body.reducemotion .slot.ed-poly::before,body.reducemotion .shopcard.ed-poly::before,body.reducemotion .slot.ed-poly::after,body.reducemotion .shopcard.ed-poly::after{animation:none}
+body.reducemotion .slot[class*="ed-"]::before,body.reducemotion .shopcard[class*="ed-"]::before,body.reducemotion .slot[class*="ed-"]::after,body.reducemotion .shopcard[class*="ed-"]::after{animation:none}
+body.reducemotion #hand .tile.hit,body.reducemotion #open .tile.hit{animation:none;transform:translateY(-14px) scale(1.12)}
+body.reducemotion .hp{animation:none}
+body.reducemotion.bganim::before{animation:none}
+body.reducemotion *,body.reducemotion *::before,body.reducemotion *::after,body.reducemotion::before,body.reducemotion::after{animation:none!important;transition:none!important}
 </style>

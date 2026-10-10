@@ -6,7 +6,8 @@ let BG_ANIM = true; try { BG_ANIM = localStorage.getItem('yakuman.bganim') !== '
 let HIGH_CONTRAST = false; try { HIGH_CONTRAST = localStorage.getItem('yakuman.hc') === 'on'; } catch (e) { }
 // Screen shake on big scores (on by default) and a CRT filter (off by default), like Balatro's options.
 let SHAKE = true; try { SHAKE = localStorage.getItem('yakuman.shake') !== 'off'; } catch (e) { }
-// CRT: 'off', 'on' (light: scanlines and vignette) or 'full' (adds Balatro's screen curvature, a soft glow and chromatic aberration).
+let REDUCE_MOTION = false; try { REDUCE_MOTION = localStorage.getItem('yakuman.motion') === 'reduce'; } catch (e) { }   // Settings: Reduce motion
+// CRT: 'off', 'on' (light: scanlines and vignette) or 'full' (adds Balatro's screen curvature and a soft glow).
 let CRT = 'off'; try { CRT = localStorage.getItem('yakuman.crt') || 'off'; } catch (e) { }
 // Helper hints under the hand: tiles away / complete hand ready is on by default; waits and what a selected discard does are off.
 let HINTS = { away: true, waits: false, without: false };
@@ -54,7 +55,8 @@ function settingsHTML() {
   <div class="setsec">Display</div>
   <div class="setrow"><div><b>Animated background</b><div class="muted">Slowly drifting light behind the table, like Balatro's swirl. Turned off automatically if your device asks for reduced motion.</div></div><div class="setbtns"><button class="${BG_ANIM ? 'primary' : ''}" data-setbg="on">On</button><button class="${!BG_ANIM ? 'primary' : ''}" data-setbg="off">Off</button></div></div>
   <div class="setrow"><div><b>Screen shake</b><div class="muted">The table shakes a little when a play scores three times the target or more.</div></div><div class="setbtns"><button class="${SHAKE ? 'primary' : ''}" data-setshake="on">On</button><button class="${!SHAKE ? 'primary' : ''}" data-setshake="off">Off</button></div></div>
-  <div class="setrow"><div><b>CRT filter</b><div class="muted">Light adds faint scanlines and a soft vignette. Full also curves the screen like an old tube, with a soft glow and colour fringing at the edges, like Balatro's CRT; it is heavier and may slow older devices.</div></div><div class="setbtns">${[['off', 'Off'], ['on', 'Light'], ['full', 'Full']].map(([k, n]) => `<button class="${CRT === k ? 'primary' : ''}" data-setcrt="${k}">${n}</button>`).join('')}</div></div>
+  <div class="setrow"><div><b>Reduce motion</b><div class="muted">Turns off all animation: cards flying and dealing in, trays sliding, shimmer, the drifting background and the scoring effects. Everything happens instantly instead. Also on automatically if your device asks for reduced motion.</div></div><div class="setbtns"><button class="${REDUCE_MOTION ? 'primary' : ''}" data-setmotion="reduce">On</button><button class="${!REDUCE_MOTION ? 'primary' : ''}" data-setmotion="full">Off</button></div></div>
+  <div class="setrow"><div><b>CRT filter</b><div class="muted">Light adds faint scanlines and a soft vignette. Full also curves the screen like an old tube, with a soft glow at the edges, like Balatro's CRT; it is heavier and may slow older devices.</div></div><div class="setbtns">${[['off', 'Off'], ['on', 'Light'], ['full', 'Full']].map(([k, n]) => `<button class="${CRT === k ? 'primary' : ''}" data-setcrt="${k}">${n}</button>`).join('')}</div></div>
   <div class="setrow"><div><b>High-contrast tiles</b><div class="muted">One strong colour per suit (Characters red, Dots blue, Bamboo green), with the number on every suited tile. Red Fives stay red with a red corner number.</div></div><div class="setbtns"><button class="${HIGH_CONTRAST ? 'primary' : ''}" data-sethc="on">On</button><button class="${!HIGH_CONTRAST ? 'primary' : ''}" data-sethc="off">Off</button></div></div>
   <div class="setrow"><div><b>Terminology</b><div class="muted" data-notr>Riichi uses Japanese names (Chi, Pon, Kan, Han, Yaku, ¥). Hong Kong uses English names (Chow, Pung, Kong, Faan, $).</div></div><div class="setbtns"><button class="${LANG === 'ja' ? 'primary' : ''}" data-setlang="ja">Riichi</button><button class="${LANG === 'hk' ? 'primary' : ''}" data-setlang="hk">Hong Kong</button></div></div>
   <div class="setrow"><div><b>Tile numbers</b><div class="muted">The small number or letter in a tile's corner. Characters and Winds is the default: Dots and Bamboo are counted by their pips. With All Tiles, some numbers sit over the Dots and Bamboo art.</div></div><div class="setbtns">${[['all', 'All Tiles'], ['some', 'Characters and Winds'], ['none', 'None']].map(([k, n]) => `<button class="${TILE_NUMS === k ? 'primary' : ''}" data-settilenums="${k}">${n}</button>`).join('')}</div></div>
@@ -507,6 +509,15 @@ function bestSubPlay(tiles) {
   }
   return best;
 }
+// Beating a Blind stamps "Blind cleared" (or "<Boss> beaten") across the board for a moment before the cash-out rises.
+function clearedStamp() {
+  const board = document.querySelector('.board'); if (!motionOK || !board) return Promise.resolve();
+  const r = board.getBoundingClientRect(), el = document.createElement('div'); el.className = 'clearstamp' + (S.boss ? ' boss' : '');
+  el.innerHTML = `<b>${S.boss ? BOSSES[S.boss].name + ' beaten' : 'Blind cleared'}</b><small>${fmtN(S.score)} / ${fmtN(S.target)}</small>`;
+  el.style.cssText = `left:${r.left + r.width / 2}px;top:${Math.max(r.top, 0) + Math.min(r.height, innerHeight - Math.max(r.top, 0)) * .45}px`; document.body.appendChild(el); translateDOM(el);
+  el.animate([{ transform: 'translate(-50%,-50%) scale(1.8) rotate(-8deg)', opacity: 0 }, { transform: 'translate(-50%,-50%) scale(.94) rotate(-5deg)', opacity: 1, offset: .22 }, { transform: 'translate(-50%,-50%) scale(1) rotate(-5deg)', opacity: 1, offset: .32 }, { transform: 'translate(-50%,-50%) scale(1) rotate(-5deg)', opacity: 1, offset: .8 }, { transform: 'translate(-50%,-60%) scale(1) rotate(-5deg)', opacity: 0 }], { duration: 1050, easing: 'ease-out' });
+  return new Promise(res => setTimeout(() => { el.remove(); res(); }, 1050));
+}
 async function doPlay() {
   if (S.phase !== 'blind' || S.busy) return; setRules(S);
   let opt = playOption(), leftovers = [];
@@ -524,8 +535,7 @@ async function doPlay() {
   if (opt.type === 'hand') { ctx = scoreCtx(S, 'hand', (opt.tiles || sel).concat(openTiles()), { yaku: opt.best.yaku, dec: opt.best.dec, claim: opt.claim }); S.stats.hands++; }
   else { ctx = scoreCtx(S, 'meld', opt.tiles || sel, { part: opt.part }); S.stats.melds++; }
   S.busy = true; setMsg(''); render();
-  document.body.classList.add('scoring');   // Full CRT drops to its light filter while the play scores (see crtFilterSVG)
-  try { await animateScore(ctx); } finally { document.body.classList.remove('scoring'); }
+  await animateScore(ctx);
   S.busy = false;
   for (const k of liveTals(S).slice()) if (TAL[k].afterScore) TAL[k].afterScore(ctx, S);
   if (S.spent && S.spent.length) { S.spent.forEach(k => toast(`<div class="label">Used up</div><b>${TAL[k].name}</b><div class="muted" style="font-size:11px">left your board after its last play</div>`)); S.spent = []; }
@@ -545,7 +555,7 @@ async function doPlay() {
   S.selected = []; S.selRiver = null;
 
   setMsg(`${leftovers.length ? `Not a valid play, so the best part scored and ${leftovers.map(tileName).join(', ')} went to the River. ` : ''}${ctx.desc}: ${ctx.chips} × ${fmtMult(ctx.mult)} = ${ctx.total}${ctx.furiten ? ' (Furiten!)' : ''}${ctx.shatter.length ? ` · ${ctx.shatter.length} Glass tile${ctx.shatter.length > 1 ? 's' : ''} shattered` : ''}`);
-  if (S.score >= S.target) { winBlind(); return render(); }
+  if (S.score >= S.target) { S.busy = true; await clearedStamp(); S.busy = false; winBlind(); return render(); }
   if (S.boss === 'pickpocket' && S.hand.length) { const lost = shuffle(S.hand.slice()).slice(0, 2); S.hand = S.hand.filter(t => !lost.includes(t)); S.river.push(...lost); setMsg(`${S.msg} The Pickpocket took ${lost.map(tileName).join(' and ')} to the River.`); }
   if (S.boss === 'crimson') rollCrimson();
   draw();
@@ -624,6 +634,8 @@ function doDeclareKan() {
   setMsg(`Declared a concealed Kan of ${isHonor(sel[0]) ? HONOR_EN[sel[0].rank] : sel[0].rank + ' ' + SUIT_EN[sel[0].suit]}. Hand stays closed.${rep ? ' Replacement tile drawn: ' + tileName(rep) + '.' : ''}`);
   render();
 }
+// A used consumable burns away from its slot on the board (the cards after it wait, then slide in), like a sold one.
+function burnSlot(i) { if (i < 0 || compactScreen()) return; holdRow('#consumables .slot.filled', '#consumables', i); dissolveEl([...document.querySelectorAll('#consumables .slot')][i]); }
 function useConsumable(i) {
   if (S.busy) return;
   const c = S.consumables[i]; const def = CONS[c.key];
@@ -633,7 +645,7 @@ function useConsumable(i) {
     const after = useOnWallTiles(def, S.deck || [], []);
     if (!after) { setMsg(def.soul ? 'Hitodama needs a free Talisman slot.' : 'That cannot be used right now.', true); return render(); }
     if (c.key !== 'echo') S.lastCons = c.key; bump(PROFILE, def.kind === 'kami' ? 'kamiUsed' : 'omikujiUsed');
-    S.consumables.splice(S.consumables.indexOf(c), 1);
+    burnSlot(S.consumables.indexOf(c)); S.consumables.splice(S.consumables.indexOf(c), 1);
     const lost = before - S.deck.length;
     setMsg(`${def.name} used.${c.key === 'fortune' ? (S.fortuneHit ? ` ${TAL[S.fortuneHit].name} is now ${EDITIONS[S.editions[S.fortuneHit]].name}!` : ' Nothing this time.') : ''}${S.gotLegend ? ` ${TAL[S.gotLegend].name} joins your Talismans.` : ''}${lost > 0 ? ` ${lost} tile${lost > 1 ? 's' : ''} left your Wall.` : ''}`); S.gotLegend = null; return render();
   }
@@ -646,7 +658,7 @@ function useConsumable(i) {
   if (S.hand.length > before) for (const k of liveTals(S)) if (TAL[k].onTileAdded) TAL[k].onTileAdded(S, S.hand.length - before);
   if (S.pendingDiscard) { S.pendingDiscard = Math.max(0, S.hand.length - capacity()); if (!S.pendingDiscard) { draw(); setMsg(`${def.name} used. Your Call is settled.`); render(); return; } }
   if (c.key !== 'echo') S.lastCons = c.key; bump(PROFILE, def.kind === 'kami' ? 'kamiUsed' : 'omikujiUsed');
-  S.consumables.splice(S.consumables.indexOf(c), 1); S.selected = []; if (S.phase === 'blind') draw();
+  burnSlot(S.consumables.indexOf(c)); S.consumables.splice(S.consumables.indexOf(c), 1); S.selected = []; if (S.phase === 'blind') draw();
   const fortune = c.key === 'fortune' ? (S.fortuneHit ? ` ${TAL[S.fortuneHit].name} is now ${EDITIONS[S.editions[S.fortuneHit]].name}!` : ' Nothing this time.') : '';
   setMsg(`${def.name} used.${S.gotLegend ? ` ${TAL[S.gotLegend].name} joins your Talismans.` : ''}${fortune}`); S.gotLegend = null; render();
 }
@@ -810,7 +822,24 @@ function itemPrice(it) { if (it.free) return 0; if (it.sticker && it.sticker.ren
 function goBackAnte() { if (S.ante <= 1) return; S.ante--; S.bossOrder[S.ante - 1] = rollBoss(S.ante, S.bossOrder); }
 // Peony: reroll the Boss for ¥10, once per Ante (Tree Peony: any number of times).
 const canRerollBoss = () => hasF('peony') && S.money >= 10 && (hasF('peony2') || S.bossRerollAnte !== S.ante);
-function rerollBoss() { if (!canRerollBoss()) return; S.money -= 10; S.bossRerollAnte = S.ante; const old = S.bossOrder[S.ante - 1]; S.bossOrder[S.ante - 1] = rollBoss(S.ante, [old]); sfx('reroll'); setMsg(`${BOSSES[old].name} rerolled into ${BOSSES[S.bossOrder[S.ante - 1]].name}.`); render(); }
+// Rerolling the Boss turns its card over: it flips away, and the new Boss flips in.
+function rerollBoss() {
+  if (!canRerollBoss() || rerolling) return; S.money -= 10; S.bossRerollAnte = S.ante; const old = S.bossOrder[S.ante - 1]; S.bossOrder[S.ante - 1] = rollBoss(S.ante, [old]); sfx('reroll'); setMsg(`${BOSSES[old].name} rerolled into ${BOSSES[S.bossOrder[S.ante - 1]].name}.`);
+  const card = $('#modal .blindcard.bosscard'), show = () => { render(); const c = $('#modal .blindcard.bosscard'); if (c && motionOK) c.animate([{ transform: 'perspective(800px) rotateY(-90deg)', opacity: .4 }, { transform: 'perspective(800px) rotateY(0)' }], { duration: 260, easing: 'cubic-bezier(.2,.8,.2,1)' }); };
+  if (!card || !motionOK) return show(); rerolling = true; let done = false; const go = () => { if (done) return; done = true; rerolling = false; show(); };
+  card.animate([{ transform: 'perspective(800px) rotateY(0)' }, { transform: 'perspective(800px) rotateY(90deg)', opacity: .4 }], { duration: 180, easing: 'ease-in', fill: 'forwards' }).onfinish = go; setTimeout(go, 420);
+}
+// A copy of one element flies onto another and shrinks into it; the target pops when it lands. Used inside full screens
+// (a Tag skipped for on the Blind screen flying into Tags held).
+function flyOnto(node, from, dest, ms = 560) {
+  if (!node || !from || !dest || !motionOK) return; const to = dest.getBoundingClientRect(), fly = document.createElement('div');
+  fly.className = 'wallfly'; Object.assign(fly.style, { left: from.left + 'px', top: from.top + 'px', width: from.width + 'px', height: from.height + 'px' });
+  node.style.cssText += ';margin:0;width:100%;height:100%;box-sizing:border-box'; fly.appendChild(node); document.body.appendChild(fly); dest.style.visibility = 'hidden';
+  const dx = to.left + to.width / 2 - (from.left + from.width / 2), dy = to.top + to.height / 2 - (from.top + from.height / 2), sc = Math.max(.4, Math.min(1.2, to.width / from.width));
+  const land = () => { fly.remove(); if (!dest.isConnected) return; dest.style.visibility = ''; dest.animate([{ transform: 'scale(.8)', filter: 'brightness(1.6)' }, { transform: 'scale(1.1)', offset: .6 }, { transform: 'none', filter: 'none' }], { duration: 300, easing: 'ease-out' }); };
+  fly.animate([{ transform: 'none' }, { transform: `translate(${dx * .45}px,${dy * .45 - 50}px) scale(${(1 + sc) / 2}) rotate(-4deg)`, offset: .45 }, { transform: `translate(${dx}px,${dy}px) scale(${sc})` }], { duration: ms, easing: 'cubic-bezier(.45,0,.4,1)' }).onfinish = land;
+  setTimeout(() => { if (fly.isConnected) land(); }, ms + 500);
+}
 // Rerolling flips the cards: the old ones turn away one after another, then the new ones turn in from the other side.
 // Clicks on the Shop are ignored for the half second it takes.
 let rerolling = false;
@@ -837,7 +866,9 @@ function skipBlind() {
   for (let i = 0; i < copies; i++) applyTag(tag);
   PROFILE.skips = (PROFILE.skips || 0) + 1;
   S.blindIndex++; S.shop = null; S.pack = null; S.phase = 'select';
+  const chip = $('#modal .blindcard.current .skipbox .tagchip'), from = chip && chip.getBoundingClientRect(), copy = chip && chip.cloneNode(true);
   setMsg(`Skipped for the ${TAGS[tag].name}${copies > 1 ? ` ×${copies}` : ''}: ${TAGS[tag].desc}`); render();
+  flyOnto(copy, from, [...document.querySelectorAll('#modal .overtals .tagchip')].pop());   // into Tags held, if the Tag waits there
 }
 // Tags that act right away do so here; the rest wait in S.tags for the next shop or Blind.
 function applyTag(tag) {
@@ -1001,7 +1032,7 @@ function render() {
   const motionBefore = tileSnapshot(), freshTiles = new Set(S.newIds || []);
   renderBlind(); renderTalismans(); renderConsumables(); renderOpen(); renderRiver(); renderHand(); renderActions(); renderLast();
   $('#msg').textContent = S.msg || ''; $('#msg').className = 'msg' + (S.msgErr ? ' err' : '');
-  if (S.phase === 'cashout') { showModal(cashoutHTML(), false, 'cashmodal traymodal'); placeOverlay(true); animateCashout(); } else if (S.phase === 'shop' && S.pack) { showModal(packHTML(), false, 'packmodal traymodal'); placeOverlay(true, 'shop'); fillPackTiles(); fillPackHand(); trayIn('pack'); } else if (S.phase === 'shop') { showModal(shopHTML(), false, 'shopmodal traymodal'); placeOverlay(true, 'shop'); tweenWallet(); trayIn('shop'); } else if (S.phase === 'select') showModal(selectHTML(), false, 'selectmodal'); else if (S.phase === 'gameover') showModal(overHTML(false), false, 'overmodal'); else if (S.phase === 'win') showModal(overHTML(true), false, 'overmodal winmodal'); else if (!modalPinned) hideModal();
+  if (S.phase === 'cashout') { showModal(cashoutHTML(), false, 'cashmodal traymodal'); placeOverlay(true); animateCashout(); } else if (S.phase === 'shop' && S.pack) { showModal(packHTML(), false, 'packmodal traymodal'); placeOverlay(true, 'shop'); fillPackTiles(); fillPackHand(); trayIn('pack'); } else if (S.phase === 'shop') { showModal(shopHTML(), false, 'shopmodal traymodal'); placeOverlay(true, 'shop'); tweenWallet(); trayIn('shop'); } else if (S.phase === 'select') { showModal(selectHTML(), false, 'selectmodal'); anteUp(); } else if (S.phase === 'gameover') { showModal(overHTML(false), false, 'overmodal'); tallyOver(); } else if (S.phase === 'win') { showModal(overHTML(true), false, 'overmodal winmodal'); tallyOver(); } else if (!modalPinned) hideModal();
   $('#btnYaku').textContent = 'Run Info';
   document.querySelectorAll('.zhead > .muted').forEach(e => { e.title = e.textContent; });   // full text on hover when a header is truncated
   translateDOM($('#app')); fitNumbers();
@@ -1367,7 +1398,7 @@ function renderTalismans() {
     box.appendChild(el);
   }
   const ts = $('#talSell'); ts.innerHTML = '';
-  if (S.selTal && S.talismans.includes(S.selTal)) { const b = document.createElement('button'); b.className = 'ghost'; b.style.cssText = 'padding:3px 8px;font-size:12px'; b.textContent = isEternal(S.selTal) ? `${TAL[S.selTal].name} is Eternal` : `Sell ${TAL[S.selTal].name} for ¥${talSellValue(S.selTal)}`; if (isEternal(S.selTal)) b.disabled = true; b.onclick = () => sellTalisman(S.selTal); ts.appendChild(b); }
+  if (S.selTal && S.talismans.includes(S.selTal)) { const b = document.createElement('button'); b.className = 'ghost'; b.style.cssText = 'padding:3px 8px;font-size:12px'; b.textContent = isEternal(S.selTal) ? 'Eternal' : `Sell ¥${talSellValue(S.selTal)}`; b.title = `${TAL[S.selTal].name}${isEternal(S.selTal) ? ' is Eternal and can never be sold' : ''}`; if (isEternal(S.selTal)) b.disabled = true; b.onclick = () => sellTalisman(S.selTal); ts.appendChild(b); }
 }
 function renderConsumables() {
   const box = $('#consumables'); box.innerHTML = ''; $('#conCount').textContent = `${S.consumables.length} / ${conSlots()} · click one to use or sell it`;
@@ -1380,7 +1411,7 @@ function renderConsumables() {
   // Like Balatro: a selected consumable shows Use and Sell in the row's header (Use only when it can be used right now).
   const cs = $('#conSell'); if (!cs) return; cs.innerHTML = ''; const c = S.consumables[S.selCon]; if (!c) { S.selCon = null; return; }
   const d = CONS[c.key], canUse = S.phase === 'blind' || d.anywhere;
-  if (canUse) { const u = document.createElement('button'); u.className = 'primary'; u.style.cssText = 'padding:3px 10px;font-size:12px'; u.textContent = `Use ${d.name}`; u.onclick = () => { const i = S.selCon; S.selCon = null; useConsumable(i); }; cs.appendChild(u); }
+  if (canUse) { const u = document.createElement('button'); u.className = 'primary'; u.style.cssText = 'padding:3px 10px;font-size:12px'; u.textContent = 'Use'; u.title = `Use ${d.name}`; u.onclick = () => { const i = S.selCon; S.selCon = null; useConsumable(i); }; cs.appendChild(u); }
   const sl = document.createElement('button'); sl.className = 'ghost'; sl.style.cssText = 'padding:3px 10px;font-size:12px;margin-left:6px'; sl.textContent = `Sell ¥${conSellValue(c)}`; sl.onclick = () => { const i = S.selCon; S.selCon = null; sellConsumable(i); }; cs.appendChild(sl);
 }
 function renderOpen() {
@@ -1616,7 +1647,11 @@ function bindSlotDrag(el, k) {
 // After a Talisman drop, the slot glides from where it was released into its new place.
 function glideSlot(k, from) { if (!motionOK) return; const el = [...$('#talismans').children].find(x => x.dataset.key === k); if (!el) return; const to = el.getBoundingClientRect(); el.animate([{ transform: `translate(${from.left - to.left}px,${from.top - to.top}px) scale(1.06)` }, { transform: 'none' }], { duration: 200, easing: 'cubic-bezier(.2,.8,.2,1)' }); }
 // ===================== SCORING ANIMATION =====================
-const motionOK = !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+// Animation is off when the device asks for reduced motion, or when Reduce motion is on in Settings. body.reducemotion applies
+// the same CSS as the device setting (see head.html), so everything animated in CSS stops too.
+const deviceReduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+let motionOK = !deviceReduce && !REDUCE_MOTION;
+function applyMotion() { motionOK = !deviceReduce && !REDUCE_MOTION; document.body.classList.toggle('reducemotion', REDUCE_MOTION); }
 let skipAnim = false, skipArmed = false;
 function wait(ms) { return new Promise(r => setTimeout(r, (motionOK && !skipAnim) ? Math.round(ms * SPEEDS[ANIM_SPEED]) : 0)); }
 // Balatro's "juice", copied from its curve: size wobbles as sin(50.8 t) fading with (1 - t/T)^3 and tilt as sin(40.8 t)
@@ -1874,7 +1909,26 @@ if (window.ResizeObserver) { const ro = new ResizeObserver(() => { clearTimeout(
 // Moving from one full screen to the next (title, run setup, the Blind screen) plays a short hand-over: the screen shrinks
 // away and the next pops in. Starting a Blind (or continuing a run) also flashes the chosen Blind card and fades the whole
 // screen out to the table, where the hand deals in. Clicks are ignored meanwhile.
-let modalLeaving = false, modalPop = false;
+let modalLeaving = false, modalPop = false, lastPinned = null;
+// A new Ante: on the Blind screen the Ante pip lights up with a pulse (once, when the Ante is first shown).
+let anteSeen = null;
+function anteUp() {
+  const key = (S.seed || '') + ':' + S.ante, prev = anteSeen; anteSeen = key; if (!motionOK || !prev || prev === key || !prev.startsWith((S.seed || '') + ':')) return;
+  const pip = $('#modal .antepips i.now'), h2 = $('#modal .shophead h2');
+  if (pip) pip.animate([{ transform: 'scale(.4)', filter: 'brightness(2)' }, { transform: 'scale(1.8)', offset: .5 }, { transform: 'none', filter: 'none' }], { duration: 600, delay: 200, easing: 'ease-out', fill: 'backwards' });
+  if (h2) h2.animate([{ transform: 'scale(1.12)', filter: 'brightness(1.5)' }, { transform: 'none', filter: 'none' }], { duration: 500, delay: 150, easing: 'ease-out' });
+}
+// The run's end screen (win or Game Over) deals its stat boxes in one by one, each number counting up from zero.
+let overShown = null;
+function tallyOver() {
+  const key = (S.seed || '') + ':' + S.phase + ':' + S.ante; if (overShown === key || !motionOK) { overShown = key; return; } overShown = key;
+  [...document.querySelectorAll('#modal .overstats .stat, #modal .overbest')].forEach((box, i) => {
+    const d = 250 + i * 90; box.animate([{ opacity: 0, transform: 'translateY(16px) scale(.95)' }, { transform: 'translateY(-2px) scale(1.01)', offset: .7 }, { transform: 'none' }], { duration: 320, delay: d, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' });
+    const v = box.querySelector('.v'), txt = v ? v.textContent.trim() : '', m = txt.match(/^([^\d−-]*)([\d,]+)(.*)$/); if (!v || !m) return;
+    const to = +m[2].replace(/,/g, ''), pre = m[1], post = m[3]; if (!isFinite(to) || to <= 0) return;
+    v.textContent = pre + '0' + post; setTimeout(() => { const t0 = performance.now(), dur = 600; const step = now => { const k = Math.min(1, (now - t0) / dur); if (!v.isConnected) return; v.textContent = pre + fmtN(to * (1 - Math.pow(1 - k, 3))) + post; if (k < 1) requestAnimationFrame(step); }; requestAnimationFrame(step); setTimeout(() => { if (v.isConnected) v.textContent = txt; }, dur + 400); }, d);
+  });
+}
 function modalOut(next, from, toBoard) {
   const ov = $('#overlay'), m = $('#modal'); if (modalLeaving) return;
   if (!motionOK || ov.hidden || ov.classList.contains('boardonly')) { next(); return; }
@@ -1886,7 +1940,13 @@ function modalOut(next, from, toBoard) {
   setTimeout(fin, lead + 520);   // safety if animations are paused
 }
 function showModal(html, pinned, cls) {
-  placeOverlay(false); modalPinned = !!pinned; $('#modal').getAnimations().forEach(an => an.cancel()); $('#overlay').getAnimations().forEach(an => an.cancel()); $('#modal').className = 'modal' + (cls ? ' ' + cls : ''); $('#modal').innerHTML = html; if ($('#modal #mClose')) $('#modal').insertAdjacentHTML('afterbegin', CLOSE_X); decorateBanner(cls); syncEditions(); fillHero($('#modal')); fillColTiles($('#modal')); fillTileArt($('#modal')); $('#overlay').hidden = false; document.documentElement.classList.add('modallock'); fillExamples($('#modal')); translateDOM($('#modal'));  if (modalPop) { modalPop = false; if (motionOK) $('#modal').animate([{ opacity: 0, transform: 'scale(.96)' }, { opacity: 1, transform: 'none' }], { duration: 200, easing: 'cubic-bezier(.2,.8,.2,1)' }); } }
+  const wasHidden = $('#overlay').hidden, key = pinned ? ((html.match(/<h2[^>]*>([\s\S]*?)<\/h2>/) || [])[1] || html.slice(0, 60)) : null;
+  placeOverlay(false); modalPinned = !!pinned; $('#modal').getAnimations().forEach(an => an.cancel()); $('#overlay').getAnimations().forEach(an => an.cancel()); $('#modal').className = 'modal' + (cls ? ' ' + cls : ''); $('#modal').innerHTML = html; if ($('#modal #mClose')) $('#modal').insertAdjacentHTML('afterbegin', CLOSE_X); decorateBanner(cls); syncEditions(); fillHero($('#modal')); fillColTiles($('#modal')); fillTileArt($('#modal')); $('#overlay').hidden = false; document.documentElement.classList.add('modallock'); fillExamples($('#modal')); translateDOM($('#modal')); 
+  // Pops in on a hand-over, or when an info screen opens fresh (Settings, Rules, the Collection...). Redraws of the same
+  // screen (a Settings toggle, a Collection tab) do not pop again.
+  const pop = modalPop || (pinned && (wasHidden || key !== lastPinned)); modalPop = false; lastPinned = key;
+  if (pop && motionOK && !(cls || '').includes('traymodal')) $('#modal').animate([{ opacity: 0, transform: 'scale(.96)' }, { opacity: 1, transform: 'none' }], { duration: 200, easing: 'cubic-bezier(.2,.8,.2,1)' });
+}
 // While any screen or tray is open only it scrolls: the page behind holds still, so there is one scrollbar, not two.
 function hideModal() { modalPinned = false; $('#modal').getAnimations().forEach(an => an.cancel()); $('#overlay').hidden = true; document.documentElement.classList.remove('modallock'); placeOverlay(false); }
 // A Talisman you gain starts fresh, like a Joker in Balatro: progress from an earlier copy you sold is gone.
@@ -2173,7 +2233,7 @@ function fullRulesHTML() {
   <p><b>Setup.</b> A new run lets you choose a Wall (deck), a Stake (difficulty) and a seed. Sharing a seed replays the same Wall, shops and bosses for players with the same unlocks. Each Stake keeps every penalty of the ones below it. Winning on a Stake with a Wall unlocks the next Stake for that Wall. From Black Stake, shop Talismans can carry stickers: Eternal (can't be sold), Perishable (stops working after 5 Blinds, from Orange) and Rental (¥1 to buy, ¥3 every Blind, from Gold).</p>
   <p><b>Special Talismans.</b> Some fade: Kakigōri loses Chips with each play, Senbei loses Mult each Blind, Ramen weakens as you discard, and each leaves when it runs out. Daikoku doubles every listed chance. Yūrei saves a lost Blind once if you scored at least a quarter of the target. Selling Rikishi during a Boss Blind disables the Boss, selling Ramune gives a Double Tag, and selling Kakuremino after 2 Blinds copies another Talisman. With Kabuki, Talismans you already own can turn up again, so you can hold two copies; each copy works on its own.</p>
   <p><b>Walls.</b> Each Wall changes the run: the Plasma Wall averages Chips and Mult before they multiply (targets ×2), the Erratic Wall is 136 random tiles, the Ghost Wall brings Kami to the shop, the Magic Wall starts with Spring and two Slips of Echoes, the Anaglyph Wall gives a Double Tag after every Boss, and the Painted Wall trades a Talisman slot for +2 hand size. Most Walls unlock through goals; the Collection shows them.</p>
-  <p><b>Settings.</b> Sound and Music are separate. The animated background, screen shake, CRT filter (Light or Full, with screen curvature, a soft glow and colour fringing), high-contrast tiles and dead-tile dots can each be switched on or off, and Reset to Defaults puts them all back. Sort by Suit or By Rank from the hand's header.</p>
+  <p><b>Settings.</b> Sound and Music are separate. The animated background, screen shake, CRT filter (Light or Full, with screen curvature and a soft glow), high-contrast tiles and dead-tile dots can each be switched on or off. Reduce motion turns off every animation (it is also on when your device asks for reduced motion). Reset to Defaults puts them all back. Sort by Suit or By Rank from the hand's header.</p>
   <p><b>Challenges.</b> Fixed runs with special rules (${CHALLENGES.length} of them), from the title screen. Winning one is recorded on its own and doesn't count toward Stakes or unlocks. Achievements on the Profile tab track long-term goals.</p>
   <h3>Help and Controls</h3>
   <p><b>Helper.</b> Under your hand the game shows how many tiles you are from a complete hand. Settings can turn that off, and can turn on two more hints: which tiles you are waiting on, and whether the tiles you select can go without setting you back. Against The Purist they only count your visible tiles. Another assist marks dead tiles with green dots.</p>
@@ -2268,7 +2328,7 @@ function profileHTML() {
 }
 // ===================== EXPORT / IMPORT =====================
 // One save = profile + settings + current run, as gzip + base64 text ("YKM1Z:...") or plain JSON.
-const SETTING_KEYS = ['yakuman.lang', 'yakuman.speed', 'yakuman.dots', 'yakuman.hints', 'yakuman.tilenums', 'yakuman.unlockall', 'yakuman.sound', 'yakuman.music', 'yakuman.bganim', 'yakuman.hc', 'yakuman.shake', 'yakuman.crt'];
+const SETTING_KEYS = ['yakuman.lang', 'yakuman.speed', 'yakuman.dots', 'yakuman.hints', 'yakuman.tilenums', 'yakuman.unlockall', 'yakuman.sound', 'yakuman.music', 'yakuman.bganim', 'yakuman.hc', 'yakuman.shake', 'yakuman.crt', 'yakuman.motion'];
 function exportPayload() { const settings = {}; for (const k of SETTING_KEYS) { try { const v = localStorage.getItem(k); if (v != null) settings[k] = v; } catch (e) { } } save(); let run = null; try { run = localStorage.getItem(SAVE_KEY); } catch (e) { } return { app: 'yakuman', v: 1, exported: new Date().toISOString(), profile: PROFILE, settings, run }; }
 async function toCode(obj) {
   const bytes = new TextEncoder().encode(JSON.stringify(obj)); let out = bytes, gz = false;
@@ -2495,10 +2555,9 @@ function copySeed(btn) {
   function fallback() { const r = document.createRange(); const code = btn.previousElementSibling; if (code) { r.selectNodeContents(code); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r); btn.textContent = 'Selected'; setTimeout(() => { btn.textContent = 'Copy'; }, 1200); } }
 }
 // ===================== CRT =====================
-// Full CRT is one SVG filter on the game and its overlays: the picture is bent outwards by a displacement map (strongest at
-// the corners), and its red channel is nudged right for a colour fringe. Kept to five steps (the bloom blur and the three-way channel split were dropped: browsers run SVG filters on the CPU and
-// redo them on every frame anything moves); the glow is a cheap static layer in CSS instead. While a play scores (the
-// busiest moments: tiles hitting, boxes pumping, counters running), a lighter twin keeps only the bend.
+// Full CRT is one SVG filter on the game and its overlays: the picture is bent outwards by a displacement map, strongest at
+// the corners. That is all it does: browsers run SVG filters on the CPU and redo them on every frame anything moves, so the
+// bloom blur and colour fringe were dropped for speed; the glow is a cheap static layer in CSS instead.
 function crtFilterSVG() {
   const N = 128, c = document.createElement('canvas'); c.width = c.height = N; const g = c.getContext('2d'), img = g.createImageData(N, N);
   for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
@@ -2507,13 +2566,6 @@ function crtFilterSVG() {
   }
   g.putImageData(img, 0, 0); const map = c.toDataURL();
   return `<svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="crtfx" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
-    <feImage href="${map}" preserveAspectRatio="none" result="map"/>
-    <feDisplacementMap in="SourceGraphic" in2="map" scale="28" xChannelSelector="R" yChannelSelector="G" result="bent"/>
-    <feOffset in="bent" dx="1.4" dy="0" result="sh"/>
-    <feColorMatrix in="sh" type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="r"/>
-    <feColorMatrix in="bent" type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0" result="gb"/>
-    <feComposite in="r" in2="gb" operator="arithmetic" k1="0" k2="1" k3="1" k4="0"/>
-  </filter><filter id="crtfxlite" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
     <feImage href="${map}" preserveAspectRatio="none" result="map"/>
     <feDisplacementMap in="SourceGraphic" in2="map" scale="28" xChannelSelector="R" yChannelSelector="G"/>
   </filter></svg>`;
@@ -2565,6 +2617,7 @@ function bindEvents() {
     if (t.dataset.setsound) { SOUND = t.dataset.setsound === 'on'; try { localStorage.setItem('yakuman.sound', SOUND ? 'on' : 'off'); } catch (e) { } if (SOUND) { audioCtx(); setTimeout(() => sfx('select'), 30); } showModal(settingsHTML(), true); return; }
     // Reset settings: the first click asks, the second clears every saved setting and reloads with the defaults (the run is saved first).
     if (t.id === 'mResetSettings') { if (t.dataset.armed) { save(); for (const k of SETTING_KEYS) { try { localStorage.removeItem(k); } catch (e) { } } location.reload(); return; } t.dataset.armed = '1'; t.textContent = 'Click again to reset'; t.classList.add('danger'); return; }
+    if (t.dataset.setmotion) { REDUCE_MOTION = t.dataset.setmotion === 'reduce'; try { localStorage.setItem('yakuman.motion', t.dataset.setmotion); } catch (e) { } applyMotion(); showModal(settingsHTML(), true); return; }
     if (t.dataset.setshake) { SHAKE = t.dataset.setshake === 'on'; try { localStorage.setItem('yakuman.shake', SHAKE ? 'on' : 'off'); } catch (e) { } showModal(settingsHTML(), true); return; }
     if (t.dataset.setcrt) { CRT = t.dataset.setcrt; try { localStorage.setItem('yakuman.crt', CRT); } catch (e) { } applyCRT(); showModal(settingsHTML(), true); return; }
     if (t.dataset.setmusic) { MUSIC = t.dataset.setmusic === 'on'; try { localStorage.setItem('yakuman.music', MUSIC ? 'on' : 'off'); } catch (e) { } if (MUSIC) musicStart(); else musicStop(); showModal(settingsHTML(), true); return; }
@@ -2619,7 +2672,7 @@ function bindEvents() {
   });
 }
 function boot(saved) {
-  bindEvents(); document.body.classList.toggle('bganim', BG_ANIM); applyCRT();
+  bindEvents(); document.body.classList.toggle('bganim', BG_ANIM); applyCRT(); applyMotion();
   if (saved && saved.phase && saved.deck) { S = saved; S.talState = S.talState || {}; (S.talismans || []).forEach(k => { if (String(k).includes('#')) talAlias(k); });
     // Resume the tile id counter above every id in the saved run, so tiles created later never collide with existing ones.
     let maxId = 0; for (const t of [...S.deck, ...S.hand, ...S.wall, ...S.river, ...S.played, ...(S.indicators || []), ...S.open.flatMap(m => m.tiles), ...((S.pack && S.pack.choices) || []).filter(c => c.tile).map(c => c.tile)]) if (t.id > maxId) maxId = t.id; tileSeq = Math.max(tileSeq, maxId);
