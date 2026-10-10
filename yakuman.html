@@ -2955,7 +2955,7 @@ function showTileTip(el, html) {
   if (!tipEl) { tipEl = document.createElement('div'); tipEl.id = 'tiletip'; tipEl.setAttribute('role', 'tooltip'); document.body.appendChild(tipEl); }
   tipEl.innerHTML = html || tileTipHTML(el._t, el.classList.contains('back')); translateDOM(tipEl);
   const r = el.getBoundingClientRect(), h = tipEl.offsetHeight, below = r.top - h - 10 < 4;
-  tipEl.classList.toggle('below', below); const hw = tipEl.offsetWidth / 2 + 8; tipEl.style.left = Math.max(hw, Math.min(innerWidth - hw, r.left + r.width / 2)) + 'px';   // kept on screen by its real width tipEl.style.top = (below ? r.bottom + 10 : r.top - 10) + 'px';
+  tipEl.classList.toggle('below', below); const hw = tipEl.offsetWidth / 2 + 8; tipEl.style.left = Math.max(hw, Math.min(innerWidth - hw, r.left + r.width / 2)) + 'px'; tipEl.style.top = (below ? r.bottom + 10 : r.top - 10) + 'px';   // kept on screen by its real width
   tipEl.classList.add('on'); const z = el.closest('#hand, #river, #open'); tipAnchor = z ? { id: el.dataset.id, zone: '#' + z.id } : null;
 }
 function hideTileTip() { if (tipEl) tipEl.classList.remove('on'); tipAnchor = null; }
@@ -3831,7 +3831,7 @@ function trayOut(next) {
 // layout has no tray to raise but still deals.
 let shopDealt = null;
 function trayIn(kind) {
-  const id = kind + ':' + S.ante + ':' + S.blindIndex + ':' + ((S.shop && S.shop.uid) || '') + ':' + (S.pack ? S.pack.key : ''), after = traySlidOut;   // each Shop has its own uid, so a new run's first Shop is new too traySlidOut = false;
+  const id = kind + ':' + S.ante + ':' + S.blindIndex + ':' + ((S.shop && S.shop.uid) || '') + ':' + (S.pack ? S.pack.key : ''), after = traySlidOut; traySlidOut = false;   // each Shop has its own uid, so a new run's first Shop is new too
   const fresh = trayShown !== id || after; trayShown = id; if (!fresh || !motionOK) return;
   const tray = $('#overlay').classList.contains('boardonly');
   if (tray) $('#modal').animate([{ transform: 'translateY(105%)' }, { transform: 'none' }], { duration: 280, easing: 'cubic-bezier(.2,.8,.2,1)' });
@@ -3966,7 +3966,7 @@ function animateCashout() {
   const vals = rows.map(x => +x.querySelector('b').dataset.v || 0);
   rows.forEach(x => { x.style.opacity = '0'; x.querySelector('b').textContent = cur + 0; }); if (amt) amt.textContent = cur + 0;
   rows.forEach((x, i) => setTimeout(() => {
-    x.style.opacity = ''; x.animate([{ opacity: 0, transform: 'translateX(-10px)' }, { opacity: 1, transform: 'none' }], { duration: 200, easing: 'ease-out' });
+    x.style.opacity = ''; x.animate([{ opacity: 0, transform: 'translateY(18px) rotate(-1.5deg) scale(.96)' }, { opacity: 1, transform: 'translateY(-2px) scale(1.01)', offset: .7 }, { opacity: 1, transform: 'none' }], { duration: 300, easing: 'cubic-bezier(.2,.8,.2,1)' });   // dealt in like the Shop's cards
     countUp(x.querySelector('b'), 0, vals[i], 220, cur, 'coin');
   }, 260 + i * 260));
   const tStart = 260 + rows.length * 260 + 80;
