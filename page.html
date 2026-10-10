@@ -527,6 +527,14 @@ button.pulse{animation:btnpulse 1s ease-in-out infinite;box-shadow:0 0 0 0 rgba(
 .colcard.undisc{background:repeating-linear-gradient(135deg,rgba(255,255,255,.025) 0 8px,transparent 8px 16px),var(--panel);border-style:dashed} .colcard.undisc .n{font-size:26px;color:var(--muted);opacity:.6} .colcard.undisc .kind{opacity:.6}
 .wallstakes{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:6px} .wsrow{display:flex;justify-content:space-between;align-items:center;gap:8px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:13px} .wsrow.lk{opacity:.5}
 .wspips{display:flex;gap:4px} .wspips .sw{width:12px;height:12px} .wspips .sw.off{opacity:.18}
+/* Stakes as poker chips: a small chip beside a Stake's name and in Stakes won by Wall, the full chip on Collection cards */
+.chipmini{width:16px;height:16px;flex:none;display:inline-block;vertical-align:-3px;filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.45))}
+.stakename{display:inline-flex;align-items:center;gap:5px;white-space:nowrap} .stakename .chipmini{vertical-align:0}
+.wsrow > span:first-child{min-width:0} .wspips{flex:none;gap:3px} .wschip{display:inline-flex} .wschip .chipmini{width:13px;height:13px} .wschip.off .chipmini{filter:grayscale(1) brightness(.5) contrast(.8)} .wschip.off{opacity:.75}
+.engcard > .stakeart{grid-column:1;grid-row:1/4;align-self:center;display:flex;align-items:center;justify-content:center;padding:10px 0}
+.stakeart .stakechipart{width:58px;height:58px}
+.stakecard.locked .stakeart .stakechipart{filter:saturate(.75) brightness(.72) drop-shadow(0 6px 10px rgba(0,0,0,.45))}
+.stakecard > .d .colfoot{margin-top:8px}
 
 /* ===== Shop: header, action rail, felt shelves, portrait cards with price tags ===== */
 .modal.shopmodal{max-width:1000px;padding-top:0}
@@ -606,7 +614,7 @@ button.pulse{animation:btnpulse 1s ease-in-out infinite;box-shadow:0 0 0 0 rgba(
 .nextbtn .nb-main{display:flex;align-items:center;justify-content:space-between;width:100%;gap:8px;white-space:nowrap;font-family:var(--display);font-size:20px;font-weight:600;letter-spacing:.02em;text-shadow:0 2px 4px rgba(0,0,0,.35)} .nextbtn .nb-main svg{transition:transform .2s} .nextbtn:hover .nb-main svg{transform:translateX(4px)}
 .shoprail .nextbtn.primary small{color:rgba(255,246,234,.85);opacity:1}
 .shoprail .nextbtn.primary::after{content:'';position:absolute;top:0;bottom:0;left:-60%;width:40%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.35),transparent);transform:skewX(-18deg);animation:nbsweep 3.2s ease-in-out infinite}
-@keyframes nbsweep{0%,55%{left:-60%}100%{left:130%}} @keyframes nbglow{0%,100%{box-shadow:0 0 0 1px rgba(0,0,0,.35),0 10px 24px rgba(201,69,58,.4),inset 0 1px 0 rgba(255,255,255,.35)}50%{box-shadow:0 0 0 1px rgba(0,0,0,.35),0 10px 30px rgba(232,90,70,.7),inset 0 1px 0 rgba(255,255,255,.35)}}
+@keyframes nbsweep{0%,55%{transform:translateX(0) skewX(-18deg)}100%{transform:translateX(475%) skewX(-18deg)}} @keyframes nbglow{0%,100%{box-shadow:0 0 0 1px rgba(0,0,0,.35),0 10px 24px rgba(201,69,58,.4),inset 0 1px 0 rgba(255,255,255,.35)}50%{box-shadow:0 0 0 1px rgba(0,0,0,.35),0 10px 30px rgba(232,90,70,.7),inset 0 1px 0 rgba(255,255,255,.35)}}
 @media (prefers-reduced-motion:reduce){.shoprail .nextbtn.primary,.shoprail .nextbtn.primary::after{animation:none}}
 
 /* ===== Realistic tiles: a lit ivory face with bevelled edges on a coloured back slab, symbols engraved into the face ===== */
@@ -805,7 +813,7 @@ aside .sidextra{background:linear-gradient(180deg,rgba(14,24,20,.82),rgba(10,18,
 /* Next Blind: no pulsing glow, a faint sweep every 9 s */
 .shoprail .nextbtn.primary{animation:none;box-shadow:0 0 0 1px rgba(0,0,0,.35),0 8px 20px rgba(201,69,58,.4),inset 0 1px 0 rgba(255,255,255,.35)}
 .shoprail .nextbtn.primary::after{background:linear-gradient(100deg,transparent,rgba(255,255,255,.16),transparent);animation:nbsweep2 9s ease-in-out infinite}
-@keyframes nbsweep2{0%,85%{left:-60%}100%{left:130%}}
+@keyframes nbsweep2{0%,85%{transform:translateX(0) skewX(-18deg)}100%{transform:translateX(475%) skewX(-18deg)}}
 /* Discard after a Call: a slow, faint ring instead of a fast pulse */
 button.pulse{animation:btnpulse2 2.6s ease-out infinite}
 @keyframes btnpulse2{0%{box-shadow:0 0 0 0 rgba(232,107,95,.4)}60%{box-shadow:0 0 0 6px rgba(232,107,95,0)}100%{box-shadow:0 0 0 0 rgba(232,107,95,0)}}
@@ -832,7 +840,8 @@ button.pulse{animation:btnpulse2 2.6s ease-out infinite}
 @keyframes holoslide15{0%,100%{background-position:0 0,7px 8px,0% 0%}50%{background-position:0 0,7px 8px,100% 100%}}
 .slot.ed-holo::after,.shopcard.ed-holo::after{animation:holoring15 15s ease-in-out infinite;animation-delay:var(--edd,0s)}
 @keyframes holoring15{0%,100%{background-position:0% 0%}50%{background-position:100% 100%}}
-.slot.ed-poly::before,.shopcard.ed-poly::before,.slot.ed-poly::after,.shopcard.ed-poly::after{animation:edpoly 15s linear infinite;animation-delay:var(--edd,0s)}
+/* the Polychrome shimmer moves 10 times a second (150 steps over its 15 s loop) rather than every frame, so it repaints far less */
+.slot.ed-poly::before,.shopcard.ed-poly::before,.slot.ed-poly::after,.shopcard.ed-poly::after{animation:edpoly 15s steps(150) infinite;animation-delay:var(--edd,0s)}
 .slot.ed-foil::before,.shopcard.ed-foil::before,.slot.ed-neg::before,.shopcard.ed-neg::before{animation:edsheen3 15s ease-in-out infinite;animation-delay:var(--edd,0s)}
 @media (prefers-reduced-motion:reduce){.slot[class*="ed-"]::before,.shopcard[class*="ed-"]::before,.slot[class*="ed-"]::after,.shopcard[class*="ed-"]::after{animation:none}}
 /* Edition overlays sit behind the card's text and contents, so names and descriptions stay crisp */
@@ -903,7 +912,7 @@ button.pulse{animation:btnpulse2 2.6s ease-out infinite}
 .colgrid.enggrid{grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
 .engcard{display:grid;grid-template-columns:76px minmax(0,1fr);grid-template-rows:auto auto 1fr;column-gap:16px;row-gap:2px;align-items:start;padding:14px 16px}
 .engcard > .kind{grid-column:2;grid-row:1} .engcard > .n{grid-column:2;grid-row:2;margin:0} .engcard > .d{grid-column:2;grid-row:3;margin-top:2px;line-height:1.45}
-.engcard > .coltile{grid-column:1;grid-row:1/4;align-self:center;margin:0;padding:8px 0;min-height:0;display:flex;align-items:center;justify-content:center;border-radius:10px;background:radial-gradient(circle at 50% 40%,#1f5a45,#123528);box-shadow:inset 0 2px 6px rgba(0,0,0,.45)}
+.engcard > .coltile{grid-column:1;grid-row:1/4;align-self:center;margin:0;padding:8px 0;min-height:0;display:flex;align-items:center;justify-content:center}
 .tt-k{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#c9b48a;margin-bottom:2px} .tt-e.tt-body{border-top:0;padding-top:0;margin-top:2px}
 .overlay.boardonly{inset:auto;border-radius:16px 16px 0 0;padding:0 14px;overflow:hidden;background:none}
 .board.cashdim{position:relative} .board.cashdim::after{content:'';position:absolute;inset:0;z-index:15;border-radius:inherit;pointer-events:none;background:linear-gradient(180deg,rgba(5,10,9,.25) 0,rgba(5,10,9,.25) calc(var(--cut,0px) - 8px),rgba(5,10,9,.62) calc(var(--cut,0px) + 8px))}
@@ -1705,9 +1714,9 @@ const TAGS = {
   holo: { name: 'Holographic Tag', desc: 'The first Talisman in the next shop is Holographic.' },
   poly: { name: 'Polychrome Tag', desc: 'The first Talisman in the next shop is Polychrome.' },
   neg: { name: 'Negative Tag', desc: 'The first Talisman in the next shop is Negative (+1 slot).' },
-  omikuji: { name: 'Charm Tag', desc: 'A free Omikuji pack opens in the next shop.' },
+  omikuji: { name: 'Omikuji Tag', desc: 'A free Omikuji pack opens in the next shop.' },
   scroll: { name: 'Scroll Tag', desc: 'A free Scroll pack opens in the next shop.' },
-  talisman: { name: 'Buffoon Tag', desc: 'A free Talisman pack opens in the next shop.' },
+  talisman: { name: 'Talisman Tag', desc: 'A free Talisman pack opens in the next shop.' },
   kami: { name: 'Kami Tag', desc: 'A free Kami pack opens in the next shop.' },
   investment: { name: 'Investment Tag', desc: '+¥25 after you defeat the next Boss.' },
   economy: { name: 'Economy Tag', desc: 'Doubles your money, up to +¥40, right away.' },
@@ -1822,9 +1831,9 @@ const YAKUMAN_SHEET = [
 const HK_TALISMAN = { kakigori: '刨冰 Shaved Ice', senbei: '米餅 Rice Cracker', ramen: '拉麵 Ramen', daikoku: '大黑天 God of Plenty', yurei: '幽靈 Ghost', rikishi: '相撲手 Sumo Wrestler', ramune: '波子汽水 Marble Soda', kakuremino: '隱身蓑 Cloak of Invisibility', kabuki: '歌舞伎 Kabuki Actor', miko: '巫女 Shrine Maiden', hyakki: '百鬼夜行 Night Parade', tsuchinoko: '槌之子 Mallet Snake', otoshidama: '利是 Red Packet', kamikiri: '剪髮鬼 Hair Cutter', kotodama: '言靈 Word Spirit', itako: '問米婆 Spirit Medium', takarabune: '寶船 Treasure Ship', binbogami: '窮神 God of Poverty', fukusuke: '福助 Fortune Doll', ebisu: '惠比壽 Fisherman God', kamaitachi: '鐮鼬 Sickle Weasel', orochi: '八岐大蛇 Eight-headed Serpent', shuten: '酒吞童子 Drunken Demon', tamamo: '九尾狐 Nine-tailed Fox', hoo: '鳳凰 Phoenix', hashi: '橋 Bridge', nopperabo: '無面鬼 Faceless Ghost', sekito: '石塔 Stone Pagoda', aobozu: '青僧 Blue Monk', shiro: '城 Castle', takibi: '篝火 Bonfire', hoshizora: '星空 Starry Sky', mabo: '魔寶 Phantom Treasure', chochin: '燈籠 Lantern', hoshi: '星 Star', hatsumode: '頭炷香 First Incense', oshi: '偶像 Idol', daimyo: '大名 Lord', utsushi: '影印 Mirror Copy', kagami: '鏡 Mirror', kasaobake: '傘妖 Umbrella Ghost', ittanmomen: '布妖 Cloth Ghost', kappa: '水鬼 Water Ghost', kitsune: '狐仙 Fox Spirit', tanuki: '貔貅 Pixiu', maneki: '招財貓 Lucky Cat', tengu: '雷震子 Leizhenzi', oni: '牛魔王 Bull Demon King', daruma: '達摩 Bodhidharma', tsuru: '仙鶴 Crane', koi: '錦鯉 Golden Carp', ryu: '龍王 Dragon King', jizo: '地藏 Dizang', komainu: '石獅 Stone Lion', yukionna: '雪妖 Snow Demon', baku: '貘 Mo', nue: '四不像 Sibuxiang', kodama: '樹精 Tree Spirit', hannya: '夜叉 Yaksha', tsukumogami: '器靈 Object Spirit', nurikabe: '門神 Door God', tengoku: '馬騮精 Monkey Spirit', hitotsume: '獨眼鬼 One-eyed Ghost', nekomata: '貓妖 Cat Demon', shikigami: '紙人 Paper Effigy', kirin: '麒麟 Qilin', hakutaku: '白澤 Bai Ze', yatagarasu: '金烏 Golden Crow', gashadokuro: '骷髏精 Skeleton Spirit', jorogumo: '蜘蛛精 Spider Spirit', rokurokubi: '長頸鬼 Long-neck Ghost', ushioni: '牛頭 Ox-Head', nurarihyon: '無常 Wuchang', zashiki: '福童 Fortune Child', nureonna: '白蛇 White Snake', ryujin: '龍母 Dragon Mother', namazu: '鯉魚精 Carp Spirit', funayurei: '鬼船 Ghost Ship', sazaeoni: '螺精 Conch Spirit', amabie: '人魚 Mermaid', mizuchi: '蛟 Flood Dragon', kawauso: '水獺精 Otter Spirit', omagatoki: '黃昏 Twilight Hour', shojo: '猩猩 Wine Ape', azukiarai: '洗豆妖 Bean Washer' };
 const HK_CONS = { wild: '百搭籤 Wild', lucky: '幸運籤 Luck', crimson: '熱鬧籤 Fervour', stone: '石籤 Stone', echo: '回響籤 Echoes', judgement: '審判籤 Judgement', emperor: '皇帝籤 Emperor', priestess: '女祭司籤 Priestess', hermit: '隱士籤 Hermit', temperance: '節制籤 Temperance', fortune: '命運籤 Fortune', izanagi: '伊邪那岐 Creator God', izanami: '伊邪那美 Creator Goddess', okuninushi: '大國主 Lord of the Land', minakanushi: '天之御中主 First God', hiruko: '水蛭子 Leech Child', uzume: '天宇受賣 Dawn Goddess', hitodama: '鬼火 Ghost Fire', benzaiten: '辯才天 Goddess of Fortune', hachiman: '八幡 God of War', fujin: '風神 Wind God', steel: '鋼籤 Steel', redseal: '紅印籤 Red Seal', glass: '玻璃籤 Glass', dup: '分身籤 Duplication', ascend: '升籤 Ascension', descend: '降籤 Descent', toman: '萬子籤 Characters', topin: '筒子籤 Dots', tosou: '索子籤 Bamboo', destroy: '化灰籤 Dust', dragon: '紅中籤 Red Dragon', redfive: '紅五籤 Red Five', indicator: '寶牌籤 Bonus Tile Slip', wealth: '橫財籤 Windfall', gold: '金箔籤 Gold Foil', obsidian: '黑曜籤 Obsidian', dragonmark: '龍紋籤 Dragon Mark', jade: '翡翠籤 Jade', susanoo: '哪吒 Nezha', inari: '財神 God of Wealth', raijin: '雷公 Lei Gong', tsukuyomi: '嫦娥 Chang’e', amaterasu: '媽祖 Mazu' };
 const HK_SCROLL = { 'm:pair': '對子秘笈 Pairs Manual', 'm:chi': '上牌秘笈 Chow Manual', 'm:pon': '碰牌秘笈 Pung Manual', 'm:kan': '槓牌秘笈 Kong Manual', 'm:hand': '食糊秘笈 Winning Manual', 'y:tanyao': '斷幺九秘笈 All Simples Manual', 'y:pinfu': '平糊秘笈 All Chows Manual', 'y:yakuhai': '番牌秘笈 Honor Set Manual', 'y:honitsu': '混一色秘笈 Mixed Suit Manual', 'y:chinitsu': '清一色秘笈 Pure Suit Manual', 'y:toitoi': '對對糊秘笈 All Pungs Manual', 'y:chiitoitsu': '七對子秘笈 Seven Pairs Manual', 'y:sanshoku': '三色同順秘笈 Triple Chow Manual', 'y:ittsu': '一條龍秘笈 Straight Manual', 'y:chanta': '混全帶幺秘笈 Outside Hand Manual' };
-const HK_FLOWER = { plum: '梅 Plum', orchid: '蘭 Orchid', chrysanthemum: '菊 Chrysanthemum', bamboo: '竹 Bamboo', spring: '春 Spring', summer: '夏 Summer', autumn: '秋 Autumn', winter: '冬 Winter' };
+const HK_FLOWER = { plum: '梅 Plum', orchid: '蘭 Orchid', chrysanthemum: '菊 Chrysanthemum', bamboo: '竹 Bamboo', spring: '春 Spring', summer: '夏 Summer', autumn: '秋 Autumn', winter: '冬 Winter', sakura2: 'Night Blossom' };
 const HK_ENG = { steel: '鋼 Steel Inlay', glass: '玻璃 Glass', gold: '金箔 Gold Foil', obsidian: '黑曜 Obsidian Inlay', dragonmark: '龍紋 Dragon Mark', jade: '翡翠 Jade Inlay' };
-const HK_BOSS = { fisherman: '漁夫 The Fisherman', censor: '審查官 The Censor', gatekeeper: '守門人 The Gatekeeper', collector: '收藏家 The Collector', miser: '孤寒鬼 The Miser', monk: '和尚 The Monk', purist: '蒙眼佬 The Purist', typhoon: '打風 The Typhoon', wallbuilder: '砌牆佬 The Wall-Builder', loanshark: '大耳窿 The Loan Shark' };
+const HK_BOSS = { fisherman: '漁夫 The Fisherman', censor: '審查官 The Censor', gatekeeper: '守門人 The Gatekeeper', collector: '收藏家 The Collector', miser: '孤寒鬼 The Miser', monk: '和尚 The Monk', purist: '蒙眼佬 The Purist', typhoon: '打風 The Typhoon', wallbuilder: '砌牆佬 The Wall-Builder', loanshark: '大耳窿 The Loan Shark', crimson: 'The Crimson Demon' };
 // Generic terms and hand names. Longer keys are matched first.
 const HK_TERMS = {
   'Sanshoku Doujun': '三色同順 Mixed Triple Chow', 'Sanshoku Doukou': '三色同刻 Mixed Triple Pung', 'Kokushi Musou': '十三幺 Thirteen Orphans', 'Chuuren Poutou': '九蓮寶燈 Nine Gates',
@@ -1837,9 +1846,9 @@ const HK_TERMS = {
   'Kami Spirit': '神 Deity', 'Kami': '神 Deity', 'Omikuji': '求籤 Fortune Stick', 'Talismans': '符 Charms', 'Talisman': '符 Charm',
   'Complete Hands': '食糊 Winning Hands', 'Complete Hand': '食糊 Winning Hand', 'Complete hands': 'Winning hands', 'Complete hand': 'Winning hand', 'complete hands': 'winning hands', 'complete hand': 'winning hand', 'Ready Hand': '聽牌 Teng Paai',
   'Red Fives': '紅五 Red Fives', 'Red Five': '紅五 Red Five', 'Yakuhai': '番牌 Honor Set', 'Yakuman': '限糊 Limit Hand', 'Yaku': 'Faan Patterns', 'Han': 'Faan', 'Dora': '寶牌 Bonus Tile', 'Furiten': '振聽 Discard Lock', 'tenpai': '聽牌 teng paai',
-  'Chis': 'Chows', 'Chi': 'Chow 上', 'Pons': 'Pungs', 'Pon': 'Pung 碰', 'Kans': 'Kongs', 'Kan': 'Kong 槓', 'Manzu': '萬子 Characters', 'Pinzu': '筒子 Dots', 'Souzu': '索子 Bamboo', 'Man': 'Characters', 'Pin': 'Dots', 'Sou': 'Bamboo',
+  'Chi': 'Chow 上', 'Pon': 'Pung 碰', 'Kans': 'Kongs', 'Kan': 'Kong 槓', 'Manzu': '萬子 Characters', 'Pinzu': '筒子 Dots', 'Souzu': '索子 Bamboo', 'Man': 'Characters', 'Pin': 'Dots', 'Sou': 'Bamboo',
   'East Wind': '東風 East', 'South Wind': '南風 South', 'West Wind': '西風 West', 'North Wind': '北風 North', 'White Dragon': '白板 White Dragon', 'Green Dragon': '發財 Green Dragon', 'Red Dragon': '紅中 Red Dragon',
-  '¥': '$', 'Rinshan Kaihou': '槓上開花 Flower on the Kong', 'The River': '牌河 The River', 'Open melds': '落地 Exposed sets', 'YEN': 'HKD', 'Mangan': '滿糊 Full Win', 'Haneman': '跳滿 Jump Win', 'Baiman': '倍滿 Double Win', 'Sanbaiman': '三倍滿 Triple Win', 'Yakuza': 'Triad', 'Open 3 Omikuji': 'Open 3 Fortune Sticks', 'Open 5 Omikuji': 'Open 5 Fortune Sticks', 'Kami Spirits': 'Deities', 'Omikuji and Kami': 'Fortune Sticks and Deities', 'Standard': '一番', 'Advanced': '二番', 'Master': '三番',
+  '¥': '$', 'Rinshan Kaihou': '槓上開花 Flower on the Kong', 'The River': '牌河 The River', 'Open melds': '落地 Exposed sets', 'Open Melds': 'Exposed Sets', 'YEN': 'HKD', 'Mangan': '滿糊 Full Win', 'Haneman': '跳滿 Jump Win', 'Baiman': '倍滿 Double Win', 'Sanbaiman': '三倍滿 Triple Win', 'Yakuza': 'Triad', 'Open 3 Omikuji': 'Open 3 Fortune Sticks', 'Open 5 Omikuji': 'Open 5 Fortune Sticks', 'Kami Spirits': 'Deities', 'Omikuji and Kami': 'Fortune Sticks and Deities', 'random Omikuji (room': 'random Fortune Sticks (room', '30 Omikuji': '30 Fortune Sticks', 'Omikuji can': 'Fortune Sticks can', 'Omikuji and Scrolls': 'Fortune Sticks and Manuals', 'Kami come': 'Deities come', 'brings Kami': 'brings Deities', 'Kami turn up': 'Deities turn up', 'each Yaku': 'each Faan Pattern', 'most-scored Yaku': 'most-scored Faan Pattern', 'every Yaku': 'every Faan Pattern', 'Standard': '一番', 'Advanced': '二番', 'Master': '三番',
   'Mahjong roguelite in the Balatro mould': 'Hong Kong mahjong roguelite in the Balatro mould',
 };
 // ===================== MELDS & DECOMPOSITION =====================
@@ -2193,8 +2202,17 @@ function shantenRegular(counts, M) {
   dfs(0, 0, 0, false);
   return Math.max(-1, best);
 }
+// Shanten depends only on the tile counts, the open melds and the Chi shapes (Hashi), so results are remembered: the
+// helper asks about the same hands again on every redraw, and selecting tiles never changes the hand.
+const SHANTEN_MEMO = new Map();
 function handShanten(tiles, openCount) {
   const counts = new Array(34).fill(0); for (const t of tiles) counts[idx(t)]++;
+  const memoKey = String.fromCharCode(...counts.map(c => 48 + c)) + openCount + (GAP_CHI ? 'g' : '');
+  const known = SHANTEN_MEMO.get(memoKey); if (known !== undefined) return known;
+  if (SHANTEN_MEMO.size > 5000) SHANTEN_MEMO.clear();
+  const s = shantenOf(counts, openCount); SHANTEN_MEMO.set(memoKey, s); return s;
+}
+function shantenOf(counts, openCount) {
   let s = shantenRegular(counts, 4 - openCount);
   if (openCount === 0) {
     let pairs = 0, kinds = 0; for (const c of counts) { if (c >= 2) pairs++; if (c > 0) kinds++; }
@@ -2209,7 +2227,27 @@ function handShanten(tiles, openCount) {
 function winningTile(tiles) { let w = null; for (const t of tiles) if (!w || (t.d || 0) > (w.d || 0)) w = t; return w; }
 // Tile types that would complete the hand if drawn (only meaningful when one tile away).
 function waitsOf(hand, openCount) {
-  const out = []; for (let w = 0; w < 34; w++) { const t = tileFromIdx(w); if (handShanten(hand.concat([t]), openCount) === -1) out.push(w); } return out;
+  const out = []; for (let w = 0; w < 34; w++) { const t = tileFromIdx(w); if (isComplete(hand.concat([t]), openCount)) out.push(w); } return out;
+}
+// Whether the tiles contain a complete hand: the same answer as handShanten(...) === -1, but it stops at the first
+// arrangement found instead of searching every partial one, so asking it for each of the 34 possible waits stays cheap.
+function isComplete(tiles, openCount) {
+  const counts = new Array(34).fill(0); for (const t of tiles) counts[idx(t)]++;
+  if (openCount === 0) {
+    let pairs = 0; for (const c of counts) if (c >= 2) pairs++; if (pairs >= 7) return true;
+    let d = 0, hp = false; for (const i of ORPHANS) { if (counts[i] > 0) d++; if (counts[i] >= 2) hp = true; } if (d === 13 && hp) return true;
+  }
+  const M = 4 - openCount;
+  const melds = (i, m) => {
+    if (m === M) return true;
+    while (i < 34 && counts[i] === 0) i++;
+    if (i >= 34) return false;
+    if (counts[i] >= 3) { counts[i] -= 3; const ok = melds(i, m + 1); counts[i] += 3; if (ok) return true; }
+    if (i < 27) for (const sh of CHI_SHAPES()) { const a = i + sh[1], b = i + sh[2]; if ((i % 9) + sh[2] > 8 || !counts[a] || !counts[b]) continue; counts[i]--; counts[a]--; counts[b]--; const ok = melds(i, m + 1); counts[i]++; counts[a]++; counts[b]++; if (ok) return true; }
+    const c = counts[i]; counts[i] = 0; const ok = melds(i + 1, m); counts[i] = c; return ok;
+  };
+  for (let p = 0; p < 34; p++) { if (counts[p] < 2) continue; counts[p] -= 2; const ok = melds(0, 0); counts[p] += 2; if (ok) return true; }
+  return false;
 }
 // ===================== TERMINOLOGY SWITCH =====================
 let LANG = 'ja'; try { LANG = localStorage.getItem('yakuman.lang') === 'hk' ? 'hk' : 'ja'; } catch (e) { }
@@ -2274,29 +2312,29 @@ function settingsHTML() {
   return `<div class="shophead"><h2>Settings</h2></div>
   <div class="setsec">Gameplay</div>
   <div class="setrow"><div><b>Terminology</b><div class="muted" data-notr>Riichi uses Japanese names (Chi, Pon, Kan, Han, Yaku, ¥). Hong Kong uses English names (Chow, Pung, Kong, Faan, $).</div></div><div class="setbtns"><button class="${LANG === 'ja' ? 'primary' : ''}" data-setlang="ja">Riichi</button><button class="${LANG === 'hk' ? 'primary' : ''}" data-setlang="hk">Hong Kong</button></div></div>
-  <div class="setrow"><div><b>Helper hints</b><div class="muted">Shown under your hand. Tiles Away (on by default) says how many tiles you are from a complete hand. Waiting On lists the tiles you need, and Without These says whether the tiles you select can go without setting you back.</div></div><div class="setbtns">${[['away', 'Tiles Away'], ['waits', 'Waiting On'], ['without', 'Without These']].map(([k, n]) => `<button class="${HINTS[k] ? 'primary' : ''}" data-sethint="${k}">${n}</button>`).join('')}</div></div>
-  <div class="setrow"><div><b>Dead-tile dots</b><div class="muted">Green dots mark tiles you can discard without losing progress toward a complete hand.</div></div><div class="setbtns"><button class="${SHOW_DOTS ? 'primary' : ''}" data-setdots="on">On</button><button class="${!SHOW_DOTS ? 'primary' : ''}" data-setdots="off">Off</button></div></div>
+  <div class="setrow"><div><b>Helper Hints</b><div class="muted">Shown under your hand. Tiles Away (on by default) says how many tiles you are from a complete hand. Waiting On lists the tiles you need, and Without These says whether the tiles you select can go without setting you back.</div></div><div class="setbtns">${[['away', 'Tiles Away'], ['waits', 'Waiting On'], ['without', 'Without These']].map(([k, n]) => `<button class="${HINTS[k] ? 'primary' : ''}" data-sethint="${k}">${n}</button>`).join('')}</div></div>
+  <div class="setrow"><div><b>Dead-Tile Dots</b><div class="muted">Green dots mark tiles you can discard without losing progress toward a complete hand.</div></div><div class="setbtns"><button class="${SHOW_DOTS ? 'primary' : ''}" data-setdots="on">On</button><button class="${!SHOW_DOTS ? 'primary' : ''}" data-setdots="off">Off</button></div></div>
   <div class="setsec">Sound</div>
   <div class="setrow"><div><b>Sound</b><div class="muted">Tile clacks, scoring chimes and counters. Sound starts after your first click.</div></div><div class="setbtns"><button class="${SOUND ? 'primary' : ''}" data-setsound="on">On</button><button class="${!SOUND ? 'primary' : ''}" data-setsound="off">Off</button></div></div>
   <div class="setrow"><div><b>Music</b><div class="muted">A laid-back synth groove in the style of Balatro, with a brighter Shop theme and a heavier Boss theme that crossfade as you play. Separate from Sound, and starts after your first click.</div></div><div class="setbtns"><button class="${MUSIC ? 'primary' : ''}" data-setmusic="on">On</button><button class="${!MUSIC ? 'primary' : ''}" data-setmusic="off">Off</button></div></div>
   <div class="setsec">Display</div>
-  <div class="setrow"><div><b>High-contrast tiles</b><div class="muted">One strong colour per suit (Characters red, Dots blue, Bamboo green), with the number on every suited tile. Red Fives stay red with a red corner number.</div></div><div class="setbtns"><button class="${HIGH_CONTRAST ? 'primary' : ''}" data-sethc="on">On</button><button class="${!HIGH_CONTRAST ? 'primary' : ''}" data-sethc="off">Off</button></div></div>
-  <div class="setrow"><div><b>Tile numbers</b><div class="muted">The small number or letter in a tile's corner. Characters and Winds is the default: Dots and Bamboo are counted by their pips. With All Tiles, some numbers sit over the Dots and Bamboo art.</div></div><div class="setbtns">${[['all', 'All Tiles'], ['some', 'Characters and Winds'], ['none', 'None']].map(([k, n]) => `<button class="${TILE_NUMS === k ? 'primary' : ''}" data-settilenums="${k}">${n}</button>`).join('')}</div></div>
-  <div class="setrow"><div><b>CRT filter</b><div class="muted">Light adds faint scanlines and a soft vignette. Full also curves the screen like an old tube, with a soft glow at the edges, like Balatro's CRT; it is heavier and may slow older devices.</div></div><div class="setbtns">${[['off', 'Off'], ['on', 'Light'], ['full', 'Full']].map(([k, n]) => `<button class="${CRT === k ? 'primary' : ''}" data-setcrt="${k}">${n}</button>`).join('')}</div></div>
+  <div class="setrow"><div><b>High-Contrast Tiles</b><div class="muted">One strong colour per suit (Characters red, Dots blue, Bamboo green), with the number on every suited tile. Red Fives stay red with a red corner number.</div></div><div class="setbtns"><button class="${HIGH_CONTRAST ? 'primary' : ''}" data-sethc="on">On</button><button class="${!HIGH_CONTRAST ? 'primary' : ''}" data-sethc="off">Off</button></div></div>
+  <div class="setrow"><div><b>Tile Numbers</b><div class="muted">The small number or letter in a tile's corner. Characters and Winds is the default: Dots and Bamboo are counted by their pips. With All Tiles, some numbers sit over the Dots and Bamboo art.</div></div><div class="setbtns">${[['all', 'All Tiles'], ['some', 'Characters and Winds'], ['none', 'None']].map(([k, n]) => `<button class="${TILE_NUMS === k ? 'primary' : ''}" data-settilenums="${k}">${n}</button>`).join('')}</div></div>
+  <div class="setrow"><div><b>CRT Filter</b><div class="muted">Light adds faint scanlines and a soft vignette. Full also curves the screen like an old tube, with a soft glow at the edges, like Balatro's CRT; it is heavier and may slow older devices.</div></div><div class="setbtns">${[['off', 'Off'], ['on', 'Light'], ['full', 'Full']].map(([k, n]) => `<button class="${CRT === k ? 'primary' : ''}" data-setcrt="${k}">${n}</button>`).join('')}</div></div>
   <div class="setsec">Motion</div>
-  <div class="setrow"><div><b>Reduce motion</b><div class="muted">Turns off all animation: cards flying and dealing in, trays sliding, shimmer, the drifting background and the scoring effects. Everything happens instantly instead. Also on automatically if your device asks for reduced motion.</div></div><div class="setbtns"><button class="${REDUCE_MOTION ? 'primary' : ''}" data-setmotion="reduce">On</button><button class="${!REDUCE_MOTION ? 'primary' : ''}" data-setmotion="full">Off</button></div></div>
-  <div class="setrow${noMotion ? ' setoff' : ''}"><div><b>Animation speed</b><div class="muted">How fast everything moves: scoring, trays sliding, cards dealing in and flying to their slots. The drifting background and shimmer keep their pace.${noMotion ? `<div class="setnote">Off while ${deviceReduce && !REDUCE_MOTION ? 'your device asks for reduced motion' : 'Reduce motion is on'}.</div>` : ''}</div></div><div class="setbtns">${[['slow', 'Slow'], ['normal', 'Normal'], ['fast', 'Fast']].map(([k, n]) => `<button ${noMotion ? 'disabled ' : ''}class="${ANIM_SPEED === k ? 'primary' : ''}" data-setspeed="${k}">${n}</button>`).join('')}</div></div>
-  <div class="setrow${noMotion ? ' setoff' : ''}"><div><b>Instant scoring</b><div class="muted">Shows a play's result at once instead of scoring tile by tile. Clicking anywhere during scoring also skips it.${noMotion ? `<div class="setnote">Off while ${deviceReduce && !REDUCE_MOTION ? 'your device asks for reduced motion' : 'Reduce motion is on'}.</div>` : ''}</div></div><div class="setbtns"><button ${noMotion ? 'disabled ' : ''}class="${INSTANT_SCORE ? 'primary' : ''}" data-setinstant="on">On</button><button ${noMotion ? 'disabled ' : ''}class="${!INSTANT_SCORE ? 'primary' : ''}" data-setinstant="off">Off</button></div></div>
-  <div class="setrow${noMotion ? ' setoff' : ''}"><div><b>Animated background</b><div class="muted">Slowly drifting light behind the table, like Balatro's swirl.${noMotion ? `<div class="setnote">Off while ${deviceReduce && !REDUCE_MOTION ? 'your device asks for reduced motion' : 'Reduce motion is on'}.</div>` : ''}</div></div><div class="setbtns"><button ${noMotion ? 'disabled ' : ''}class="${BG_ANIM ? 'primary' : ''}" data-setbg="on">On</button><button ${noMotion ? 'disabled ' : ''}class="${!BG_ANIM ? 'primary' : ''}" data-setbg="off">Off</button></div></div>
-  <div class="setrow${noMotion ? ' setoff' : ''}"><div><b>Screen shake</b><div class="muted">The table shakes a little when a play scores three times the target or more.${noMotion ? `<div class="setnote">Off while ${deviceReduce && !REDUCE_MOTION ? 'your device asks for reduced motion' : 'Reduce motion is on'}.</div>` : ''}</div></div><div class="setbtns"><button ${noMotion ? 'disabled ' : ''}class="${SHAKE ? 'primary' : ''}" data-setshake="on">On</button><button ${noMotion ? 'disabled ' : ''}class="${!SHAKE ? 'primary' : ''}" data-setshake="off">Off</button></div></div>
-  <div class="setsec">Your data</div>
+  <div class="setrow"><div><b>Reduce Motion</b><div class="muted">Turns off all animation: cards flying and dealing in, trays sliding, shimmer, the drifting background and the scoring effects. Everything happens instantly instead. Also on automatically if your device asks for reduced motion.</div></div><div class="setbtns"><button class="${REDUCE_MOTION ? 'primary' : ''}" data-setmotion="reduce">On</button><button class="${!REDUCE_MOTION ? 'primary' : ''}" data-setmotion="full">Off</button></div></div>
+  <div class="setrow${noMotion ? ' setoff' : ''}"><div><b>Animation Speed</b><div class="muted">How fast everything moves: scoring, trays sliding, cards dealing in and flying to their slots. The drifting background and shimmer keep their pace.${noMotion ? `<div class="setnote">Off while ${deviceReduce && !REDUCE_MOTION ? 'your device asks for reduced motion' : 'Reduce motion is on'}.</div>` : ''}</div></div><div class="setbtns">${[['slow', 'Slow'], ['normal', 'Normal'], ['fast', 'Fast']].map(([k, n]) => `<button ${noMotion ? 'disabled ' : ''}class="${ANIM_SPEED === k ? 'primary' : ''}" data-setspeed="${k}">${n}</button>`).join('')}</div></div>
+  <div class="setrow${noMotion ? ' setoff' : ''}"><div><b>Instant Scoring</b><div class="muted">Shows a play's result at once instead of scoring tile by tile. Clicking anywhere during scoring also skips it.${noMotion ? `<div class="setnote">Off while ${deviceReduce && !REDUCE_MOTION ? 'your device asks for reduced motion' : 'Reduce motion is on'}.</div>` : ''}</div></div><div class="setbtns"><button ${noMotion ? 'disabled ' : ''}class="${INSTANT_SCORE ? 'primary' : ''}" data-setinstant="on">On</button><button ${noMotion ? 'disabled ' : ''}class="${!INSTANT_SCORE ? 'primary' : ''}" data-setinstant="off">Off</button></div></div>
+  <div class="setrow${noMotion ? ' setoff' : ''}"><div><b>Animated Background</b><div class="muted">Slowly drifting light behind the table, like Balatro's swirl.${noMotion ? `<div class="setnote">Off while ${deviceReduce && !REDUCE_MOTION ? 'your device asks for reduced motion' : 'Reduce motion is on'}.</div>` : ''}</div></div><div class="setbtns"><button ${noMotion ? 'disabled ' : ''}class="${BG_ANIM ? 'primary' : ''}" data-setbg="on">On</button><button ${noMotion ? 'disabled ' : ''}class="${!BG_ANIM ? 'primary' : ''}" data-setbg="off">Off</button></div></div>
+  <div class="setrow${noMotion ? ' setoff' : ''}"><div><b>Screen Shake</b><div class="muted">The table shakes a little when a play scores three times the target or more.${noMotion ? `<div class="setnote">Off while ${deviceReduce && !REDUCE_MOTION ? 'your device asks for reduced motion' : 'Reduce motion is on'}.</div>` : ''}</div></div><div class="setbtns"><button ${noMotion ? 'disabled ' : ''}class="${SHAKE ? 'primary' : ''}" data-setshake="on">On</button><button ${noMotion ? 'disabled ' : ''}class="${!SHAKE ? 'primary' : ''}" data-setshake="off">Off</button></div></div>
+  <div class="setsec">Your Data</div>
   <div class="setrow"><div><b>Profile</b><div class="muted">${PROFILE.runs} runs · ${PROFILE.wins} wins · best Ante ${PROFILE.bestAnte || '—'} · ${unlockedCount()} of ${UNLOCKS.length} unlocks. Saved in this browser. Export to move it, with your settings and current run, to another device.</div></div><div class="setbtns solo"><button class="ghost" id="mExport">Export</button><button class="ghost" id="mImport">Import</button></div></div>
-  <div class="setrow"><div><b>Delete current run</b><div class="muted">Ends the run in progress so it can't be continued. Your profile, unlocks and settings stay.</div></div><div class="setbtns solo"><button class="danger" id="mDeleteRun"${hasRunSave() ? '' : ' disabled'}>Delete Run</button></div></div>
-  <div class="setrow"><div><b>Reset profile</b><div class="muted">Clears lifetime stats and locks everything you have unlocked again. Your current run and settings stay.</div></div><div class="setbtns solo"><button class="danger" id="mResetProfile">Reset Profile</button></div></div>
+  <div class="setrow"><div><b>Delete Current Run</b><div class="muted">Ends the run in progress so it can't be continued. Your profile, unlocks and settings stay.</div></div><div class="setbtns solo"><button class="danger" id="mDeleteRun"${hasRunSave() ? '' : ' disabled'}>Delete Run</button></div></div>
+  <div class="setrow"><div><b>Reset Profile</b><div class="muted">Clears lifetime stats and locks everything you have unlocked again. Your current run and settings stay.</div></div><div class="setbtns solo"><button class="danger" id="mResetProfile">Reset Profile</button></div></div>
   <div class="setsec">Advanced</div>
-  <div class="setrow"><div><b>Debug tools</b><div class="muted">A bar under the board with money, plays, items, bosses and editions for playtesting.</div></div><div class="setbtns"><button class="${dbgOn ? 'primary' : ''}" data-setdbg="on">Show</button><button class="${!dbgOn ? 'primary' : ''}" data-setdbg="off">Hide</button></div></div>
-  <div class="setrow"><div><b>Unlock everything</b><div class="muted">For playtesting. Every Talisman, Wall and Stake is available and the whole Collection is revealed, whatever your profile says. Progress keeps counting.</div></div><div class="setbtns"><button class="${UNLOCK_ALL ? 'primary' : ''}" data-setunlock="on">On</button><button class="${!UNLOCK_ALL ? 'primary' : ''}" data-setunlock="off">Off</button></div></div>
-  <div class="setrow"><div><b>Reset settings</b><div class="muted">Puts every setting on this page back to its default. Your run, profile and unlocks are not touched.</div></div><div class="setbtns solo"><button class="ghost" id="mResetSettings">Reset to Defaults</button></div></div>
+  <div class="setrow"><div><b>Debug Tools</b><div class="muted">A bar under the board with money, plays, items, bosses and editions for playtesting.</div></div><div class="setbtns"><button class="${dbgOn ? 'primary' : ''}" data-setdbg="on">Show</button><button class="${!dbgOn ? 'primary' : ''}" data-setdbg="off">Hide</button></div></div>
+  <div class="setrow"><div><b>Unlock Everything</b><div class="muted">For playtesting. Every Talisman, Wall and Stake is available and the whole Collection is revealed, whatever your profile says. Progress keeps counting.</div></div><div class="setbtns"><button class="${UNLOCK_ALL ? 'primary' : ''}" data-setunlock="on">On</button><button class="${!UNLOCK_ALL ? 'primary' : ''}" data-setunlock="off">Off</button></div></div>
+  <div class="setrow"><div><b>Reset Settings</b><div class="muted">Puts every setting on this page back to its default. Your run, profile and unlocks are not touched.</div></div><div class="setbtns solo"><button class="ghost" id="mResetSettings">Reset to Defaults</button></div></div>
   <button id="mClose" hidden>Close</button>`;
 }
 // ===================== STATE =====================
@@ -2563,7 +2601,7 @@ const ACHIEVEMENTS = [
   { key: 'limit', name: 'Limit Hand', goal: 'Score any Yakuman', prog: P => [yakuN(P, ...YAKUMAN_KEYS), 1] },
   { key: 'orphans', name: 'Thirteen Orphans', goal: 'Score Kokushi Musou', prog: P => [yakuN(P, 'kokushi'), 1] },
   { key: 'pairs', name: 'Seven Pairs, Ten Times', goal: 'Score Chiitoitsu 10 times', prog: P => [yakuN(P, 'chiitoitsu'), 10] },
-  { key: 'rinshan', name: 'Flower on the Kong', goal: 'Score Rinshan Kaihou', prog: P => [yakuN(P, 'rinshan'), 1] },
+  { key: 'rinshan', name: 'Flower on the Kan', goal: 'Score Rinshan Kaihou', prog: P => [yakuN(P, 'rinshan'), 1] },
   { key: 'furiten', name: 'Against the Odds', goal: 'Score 10 Complete Hands in Furiten', prog: P => [P.furitenHands, 10] },
   { key: 'rich', name: 'Deep Pockets', goal: 'Hold ¥100 at once', prog: P => [P.mostMoney, 100] },
   { key: 'showdown', name: 'Showdown', goal: 'Beat a Showdown Boss', prog: P => [Object.keys(P.bosses).filter(k => BOSSES[k] && BOSSES[k].showdown).length, 1] },
@@ -2704,7 +2742,7 @@ function winBlind() {
   if (finished && !S.challenge) { PROFILE.wins++; bump(PROFILE.stakesWon, S.stake); bump(PROFILE.wallsWon, S.deckKey); PROFILE.bestAnte = Math.max(PROFILE.bestAnte, CFG.antes);
     const lv = stakeLevel(S.stake), next = STAKE_KEYS[lv + 1];
     if (lv > wallBest(S.deckKey)) { PROFILE.wallStakes[S.deckKey] = lv;
-      if (next) { S.newUnlocks = (S.newUnlocks || []).concat([`stake:${next}:${S.deckKey}`]); setTimeout(() => toast(`<div class="label">Unlocked · Stake</div><b>${STAKES[next].name}</b><div class="muted" style="font-size:11px">for the ${DECKS[S.deckKey].name}</div>`), 200); } } }
+      if (next) { S.newUnlocks = (S.newUnlocks || []).concat([`stake:${next}:${S.deckKey}`]); setTimeout(() => toast(`<div class="label">Unlocked · Stake</div><b>${stakeName(next)}</b><div class="muted" style="font-size:11px">for the ${DECKS[S.deckKey].name}</div>`), 200); } } }
   saveProfile();
   if (finished) { S.phase = 'win'; return; }
   genShop(); S.phase = 'cashout';
@@ -2728,9 +2766,25 @@ const fitMQ = matchMedia('(min-width:821px)');
 let shortest = { w: 0, h: 0 };
 // A sudden drop of more than a toolbar's height is the on-screen keyboard, which comes and goes, so it is not counted.
 function fitHeight() { if (innerWidth !== shortest.w) shortest = { w: innerWidth, h: innerHeight }; else if (innerHeight > shortest.h - 140) shortest.h = Math.min(shortest.h, innerHeight); return shortest.h; }
+// The fitting's searches force many layouts, so their result is kept while nothing that sizes the board changes: the
+// window, the phase, the hand's capacity and size, the River and melds, a pending Call, and the cards' text. Each redraw
+// then only puts back the card-name sizes (the cards are redrawn) and checks that the board still ends where it did.
+let fitSig = '', fitBottom = 0, fitNames = new Map();
+const fitSignature = () => [innerWidth, fitHeight(), S.phase, !!S.pack, capacity(), S.hand.length, S.river.length, S.open.map(m => m.type + (m.closed ? 'c' : '') + m.tiles.length).join(), S.pendingDiscard || 0, $('#talismans').childElementCount, $('#consumables').childElementCount, $('#talismans').textContent, $('#consumables').textContent].join('|');
+const cardNames = () => document.querySelectorAll('#talismans .slot.filled .n, #consumables .slot.filled .n');
 function fitBoard() {
   const on = fitMQ.matches, hand = $('#hand'), river = $('#river'), open = $('#open'), aside = document.querySelector('aside'), board = document.querySelector('.board');
   document.body.classList.toggle('fitboard', on);
+  const sig = on && board && S ? fitSignature() : '';
+  if (sig && sig === fitSig) {
+    // the action message and the hint title are set up again below as on a full fit; the sizes stay as they are
+    const msg = $('#msg'), slot = $('.hintrow'); if (msg.parentElement !== slot) slot.appendChild(msg);
+    $('#hint').title = $('#hint').textContent;
+    for (const n of cardNames()) { const f = fitNames.get(n.textContent); if (f && f.fs) n.style.fontSize = f.fs; if (f && f.two) n.classList.add('twoline'); }
+    if (river.classList.contains('scrolly')) river.scrollTop = river.scrollHeight;
+    if (Math.abs(board.getBoundingClientRect().bottom + scrollY - fitBottom) <= 0.5) return;
+  }
+  fitSig = '';
   hand.style.removeProperty('--tw'); hand.style.removeProperty('--th'); river.style.removeProperty('--tws'); open.style.removeProperty('--tws'); river.classList.remove('scrolly'); aside.style.maxHeight = ''; document.querySelector('.zone-row').style.removeProperty('--rws');
   // the action message joins the hint line, sharing it with the hint, and goes back under the buttons otherwise
   const msg = $('#msg'), slot = on ? $('.hintrow') : $('.actions'); if (msg.parentElement !== slot) slot.appendChild(msg);
@@ -2769,7 +2823,7 @@ function fitBoard() {
   // card names stay on one line: a name too long for its card is set smaller, and one that would need less than 11px
   // ("Yamata-no-Orochi", "Slip of the Dragon Mark") wraps onto two lines instead
   const collapsed = S.phase === 'blind' && !body.classList.contains('descopen');
-  for (const n of document.querySelectorAll('#talismans .slot.filled .n, #consumables .slot.filled .n')) {
+  for (const n of cardNames()) {
     n.style.fontSize = ''; n.classList.remove('twoline'); if (!collapsed) continue;
     // measured to the fraction of a pixel, as even a fraction over shows the "…"
     const w = n.getBoundingClientRect().width, need = () => { const r = document.createRange(); r.selectNodeContents(n); return r.getBoundingClientRect().width; };
@@ -2785,8 +2839,10 @@ function fitBoard() {
   pads.forEach(g => g.remove());
   // the left column scrolls inside itself (Last Play shown) only while the board fits the window
   if (fitted) aside.style.maxHeight = Math.max(200, room - aside.getBoundingClientRect().top - scrollY - 10) + 'px';
+  fitNames = new Map([...cardNames()].map(n => [n.textContent, { fs: n.style.fontSize, two: n.classList.contains('twoline') }]));
+  fitBottom = board.getBoundingClientRect().bottom + scrollY; fitSig = sig;
 }
-let fitTimer = 0, fitWidth = innerWidth; const refit = () => { clearTimeout(fitTimer); fitTimer = setTimeout(() => { if (S) fitBoard(); }, 60); };
+let fitTimer = 0, fitWidth = innerWidth; const refit = () => { clearTimeout(fitTimer); fitTimer = setTimeout(() => { fitSig = ''; if (S) fitBoard(); }, 60); };
 // a change of height alone (Safari's toolbar shrinking or growing as the page scrolls) only refits when the window is
 // shorter than it has been, so the page does not jump while it is being scrolled
 addEventListener('resize', () => { const same = innerWidth === fitWidth; fitWidth = innerWidth; if (same && (innerHeight >= shortest.h || innerHeight <= shortest.h - 140)) return; refit(); });
@@ -3277,7 +3333,7 @@ function selectHTML() {
   const plays = blindPlays(), discards = blindDiscards();
   // Ante progress: one pip per Ante, filled for cleared Antes, ringed for this one.
   const pips = S.ante > CFG.antes ? '<span class="endlessbadge">Endless</span>' : Array.from({ length: CFG.antes }, (_, i) => `<i class="${i + 1 < S.ante ? 'done' : i + 1 === S.ante ? 'now' : ''}"></i>`).join('');
-  let h = `<div class="shophead"><h2>Ante ${S.ante}${S.ante > CFG.antes ? '' : ` <span class="muted sub">of ${CFG.antes}</span>`}</h2><span class="antepips" title="${anteLabel()}">${pips}</span></div><div class="selsub"><p class="muted">${S.challenge ? `Challenge: <b>${CHAL[S.challenge].name}</b> · ${CHAL[S.challenge].desc}` : `${DECKS[S.deckKey].name} · ${STAKES[S.stake].name}`}</p><span class="selbtns"><button id="mDeck" class="ghost quietbtn">${WALL_ICO}View Wall <b class="num">${(S.deck || []).length}</b></button><button id="mRunInfo" class="ghost quietbtn">${INFO_ICO}Run Info</button></span></div><div class="blindsel">`;
+  let h = `<div class="shophead"><h2>Ante ${S.ante}${S.ante > CFG.antes ? '' : ` <span class="muted sub">of ${CFG.antes}</span>`}</h2><span class="antepips" title="${anteLabel()}">${pips}</span></div><div class="selsub"><p class="muted">${S.challenge ? `Challenge: <b>${CHAL[S.challenge].name}</b> · ${CHAL[S.challenge].desc}` : `${DECKS[S.deckKey].name} · ${stakeName(S.stake)}`}</p><span class="selbtns"><button id="mDeck" class="ghost quietbtn">${WALL_ICO}View Wall <b class="num">${(S.deck || []).length}</b></button><button id="mRunInfo" class="ghost quietbtn">${INFO_ICO}Run Info</button></span></div><div class="blindsel">`;
   kinds.forEach((k, i) => {
     const state = i < S.blindIndex ? 'done' : i === S.blindIndex ? 'current' : 'next';
     const reward = (k === 'small' && smallPaysNothing()) ? 0 : CFG.blindReward[k];
@@ -3293,7 +3349,7 @@ function selectHTML() {
     h += `</div>`;
   });
   h += `</div>`;
-  if (S.tags.length) h += `<div class="label" style="margin:12px 0 6px">Tags held</div><div class="overtals">${S.tags.map(t => `<span class="tagchip" data-hc-kind="Tag" data-hc-title="${TAGS[t].name}" data-hc-body="${TAGS[t].desc.replace(/"/g, '&quot;')}">${TAGS[t].name}</span>`).join('')}</div>`;
+  if (S.tags.length) h += `<div class="label" style="margin:12px 0 6px">Tags Held</div><div class="overtals">${S.tags.map(t => `<span class="tagchip" data-hc-kind="Tag" data-hc-title="${TAGS[t].name}" data-hc-body="${TAGS[t].desc.replace(/"/g, '&quot;')}">${TAGS[t].name}</span>`).join('')}</div>`;
   h += `<div class="msg${S.msgErr ? ' err' : ''}" style="margin-top:8px;min-height:18px">${S.msg || ''}</div>${hasF('peony') ? `<div class="shopfoot"><span style="flex:1"></span><button id="mRerollBoss" class="ghost" ${canRerollBoss() ? '' : `disabled title="${S.money < 10 ? 'Needs ¥10' : 'Already rerolled this Ante'}"`}>Reroll Boss ¥10</button></div>` : ''}`;
   return h;
 }
@@ -3330,13 +3386,15 @@ function tileEl(t, o = {}) {
   el.dataset.id = t.id;
   el.className = 'tile ' + t.suit + (t.red ? ' red' : '') + (t.eng ? ' eng-' + t.eng : '') + (t.seal ? ' seal-' + t.seal : '') + (t.ed ? ' ted-' + t.ed : '') + (o.sel ? ' sel' : '') + (o.small ? ' small' : '') + (o.back ? ' back' : '') + (o.called ? ' called' : '');
   if (!o.back) {
-    el.innerHTML = t.eng === 'stone' ? STONE_SVG : tileSVG(t);
-    if (t.ed) el.innerHTML += '<span class="tedfx"></span>';
-    if (t.eng === 'wild' || t.eng === 'lucky' || t.eng === 'mult') el.innerHTML += `<span class="emark emark-${t.eng}">${EMARK_SVG[t.eng]}</span>`;
-    if (t.seal || t.eng === 'redseal') el.innerHTML += `<span class="seal seal-${t.seal || 'red'}"></span>`;
-    if (t.eng === 'dragonmark') el.innerHTML += '<span class="dmark"></span>';
-    else if (t.eng === 'gold') el.innerHTML += '<span class="shine"></span>';
-    else if (t.eng === 'steel') el.innerHTML += '<span class="brush"></span>';
+    // built as one string and parsed once
+    let h = t.eng === 'stone' ? STONE_SVG : tileSVG(t);
+    if (t.ed) h += '<span class="tedfx"></span>';
+    if (t.eng === 'wild' || t.eng === 'lucky' || t.eng === 'mult') h += `<span class="emark emark-${t.eng}">${EMARK_SVG[t.eng]}</span>`;
+    if (t.seal || t.eng === 'redseal') h += `<span class="seal seal-${t.seal || 'red'}"></span>`;
+    if (t.eng === 'dragonmark') h += '<span class="dmark"></span>';
+    else if (t.eng === 'gold') h += '<span class="shine"></span>';
+    else if (t.eng === 'steel') h += '<span class="brush"></span>';
+    el.innerHTML = h;
   }
   el._t = t;   // the hover card reads the tile from here (it replaces the plain tooltip)
   return el;
@@ -3392,7 +3450,13 @@ const SOU_LAYOUT = {
   8: [[11, 22], [22, 22], [33, 22], [44, 22], [11, 52], [22, 52], [33, 52], [44, 52]],
   9: [[13, 15], [27, 15], [41, 15], [13, 37, 1], [27, 37, 1], [41, 37, 1], [13, 59], [27, 59], [41, 59]],
 };
+// A tile's face depends only on its suit, rank and Red Five, plus two display settings, so each face is drawn once.
+const TILE_SVG_MEMO = new Map();
 function tileSVG(t) {
+  const memoKey = t.suit + t.rank + (t.red ? 'r' : '') + (HIGH_CONTRAST ? 'h' : '') + TILE_NUMS;
+  let svg = TILE_SVG_MEMO.get(memoKey); if (!svg) { svg = tileFace(t); TILE_SVG_MEMO.set(memoKey, svg); } return svg;
+}
+function tileFace(t) {
   const red = '#d12c1f', blue = HIGH_CONTRAST ? '#1747c9' : '#1f4f8f', green = HIGH_CONTRAST ? '#0b7a2e' : '#2e7d4f', ink = '#1b1b1b', HC = HIGH_CONTRAST, NUMS = HC ? 'all' : TILE_NUMS;
   let body = '';
   const small = n => `<text x="5" y="11" font-size="9" font-family="IBM Plex Sans, sans-serif" font-weight="600" fill="${t.red ? red : '#7a6e52'}">${n}</text>`;
@@ -3703,11 +3767,12 @@ function tileSnapshot() {
 function tileMotion(before, fresh) {
   if (!motionOK || (!before.size && !fresh.size)) return;
   let fly = 0, deal = 0; const dealGap = fresh.size > 8 ? 30 : 55;
-  for (const z of TILE_ZONES) document.querySelectorAll(`${z} .tile[data-id]`).forEach(e => {
-    const id = +e.dataset.id; if (!id) return;
-    const old = before.get(id), lift = liftOf(e), end = `translate(0px,${lift}px) scale(1)`;
+  // every tile is measured before any is animated, so the page lays out once instead of once per tile
+  const tiles = []; for (const z of TILE_ZONES) document.querySelectorAll(`${z} .tile[data-id]`).forEach(e => { const id = +e.dataset.id; if (!id) return; const old = before.get(id); tiles.push({ e, id, z, old, r: old ? e.getBoundingClientRect() : null }); });
+  tiles.forEach(({ e, id, z, old, r }) => {
+    const lift = liftOf(e), end = `translate(0px,${lift}px) scale(1)`;
     if (old) {
-      const r = e.getBoundingClientRect(), dx = old.r.left - r.left, dy = old.r.top - (r.top - lift), sc = old.r.width / r.width;
+      const dx = old.r.left - r.left, dy = old.r.top - (r.top - lift), sc = old.r.width / r.width;
       if (old.zone !== z) {   // discards into the River, Calls onto the table
         e.style.transformOrigin = '0 0';
         const a = e.animate([{ transform: `translate(${dx}px,${dy}px) scale(${sc})`, zIndex: 30 }, { transform: `translate(${dx / 2}px,${dy / 2 - 34}px) scale(${(sc + 1) / 2}) rotate(${fly % 2 ? 7 : -7}deg)`, zIndex: 30, offset: .45 }, { transform: end, zIndex: 30 }],
@@ -3729,7 +3794,14 @@ function tileMotion(before, fresh) {
 }
 // Big numbers shrink to fit their box instead of wrapping onto a second line (targets, chips, Mult, totals, Round Score).
 function fitText(el, min) { if (!el) return; el.style.fontSize = ''; let fs = parseFloat(getComputedStyle(el).fontSize); while (el.scrollWidth > el.clientWidth + 1 && fs > (min || 11)) { fs -= 1; el.style.fontSize = fs + 'px'; } }
-function fitNumbers(root) { (root || document).querySelectorAll('.handbox .chipbox, .handbox .multbox, .bp-row .target, .roundscore .rs, .hb-total .tot, #purseVal, .lastplay .lp-result').forEach(e => fitText(e)); (root || document).querySelectorAll('.hanfoot').forEach(fitFoot); (root || document).querySelectorAll('.hb-head .hb-title').forEach(fitTitle); }
+// All boxes are reset and measured together, then only the ones that overflow shrink (one layout instead of one per box).
+function fitNumbers(root) {
+  const boxes = [...(root || document).querySelectorAll('.handbox .chipbox, .handbox .multbox, .bp-row .target, .roundscore .rs, .hb-total .tot, #purseVal, .lastplay .lp-result')];
+  boxes.forEach(e => { e.style.fontSize = ''; });
+  boxes.filter(e => e.scrollWidth > e.clientWidth + 1).forEach(e => { let fs = parseFloat(getComputedStyle(e).fontSize); while (e.scrollWidth > e.clientWidth + 1 && fs > 11) { fs -= 1; e.style.fontSize = fs + 'px'; } });
+  fitOthers(root);
+}
+function fitOthers(root) { (root || document).querySelectorAll('.hanfoot').forEach(fitFoot); (root || document).querySelectorAll('.hb-head .hb-title').forEach(fitTitle); }
 // The Han caption always shows the tier name (Baiman, ...) on its second line; the tooltip has both.
 function fitFoot(el) { if (!el) return; const t = el.querySelector('.hantier').textContent; el.title = el.querySelector('.hanline').textContent + (t ? ' · ' + t : ''); }
 // Chips × Mult boxes for the scoring summary. Han lives in a caption strip under Mult, because Han only exists to become Mult.
@@ -3882,7 +3954,15 @@ function fitHead(id) {
   if (!cs.children.length) return; const over = () => cs.lastElementChild.getBoundingClientRect().right > z.getBoundingClientRect().right + .5;
   if (over()) z.classList.add('tight'); if (over()) z.classList.add('tighter');
 }
+// The River and Open Melds are only redrawn when something they show changes (their tiles, the River selection, the
+// terms or tile settings, or scoring starting or ending, which marks melds as they score): selecting hand tiles leaves
+// them as they are, which saves repainting dozens of tiles on every tap.
+let openDrawn = null, riverDrawn = null;
+const tileSig = t => [t.id, t.suit, t.rank, t.red ? 1 : 0, t.eng || '', t.seal || '', t.ed || ''].join(':');
+const zoneSig = extra => [LANG, HIGH_CONTRAST ? 1 : 0, TILE_NUMS, S.busy ? 1 : 0, extra].join('|');
 function renderOpen() {
+  const sig = zoneSig(S.open.map(m => `${m.type}${m.closed ? 'c' : ''}${m.calledId || ''}[${m.tiles.map(tileSig).join(',')}]`).join(';'));
+  if (openDrawn && openDrawn.s === S && openDrawn.sig === sig) return; openDrawn = { s: S, sig };
   const box = $('#open'); box.innerHTML = '';
   if (!S.open.length) box.innerHTML = '<span class="muted empty">No melds on the table</span>';
   for (const m of S.open) { const w = document.createElement('div'); w.className = 'meld' + (m.closed ? ' closedmeld' : ''); w.innerHTML = `<span class="mt">${m.closed ? 'Concealed ' : ''}${MELD_LABEL[m.type]}</span>`; if (m.closed) w.title = 'Concealed Kan: declared from your hand, so your hand stays closed. Shown like real Mahjong, with the two end tiles face down.';
@@ -3890,6 +3970,8 @@ function renderOpen() {
     m.tiles.forEach((t, k) => w.appendChild(tileEl(t, { small: true, called: t.id === m.calledId, back: m.closed && m.type === 'kan' && (k === 0 || k === 3) }))); box.appendChild(w); }
 }
 function renderRiver() {
+  const sig = zoneSig(`${S.selRiver || ''}#${S.river.map(tileSig).join(',')}`);
+  if (riverDrawn && riverDrawn.s === S && riverDrawn.sig === sig) return; riverDrawn = { s: S, sig };
   const box = $('#river'); box.innerHTML = '';
   for (const t of S.river) { const e = tileEl(t, { small: true, sel: S.selRiver === t.id }); e.onclick = () => { if (S.phase !== 'blind') return; S.selRiver = S.selRiver === t.id ? null : t.id; render(); }; box.appendChild(e); }
   if (!S.river.length) box.innerHTML = '<span class="muted empty">No discards yet</span>';
@@ -4156,6 +4238,8 @@ const spd = ms => motionOK ? ms * SPEEDS[ANIM_SPEED] : ms;
   // One-off CSS animations (pops, bounces, hit badges) follow the same speed; looping ones (shimmer, the drifting
   // background, embers) keep their pace.
   document.addEventListener('animationstart', e => {
+    // a pseudo-element's animation is not among its element's getAnimations(), so there is nothing to scale
+    if (e.pseudoElement) return;
     const k = motionOK ? SPEEDS[ANIM_SPEED] : 1; if (k === 1 || !e.target.getAnimations) return;
     for (const a of e.target.getAnimations()) if (a.animationName === e.animationName && a.effect && a.effect.getTiming().iterations !== Infinity) a.playbackRate = 1 / k;
   });
@@ -4595,7 +4679,7 @@ function emblem(kind, inner) {
 }
 function cardHTML(it, idx) {
   const d = itemDef(it); const p = it.free ? 0 : itemPrice(it);
-  const kindLabel = { talisman: 'Talisman', omikuji: 'Omikuji', kami: 'Kami Spirit', scroll: 'Scroll of Mastery', flower: 'Flower / Season', pack: 'Booster pack' }[it.kind];
+  const kindLabel = { talisman: 'Talisman', omikuji: 'Omikuji', kami: 'Kami Spirit', scroll: 'Scroll of Mastery', flower: 'Flower / Season', pack: 'Booster Pack' }[it.kind];
   const ed = it.edition ? EDITIONS[it.edition] : null;
   const full = slotsFullMsg(it), no = p > S.money ? `You have ¥${S.money}; this costs ¥${p}` : full;
   const action = it.sold ? '<span class="muted soldnote">Sold</span>' : `<button class="primary" data-buy="${idx}" ${no ? `disabled title="${no}"` : ''}>${it.kind === 'pack' ? 'Open' : full ? 'Slots Full' : 'Buy'}</button>`;
@@ -4672,9 +4756,9 @@ function cashoutHTML() {
   // Each row: label, note, amount, and what paid it (it pops as the row counts in). Older saves only kept the Talisman total.
   const talSlot = k => `#talismans .slot[data-key="${k}"]`;
   const talRows = r.talPay ? r.talPay.map(([k, v]) => [TAL[k] ? TAL[k].name : k, 'Talisman', v, talSlot(k)]) : r.tal ? [['Talismans', 'end-of-Blind payouts', r.tal]] : [];
-  const rows = [['Blind reward', names[r.kind], r.base], [`Unused Plays <span class="rcnt">${r.left}</span>`, '¥1 each', r.left], ['Interest', `¥1 per ¥${CFG.interestPer} held, up to ¥${cap}`, r.interest], ...talRows, r.summer ? ['Summer', 'Flower', r.summer, '.sidextra .flowerchip[data-flw^="summer"]'] : null, r.invest ? ['Investment Tag', 'Boss bonus', r.invest] : null, ...(r.rent || []).map(([k, v]) => [TAL[k] ? TAL[k].name : k, 'Rental', -v, talSlot(k)])].filter(Boolean);
+  const rows = [['Blind Reward', names[r.kind], r.base], [`Unused Plays <span class="rcnt">${r.left}</span>`, '¥1 each', r.left], ['Interest', `¥1 per ¥${CFG.interestPer} held, up to ¥${cap}`, r.interest], ...talRows, r.summer ? ['Summer', 'Flower', r.summer, '.sidextra .flowerchip[data-flw^="summer"]'] : null, r.invest ? ['Investment Tag', 'Boss bonus', r.invest] : null, ...(r.rent || []).map(([k, v]) => [TAL[k] ? TAL[k].name : k, 'Rental', -v, talSlot(k)])].filter(Boolean);
   const cur = LANG === 'hk' ? '$' : '¥';
-  let h = `<div class="drawhead"><h2>${bossName ? bossName + ' beaten' : 'Blind cleared'}</h2></div>`;
+  let h = `<div class="drawhead"><h2>${bossName ? bossName + ' Beaten' : 'Blind Cleared'}</h2></div>`;
   // Like Balatro, the Cash Out button sits on top and the reward rows fill in beneath it, so the button never moves.
   h += `<button id="mCashOut" class="primary cashbtn">Cash Out <span class="cashamt"><span class="coin" aria-hidden="true">${coinSVG()}</span><span class="num">${money(cur, r.total)}</span></span></button>`;
   const amt = v => `<b class="num${v < 0 ? ' neg' : ''}" data-v="${v}">${money('¥', v)}</b>`;
@@ -4736,7 +4820,7 @@ function packHTML() {
   const pk = PACKS[S.pack.key], tray = shopTray = useTray();
   const tone = { omikuji: 'omikuji', kami: 'kami', scroll: 'scroll', talisman: 'talisman', tile: 'tilepk' }[pk.type] || 'pack';
   // Skip the Rest or Done sits in the header beside the picks left, so it is always in view.
-  let h = `<div class="packhead ${tone}"><div class="packart">${emblem('pack', pk.type)}</div><div class="packtitle"><div class="label">Booster pack${S.pack.free ? ' · free from a Tag' : ''}</div><h2>${pk.name}</h2><p>${pk.desc}</p></div><div class="packacts">${S.pack.done ? '<button class="ghost hbtn" disabled>All picks used</button>' : '<button id="mPackDone" class="ghost hbtn">Skip the Rest</button>'}</div><div class="packpicks"><b class="num">${S.pack.done ? 0 : S.pack.left}</b><span>${S.pack.done || S.pack.left !== 1 ? 'picks' : 'pick'} left</span></div></div>`;
+  let h = `<div class="packhead ${tone}"><div class="packart">${emblem('pack', pk.type)}</div><div class="packtitle"><div class="label">Booster Pack${S.pack.free ? ' · free from a Tag' : ''}</div><h2>${pk.name}</h2><p>${pk.desc}</p></div><div class="packacts">${S.pack.done ? '<button class="ghost hbtn" disabled>All picks used</button>' : '<button id="mPackDone" class="ghost hbtn">Skip the Rest</button>'}</div><div class="packpicks"><b class="num">${S.pack.done ? 0 : S.pack.left}</b><span>${S.pack.done || S.pack.left !== 1 ? 'picks' : 'pick'} left</span></div></div>`;
   if (S.pack.hand) h += `<div class="packhandwrap"><div class="label">Your Tiles · ${(S.pack.view || S.pack.hand).length} random tiles from your Wall</div><div class="muted" style="font-size:12px;margin:2px 0 6px">${S.pack.done ? 'All picks used. Outlined tiles changed and stay that way in your Wall.' : 'Select tiles, then press Use on a card. The change stays in your Wall for the rest of the run. Keep puts the card in your consumable slots instead.'}</div><div class="packhand" id="packHand"></div></div>`;
   h += `<div class="shelf packshelf"><div class="shelflabel">${S.pack.done ? 'Cards · all picks used' : `Cards · choose ${S.pack.left} more`}</div><div class="shop-grid" style="--n:${S.pack.choices.length}">${S.pack.choices.map((it, i) => { const d = itemDef(it); const ed = it.edition ? EDITIONS[it.edition] : null; return `<div class="shopcard ${it.kind === 'tile' ? 'tilecard' : it.kind}${it.sold ? ' sold' : ''}${ed ? ' ed-' + it.edition : ''}"><div class="${it.kind === 'tile' ? 'packtileart' : 'emblem'}" data-pt="${i}">${it.kind === 'tile' ? '' : emblem(it.kind)}</div>${it.kind === 'talisman' ? stickerBadges(it.sticker) : ''}<div class="kind">${it.kind === 'talisman' ? talKindRow(it.key, it.edition) : { omikuji: 'Omikuji', kami: 'Kami Spirit', scroll: 'Scroll of Mastery', tile: 'Tile' }[it.kind] + (ed ? `<span class="edtag ed-${it.edition}">${ed.name}</span>` : '')}</div><div class="n">${d.name}</div><div class="d">${d.desc}${ed ? ` <b>${ed.name}: ${ed.desc}.</b>` : ''}</div>${it.kind === 'scroll' && !it.sold ? scrollLevelHTML(it.key) : it.kind === 'talisman' && !it.sold ? talPreview(it.key) : ''}<div class="buy"><span></span>${it.sold ? `<span class="muted">${it.used ? 'Used' : 'Taken'}</span>` : packButtons(it, i)}</div></div>`; }).join('')}</div></div>`;
   h += `<div class="msg${S.msgErr ? ' err' : ''}" style="min-height:18px;margin:2px 0 6px">${S.msg || ''}</div>`;
@@ -4748,15 +4832,15 @@ function overHTML(won) {
   const where = S.boss ? BOSSES[S.boss].name : ({ small: 'the Small Blind', big: 'the Big Blind', boss: 'the Boss Blind' })[blindKind()];
   const stat = (label, v) => `<div class="stat"><div class="label">${label}</div><div class="v num">${v}</div></div>`;
   let h = `<div class="overhead"><div class="label">${won ? 'Run complete' : S.endless ? 'Endless run over' : 'Run over'}</div><h2 class="${won ? '' : 'lost'}">${won ? 'You broke the bank!' : 'The syndicate collects.'}</h2></div>${won ? '<div class="herotiles small" id="heroTiles"></div>' : ''}`;
-  h += won ? `<p class="muted">All ${CFG.antes} Antes cleared on ${STAKES[S.stake].name} with the ${DECKS[S.deckKey].name}.</p>` : `<p class="muted">${S.endless ? `You won the run, then reached Ante ${S.ante} in Endless Mode. Out of Plays against ${where}.` : `Out of Plays on Ante ${S.ante} against ${where}.`}</p><div class="overscore"><div class="row"><span class="label">Round Score</span><span class="num"><b>${fmtN(S.score)}</b> <span class="muted">of ${fmtN(S.target)}</span></span></div><div class="overbar"><i style="width:${pct}%"></i></div></div>`;
-  h += `<div class="overstats">${stat('Ante reached', S.endless ? `${S.ante}` : `${Math.min(S.ante, CFG.antes)} / ${CFG.antes}`)}${stat('Blinds won', st.blinds)}${stat('Complete Hands', st.hands)}${stat('Partial Plays', st.melds)}${stat('YEN', '¥' + S.money)}</div>`;
+  h += won ? `<p class="muted">All ${CFG.antes} Antes cleared on ${stakeName(S.stake)} with the ${DECKS[S.deckKey].name}.</p>` : `<p class="muted">${S.endless ? `You won the run, then reached Ante ${S.ante} in Endless Mode. Out of Plays against ${where}.` : `Out of Plays on Ante ${S.ante} against ${where}.`}</p><div class="overscore"><div class="row"><span class="label">Round Score</span><span class="num"><b>${fmtN(S.score)}</b> <span class="muted">of ${fmtN(S.target)}</span></span></div><div class="overbar"><i style="width:${pct}%"></i></div></div>`;
+  h += `<div class="overstats">${stat('Ante Reached', S.endless ? `${S.ante}` : `${Math.min(S.ante, CFG.antes)} / ${CFG.antes}`)}${stat('Blinds Won', st.blinds)}${stat('Complete Hands', st.hands)}${stat('Partial Plays', st.melds)}${stat('YEN', '¥' + S.money)}</div>`;
   // Like Balatro's run summary: what you did this run, and how much of the Collection it revealed.
   const found = S.stats.seen0 != null ? Object.keys(PROFILE.seen || {}).length - S.stats.seen0 : null, most = mostPlayedRung();
   h += `<div class="overstats">${stat('Tiles played', st.tilesPlayed || 0)}${stat('Tiles discarded', st.tilesDiscarded || 0)}${stat('Bought', st.bought || 0)}${stat('Rerolls', st.rerolls || 0)}${found != null ? stat('New discoveries', found) : ''}</div>${most ? `<p class="muted" style="margin:6px 0 0">Most played: <b>${rungLabel(most)}</b> ×${st.rungs[most]}${st.skipped ? ` · Blinds skipped: <b>${st.skipped}</b>` : ''}</p>` : ''}`;
   h += `<div class="overbest"><div><div class="label">Best Play</div><div class="v num">${fmtN(st.best)}</div></div>${st.bestDesc ? `<div class="muted">${st.bestDesc}</div>` : ''}</div>`;
   if (S.newUnlocks && S.newUnlocks.length) h += `<div class="label" style="margin:14px 0 6px">Unlocked this run</div><div class="overtals">${S.newUnlocks.map(unlockLabel).filter(Boolean).map(l => `<span class="overtal newunlock"><span class="muted" style="font-size:11px">${l.kind}</span>${l.name}</span>`).join('')}</div>`;
   h += `<div class="label" style="margin:14px 0 6px">Talismans</div><div class="overtals">${S.talismans.length ? S.talismans.map((k, i) => `<span class="overtal"><span class="order">${i + 1}</span>${TAL[k].name}</span>`).join('') : '<span class="muted">None</span>'}</div>`;
-  h += `<div class="shopfoot"><span class="seedline muted" style="margin:0">Seed <code class="seed">${S.seed}</code> <button class="ghost tiny-btn" data-copyseed>Copy</button> · ${DECKS[S.deckKey].name} · ${STAKES[S.stake].name}</span><span style="flex:1"></span>${won ? '<button id="mEndless" class="ghost" title="Keep playing past Ante 8. Targets climb steeply.">Endless Mode</button>' : ''}<button id="mNewRun" class="primary">New Run</button></div>`;
+  h += `<div class="shopfoot"><span class="seedline muted" style="margin:0">Seed <code class="seed">${S.seed}</code> <button class="ghost tiny-btn" data-copyseed>Copy</button> · ${DECKS[S.deckKey].name} · ${stakeName(S.stake)}</span><span style="flex:1"></span>${won ? '<button id="mEndless" class="ghost" title="Keep playing past Ante 8. Targets climb steeply.">Endless Mode</button>' : ''}<button id="mNewRun" class="primary">New Run</button></div>`;
   return h;
 }
 function deckHTML() {
@@ -4805,24 +4889,26 @@ function deckHTML() {
   }, 0);
   return h;
 }
-function hanTableText() {
-  // Groups the Han table into ranges that share a multiplier, e.g. "4–5 Han ×15 (Mangan)", straight from CFG.
-  const out = []; let from = 1;
-  for (let h = 1; h <= 13; h++) {
+// The Han table grouped into ranges that share a multiplier and tier, straight from CFG: [label, mult, tier] rows such as
+// ['4–5', 15, 'Mangan']; 0 Han has no tier.
+function hanRows() {
+  const out = []; let from = 0;
+  for (let h = 0; h <= 13; h++) {
     const next = h + 1; const same = next <= 13 && hanMult(next) === hanMult(h) && tierName(next) === tierName(h);
-    if (!same) { out.push(`${from === h ? from : from + '–' + h}${h === 13 ? '+' : ''} Han ×${hanMult(h)} (${tierName(h)})`); from = next; }
+    if (!same) { out.push([`${from === h ? from : from + '–' + h}${h === 13 ? '+' : ''}`, hanMult(h), h ? tierName(h) : '—']); from = next; }
   }
-  return out.join(', ');
+  return out;
 }
+function hanTableText() { return hanRows().map(([l, m, t]) => `${l} Han ×${m}${t === '—' ? '' : ` (${t})`}`).join(', '); }
 function fullRulesHTML() {
   const R = CFG.blindReward, K = CFG.kanBonus;
   return `<div class="menu-rules">
   <h3>Playing a Blind</h3>
-  <p><b>Goal.</b> Score at least the Blind's target before you run out of Plays. Each Ante has a Small Blind, a Big Blind and a Boss Blind. Beat all ${CFG.antes} Antes to win.</p>
+  <p><b>Goal.</b> Score at least the Blind's target before you run out of Plays. Each Ante has a Small Blind, a Big Blind and a Boss Blind. The Big Blind's target is ×${CFG.blindMult.big} the Small Blind's and the Boss's ×${CFG.blindMult.boss}, and some Bosses raise it further. You start with ¥${CFG.startMoney}. Beat all ${CFG.antes} Antes to win.</p>
   <p><b>Endless Mode.</b> After you win, you can keep the same run going past Ante ${CFG.antes}, as in Balatro. Each new Ante draws a fresh Boss and its targets climb steeply: Ante ${CFG.antes + 1} starts at ${fmtN(anteBase(CFG.antes + 1))}, Ante ${CFG.antes + 2} at ${fmtN(anteBase(CFG.antes + 2))} and Ante ${CFG.antes + 3} at ${fmtN(anteBase(CFG.antes + 3))} on White Stake. Your win is already counted, and your Profile keeps your best Ante.</p>
   <p><b>Hand.</b> You hold ${CFG.handSize} tiles drawn from the Wall (136 tiles in the Standard Wall: four of every tile, four of them Red Fives). You refill after every action. A complete hand uses 14 tiles, so you always have spares. If the Wall runs dry you simply stop drawing.</p>
   <p><b>Plays and Discards.</b> You get ${CFG.playsPerBlind} Plays and ${CFG.discardsPerBlind} Discards per Blind, before Talismans, Flowers and Wall effects. A Discard throws up to ${CFG.maxDiscardTiles} tiles into the River, which stays visible for the whole Blind.</p>
-  <p><b>Partial plays.</b> Select tiles that split into melds (Chi runs, Pon triplets, Kan quads) plus at most one pair, or two pairs on their own, and press Play. The box in the side panel names the rung it makes: Lone Tile, Pair, Two Pair, one meld, Two Melds, Three Melds, Ready Hand (three melds and a pair) or Four Melds. Bigger rungs score far more, so a hand one tile short is still worth cashing in. Each costs 1 Play. Run Info, Play Ladder tab, lists every rung's Chips and Han.</p>
+  <p><b>Partial plays.</b> Select tiles that split into melds (Chi runs, Pon triplets, Kan quads) plus at most one pair, or two pairs on their own, and press Play. The box in the side panel names the rung it makes: Lone Tile, Pair, Two Pair, one meld (with or without a Pair), Two Melds, Two Melds + Pair, Three Melds, Ready Hand (three melds and a pair), Four Melds or Four Melds + Pair. Bigger rungs score far more, so a hand one tile short is still worth cashing in. Each costs 1 Play. Run Info, Play Ladder tab, lists every rung's Chips and Han.</p>
   <p><b>Complete hand.</b> Select 14 tiles that make four melds and a pair, Seven Pairs, or Thirteen Orphans, and press Play. Its Yaku add Han. A complete hand with no Yaku still gets +1 Han. Each Yakuman counts as 13 Han, and they stack. Run Info lists all Yaku with example hands.</p>
   <p><b>Call.</b> Select one River tile and 2–3 hand tiles that form a meld with it, then press Call. It costs 1 Play and scores nothing yet, and you cannot Call with your last Play. The ${TAL.ryujin.name} Talisman makes your first ${TAL.ryujin.freeCall} Calls each Blind free. The meld is set aside as Open and counts toward your complete hand. Open hands get less Han from some Yaku and lose closed-only Yaku such as Pinfu and Iipeikou. After a Call you discard 1 tile to settle it, which does not use a Discard.</p>
   <p><b>Kan.</b> Four identical tiles can be played as a partial Kan for points, or declared with Declare Kan to set them aside as a closed Kan that counts toward your complete hand without opening it. Every Kan, declared or called, draws one replacement tile. If that tile ends up as the winning tile of your complete hand, you score Rinshan Kaihou (+1 Han).</p>
@@ -4834,26 +4920,26 @@ function fullRulesHTML() {
   <p><b>Extra Han.</b> Each Red Five scored gives +1 Han. A Dora indicator is a tile flipped from the Wall; the next tile in sequence after it is the Dora (9 wraps to 1, Winds go East, South, West, North, Dragons go White, Green, Red), and each Dora scored gives +1 Han. Indicators last for the current Blind. In partial plays, a Pon or Kan of Winds or Dragons scores Yakuhai (+1 Han). Each Kan in a play with two or more melds adds +${K.chips} Chips and +${K.han} Han.</p>
   <p><b>Talismans.</b> Han from Talismans and the Holographic edition is counted before the table converts. Everything else fires after it, left to right: some Talismans add Chips, some add flat Mult (+4 Mult), some multiply (×1.5 Mult). A +Mult Talisman placed before a ×Mult Talisman scores more than the reverse. Drag Talismans to reorder them; the number on each card is its firing order. Some Talismans grow as you play and show their current value on the card, and some copy another Talisman. A Talisman you sell and buy again starts fresh.</p>
   <p><b>Scrolls of Mastery.</b> Each level of a meld Scroll gives +${CFG.scrollChips} Chips for every matching meld or pair in a play and +${CFG.scrollHan} Han once per play. Levels apply inside complete hands too, so a complete hand always beats the Ready Hand inside it. Other Scrolls are named after a hand pattern, such as Tanyao, and add Han whenever it scores.</p>
-  <p><b>Engravings.</b> Omikuji can engrave tiles, and you can see it on the tile: Gold Foil (gold face, ¥1 when scored), Obsidian (dark stone face, +20 Chips), Jade (green face, ×1.5 Mult), Steel (brushed metal face, ×1.5 Mult while held in hand), Glass (clear blue face, ×2 Mult, 1 in 4 chance to shatter and leave your Wall), and Dragon Mark (a red emblem in the corner, +1 Han). Hover a tile for its exact effect.</p>
+  <p><b>Engravings.</b> Omikuji can engrave tiles, and you can see it on the tile's face: ${['gold', 'obsidian', 'jade', 'steel', 'glass', 'dragonmark', 'lucky', 'mult'].map(k => `${ENG[k].name} (${ENG[k].desc.replace(/\.$/, '').replace(/ \(([^)]*)\)/, ', $1').replace(/^./, c => c.toLowerCase())})`).join('; ')}. Hover a tile for its exact effect.</p>
   <p><b>Seals.</b> A tile can also carry one Seal beside its engraving, shown as a wax dot on top: ${Object.values(SEALS).map(e => `${e.name} (${e.desc.replace(/\.$/, '').toLowerCase()})`).join('; ')}. Slip of the Red Seal and the Kami Benzaiten, Hachiman and Fūjin add them.</p>
-  <p><b>Tile editions.</b> Like Balatro's playing cards, a tile can carry an edition beside its engraving and Seal: ${Object.values(TILE_EDS).map(e => `${e.name} (${e.desc.replace(/\.$/, '').toLowerCase()})`).join(', ')}. Tile +Mult (Holographic, Crimson Inlay, Lucky Inlay) is added after Han becomes Mult, and before the Talismans fire.</p>
-  <p><b>Wild and Stone.</b> A Wild Inlay tile becomes whichever suit gives the best play when you play it (up to 4 Wild tiles at once); the helper hints still treat it as its printed suit. A Stone tile has no rank or suit: it never forms a meld or a Kong, rides along with any play for +50 Chips, and is not counted for a complete hand's 14 tiles.</p>
+  <p><b>Tile editions.</b> Like Balatro's playing cards, a tile can carry an edition beside its engraving and Seal: ${Object.values(TILE_EDS).map(e => `${e.name} (${e.desc.replace(/\.$/, '').toLowerCase()})`).join(', ')}. Tile and engraving +Mult (Holographic edition, ${ENG.mult.name}, ${ENG.lucky.name}) is added after Han becomes Mult, and before the Talismans fire.</p>
+  <p><b>Wild and Stone.</b> A Wild Inlay tile becomes whichever suit gives the best play when you play it (up to 4 Wild tiles at once); the helper hints still treat it as its printed suit. A Stone tile has no rank or suit: it never forms a meld, rides along with any play for +50 Chips, and is not counted for a complete hand's 14 tiles.</p>
   <p><b>Rarity.</b> Talismans are Common, Uncommon or Rare (about ${Math.round(CFG.rarityWeights.common * 100)}%, ${Math.round(CFG.rarityWeights.uncommon * 100)}% and ${Math.round(CFG.rarityWeights.rare * 100)}% of shop and pack Talismans). Legendary Talismans only come from the rare Kami Hitodama.</p>
   <p><b>Editions.</b> Shop Talismans sometimes come in an edition: ${Object.values(EDITIONS).map(e => `${e.name} (${e.desc})`).join(', ')}.</p>
   <h3>Between Blinds</h3>
-  <p><b>Money.</b> Beating a Blind pays ¥${R.small} for a Small Blind, ¥${R.big} for a Big Blind and ¥${R.boss} for a Boss, plus ¥1 for each unused Play and ¥1 interest for every ¥${CFG.interestPer} you hold (at most ¥${CFG.interestCap}). From Red Stake up, Small Blinds pay nothing.</p>
-  <p><b>Shop.</b> Spend money on Talismans (passive, ${CFG.talismanSlots} slots), Omikuji and Kami (consumables, ${CFG.consumableSlots} slots, used on selected hand tiles), Scrolls of Mastery (permanent upgrades), Flowers (run-long perks) and Booster Packs (open one and keep one or two of what's inside). Like Balatro, each shop has two card slots (Talismans about 71%, Omikuji and Scrolls about 14% each; Kami come from packs, or the shop with the Ghost Wall), one Flower for the whole Ante, and two Booster Packs; the first shop of a run always has a Talisman pack. Rerolling changes only the cards: it costs ¥5, then ¥1 more each time in the same shop. On wide screens the Shop and packs rise from the bottom of the board, so your Talismans and consumables stay in view above: select one there to sell or use it. Every pack comes in three sizes: Normal, Jumbo (more cards) and Mega (more cards and two picks). Tile Packs add new tiles to your Wall, some engraved, sealed or with an edition. One Flower is offered per Ante and waits in every shop of that Ante until you buy it; upgrades appear once you own the first Flower. Talismans and consumables can also gain sell value (Tsuchinoko, Otoshidama). Omikuji Packs and Kami Packs also deal ${PACK_HAND} random tiles from your Wall: select some and press Use on a card to change them for the rest of the run, or Keep the card for a Blind. After your last pick the changed tiles light up for a moment, then the pack closes back to the shop. ${CONS.indicator.name} and ${CONS.amaterasu.name} only work during a Blind. ${CONS.wealth.name} and ${CONS.raijin.name} can also be used from your slots in the shop; there ${CONS.raijin.name} destroys 2 random tiles from your Wall. Every shop has two random cards (Talismans ${Math.round(CFG.shopWeights.talisman * 100)}%, Omikuji ${Math.round(CFG.shopWeights.omikuji * 100)}%, Kami ${Math.round(CFG.shopWeights.kami * 100)}% each), plus one Scroll, one Flower and one booster pack in fixed spots. A reroll changes only the two random cards and costs ¥${CFG.rerollCost}. Selling returns half the item's value: click a Talisman on the board and press Sell, or sell from inside the shop.</p>
-  <p><b>Blind Select.</b> After the shop you see the Ante's three blinds with their targets, rewards and the Boss's rule. A Small or Big Blind can be skipped for the Tag on its card instead of its money: free packs, editions, coupons, money, a bigger hand, a different Boss, free Rare or Uncommon Talismans, Scroll levels, a second Flower (Voucher Tag), and a Double Tag that copies the next Tag you get. Tags you hold show in the side panel.</p>
-  <p><b>Setup.</b> A new run lets you choose a Wall (deck), a Stake (difficulty) and a seed. Sharing a seed replays the same Wall, shops and bosses for players with the same unlocks. Each Stake keeps every penalty of the ones below it. Winning on a Stake with a Wall unlocks the next Stake for that Wall. From Black Stake, shop Talismans can carry stickers: Eternal (can't be sold), Perishable (stops working after 5 Blinds, from Orange) and Rental (¥1 to buy, ¥3 every Blind, from Gold).</p>
+  <p><b>Money.</b> Beating a Blind pays ¥${R.small} for a Small Blind, ¥${R.big} for a Big Blind and ¥${R.boss} for a Boss, plus ¥1 for each unused Play and ¥1 interest for every ¥${CFG.interestPer} you hold (at most ¥${CFG.interestCap}; Winter Flowers raise it). Talismans that pay at the end of a Blind, Summer and the Investment Tag add their own lines to the Cash Out, and each Rental Talisman takes ¥3. From Red Stake up, Small Blinds pay nothing.</p>
+  <p><b>Shop.</b> Spend money on Talismans (passive, ${CFG.talismanSlots} slots), Omikuji and Kami (consumables, ${CFG.consumableSlots} slots, used on selected hand tiles), Scrolls of Mastery (permanent upgrades), Flowers (run-long perks) and Booster Packs (open one and keep one or two of what's inside). Like Balatro, each shop has two card slots, more with the Lotus Flowers (Talismans about ${Math.round(CFG.shopWeights.talisman * 100)}%, Omikuji and Scrolls about ${Math.round(CFG.shopWeights.omikuji * 100)}% each; Kami come from packs, or the shop with the Ghost Wall), one Flower for the whole Ante, and two Booster Packs; the first shop of a run always has a Talisman pack. Rerolling changes only the cards: it costs ¥${CFG.rerollCost} (less with the Autumn Flowers), then ¥1 more each time in the same shop. On wide screens the Shop and packs rise from the bottom of the board, so your Talismans and consumables stay in view above: select one there to sell or use it. Every pack comes in three sizes: Normal, Jumbo (more cards) and Mega (more cards and two picks). Tile Packs add new tiles to your Wall, some engraved, sealed or with an edition. One Flower is offered per Ante and waits in every shop of that Ante until you buy it; upgrades appear once you own the first Flower. Talismans and consumables can also gain sell value (Tsuchinoko, Otoshidama). Omikuji Packs and Kami Packs also deal ${PACK_HAND} random tiles from your Wall: select some and press Use on a card to change them for the rest of the run, or Keep the card for a Blind. After your last pick the changed tiles light up for a moment, then the pack closes back to the shop. ${CONS.indicator.name} and ${CONS.amaterasu.name} only work during a Blind. Consumables that make new cards or money, and ${CONS.raijin.name}, can also be used from your slots in the shop; there ${CONS.raijin.name} destroys 2 random tiles from your Wall. Selling returns half the item's value: click a Talisman on the board and press Sell, or sell from inside the shop.</p>
+  <p><b>Blind Select.</b> After the shop you see the Ante's three blinds with their targets, rewards and the Boss's rule. A Small or Big Blind can be skipped for the Tag on its card instead of its money: free packs, editions, coupons, money, a bigger hand, a different Boss, free Rare or Uncommon Talismans, Scroll levels, a second Flower (Voucher Tag), free or cheaper rerolls, free Common Talismans, and a Double Tag that copies the next Tag you get. Tags you hold show in the side panel.</p>
+  <p><b>Setup.</b> A new run lets you choose a Wall (deck), a Stake (difficulty) and a seed. Sharing a seed replays the same Wall, shops and bosses for players with the same unlocks. Each Stake keeps every penalty of the ones below it: ${Object.values(STAKES).slice(1).map(s => `${s.name}: ${s.desc.replace(/^Everything in [^,]+, (and )?/, '').replace(/^./, c => c.toUpperCase())}`).join(' ')} Winning on a Stake with a Wall unlocks the next Stake for that Wall. From Black Stake, shop and pack Talismans can carry stickers: Eternal (can't be sold), Perishable (stops working after 5 Blinds, from Orange) and Rental (¥1 to buy, ¥3 every Blind, from Gold).</p>
   <p><b>Special Talismans.</b> Some fade: Kakigōri loses Chips with each play, Senbei loses Mult each Blind, Ramen weakens as you discard, and each leaves when it runs out. Daikoku doubles every listed chance. Yūrei saves a lost Blind once if you scored at least a quarter of the target. Selling Rikishi during a Boss Blind disables the Boss, selling Ramune gives a Double Tag, and selling Kakuremino after 2 Blinds copies another Talisman. With Kabuki, Talismans you already own can turn up again, so you can hold two copies; each copy works on its own.</p>
-  <p><b>Walls.</b> Each Wall changes the run: the Plasma Wall averages Chips and Mult before they multiply (targets ×2), the Erratic Wall is 136 random tiles, the Ghost Wall brings Kami to the shop, the Magic Wall starts with Spring and two Slips of Echoes, the Anaglyph Wall gives a Double Tag after every Boss, and the Painted Wall trades a Talisman slot for +2 hand size. Most Walls unlock through goals; the Collection shows them.</p>
+  <p><b>Walls.</b> Each Wall changes the run. ${Object.values(DECKS).filter(d => d !== DECKS.standard).map(d => `${d.name}: ${d.desc}`).join(' ')} Most Walls unlock through goals; the Collection shows them.</p>
   <p><b>Settings.</b> Sound and Music are separate. The animated background, screen shake, CRT filter (Light or Full, with screen curvature and a soft glow), high-contrast tiles and dead-tile dots can each be switched on or off. Reduce motion turns off every animation (it is also on when your device asks for reduced motion). Reset to Defaults puts them all back. Sort by Suit or By Rank from the hand's header.</p>
-  <p><b>Challenges.</b> Fixed runs with special rules (${CHALLENGES.length} of them), from the title screen. Winning one is recorded on its own and doesn't count toward Stakes or unlocks. Achievements on the Profile tab track long-term goals.</p>
+  <p><b>Challenges.</b> Fixed runs with special rules (${CHALLENGES.length} of them), from the title screen. Winning one is recorded on its own and doesn't count as a run, Stake or Wall win. Achievements on the Profile tab track long-term goals.</p>
   <h3>Help and Controls</h3>
   <p><b>Helper.</b> Under your hand the game shows how many tiles you are from a complete hand. Settings can turn that off, and can turn on two more hints: which tiles you are waiting on, and whether the tiles you select can go without setting you back. Against The Purist they only count your visible tiles. Another assist marks dead tiles with green dots.</p>
   <p><b>Arranging.</b> Drag hand tiles to reorder them. Dragging turns off auto-sort; Sort Hand sorts again. Tiles score in the order they sit, which matters for Shikigami. Sorting also works against The Purist, so face-down tiles sit in their sorted place. A selection with face-down tiles always plays: if it isn't a valid play, its best part scores and the other selected tiles go to the River.</p>
-  <p><b>Saving.</b> Your run saves automatically after every action. Run Info, Profile tab, keeps lifetime stats across runs. Settings, Your data, exports your profile, settings and current run as a code or file, so you can import them on another device or browser.</p>
-  <p><b>Unlocks.</b> Most of the game is open from your first run. ${UNLOCKS.filter(u => u.kind === 'tal').length} Talismans, ${UNLOCKS.filter(u => u.kind === 'wall').length} Walls unlock as you reach goals across runs, such as reaching Ante 6 or winning a run, and each Wall climbs the Stakes on its own. The Collection and Run Info, Profile tab, show each goal and your progress. Locked items never appear in shops or packs. Talismans, consumables, Scrolls, Flowers, packs, Tags and Bosses also stay hidden in the Collection until you first come across them. Settings, Advanced, can unlock and reveal everything for playtesting.</p>
+  <p><b>Saving.</b> Your run saves automatically after every action. Run Info, Profile tab, keeps lifetime stats across runs. Settings, Your Data, exports your profile, settings and current run as a code or file, so you can import them on another device or browser.</p>
+  <p><b>Unlocks.</b> Most of the game is open from your first run. ${UNLOCKS.filter(u => u.kind === 'tal').length} Talismans and ${UNLOCKS.filter(u => u.kind === 'wall').length} Walls unlock as you reach goals across runs, such as reaching Ante 6 or winning a run, and each Wall climbs the Stakes on its own. The Collection and Run Info, Profile tab, show each goal and your progress. Locked items never appear in shops or packs. Talismans, consumables, Scrolls, Flowers, packs, Tags and Bosses also stay hidden in the Collection until you first come across them. Settings, Advanced, Unlock Everything reveals and unlocks it all for playtesting.</p>
   <p><b>Tile numbers.</b> Characters show their number and Winds their letter in the corner. Dots and Bamboo have none by default, since you count their pips. Settings can show numbers on all tiles or on none.</p>
   <p><b>Keys.</b> Enter or P plays, D discards, C calls, K declares a Kan, Esc clears your selection. Click anywhere or press any key while a play scores to skip the animation. Esc or a click outside closes Rules, Wall, Run Info and Settings.</p>
   </div>`;
@@ -4899,18 +4985,19 @@ function collectionHTML() {
   else if (colTab === 'kami') body = cons(KAMI, 'kami');
   else if (colTab === 'scroll') body = SCROLLS.map(sc => !isSeen('scroll', sc.key) ? hidden('scroll', 'Scroll of Mastery') : card('scroll', `Scroll of Mastery · ¥${sc.cost}`, sc.name, sc.desc, run ? scrollLevelHTML(sc.key) : '')).join('');
   else if (colTab === 'flower') body = FLOWERS.map(f => !isSeen('flower', f.key) ? hidden('flower', 'Flower') : card('flower', `Flower · ¥${f.cost}${f.needs ? ` · upgrades ${FLW[f.needs].name}` : ''}`, f.name, f.desc, '', run && S.flowers.includes(f.key) ? 'Owned' : '')).join('');
-  else if (colTab === 'pack') body = Object.entries(PACKS).map(([pk, p]) => !isSeen('pack', pk) ? hidden('pack', 'Booster pack') : card('pack', `Booster pack · ¥${p.cost}`, p.name, p.desc)).join('');
+  else if (colTab === 'pack') body = Object.entries(PACKS).map(([pk, p]) => !isSeen('pack', pk) ? hidden('pack', 'Booster Pack') : card('pack', `Booster Pack · ¥${p.cost}`, p.name, p.desc)).join('');
   else if (colTab === 'eng') body = Object.entries(ENG).map(([k, e]) => card(`omikuji engcard eng-${k}`, 'Engraving', e.name, e.desc, `<div class="coltile" data-eng="${k}"></div>`)).join('');
   else if (colTab === 'stk') body = Object.entries(STICKERS).map(([k, e]) => card('talisman', `Sticker · from ${{ eternal: 'Black', perish: 'Orange', rental: 'Gold' }[k]} Stake`, `${stickerBadges({ [k]: k === 'perish' ? 5 : true }).replace('stkcorner', 'stkcorner inline')}${e.name}`, e.desc)).join('');
   else if (colTab === 'seal') body = Object.entries(SEALS).map(([k, e]) => card(`omikuji engcard seal-${k}`, 'Seal', e.name, e.desc, `<div class="coltile" data-seal="${k}"></div>`)).join('');
   else if (colTab === 'ed') body = Object.entries(EDITIONS).map(([k, e]) => card(`talisman ed-${k}`, `Edition · +¥${e.price}`, `<span class="edtag ed-${k}">${e.name}</span>`, `${e.desc}${k === 'neg' ? '' : ' on every play'}.`, `<div class="muted" style="font-size:11px;margin-top:4px">${Math.round(e.odds * 100)}% of shop Talismans</div>`)).join('') + Object.entries(TILE_EDS).map(([k, e]) => card(`omikuji engcard`, 'Tile edition', e.name, e.desc, `<div class="coltile" data-ted="${k}"></div>`)).join('');
   else if (colTab === 'tag') body = Object.entries(TAGS).map(([k, t]) => !isSeen('tag', k) ? hidden('pack', 'Tag') : card('pack', 'Tag', t.name, t.desc, '', run && S.tags.includes(k) ? 'Held' : '')).join('');
-  else if (colTab === 'boss') body = Object.entries(BOSSES).map(([k, b]) => !isSeen('boss', k) ? hidden('bosscol', 'Boss Blind') : card('bosscol' + (b.showdown ? ' showdown' : ''), b.showdown ? 'Showdown Boss · Ante 8' : `Boss Blind${(b.minAnte || 1) > 1 ? ` · from Ante ${b.minAnte}` : ''}`, b.name, b.desc, '', run && S.stats && S.stats.bosses.includes(k) ? 'Met this run' : '')).join('');
+  else if (colTab === 'boss') body = Object.entries(BOSSES).map(([k, b]) => !isSeen('boss', k) ? hidden('bosscol', 'Boss Blind') : card('bosscol' + (b.showdown ? ' showdown' : ''), b.showdown ? `Showdown Boss · Ante ${CFG.antes}` : `Boss Blind${(b.minAnte || 1) > 1 ? ` · from Ante ${b.minAnte}` : ''}`, b.name, b.desc, '', run && S.stats && S.stats.bosses.includes(k) ? 'Met this run' : '')).join('');
   else if (colTab === 'wall') body = Object.entries(DECKS).map(([k, d]) => card('flower', 'Wall', d.name, d.desc, '', run && S.deckKey === k ? 'This run' : '', lockOf('wall', k))).join('');
-  else if (colTab === 'stake') body = Object.entries(STAKES).map(([k, st]) => card('flower', `<i class="sw sw-${k}" aria-hidden="true"></i> Stake`, st.name, st.desc, '', run && S.stake === k ? 'This run' : '', stakeLockAny(k))).join('');
+  else if (colTab === 'stake') body = Object.entries(STAKES).map(([k, st]) => { const lock = stakeLockAny(k), badge = run && S.stake === k ? '<div class="colfoot"><span class="tag colmark">This run</span></div>' : '';
+    return `<div class="shopcard flower engcard stakecard colcard${lock ? ' locked' : ''}"><div class="kind">Stake</div><div class="n">${st.name}</div><div class="d">${lock ? lockHTML(lock) : st.desc}${lock ? '<div class="colfoot"><span class="tag lockmark">Locked</span></div>' : badge}</div><div class="stakeart">${stakeChipSVG(k)}</div></div>`; }).join('');
   return `<div class="shophead"><h2>Collection</h2><input id="colSearch" placeholder="Search" autocomplete="off"></div><p class="muted" style="margin:2px 0 10px">Everything that can turn up in a run. Cards you haven't come across yet show as ?, and locked cards show their goal. Yaku and the Play Ladder are in Run Info.</p>
   <div class="tabs coltabs">${tabs.map(([k, n, c]) => `<button class="tab${colTab === k ? ' on' : ''}" data-ctab="${k}">${n} <span class="muted">${c}</span></button>`).join('')}</div>
-  <div class="shop-grid colgrid${colTab === 'eng' || colTab === 'seal' ? ' enggrid' : ''}">${body}</div><div class="muted colnone" hidden>Nothing matches.</div><button id="mClose" hidden>Close</button>`;
+  <div class="shop-grid colgrid${colTab === 'eng' || colTab === 'seal' || colTab === 'stake' ? ' enggrid' : ''}">${body}</div><div class="muted colnone" hidden>Nothing matches.</div><button id="mClose" hidden>Close</button>`;
 }
 function fillColTiles(root) { root && root.querySelectorAll('.coltile').forEach(b => { if (!b.children.length) b.appendChild(tileEl({ id: 0, suit: 'p', rank: 5, red: false, eng: b.dataset.eng || null, seal: b.dataset.seal || null, ed: b.dataset.ted || null }, { small: true })); }); }
 let rulesTab = 'quick';
@@ -4923,7 +5010,7 @@ function profileHTML() {
   const named = (obj, table, nameOf) => { const e = Object.entries(obj).sort((a, b) => b[1] - a[1]); return e.length ? e.map(([k, n]) => `<span class="tagchip">${nameOf(table, k)} ×${n}</span>`).join('') : '<span class="muted">None yet</span>'; };
   const nm = (t, k) => (t[k] && t[k].name) || k, yn = (t, k) => ((YAKU_SHEET.find(y => y.k === k) || YAKUMAN_SHEET.find(y => y.k === k) || {}).n) || k;
   let h = `<p class="muted" style="margin:8px 0">Your progress across every run in this browser. Export it from Settings to move it to another device.</p>`;
-  h += `<div class="overstats">${stat('Runs', P.runs)}${stat('Wins', P.wins)}${stat('Best Ante', P.bestAnte ? (P.bestAnte > CFG.antes ? `${P.bestAnte} · Endless` : `${P.bestAnte} / ${CFG.antes}`) : '—')}${stat('Blinds won', P.blinds)}${stat('Complete Hands', P.hands)}</div>`;
+  h += `<div class="overstats">${stat('Runs', P.runs)}${stat('Wins', P.wins)}${stat('Best Ante', P.bestAnte ? (P.bestAnte > CFG.antes ? `${P.bestAnte} · Endless` : `${P.bestAnte} / ${CFG.antes}`) : '—')}${stat('Blinds Won', P.blinds)}${stat('Complete Hands', P.hands)}</div>`;
   h += `<div class="overbest"><div><div class="label">Best Play ever</div><div class="v num">${P.bestPlay ? fmtN(P.bestPlay) : '—'}</div></div>${P.bestPlayDesc ? `<div class="muted">${P.bestPlayDesc}</div>` : ''}</div>`;
   const locked = UNLOCKS.filter(u => !P.unlocked.includes(`${u.kind}:${u.key}`)), earned = UNLOCKS.filter(u => P.unlocked.includes(`${u.kind}:${u.key}`));
   h += `<div class="label" style="margin:12px 0 6px">Unlocks · ${earned.length} of ${UNLOCKS.length}${UNLOCK_ALL ? ' · Unlock everything is on in Settings' : ''}</div>`;
@@ -4933,7 +5020,7 @@ function profileHTML() {
   h += `<div class="label" style="margin:12px 0 6px">Achievements · ${got.length} of ${ACHIEVEMENTS.length}</div><div class="achgrid">${ACHIEVEMENTS.map(a => { const done = got.includes(a.key), [have, need] = a.prog(P); return `<div class="ach${done ? ' done' : ''}"><b>${a.name}</b><span class="muted">${a.goal}</span>${done ? '' : need > 1 ? `<div class="lockbar"><i style="width:${Math.min(100, 100 * (have || 0) / need)}%"></i></div>` : ''}</div>`; }).join('')}</div>`;
   const disc = [...TALISMANS.map(t => ['tal', t.key]), ...OMIKUJI.map(o => ['omikuji', o.key]), ...KAMI.map(o => ['kami', o.key]), ...SCROLLS.map(o => ['scroll', o.key]), ...FLOWERS.map(o => ['flower', o.key]), ...Object.keys(PACKS).map(k => ['pack', k]), ...Object.keys(TAGS).map(k => ['tag', k]), ...Object.keys(BOSSES).map(k => ['boss', k])];
   h += `<div class="label" style="margin:12px 0 6px">Collection · ${disc.filter(([k, key]) => isSeen(k, key)).length} of ${disc.length} discovered</div>`;
-  h += `<div class="label" style="margin:12px 0 6px">Stakes won by Wall</div><div class="wallstakes">${Object.entries(DECKS).map(([w, d]) => `<div class="wsrow${lockOf('wall', w) ? ' lk' : ''}"><span>${d.name}</span><span class="wspips">${STAKE_KEYS.map((k, i) => `<i class="sw sw-${k}${wallBest(w) >= i ? '' : ' off'}" title="${STAKES[k].name}${wallBest(w) >= i ? ' won' : ''}"></i>`).join('')}</span></div>`).join('')}</div>`;
+  h += `<div class="label" style="margin:12px 0 6px">Stakes won by Wall</div><div class="wallstakes">${Object.entries(DECKS).map(([w, d]) => `<div class="wsrow${lockOf('wall', w) ? ' lk' : ''}"><span>${d.name}</span><span class="wspips">${STAKE_KEYS.map((k, i) => `<span class="wschip${wallBest(w) >= i ? '' : ' off'}" title="${STAKES[k].name}${wallBest(w) >= i ? ' won' : ''}">${stakeChipSVG(k, 'chipmini')}</span>`).join('')}</span></div>`).join('')}</div>`;
   h += `<div class="label" style="margin:12px 0 6px">Bosses beaten · ${Object.keys(P.bosses).length} of ${Object.keys(BOSSES).length}</div><div class="overtals">${named(P.bosses, BOSSES, nm)}</div>`;
   h += `<div class="label" style="margin:12px 0 6px">Wins by Stake</div><div class="overtals">${named(P.stakesWon, STAKES, nm)}</div>`;
   h += `<div class="label" style="margin:12px 0 6px">Wins by Wall</div><div class="overtals">${named(P.wallsWon, DECKS, nm)}</div>`;
@@ -5012,7 +5099,7 @@ function confirmHTML(icon, title, text, stats, actId, actLabel) {
 // The run you would give up: how far it got, its money, Talismans and best play.
 function runAtStake() {
   if (!S || ['gameover', 'win'].includes(S.phase)) return [];
-  return [['Ante', `${S.ante}<small> / ${CFG.antes}</small>`], ['Money', money('¥', S.money)], ['Talismans', `${S.talismans.length}`], ['Best play', fmtN(S.stats.best || 0)]];
+  return [['Ante', `${S.ante}<small> / ${CFG.antes}</small>`], ['Money', money('¥', S.money)], ['Talismans', `${S.talismans.length}`], ['Best Play', fmtN(S.stats.best || 0)]];
 }
 // Settings opened from the title screen go back there when closed, also after a setting is changed (which redraws it).
 let settingsFromTitle = false;
@@ -5026,31 +5113,31 @@ function yakuHTML() {
   if (infoTab === 'run') {
     const kv = (k, v) => `<div class="kv"><span>${k}</span><b>${v}</b></div>`;
     h += `<div class="infogrid">`;
-    h += `<div class="infocard"><div class="label">Run</div>${kv('Seed', `<code class="seed">${S.seed}</code> <button class="ghost tiny-btn" data-copyseed>Copy</button>`)}${kv('Wall', DECKS[S.deckKey].name)}${kv('Stake', STAKES[S.stake].name)}${kv('Ante', `${Math.min(S.ante, CFG.antes)} / ${CFG.antes}`)}${kv('Blinds won', st.blinds)}${kv('Skipped blinds', st.skipped)}${kv('Best play', `${fmtN(st.best)}${st.bestDesc ? ' <span class="muted">' + st.bestDesc + '</span>' : ''}`)}</div>`;
-    h += `<div class="infocard"><div class="label">Plays this run</div>${kv('Complete hands', st.hands)}${kv('Partial plays', st.melds)}${kv('Calls from the River', st.calls)}${kv('Kans', st.kans)}${kv('Discards', st.discards)}${kv('Most-played rung', most ? (MELD_LABEL[most] || (CFG.rungs[most.replace('rung', '').split('').join(',')] || {}).name || most) : '—')}</div>`;
+    h += `<div class="infocard"><div class="label">Run</div>${kv('Seed', `<code class="seed">${S.seed}</code> <button class="ghost tiny-btn" data-copyseed>Copy</button>`)}${kv('Wall', DECKS[S.deckKey].name)}${kv('Stake', stakeName(S.stake))}${kv('Ante', `${Math.min(S.ante, CFG.antes)} / ${CFG.antes}`)}${kv('Blinds Won', st.blinds)}${kv('Skipped Blinds', st.skipped)}${kv('Best Play', `${fmtN(st.best)}${st.bestDesc ? ' <span class="muted">' + st.bestDesc + '</span>' : ''}`)}</div>`;
+    h += `<div class="infocard"><div class="label">Plays This Run</div>${kv('Complete Hands', st.hands)}${kv('Partial Plays', st.melds)}${kv('Calls From the River', st.calls)}${kv('Kans', st.kans)}${kv('Discards', st.discards)}${kv('Most-Played Rung', most ? (MELD_LABEL[most] || (CFG.rungs[most.replace('rung', '').split('').join(',')] || {}).name || most) : '—')}</div>`;
     const talRows = S.talismans.map((k, i) => { const ed = S.editions[k]; return `<div class="kv"><span><span class="order">${i + 1}</span>${TAL[k].name}${ed ? ` <span class="edtag ed-${ed}">${EDITIONS[ed].name}</span>` : ''}</span><b class="muted" style="font-weight:400;text-align:right;max-width:60%">${TAL[k].status ? TAL[k].status(S) : ''}</b></div>`; }).join('');
     h += `<div class="infocard"><div class="label">Talismans · ${S.talismans.length}/${talSlots()} · fire in this order</div>${talRows || '<div class="muted">None</div>'}</div>`;
     const sc = Object.entries(S.scrolls.meld).filter(([, v]) => v).map(([k, v]) => kv(MELD_LABEL[k], `Lv.${v + 1}`)).concat(Object.entries(S.scrolls.yaku).filter(([, v]) => v).map(([k, v]) => kv((YAKU_SHEET.find(y => y.k === k) || { n: k }).n, `+${v} Han`)));
     h += `<div class="infocard"><div class="label">Scrolls</div>${sc.join('') || '<div class="muted">No Scrolls yet</div>'}</div>`;
     h += `<div class="infocard"><div class="label">Flowers &amp; Seasons</div>${S.flowers.map(f => kv(FLW[f].name, `<span class="muted" style="font-weight:400">${FLW[f].desc}</span>`)).join('') || '<div class="muted">None</div>'}</div>`;
-    h += `<div class="infocard"><div class="label">Tags held</div>${(S.tags || []).map(t => kv(TAGS[t].name, `<span class="muted" style="font-weight:400">${TAGS[t].desc}</span>`)).join('') || '<div class="muted">None</div>'}</div>`;
+    h += `<div class="infocard"><div class="label">Tags Held</div>${(S.tags || []).map(t => kv(TAGS[t].name, `<span class="muted" style="font-weight:400">${TAGS[t].desc}</span>`)).join('') || '<div class="muted">None</div>'}</div>`;
     h += `</div>`;
     h += `<div class="infocard" style="margin-top:10px"><div class="label">Bosses</div><div class="bossline">${S.bossOrder.slice(0, Math.max(CFG.antes, S.ante)).map((b, i) => { const known = i <= S.ante - 1 || st.bosses.includes(b); const beaten = i < S.ante - 1; return `<div class="bossstep${beaten ? ' beaten' : i === S.ante - 1 ? ' now' : ''}"><span class="order">A${i + 1}</span><b>${known ? BOSSES[b].name : '?'}</b>${known ? `<span class="muted">${BOSSES[b].desc}</span>` : ''}</div>`; }).join('')}</div></div>`;
   } else if (infoTab === 'profile') { h += profileHTML();
   } else if (infoTab === 'ladder') {
     const lv = k => (S && S.scrolls.meld[k]) || 0; const lvTag = k => lv(k) ? ` <span class="tag">Lv.${lv(k) + 1}</span>` : '';
-    const val = k => `${CFG.meldBase[k].chips + lv(k) * CFG.scrollChips} chips, ${CFG.meldBase[k].han + lv(k) * CFG.scrollHan} Han`;
+    const val = k => `${CFG.meldBase[k].chips + lv(k) * CFG.scrollChips} Chips, ${CFG.meldBase[k].han + lv(k) * CFG.scrollHan} Han`;
     const played = k => { const n = (S && S.stats.rungs[k]) || 0; return `<td class="num">${n || '—'}${k === most && n ? ' <span class="tag">Most played</span>' : ''}</td>`; };
     h += `<p class="muted" style="margin:8px 0">Base values after your Scroll levels. "Played" counts this run; the most-played rung is marked.</p><div style="overflow-x:auto"><table class="sheet"><thead><tr><th>Play</th><th>Base</th><th>Played</th><th>Example</th></tr></thead><tbody>`;
     const exs = { single: '7p', pair: '77p', twopair: '33m 77p', chi: '456s', pon: '555z', kan: '8888m' };
     for (const k of ['single', 'pair', 'twopair', 'chi', 'pon', 'kan']) h += `<tr><td><b>${MELD_LABEL[k]}</b>${lvTag(k)}</td><td class="num">${val(k)}</td>${played(k)}<td>${exampleHTML(exs[k])}</td></tr>`;
     const rex = { '2,0': '234m 777p', '2,1': '234m 777p 55s', '3,0': '234m 777p 456s', '3,1': '234m 777p 456s 55s', '4,0': '234m 777p 456s 678p', '4,1': '234m 777p 456s 678p 55s' };
-    for (const [k, r] of Object.entries(CFG.rungs)) h += `<tr><td><b>${r.name}</b></td><td class="num">${r.chips} chips, ${r.han} Han</td>${played('rung' + k.replace(',', ''))}<td>${exampleHTML(rex[k])}</td></tr>`;
+    for (const [k, r] of Object.entries(CFG.rungs)) h += `<tr><td><b>${r.name}</b></td><td class="num">${r.chips} Chips, ${r.han} Han</td>${played('rung' + k.replace(',', ''))}<td>${exampleHTML(rex[k])}</td></tr>`;
     h += `<tr><td><b>Complete Hand</b>${lvTag('hand')}</td><td class="num">${val('hand')}</td>${played('hand')}<td>${exampleHTML('234m 777p 456s 678p 55s')}</td></tr>`;
-    h += `</tbody></table></div><p class="muted" style="font-size:12px">Each Kan inside a multi-meld play adds +${CFG.kanBonus.chips} chips and +${CFG.kanBonus.han} Han. Honor sets add Yakuhai. Scroll levels apply to every play containing that component: +10 Chips per level for each such component, and +1 Han per level once for the play.</p>`;
+    h += `</tbody></table></div><p class="muted" style="font-size:12px">Each Kan inside a multi-meld play adds +${CFG.kanBonus.chips} Chips and +${CFG.kanBonus.han} Han. Honor sets add Yakuhai. Scroll levels apply to every play containing that component: +${CFG.scrollChips} Chips per level for each such component, and +${CFG.scrollHan} Han per level once for the play.</p>`;
     h += `<div style="overflow-x:auto;margin-top:10px"><table class="sheet"><thead><tr><th>Han</th><th>Mult</th><th>Tier</th></tr></thead><tbody>`;
-    for (const [hh, m, t] of [[0, 1, '—'], [1, 2, 'Standard'], [2, 4, 'Advanced'], [3, 8, 'Master'], ['4–5', 15, 'Mangan'], ['6–7', 25, 'Haneman'], ['8–10', 40, 'Baiman'], ['11–12', 60, 'Sanbaiman'], ['13+', 100, 'Yakuman']]) h += `<tr><td class="num">${hh}</td><td class="num">×${m}</td><td>${t}</td></tr>`;
-    h += `</tbody></table></div><p style="margin:10px 0 0;font-size:12px"><b>Extra Han on any play:</b> each Red Five +1 (Koi: +2). Each tile matching a flipped Dora indicator +1. Dragon Mark engraving +1. Han is converted through the table once; after that Talismans fire left to right, adding Chips, adding flat Mult or multiplying Mult, so put +Mult Talismans before ×Mult ones. Furiten (the newest-drawn tile of your complete hand has a copy in your River) halves the final Mult.</p>`;
+    for (const [hh, m, t] of hanRows()) h += `<tr><td class="num">${hh}</td><td class="num">×${m}</td><td>${t}</td></tr>`;
+    h += `</tbody></table></div><p style="margin:10px 0 0;font-size:12px"><b>Extra Han on any play:</b> each Red Five +1 (${TAL.koi.name}: +2). Each tile matching a flipped Dora indicator +1. Dragon Mark engraving +1. Han is converted through the table once; after that Talismans fire left to right, adding Chips, adding flat Mult or multiplying Mult, so put +Mult Talismans before ×Mult ones. Furiten (the newest-drawn tile of your complete hand has a copy in your River) halves the final Mult.</p>`;
   } else {
     const list = infoTab === 'yaku' ? YAKU_SHEET : YAKUMAN_SHEET;
     h += `<p class="muted" style="margin:8px 0">${infoTab === 'yaku' ? 'A complete hand is 4 melds + 1 pair (14 tiles) unless noted. Han is shown as closed / open; a hand is Open once you have Called from the River. A complete hand with no Yaku still counts as 1 Han.' : 'Each Yakuman is worth 13 Han (×100). Several in one hand stack.'} Examples are drawn with tiles; a Kan shows as four of a kind.</p>`;
@@ -5070,7 +5157,10 @@ const WALL_FACTS = () => ({ standard: [['136 tiles'], ['4 Red Fives']], red: [['
 // Each Stake lists what it adds (bad) under everything it keeps from the Stakes below (old).
 const STAKE_NEW = { red: ['Small Blinds pay nothing'], green: ['Targets ×1.3'], black: ['Talismans cost ¥2 more', 'Eternal Talismans'], blue: ['−1 Discard'], purple: ['Targets +5% per Ante'], orange: ['Perishable Talismans'], gold: ['Rental Talismans'] };
 const STAKE_FACTS = {}; { let kept = []; for (const k of Object.keys(STAKES).slice(1)) { STAKE_FACTS[k] = kept.map(t => [t, 'old']).concat(STAKE_NEW[k].map(t => [t, 'bad'])); kept = kept.concat(STAKE_NEW[k]); } }
-function stakeChipSVG(k) { const c = { white: '#ece4cf', red: '#c9453a', green: '#4f9d69', black: '#1a1a1a', blue: '#2f6fb8', purple: '#7a3fb0', orange: '#d9822b', gold: '#d4a62a' }[k], ink = k === 'white' ? '#bfae82' : 'rgba(255,255,255,.85)'; return `<svg class="stakechipart" viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="40" r="36" fill="${c}" stroke="rgba(0,0,0,.35)" stroke-width="2"/>${[0, 45, 90, 135, 180, 225, 270, 315].map(a => `<rect x="36" y="4" width="8" height="12" rx="2" fill="${ink}" transform="rotate(${a} 40 40)"/>`).join('')}<circle cx="40" cy="40" r="22" fill="none" stroke="${ink}" stroke-width="2" stroke-dasharray="4 3"/><circle cx="40" cy="40" r="15" fill="rgba(0,0,0,.18)"/></svg>`; }
+// Stakes are poker chips everywhere they appear: the big chip on the New Run screen and in the Collection, a small one
+// beside a Stake's name (stakeName) and in the Profile's Stakes won by Wall.
+const stakeName = k => `<span class="stakename">${stakeChipSVG(k, 'chipmini')}${STAKES[k].name}</span>`;
+function stakeChipSVG(k, cls = 'stakechipart') { const c = { white: '#ece4cf', red: '#c9453a', green: '#4f9d69', black: '#1a1a1a', blue: '#2f6fb8', purple: '#7a3fb0', orange: '#d9822b', gold: '#d4a62a' }[k], ink = k === 'white' ? '#bfae82' : 'rgba(255,255,255,.85)'; return `<svg class="${cls}" viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="40" r="36" fill="${c}" stroke="rgba(0,0,0,.35)" stroke-width="2"/>${[0, 45, 90, 135, 180, 225, 270, 315].map(a => `<rect x="36" y="4" width="8" height="12" rx="2" fill="${ink}" transform="rotate(${a} 40 40)"/>`).join('')}<circle cx="40" cy="40" r="22" fill="none" stroke="${ink}" stroke-width="2" stroke-dasharray="4 3"/><circle cx="40" cy="40" r="15" fill="rgba(0,0,0,.18)"/></svg>`; }
 function setupHTML() {
   const chev = d => `<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="${d < 0 ? 'M10.5 2.5 5 8l5.5 5.5' : 'M5.5 2.5 11 8l-5.5 5.5'}" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
   const facts = list => `<div class="carfacts">${list.map(([t, tone]) => `<span class="fact${tone ? ' ' + tone : ''}">${t}</span>`).join('')}</div>`;
@@ -5228,15 +5318,17 @@ function applyCRT() {
 // Balatro-style hover: shop and pack cards lift and tilt toward the mouse with a soft shine. Off while dragging or with
 // reduced motion. Talisman and consumable cards tilt too whenever they show their descriptions in full (outside a Blind,
 // or during one on a screen with room for them); otherwise they expand on hover instead.
-let tiltEl = null;
-document.addEventListener('pointermove', e => {
+// The mouse can report many moves per frame; only the latest is applied, once per frame.
+let tiltEl = null, tiltEv = null;
+document.addEventListener('pointermove', e => { if (!tiltEv) requestAnimationFrame(() => { const ev = tiltEv; tiltEv = null; if (ev) tiltMove(ev); }); tiltEv = e; });
+function tiltMove(e) {
   if (!motionOK || drag || slotDrag) { if (tiltEl) tiltEl.classList.remove('tilting'); tiltEl = null; return; }
   const el = e.target.closest && e.target.closest('.shelf .shopcard, .packmodal .shop-grid:not(.owned-grid) .shopcard, body.cardsopen #talismans .slot.filled, body.cardsopen #consumables .slot.filled, body.descopen #talismans .slot.filled, body.descopen #consumables .slot.filled');
   if (tiltEl && tiltEl !== el) tiltEl.classList.remove('tilting'); tiltEl = el; if (!el) return;
   el.classList.add('tiltcard', 'tilting'); if (!el.querySelector('.cshine')) el.insertAdjacentHTML('beforeend', '<span class="cshine" aria-hidden="true"></span>');
   const r = el.getBoundingClientRect(), x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
   el.style.setProperty('--rx', ((.5 - y) * 10).toFixed(1) + 'deg'); el.style.setProperty('--ry', ((x - .5) * 12).toFixed(1) + 'deg'); el.style.setProperty('--mx', (x * 100).toFixed(0) + '%'); el.style.setProperty('--my', (y * 100).toFixed(0) + '%');
-});
+}
 function bindEvents() {
   $('#btnPlay').onclick = doPlay; $('#btnDiscard').onclick = doDiscard; $('#btnCall').onclick = doCall; $('#btnKan').onclick = doDeclareKan;
   $('#btnClear').onclick = () => { S.selected = []; S.selRiver = null; render(); };

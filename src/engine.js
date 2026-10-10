@@ -349,8 +349,17 @@ function shantenRegular(counts, M) {
   dfs(0, 0, 0, false);
   return Math.max(-1, best);
 }
+// Shanten depends only on the tile counts, the open melds and the Chi shapes (Hashi), so results are remembered: the
+// helper asks about the same hands again on every redraw, and selecting tiles never changes the hand.
+const SHANTEN_MEMO = new Map();
 function handShanten(tiles, openCount) {
   const counts = new Array(34).fill(0); for (const t of tiles) counts[idx(t)]++;
+  const memoKey = String.fromCharCode(...counts.map(c => 48 + c)) + openCount + (GAP_CHI ? 'g' : '');
+  const known = SHANTEN_MEMO.get(memoKey); if (known !== undefined) return known;
+  if (SHANTEN_MEMO.size > 5000) SHANTEN_MEMO.clear();
+  const s = shantenOf(counts, openCount); SHANTEN_MEMO.set(memoKey, s); return s;
+}
+function shantenOf(counts, openCount) {
   let s = shantenRegular(counts, 4 - openCount);
   if (openCount === 0) {
     let pairs = 0, kinds = 0; for (const c of counts) { if (c >= 2) pairs++; if (c > 0) kinds++; }
@@ -365,5 +374,25 @@ function handShanten(tiles, openCount) {
 function winningTile(tiles) { let w = null; for (const t of tiles) if (!w || (t.d || 0) > (w.d || 0)) w = t; return w; }
 // Tile types that would complete the hand if drawn (only meaningful when one tile away).
 function waitsOf(hand, openCount) {
-  const out = []; for (let w = 0; w < 34; w++) { const t = tileFromIdx(w); if (handShanten(hand.concat([t]), openCount) === -1) out.push(w); } return out;
+  const out = []; for (let w = 0; w < 34; w++) { const t = tileFromIdx(w); if (isComplete(hand.concat([t]), openCount)) out.push(w); } return out;
+}
+// Whether the tiles contain a complete hand: the same answer as handShanten(...) === -1, but it stops at the first
+// arrangement found instead of searching every partial one, so asking it for each of the 34 possible waits stays cheap.
+function isComplete(tiles, openCount) {
+  const counts = new Array(34).fill(0); for (const t of tiles) counts[idx(t)]++;
+  if (openCount === 0) {
+    let pairs = 0; for (const c of counts) if (c >= 2) pairs++; if (pairs >= 7) return true;
+    let d = 0, hp = false; for (const i of ORPHANS) { if (counts[i] > 0) d++; if (counts[i] >= 2) hp = true; } if (d === 13 && hp) return true;
+  }
+  const M = 4 - openCount;
+  const melds = (i, m) => {
+    if (m === M) return true;
+    while (i < 34 && counts[i] === 0) i++;
+    if (i >= 34) return false;
+    if (counts[i] >= 3) { counts[i] -= 3; const ok = melds(i, m + 1); counts[i] += 3; if (ok) return true; }
+    if (i < 27) for (const sh of CHI_SHAPES()) { const a = i + sh[1], b = i + sh[2]; if ((i % 9) + sh[2] > 8 || !counts[a] || !counts[b]) continue; counts[i]--; counts[a]--; counts[b]--; const ok = melds(i, m + 1); counts[i]++; counts[a]++; counts[b]++; if (ok) return true; }
+    const c = counts[i]; counts[i] = 0; const ok = melds(i + 1, m); counts[i] = c; return ok;
+  };
+  for (let p = 0; p < 34; p++) { if (counts[p] < 2) continue; counts[p] -= 2; const ok = melds(0, 0); counts[p] += 2; if (ok) return true; }
+  return false;
 }
