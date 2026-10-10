@@ -885,14 +885,24 @@ body.crt-full #app,body.crt-full #overlay{filter:url(#crtfx)} #crtbezel{display:
 .slot.filled.sel{outline:2px solid var(--accent);outline-offset:1px}
 .overlay.shoptray{padding:0} .overlay.shoptray .modal.shopmodal{padding-top:0} .overlay.shoptray .modal.packmodal{padding-top:20px}
 /* Shop: the buttons in a bar under the banner, the shelves side by side. Each shelf is as wide as its cards (--n of them) and they wrap. */
-.shoprail.shopbar{flex-direction:row;flex-wrap:wrap;position:static;gap:10px;margin:0 0 22px} .shopbar button{width:auto;flex:1 1 150px} .shopbar .nextbtn{flex:1.6 1 220px}
-.shoprail.shopbar .nextbtn.primary{min-height:0;padding:10px 16px;justify-content:center} .shopbar .railbtn{min-height:0}
+/* Compact buttons in the Shop banner and pack header; Reroll is a pill on the Cards shelf */
+.shopacts,.packacts{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.hbtn{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:6px 14px;border-radius:9px;background:rgba(0,0,0,.24);border:1px solid rgba(246,234,210,.32);color:#f6ead2;font-size:13px;white-space:nowrap}
+.hbtn:hover:not(:disabled){background:rgba(0,0,0,.36);border-color:rgba(246,234,210,.55)} .hbtn b{font-family:var(--display);font-weight:500;font-size:15px;color:rgba(246,234,210,.7)}
+.hbtn .rbico,.shelfbtn .rbico{width:16px;height:16px} .hbtn .wallico{transform:scale(.62);transform-origin:center;width:16px;margin:0 -1px}
+.hnext{display:inline-flex;flex-direction:column;align-items:flex-start;gap:1px;min-height:40px;padding:5px 16px 6px;border-radius:9px;text-align:left;box-shadow:0 4px 12px rgba(0,0,0,.35)}
+.hnext .nb-main{display:flex;align-items:center;gap:10px;font-family:var(--display);font-size:17px;font-weight:600;white-space:nowrap} .hnext small{font-size:10.5px;font-weight:500;opacity:.8;white-space:nowrap}
+.hnext .nb-main svg{transition:transform .2s} .hnext:hover .nb-main svg{transform:translateX(3px)}
+.shelfbtn{position:absolute;top:-13px;right:14px;z-index:1;display:inline-flex;align-items:center;gap:7px;padding:3px 12px;border-radius:999px;background:var(--panel);border:1px solid rgba(217,164,65,.6);color:var(--fg);font-size:12px;cursor:pointer}
+.shelfbtn b{font-family:var(--display);font-weight:500;color:var(--accent)} .shelfbtn:hover:not(:disabled){border-color:var(--accent);background:var(--panel2)} .shelfbtn:disabled{opacity:.5;cursor:default}
+.packhead .packacts{margin-left:auto} .packhead .hbtn{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,.18)}
+@media (max-width:720px){.norenbar{flex-wrap:wrap} .shopacts{justify-content:flex-start} .packhead .packacts{order:5;width:100%;justify-content:flex-start}}
 .shopshelves{display:flex;flex-wrap:wrap;gap:0 16px;align-items:stretch}
 .shopshelves .shelf{--w:164px;flex:var(--n) 1 calc(var(--n) * var(--w) + (var(--n) - 1) * 16px + 30px);min-width:0}
 .shopshelves .shelf.many{--w:132px}
 .shopshelves .shelfrow,.shopshelves .shelf.many .shelfrow{grid-template-columns:repeat(var(--n),minmax(0,230px));justify-content:center}
 .shopshelves .emptyvouch{width:var(--w)}
 .overlay.shoptray .packhand{padding-top:4px} .overlay.shoptray .packhand .tile{--tw:min(54px,calc((100cqw - 42px) / 8))} .overlay.shoptray .packhandwrap > .muted{min-height:0}
-.packbar{margin:12px 0 14px} .packbar .railbtn{min-height:44px} .packmodal .packshelf{margin-top:22px}
+.packmodal .packshelf{margin-top:22px}
 .packshelf .shop-grid:not(.owned-grid){grid-template-columns:repeat(var(--n,3),minmax(0,200px));justify-content:center} @media (max-width:720px){.packshelf .shop-grid:not(.owned-grid){grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}}
 </style>
