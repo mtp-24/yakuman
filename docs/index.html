@@ -2170,7 +2170,10 @@ function playRowHolds() {
     if (box && h.h - nowH > 1) box.animate([{ height: h.h + 'px' }, { height: h.h + 'px', offset: (DISSOLVE_MS - 60) / total }, { height: nowH + 'px' }], { duration: total, easing: 'ease-in-out' });
     [...document.querySelectorAll(h.sel)].forEach((el, j) => {
       const was = h.rects[j < h.gone ? j : j + 1]; if (!was) return; const now = el.getBoundingClientRect(), dx = was.left - now.left, dy = was.top - now.top;
-      if (Math.abs(dx) > 1 || Math.abs(dy) > 1) el.animate([{ transform: `translate(${dx}px,${dy}px)` }, { transform: 'none' }], { duration: 280, delay: DISSOLVE_MS - 60, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' });
+      // Cards in a grid stretch to their row's tallest card, so a card can change size as the rows re-pair: it keeps its old
+      // size (and place) while the sold card burns, then eases to the new one with the slide.
+      const resize = Math.abs(was.height - now.height) > 1 || Math.abs(was.width - now.width) > 1;
+      if (Math.abs(dx) > 1 || Math.abs(dy) > 1 || resize) el.animate([{ transform: `translate(${dx}px,${dy}px)`, ...(resize ? { width: was.width + 'px', height: was.height + 'px', boxSizing: 'border-box' } : {}) }, { transform: 'none', ...(resize ? { width: now.width + 'px', height: now.height + 'px', boxSizing: 'border-box' } : {}) }], { duration: 280, delay: DISSOLVE_MS - 60, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' });
     });
   }
 }

@@ -173,6 +173,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 162: Collection engravings use wide cards: the sample tile sits on a felt pad at the left, the name and effect beside it, an accent edge in each engraving's colour, two or three cards per row.
 - Build 163: Engraving cards drop the coloured accent edge.
 - Build 164: Flowers in the side panel use the same hover card as tiles (a Flower label, the name and the effect) instead of the plain tooltip; the hover card now works for any element with data-hc-title.
+- Build 210: After a sale, cards that change size as the grid's rows re-pair (each card stretches to its row's tallest) keep their old size during the dissolve, then ease to the new size with the slide.
 - Build 209: Trays hand over instead of cutting: a leaving tray (a pack closing after its last pick or Skip the Rest, the Shop giving way to a pack or to the next Blind, a ¥0 cash-out) slides down quickly, then the next tray rises in its place (a little faster than before). Clicks are ignored during the slide.
 - Build 208: When a new card makes the Charm or consumable row taller (on the board, or the lists in the full-screen Shop), the row grows into its new height in a quarter second instead of jumping, and the Shop tray under the board's row glides down with it.
 - Build 207: After a sale the list keeps its height while the card burns, then eases to its new height as the cards slide, so the panel no longer jumps when a row empties (or the last card goes and "None yet." shows).
