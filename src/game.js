@@ -112,8 +112,17 @@ const conSellValue = c => Math.max(1, Math.floor(CONS[c.key].cost / 2)) + (c.bon
 // Destroys a Talisman (Kamikiri, Izanagi, Izanami) and clears everything it owned. Eternal Talismans cannot be destroyed.
 // Balatro's dissolve: a copy of the card burns away where it stood, then the board redraws without it.
 function dissolveTal(k) {
-  if (!motionOK) return; const i = S.talismans.indexOf(k); const el = (document.querySelector(`[data-sell="${k}"]`) || {}).closest ? document.querySelector(`[data-sell="${k}"]`).closest('.shopcard') : [...document.querySelectorAll('#talismans .slot')][i];
-  holdRow('#talismans .slot.filled', '#talismans', i); holdRow('#modal .owned-card.talisman', '#modal .owned-grid.otal', i); dissolveEl(el);
+  if (!motionOK) return; const i = S.talismans.indexOf(k), b = document.querySelector(`#modal [data-sell="${k}"]`);
+  if (b) return burnInList(b.closest('.shopcard'));   // the compact (full-screen) Shop's list of your cards
+  holdRow('#talismans .slot.filled', '#talismans', i); dissolveEl([...document.querySelectorAll('#talismans .slot')][i]);
+}
+// In the compact layout's list of your cards nothing moves: the sold card burns away where it is, the list holds still, and
+// only once it has burned out is the list redrawn in its new order. Returns true when the redraw is left to it.
+function burnInList(el) {
+  if (!el || !motionOK) return false; $('#modal').style.pointerEvents = 'none';
+  el.animate([{ opacity: 1, filter: 'none', transform: 'none' }, { opacity: .9, filter: 'brightness(1.6) sepia(.6) saturate(3) blur(.5px)', transform: 'scale(1.03)', offset: .3 }, { opacity: 0, filter: 'brightness(2) saturate(4) blur(6px)', transform: 'scale(.92) translateY(-10px)' }], { duration: DISSOLVE_MS, easing: 'ease-in', fill: 'forwards' });
+  setTimeout(() => { $('#modal').style.pointerEvents = ''; render(); }, DISSOLVE_MS + 20);
+  return true;
 }
 const DISSOLVE_MS = 520;
 function dissolveEl(el) {
@@ -143,22 +152,31 @@ function growRows(was) {
 let rowHolds = [];
 function holdRow(sel, box, gone) {
   if (!motionOK || gone < 0) return; const b = document.querySelector(box);
-  rowHolds.push({ sel, box, gone, t: performance.now(), rects: [...document.querySelectorAll(sel)].map(e => e.getBoundingClientRect()), h: b ? b.getBoundingClientRect().height : 0 });
+  rowHolds.push({ sel, box, gone, t: performance.now(), rects: [...document.querySelectorAll(sel)].filter(e => !e.classList.contains('rowghost')).map(e => e.getBoundingClientRect()), h: b ? b.getBoundingClientRect().height : 0 });
 }
 function playRowHolds() {
   const holds = rowHolds; rowHolds = [];
   for (const h of holds) {
     if (performance.now() - h.t > 1000) continue;
-    // The row's box keeps its old height while the card burns (a list that loses a whole row would otherwise jump),
-    // then eases to its new height as the cards slide.
-    const box = document.querySelector(h.box), nowH = box ? box.getBoundingClientRect().height : 0, total = DISSOLVE_MS - 60 + 280;
-    if (box && h.h - nowH > 1) box.animate([{ height: h.h + 'px' }, { height: h.h + 'px', offset: (DISSOLVE_MS - 60) / total }, { height: nowH + 'px' }], { duration: total, easing: 'ease-in-out' });
-    [...document.querySelectorAll(h.sel)].forEach((el, j) => {
+    const box = document.querySelector(h.box); if (!box) continue;
+    const br = box.getBoundingClientRect(), nowH = br.height, wait = DISSOLVE_MS - 60, total = wait + 280;
+    // The row's box keeps its old height while the card burns (a list that loses a whole row would otherwise jump), then
+    // eases to its new height as the cards slide. Rows stay packed at the top meanwhile instead of stretching to fill it.
+    box.classList.add('reflowing'); setTimeout(() => box.classList.remove('reflowing'), total + 80);
+    if (h.h - nowH > 1) box.animate([{ height: h.h + 'px' }, { height: h.h + 'px', offset: wait / total }, { height: nowH + 'px' }], { duration: total, easing: 'ease-in-out' });
+    // Each card that has to move or change size (cards in a grid stretch to their row's tallest, so rows re-pairing resizes
+    // them) is played by a stand-in copy laid over the list, out of the layout, so nothing reflows while it moves. The real
+    // list is already in its final shape underneath, hidden until the copies land.
+    if (getComputedStyle(box).position === 'static') box.style.position = 'relative';
+    [...document.querySelectorAll(h.sel)].filter(e => !e.classList.contains('rowghost')).forEach((el, j) => {
       const was = h.rects[j < h.gone ? j : j + 1]; if (!was) return; const now = el.getBoundingClientRect(), dx = was.left - now.left, dy = was.top - now.top;
-      // Cards in a grid stretch to their row's tallest card, so a card can change size as the rows re-pair: it keeps its old
-      // size (and place) while the sold card burns, then eases to the new one with the slide.
-      const resize = Math.abs(was.height - now.height) > 1 || Math.abs(was.width - now.width) > 1;
-      if (Math.abs(dx) > 1 || Math.abs(dy) > 1 || resize) el.animate([{ transform: `translate(${dx}px,${dy}px)`, ...(resize ? { width: was.width + 'px', height: was.height + 'px', boxSizing: 'border-box' } : {}) }, { transform: 'none', ...(resize ? { width: now.width + 'px', height: now.height + 'px', boxSizing: 'border-box' } : {}) }], { duration: 280, delay: DISSOLVE_MS - 60, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' });
+      if (Math.abs(dx) <= 1 && Math.abs(dy) <= 1 && Math.abs(was.height - now.height) <= 1 && Math.abs(was.width - now.width) <= 1) return;
+      const g = el.cloneNode(true); g.classList.add('rowghost');
+      Object.assign(g.style, { position: 'absolute', left: now.left - br.left - box.clientLeft + 'px', top: now.top - br.top - box.clientTop + 'px', width: now.width + 'px', height: now.height + 'px', margin: 0, zIndex: 3, pointerEvents: 'none', visibility: '' });
+      box.appendChild(g); el.style.visibility = 'hidden';
+      const show = () => { g.remove(); el.style.visibility = ''; };
+      g.animate([{ transform: `translate(${dx}px,${dy}px)`, width: was.width + 'px', height: was.height + 'px' }, { transform: 'none', width: now.width + 'px', height: now.height + 'px' }], { duration: 280, delay: wait, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' }).onfinish = show;
+      setTimeout(() => { if (g.isConnected) show(); }, total + 400);   // safety if animations are paused
     });
   }
 }
@@ -637,8 +655,8 @@ function sellEffect(k) {
   if (b === 'kakuremino' && (S.talState.kakuremino || 0) >= 2) { const others = S.talismans.filter(x => x !== k); if (!others.length) return ''; const src = pick(others); const ed = S.editions[src]; const copy = newAlias(S, baseKey(src)); S.talismans.push(copy); if (ed && ed !== 'neg') S.editions[copy] = ed; return ` Kakuremino copies ${TAL[src].name}.`; }
   return '';
 }
-function sellTalisman(k) { const i = S.talismans.indexOf(k); if (i < 0) return; if (isEternal(k)) { setMsg(`${TAL[k].name} is Eternal and can never be sold.`, true); return render(); } if (S.stickers) delete S.stickers[k]; if (S.phase === 'blind') S.leafCut = true; if (S.crimsonOff === k) S.crimsonOff = null; const v = talSellValue(k); dissolveTal(k); S.talismans.splice(i, 1); const eff = sellEffect(k); if (S.sellBonus) delete S.sellBonus[k]; S.money += v; sfx('sell'); delete S.editions[k]; S.selTal = null; for (const t of S.talismans) if (TAL[t].onSell) TAL[t].onSell(S); PROFILE.sold++; saveProfile(); setMsg(`Sold ${TAL[k].name} for ¥${v}.${eff}`); render(); }
-function sellConsumable(i) { const c = S.consumables[i]; if (!c) return; const v = conSellValue(c); const b = document.querySelector(`[data-sellcon="${i}"]`); holdRow('#consumables .slot.filled', '#consumables', i); holdRow('#modal .owned-card:not(.talisman)', '#modal .owned-grid.ocon', i); dissolveEl(b && b.closest('.shopcard') || [...document.querySelectorAll('#consumables .slot')][i]); S.consumables.splice(i, 1); S.money += v; sfx('sell'); setMsg(`Sold ${CONS[c.key].name} for ¥${v}.`); render(); }
+function sellTalisman(k) { const i = S.talismans.indexOf(k); if (i < 0) return; if (isEternal(k)) { setMsg(`${TAL[k].name} is Eternal and can never be sold.`, true); return render(); } if (S.stickers) delete S.stickers[k]; if (S.phase === 'blind') S.leafCut = true; if (S.crimsonOff === k) S.crimsonOff = null; const v = talSellValue(k); const later = dissolveTal(k) === true; S.talismans.splice(i, 1); const eff = sellEffect(k); if (S.sellBonus) delete S.sellBonus[k]; S.money += v; sfx('sell'); delete S.editions[k]; S.selTal = null; for (const t of S.talismans) if (TAL[t].onSell) TAL[t].onSell(S); PROFILE.sold++; saveProfile(); setMsg(`Sold ${TAL[k].name} for ¥${v}.${eff}`); if (!later) render(); }
+function sellConsumable(i) { const c = S.consumables[i]; if (!c) return; const v = conSellValue(c); const b = document.querySelector(`#modal [data-sellcon="${i}"]`), later = !!b && burnInList(b.closest('.shopcard')); if (!b) { holdRow('#consumables .slot.filled', '#consumables', i); dissolveEl([...document.querySelectorAll('#consumables .slot')][i]); } S.consumables.splice(i, 1); S.money += v; sfx('sell'); setMsg(`Sold ${CONS[c.key].name} for ¥${v}.`); if (!later) render(); }
 
 // ===================== SHOP =====================
 function rollCard() {
@@ -1014,7 +1032,7 @@ function playLevelStamp(f) {
 function queueSlotFlight(card, row) { if (card && motionOK) slotFlights.push({ rect: card.getBoundingClientRect(), node: card.cloneNode(true), row }); }
 function animateSlots() {
   const flights = slotFlights; slotFlights = []; if (!flights.length || S.quiet) return;
-  const filled = { tal: [...document.querySelectorAll('#talismans .slot.filled')], con: [...document.querySelectorAll('#consumables .slot.filled')] };
+  const filled = { tal: [...document.querySelectorAll('#talismans .slot.filled:not(.rowghost)')], con: [...document.querySelectorAll('#consumables .slot.filled:not(.rowghost)')] };
   flights.forEach((f, k) => {
     if (f.stamp) return playLevelStamp(f);
     const dest = f.row === 'flower' ? [...document.querySelectorAll('main > aside .flowers .flowerchip')].pop() : filled[f.row].pop(); if (!dest) return;
