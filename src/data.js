@@ -412,18 +412,32 @@ const TAGS = {
   boss: { name: 'Boss Tag', desc: 'Rerolls the next Boss.' },
   speed: { name: 'Speed Tag', desc: '+¥5 for every Blind you have skipped this run, right away.' },
   tile: { name: 'Tile Tag', desc: 'A free Mega Tile Pack opens in the next shop.' },
+  uncommon: { name: 'Uncommon Tag', desc: 'The next shop has a free Uncommon Talisman.' },
+  rare: { name: 'Rare Tag', desc: 'The next shop has a free Rare Talisman.' },
+  double: { name: 'Double Tag', desc: 'The next Tag you get counts twice (except another Double Tag).' },
+  orbital: { name: 'Orbital Tag', desc: 'Levels up a random meld Scroll by 3, right away.' },
+  topup: { name: 'Top-up Tag', desc: 'Creates up to 2 Common Talismans right away, if you have room.' },
+  d6: { name: 'D6 Tag', desc: 'Rerolls in the next shop start at ¥0 and cost ¥1 more each time.' },
+  handy: { name: 'Handy Tag', desc: '+¥1 for every Play you have used this run, right away.' },
+  garbage: { name: 'Garbage Tag', desc: '+¥1 for every Discard you left unused this run, right away.' },
 };
 // ===================== PACKS =====================
-const PACKS = {
-  omikuji: { name: 'Omikuji Pack', cost: 4, show: 3, keep: 1, desc: 'Open 3 Omikuji. Use 1 on tiles from your Wall now, or keep it.' },
-  scroll: { name: 'Scroll Pack', cost: 4, show: 3, keep: 1, desc: 'Open 3 Scrolls of Mastery, use 1 now.' },
-  talisman: { name: 'Talisman Pack', cost: 6, show: 2, keep: 1, desc: 'Open 2 Talismans, keep 1.' },
-  kami: { name: 'Kami Pack', cost: 6, show: 2, keep: 1, desc: 'Open 2 Kami Spirits. Use 1 on tiles from your Wall now, or keep it.' },
-  mega: { name: 'Mega Omikuji Pack', cost: 7, show: 5, keep: 2, desc: 'Open 5 Omikuji. Use or keep 2.' },
-  // Balatro's Standard Packs: new tiles for your Wall, some engraved or sealed.
-  tile: { name: 'Tile Pack', cost: 4, show: 4, keep: 1, desc: 'Open 4 tiles and add 1 to your Wall. Some come engraved or sealed.' },
-  megatile: { name: 'Mega Tile Pack', cost: 7, show: 6, keep: 2, desc: 'Open 6 tiles and add 2 to your Wall. Some come engraved or sealed.' },
+// Every pack type comes in three sizes, like Balatro: Normal, Jumbo (+2 cards) and Mega (+2 cards, 2 picks).
+// Mega Omikuji ('mega') and Mega Tile ('megatile') keep their old keys so saved runs still open them.
+const PACK_TYPES = {
+  omikuji: { label: 'Omikuji', show: 3, cost: 4, desc: (n, k) => `Open ${n} Omikuji. Use ${k === 1 ? '1' : k} on tiles from your Wall now, or keep ${k === 1 ? 'it' : 'them'}.` },
+  scroll: { label: 'Scroll', show: 3, cost: 4, desc: (n, k) => `Open ${n} Scrolls of Mastery, use ${k} now.` },
+  talisman: { label: 'Talisman', show: 2, cost: 6, desc: (n, k) => `Open ${n} Talismans, keep ${k}.` },
+  kami: { label: 'Kami', show: 2, cost: 6, desc: (n, k) => `Open ${n} Kami Spirits. Use ${k === 1 ? '1' : k} on tiles from your Wall now, or keep ${k === 1 ? 'it' : 'them'}.` },
+  tile: { label: 'Tile', show: 4, cost: 4, desc: (n, k) => `Open ${n} tiles and add ${k} to your Wall. Some come engraved or sealed.` },
 };
+const PACKS = {};
+for (const [type, t] of Object.entries(PACK_TYPES)) {
+  const mk = (size, show, keep, cost) => ({ type, size, name: `${size ? size + ' ' : ''}${t.label} Pack`, show, keep, cost, desc: t.desc(show, keep) });
+  PACKS[type] = mk('', t.show, 1, t.cost);
+  PACKS['jumbo' + type] = mk('Jumbo', t.show + 2, 1, t.cost + 2);
+  PACKS[type === 'omikuji' ? 'mega' : 'mega' + type] = mk('Mega', t.show + 2, 2, t.cost + 3);
+}
 // A tile for a Tile Pack: any tile your Wall can hold, sometimes a Red Five, engraved (30%) or sealed (15%).
 function packTile(deckKey) {
   const suits = deckKey === 'lean' ? ['m', 'p', 'z'] : deckKey === 'monk' ? ['m', 'p', 's'] : ['m', 'p', 's', 'z'];

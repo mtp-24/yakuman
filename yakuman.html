@@ -1333,18 +1333,32 @@ const TAGS = {
   boss: { name: 'Boss Tag', desc: 'Rerolls the next Boss.' },
   speed: { name: 'Speed Tag', desc: '+¥5 for every Blind you have skipped this run, right away.' },
   tile: { name: 'Tile Tag', desc: 'A free Mega Tile Pack opens in the next shop.' },
+  uncommon: { name: 'Uncommon Tag', desc: 'The next shop has a free Uncommon Talisman.' },
+  rare: { name: 'Rare Tag', desc: 'The next shop has a free Rare Talisman.' },
+  double: { name: 'Double Tag', desc: 'The next Tag you get counts twice (except another Double Tag).' },
+  orbital: { name: 'Orbital Tag', desc: 'Levels up a random meld Scroll by 3, right away.' },
+  topup: { name: 'Top-up Tag', desc: 'Creates up to 2 Common Talismans right away, if you have room.' },
+  d6: { name: 'D6 Tag', desc: 'Rerolls in the next shop start at ¥0 and cost ¥1 more each time.' },
+  handy: { name: 'Handy Tag', desc: '+¥1 for every Play you have used this run, right away.' },
+  garbage: { name: 'Garbage Tag', desc: '+¥1 for every Discard you left unused this run, right away.' },
 };
 // ===================== PACKS =====================
-const PACKS = {
-  omikuji: { name: 'Omikuji Pack', cost: 4, show: 3, keep: 1, desc: 'Open 3 Omikuji. Use 1 on tiles from your Wall now, or keep it.' },
-  scroll: { name: 'Scroll Pack', cost: 4, show: 3, keep: 1, desc: 'Open 3 Scrolls of Mastery, use 1 now.' },
-  talisman: { name: 'Talisman Pack', cost: 6, show: 2, keep: 1, desc: 'Open 2 Talismans, keep 1.' },
-  kami: { name: 'Kami Pack', cost: 6, show: 2, keep: 1, desc: 'Open 2 Kami Spirits. Use 1 on tiles from your Wall now, or keep it.' },
-  mega: { name: 'Mega Omikuji Pack', cost: 7, show: 5, keep: 2, desc: 'Open 5 Omikuji. Use or keep 2.' },
-  // Balatro's Standard Packs: new tiles for your Wall, some engraved or sealed.
-  tile: { name: 'Tile Pack', cost: 4, show: 4, keep: 1, desc: 'Open 4 tiles and add 1 to your Wall. Some come engraved or sealed.' },
-  megatile: { name: 'Mega Tile Pack', cost: 7, show: 6, keep: 2, desc: 'Open 6 tiles and add 2 to your Wall. Some come engraved or sealed.' },
+// Every pack type comes in three sizes, like Balatro: Normal, Jumbo (+2 cards) and Mega (+2 cards, 2 picks).
+// Mega Omikuji ('mega') and Mega Tile ('megatile') keep their old keys so saved runs still open them.
+const PACK_TYPES = {
+  omikuji: { label: 'Omikuji', show: 3, cost: 4, desc: (n, k) => `Open ${n} Omikuji. Use ${k === 1 ? '1' : k} on tiles from your Wall now, or keep ${k === 1 ? 'it' : 'them'}.` },
+  scroll: { label: 'Scroll', show: 3, cost: 4, desc: (n, k) => `Open ${n} Scrolls of Mastery, use ${k} now.` },
+  talisman: { label: 'Talisman', show: 2, cost: 6, desc: (n, k) => `Open ${n} Talismans, keep ${k}.` },
+  kami: { label: 'Kami', show: 2, cost: 6, desc: (n, k) => `Open ${n} Kami Spirits. Use ${k === 1 ? '1' : k} on tiles from your Wall now, or keep ${k === 1 ? 'it' : 'them'}.` },
+  tile: { label: 'Tile', show: 4, cost: 4, desc: (n, k) => `Open ${n} tiles and add ${k} to your Wall. Some come engraved or sealed.` },
 };
+const PACKS = {};
+for (const [type, t] of Object.entries(PACK_TYPES)) {
+  const mk = (size, show, keep, cost) => ({ type, size, name: `${size ? size + ' ' : ''}${t.label} Pack`, show, keep, cost, desc: t.desc(show, keep) });
+  PACKS[type] = mk('', t.show, 1, t.cost);
+  PACKS['jumbo' + type] = mk('Jumbo', t.show + 2, 1, t.cost + 2);
+  PACKS[type === 'omikuji' ? 'mega' : 'mega' + type] = mk('Mega', t.show + 2, 2, t.cost + 3);
+}
 // A tile for a Tile Pack: any tile your Wall can hold, sometimes a Red Five, engraved (30%) or sealed (15%).
 function packTile(deckKey) {
   const suits = deckKey === 'lean' ? ['m', 'p', 'z'] : deckKey === 'monk' ? ['m', 'p', 's'] : ['m', 'p', 's', 'z'];
@@ -1876,7 +1890,7 @@ const editionMult = () => hasF('sakura2') ? 4 : hasF('sakura') ? 2 : 1;
 const talSellValue = k => Math.max(1, Math.floor(talValue(k) / 2)) + (hasF('camellia') ? 1 : 0);
 const blindPlays = () => chal('plays') ? chal('plays') : Math.max(1, CFG.playsPerBlind + S.bonusPlays + talMod('plays') + (hasF('bamboo') ? 1 : 0) + (hasF('bamboo2') ? 1 : 0) - (hasF('wisteria') ? 1 : 0) + (S.deckKey === 'gambler' ? 1 : 0) - (S.deckKey === 'abundant' || S.deckKey === 'lean' ? 1 : 0));
 const blindDiscards = () => Math.max(0, (chal('discards') || 0) + CFG.discardsPerBlind + S.bonusDiscards + talMod('discards') + (hasF('orchid') ? 1 : 0) + (hasF('orchid2') ? 1 : 0) - (hasF('wisteria2') ? 1 : 0) - (stakeLevel(S.stake) >= 4 ? 1 : 0) - (S.deckKey === 'gambler' ? 1 : 0));
-const rerollPrice = () => S.shop && (S.shop.freeReroll || S.shop.firstFree) ? 0 : rerollCost();
+const rerollPrice = () => S.shop && (S.shop.freeReroll || S.shop.firstFree) ? 0 : S.shop && S.shop.d6 ? S.shop.rerolls || 0 : rerollCost();
 // Stakes stack like Balatro's: each one keeps every penalty of the Stakes below it.
 const STAKE_KEYS = Object.keys(STAKES);
 const stakeLevel = k => STAKE_KEYS.indexOf(k);
@@ -2092,7 +2106,8 @@ function winBlind() {
   const rent = S.talismans.filter(k => S.stickers && S.stickers[k] && S.stickers[k].rental).map(k => [k, 3]);
   for (const [k, st] of Object.entries(S.stickers || {})) if (st.perish > 0) { st.perish--; if (!st.perish) setTimeout(() => toast(`<div class="label">Perished</div><b>${TAL[k].name}</b><div class="muted" style="font-size:11px">stops working from now on</div>`), 600); }
   const total = base + left + interest + tal + summer + invest - rent.reduce((a, [, v]) => a + v, 0);
-  const before = S.money; S.money = Math.max(0, S.money + total); S.stats.blinds++; S.msg = ''; S.msgErr = false;
+  const before = S.money; S.money = Math.max(0, S.money + total);
+  S.stats.discardsLeft = (S.stats.discardsLeft || 0) + Math.max(0, S.discards); S.stats.blinds++; S.msg = ''; S.msgErr = false;
   S.reward = { kind, base, left, interest, tal, talPay, summer, invest, rent, total, before, wallLeft: S.wall.length };
   const blue = blueSeals(); if (blue) setTimeout(() => toast(`<div class="label">Blue Seal${blue.n > 1 ? ' ×' + blue.n : ''}</div><b>${SCR[blue.key].name}</b><div class="muted" style="font-size:11px">levelled up by ${blue.n}</div>`), 300);
   collectDeck();
@@ -2180,7 +2195,7 @@ async function doPlay() {
   S.busy = false;
   for (const k of liveTals(S)) if (TAL[k].afterScore) TAL[k].afterScore(ctx, S);
   if (S.spent && S.spent.length) { S.spent.forEach(k => toast(`<div class="label">Used up</div><b>${TAL[k].name}</b><div class="muted" style="font-size:11px">left your board after its last play</div>`)); S.spent = []; }
-  S.plays--; S.playsMade = (S.playsMade || 0) + 1; tilesDestroyed(ctx.shatter.length); if (ctx.shatter.length) PROFILE.shattered = (PROFILE.shattered || 0) + ctx.shatter.length; S.score += ctx.total; S.money += ctx.money; S.lastPlay = ctx;
+  S.plays--; S.playsMade = (S.playsMade || 0) + 1; S.stats.playsTotal = (S.stats.playsTotal || 0) + 1; tilesDestroyed(ctx.shatter.length); if (ctx.shatter.length) PROFILE.shattered = (PROFILE.shattered || 0) + ctx.shatter.length; S.score += ctx.total; S.money += ctx.money; S.lastPlay = ctx;
   if (S.boss === 'toll') S.money = Math.max(0, S.money - sel.length);
   if (S.boss === 'ox' && ctx.meldType === mostPlayedRung()) { S.money = 0; toast('<div class="label">The Ox</div><b>Your money is now ¥0</b><div class="muted" style="font-size:11px">you played your most-played play type</div>'); }
   S.usedTypes = (S.usedTypes || []).concat(ctx.meldType); if (!S.mouthType) S.mouthType = ctx.meldType; S.firstPlayDone = true;
@@ -2307,7 +2322,9 @@ function rollCard() {
 }
 function genShop() {
   const fl = flowerPool(S.flowers).filter(f => S.ante > 1 || !f.key.startsWith('wisteria'));   // Wisteria cannot go back from Ante 1
-  const packKey = pick(['omikuji', 'omikuji', 'scroll', 'scroll', 'talisman', 'kami', 'mega', 'tile', 'tile', 'megatile'].filter(k => k !== 'talisman' || !chal('noTalismans')));
+  // Normal packs are the most common, Jumbo less so, Mega rarest; Kami packs are rarer than the rest.
+  const PACK_ODDS = ['omikuji', 'omikuji', 'omikuji', 'jumboomikuji', 'mega', 'scroll', 'scroll', 'scroll', 'jumboscroll', 'megascroll', 'talisman', 'talisman', 'jumbotalisman', 'megatalisman', 'kami', 'jumbokami', 'megakami', 'tile', 'tile', 'tile', 'jumbotile', 'megatile'];
+  const packKey = pick(PACK_ODDS.filter(k => PACKS[k].type !== 'talisman' || !chal('noTalismans')));
   S.shop = { cards: Array.from({ length: shopSlots() }, rollCard), firstFree: hasF('autumn2'), scroll: { kind: 'scroll', key: pick(SCROLLS).key }, flower: fl.length ? { kind: 'flower', key: pick(fl).key } : null, pack: { kind: 'pack', key: packKey }, coupon: false, freeReroll: false, freePacks: [] };
   // consume tags that act on this shop
   const take = t => { const i = S.tags.indexOf(t); if (i >= 0) { S.tags.splice(i, 1); return true; } return false; };
@@ -2316,20 +2333,23 @@ function genShop() {
   for (const ed of ['foil', 'holo', 'poly', 'neg']) if (take(ed)) { const c = S.shop.cards.find(x => x.kind === 'talisman'), pool = talPool(); if (c) c.edition = ed; else if (pool.length) S.shop.cards[0] = { kind: 'talisman', key: pickTalisman(pool).key, edition: ed }; }
   for (const pk of ['omikuji', 'scroll', 'talisman', 'kami']) while (take(pk)) S.shop.freePacks.push(pk);
   while (take('tile')) S.shop.freePacks.push('megatile');
+  // Rare and Uncommon Tags add a free Talisman of that rarity; D6 makes rerolls start at ¥0.
+  for (const r of ['uncommon', 'rare']) while (take(r)) { const pool = talPool().filter(t => talRarity(t.key) === r); if (pool.length) { const key = pick(pool).key; S.shop.cards.unshift({ kind: 'talisman', key, edition: rollEdition(editionMult()), sticker: rollSticker(key), free: true }); } }
+  if (take('d6')) { S.shop.d6 = true; S.shop.rerolls = 0; }
 }
 function openPack(key, free) {
-  const def = PACKS[key]; let pool;
-  if (key === 'omikuji' || key === 'mega') pool = OMIKUJI.map(o => ({ kind: 'omikuji', key: o.key }));
-  else if (key === 'scroll') pool = SCROLLS.map(o => ({ kind: 'scroll', key: o.key }));
-  else if (key === 'kami') pool = KAMI.filter(o => !o.soul).map(o => ({ kind: 'kami', key: o.key }));
+  const def = PACKS[key], type = def.type; let pool;
+  if (type === 'omikuji') pool = OMIKUJI.map(o => ({ kind: 'omikuji', key: o.key }));
+  else if (type === 'scroll') pool = SCROLLS.map(o => ({ kind: 'scroll', key: o.key }));
+  else if (type === 'kami') pool = KAMI.filter(o => !o.soul).map(o => ({ kind: 'kami', key: o.key }));
   let choices;
-  if (key === 'tile' || key === 'megatile') choices = Array.from({ length: def.show }, () => ({ kind: 'tile', tile: packTile(S.deckKey) }));
-  else if (key === 'talisman') { const left = talPool(); choices = []; while (choices.length < def.show && left.length) { const t = pickTalisman(left); left.splice(left.indexOf(t), 1); choices.push({ kind: 'talisman', key: t.key, edition: rollEdition(editionMult()), sticker: rollSticker(t.key) }); } }
+  if (type === 'tile') choices = Array.from({ length: def.show }, () => ({ kind: 'tile', tile: packTile(S.deckKey) }));
+  else if (type === 'talisman') { const left = talPool(); choices = []; while (choices.length < def.show && left.length) { const t = pickTalisman(left); left.splice(left.indexOf(t), 1); choices.push({ kind: 'talisman', key: t.key, edition: rollEdition(editionMult()), sticker: rollSticker(t.key) }); } }
   else choices = shuffle(pool.slice()).slice(0, def.show);
-  if (key === 'kami' && choices.length && rand() < CFG.soulOdds * 2) choices[0] = { kind: 'kami', key: 'hitodama' };
+  if (type === 'kami' && choices.length && rand() < CFG.soulOdds * 2) choices[0] = { kind: 'kami', key: 'hitodama' };
   S.pack = { key, choices, left: def.keep, free: !!free }; S.msg = ''; S.msgErr = false;   // a fresh pack starts without the last shop message
   // Like Balatro's Arcana packs: Omikuji and Kami packs deal tiles from your Wall so a pick can be used on them right away.
-  if (['omikuji', 'mega', 'kami'].includes(key) && S.deck && S.deck.length) { S.pack.hand = sortTiles(shuffle(S.deck.slice()).slice(0, PACK_HAND)).map(t => t.id); S.pack.sel = []; }
+  if ((type === 'omikuji' || type === 'kami') && S.deck && S.deck.length) { S.pack.hand = sortTiles(shuffle(S.deck.slice()).slice(0, PACK_HAND)).map(t => t.id); S.pack.sel = []; }
 }
 const PACK_HAND = 8;
 function packTiles() { return S.pack && S.pack.hand ? S.pack.hand.map(id => S.deck.find(t => t.id === id)).filter(Boolean) : []; }
@@ -2417,23 +2437,33 @@ function buy(it) {
   else if (it.kind === 'flower') { S.flowers.push(it.key); if (it.key === 'wisteria' || it.key === 'wisteria2') goBackAnte(); }
   S.money -= p; it.sold = true; inflate(); if (!S.quiet) sfx('buy'); setMsg(`Bought ${def.name}.`); render();
 }
-function itemPrice(it) { if (it.sticker && it.sticker.rental && it.kind === 'talisman') return S.shop && S.shop.coupon ? 0 : 1; const def = itemDef(it); let base = def.cost + (it.edition ? EDITIONS[it.edition].price : 0); if (it.kind === 'talisman') base += stakeTalCost(); if (S.shop && S.shop.coupon && (it.kind === 'talisman' || it.kind === 'omikuji' || it.kind === 'kami')) return 0; return price(base); }
+function itemPrice(it) { if (it.free) return 0; if (it.sticker && it.sticker.rental && it.kind === 'talisman') return S.shop && S.shop.coupon ? 0 : 1; const def = itemDef(it); let base = def.cost + (it.edition ? EDITIONS[it.edition].price : 0); if (it.kind === 'talisman') base += stakeTalCost(); if (S.shop && S.shop.coupon && (it.kind === 'talisman' || it.kind === 'omikuji' || it.kind === 'kami')) return 0; return price(base); }
 // Wisteria: back one Ante, like Balatro's Hieroglyph. You stay on the same Blind of the earlier Ante, which gets a fresh Boss.
 function goBackAnte() { if (S.ante <= 1) return; S.ante--; S.bossOrder[S.ante - 1] = rollBoss(S.ante, S.bossOrder); }
 // Peony: reroll the Boss for ¥10, once per Ante (Tree Peony: any number of times).
 const canRerollBoss = () => hasF('peony') && S.money >= 10 && (hasF('peony2') || S.bossRerollAnte !== S.ante);
 function rerollBoss() { if (!canRerollBoss()) return; S.money -= 10; S.bossRerollAnte = S.ante; const old = S.bossOrder[S.ante - 1]; S.bossOrder[S.ante - 1] = rollBoss(S.ante, [old]); sfx('reroll'); setMsg(`${BOSSES[old].name} rerolled into ${BOSSES[S.bossOrder[S.ante - 1]].name}.`); render(); }
-function reroll() { const c = rerollPrice(); if (S.money < c) { setMsg(`Reroll costs ¥${c}.`, true); return render(); } S.money -= c; S.shop.firstFree = false; S.shop.cards = Array.from({ length: shopSlots() }, rollCard); sfx('reroll'); render(); }
+function reroll() { const c = rerollPrice(); if (S.money < c) { setMsg(`Reroll costs ¥${c}.`, true); return render(); } S.money -= c; S.shop.firstFree = false; S.shop.rerolls = (S.shop.rerolls || 0) + 1; S.shop.cards = Array.from({ length: shopSlots() }, rollCard); sfx('reroll'); render(); }
 function skipBlind() {
   if (S.phase !== 'select' || blindKind() === 'boss') return;
   const tag = (S.skipTags && S.skipTags[blindKind()]) || pick(Object.keys(TAGS)); S.stats.skipped++;
+  // A Double Tag held makes the next Tag count twice (each Double held adds one more copy).
+  let copies = 1; if (tag !== 'double') while (S.tags.includes('double')) { S.tags.splice(S.tags.indexOf('double'), 1); copies++; }
+  for (let i = 0; i < copies; i++) applyTag(tag);
+  S.blindIndex++; S.shop = null; S.pack = null; S.phase = 'select';
+  setMsg(`Skipped for the ${TAGS[tag].name}${copies > 1 ? ` ×${copies}` : ''}: ${TAGS[tag].desc}`); render();
+}
+// Tags that act right away do so here; the rest wait in S.tags for the next shop or Blind.
+function applyTag(tag) {
   if (tag === 'economy') S.money += Math.min(40, S.money);
   else if (tag === 'speed') S.money += 5 * S.stats.skipped;
-  else if (tag === 'juggle') S.nextBlindMods = { handSize: 3 };
+  else if (tag === 'juggle') S.nextBlindMods = { handSize: ((S.nextBlindMods && S.nextBlindMods.handSize) || 0) + 3 };
   else if (tag === 'boss') S.bossOrder[S.ante - 1] = rollBoss(S.ante, S.bossOrder);
+  else if (tag === 'handy') S.money += S.stats.playsTotal || 0;
+  else if (tag === 'garbage') S.money += S.stats.discardsLeft || 0;
+  else if (tag === 'orbital') { const k = pick(SCROLLS.filter(sc => sc.key.startsWith('m:'))).key.slice(2); S.scrolls.meld[k] = (S.scrolls.meld[k] || 0) + 3; for (const tk of liveTals(S)) if (TAL[tk].onScroll) TAL[tk].onScroll(S); toast(`<div class="label">Orbital Tag</div><b>${SCR['m:' + k].name}</b><div class="muted" style="font-size:11px">+3 levels</div>`); }
+  else if (tag === 'topup') { for (let n = 0; n < 2 && S.talismans.length < talSlots(); n++) { const pool = talPool().filter(t => talRarity(t.key) === 'common'); if (!pool.length) break; gainTalisman(pick(pool).key); } }
   else S.tags.push(tag);
-  S.blindIndex++; S.shop = null; S.pack = null; S.phase = 'select';
-  setMsg(`Skipped for the ${TAGS[tag].name}: ${TAGS[tag].desc}`); render();
 }
 // Poker-chip tokens for the Ante screen: blue Small, gold Big, red Boss with a dashed ring.
 function blindChipSVG(k) { const c = { small: '#2b5c8f', big: '#c58f2c', boss: '#a8362c' }[k]; return `<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="${c}" stroke="rgba(0,0,0,.35)"/>${[0, 60, 120, 180, 240, 300].map(a => `<rect x="18" y="2.5" width="4" height="6" rx="1" fill="rgba(255,255,255,.85)" transform="rotate(${a} 20 20)"/>`).join('')}<circle cx="20" cy="20" r="10" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="1.5" stroke-dasharray="${k === 'boss' ? '2 2' : '0'}"/>${k === 'boss' ? '<path d="M15 17l3 2M25 17l-3 2M16 24q4-3 8 0" stroke="#fff" stroke-width="1.6" fill="none" stroke-linecap="round"/>' : `<circle cx="20" cy="20" r="${k === 'big' ? 5 : 3.5}" fill="rgba(255,255,255,.75)"/>`}</svg>`; }
@@ -3355,7 +3385,7 @@ function packButtons(it, i) {
 }
 function packHTML() {
   const pk = PACKS[S.pack.key];
-  const tone = { omikuji: 'omikuji', mega: 'omikuji', kami: 'kami', scroll: 'scroll', talisman: 'talisman' }[S.pack.key] || 'pack';
+  const tone = { omikuji: 'omikuji', kami: 'kami', scroll: 'scroll', talisman: 'talisman' }[pk.type] || 'pack';
   let h = `<div class="packhead ${tone}"><div class="packart">${emblem('pack')}</div><div class="packtitle"><div class="label">Booster pack${S.pack.free ? ' · free from a Tag' : ''}</div><h2>${pk.name}</h2><p>${pk.desc}</p></div><div class="packpicks"><b class="num">${S.pack.done ? 0 : S.pack.left}</b><span>${S.pack.done || S.pack.left !== 1 ? 'picks' : 'pick'} left</span></div></div>`;
   if (S.pack.hand) h += `<div class="packhandwrap"><div class="label">Your Tiles · ${(S.pack.view || S.pack.hand).length} random tiles from your Wall</div><div class="muted" style="font-size:12px;margin:2px 0 6px">${S.pack.done ? 'All picks used. Outlined tiles changed and stay that way in your Wall. Press Done to return to the shop.' : 'Select tiles, then press Use on a card. The change stays in your Wall for the rest of the run. Keep puts the card in your consumable slots instead.'}</div><div class="packhand" id="packHand"></div></div>`;
   h += `<div class="shelf packshelf"><div class="shelflabel">${S.pack.done ? 'Cards · all picks used' : `Cards · choose ${S.pack.left} more`}</div><div class="shop-grid">${S.pack.choices.map((it, i) => { const d = itemDef(it); const ed = it.edition ? EDITIONS[it.edition] : null; return `<div class="shopcard ${it.kind === 'tile' ? 'tilecard' : it.kind}${it.sold ? ' sold' : ''}${ed ? ' ed-' + it.edition : ''}"><div class="${it.kind === 'tile' ? 'packtileart' : 'emblem'}" data-pt="${i}">${it.kind === 'tile' ? '' : emblem(it.kind)}</div>${it.kind === 'talisman' ? stickerBadges(it.sticker) : ''}<div class="kind">${it.kind === 'talisman' ? talKindRow(it.key, it.edition) : { omikuji: 'Omikuji', kami: 'Kami Spirit', scroll: 'Scroll of Mastery', tile: 'Tile' }[it.kind] + (ed ? `<span class="edtag ed-${it.edition}">${ed.name}</span>` : '')}</div><div class="n">${d.name}</div><div class="d">${d.desc}${ed ? ` <b>${ed.name}: ${ed.desc}.</b>` : ''}</div>${it.kind === 'scroll' && !it.sold ? scrollLevelHTML(it.key) : it.kind === 'talisman' && !it.sold ? talPreview(it.key) : ''}<div class="buy"><span></span>${it.sold ? `<span class="muted">${it.used ? 'Used' : 'Taken'}</span>` : packButtons(it, i)}</div></div>`; }).join('')}</div></div>`;
