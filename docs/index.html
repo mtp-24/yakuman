@@ -658,7 +658,23 @@ button.pulse{animation:btnpulse 1s ease-in-out infinite;box-shadow:0 0 0 0 rgba(
 
 /* ===== Play field theme A, "Mahjong Parlour": felt table in a wooden rail, brass name plates ===== */
 body{background:radial-gradient(120% 80% at 50% 0%,#1c2b25,#0b1210) fixed}
-header{background:linear-gradient(180deg,#3a2716,#24170c);border-bottom:2px solid #8a6a3e;box-shadow:0 2px 10px rgba(0,0,0,.5)}
+/* Header bar: the board's wood, lit along the top, with a gold edge; a gold title and lacquer buttons with small icons */
+header{position:relative;background:linear-gradient(180deg,#5a3d22,#3a2614 70%,#2c1d0f);border-bottom:2px solid #a07a44;box-shadow:inset 0 1px 0 rgba(255,220,160,.25),inset 0 -1px 0 rgba(0,0,0,.4),0 4px 14px rgba(0,0,0,.55)}
+header h1{background:linear-gradient(180deg,#ffe2a0,#d9a441 55%,#b07a26);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 1px 1px rgba(0,0,0,.6))}
+header h1 span{-webkit-text-fill-color:rgba(233,220,192,.7);color:rgba(233,220,192,.7)}
+header .hdr-nav button{display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:9px;background:linear-gradient(180deg,#2c1f11,#1b130a);border:1px solid rgba(217,164,65,.35);color:#eadcbf;box-shadow:inset 0 1px 0 rgba(255,220,160,.12),0 2px 4px rgba(0,0,0,.35)}
+header .hdr-nav button:hover{border-color:rgba(243,199,104,.75);color:#fff3da;background:linear-gradient(180deg,#36261450,#1b130a),#2c1f11}
+header .hdr-nav .hico{width:14px;height:14px;flex:none;color:#d9a441}
+/* Last Play: a gold title, the lines on a recessed plate, the result in a gold frame */
+.lastplay .lp-title{font-family:var(--display);font-size:16px;line-height:1.25;color:#f3d38a;margin:4px 0 8px;text-shadow:0 1px 2px rgba(0,0,0,.5)}
+.lastplay .lp-lines{background:linear-gradient(180deg,rgba(14,24,20,.82),rgba(10,18,15,.9));border:1px solid rgba(0,0,0,.5);border-radius:8px;padding:4px 10px;box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 2px 6px rgba(0,0,0,.3)}
+.lastplay .lp-lines .row{border-bottom:1px solid rgba(255,255,255,.05);padding:3px 0}
+.lastplay .lp-lines .row:last-child{border-bottom:0}
+.lastplay .formula{font-size:11px;margin:8px 2px 0}
+.lastplay .total{margin-top:6px;padding:7px 12px;border-radius:9px;background:linear-gradient(180deg,rgba(0,0,0,.4),rgba(0,0,0,.25));border:1px solid rgba(217,164,65,.55);box-shadow:inset 0 1px 0 rgba(255,220,160,.12),0 0 14px rgba(217,164,65,.15);text-align:right;font-size:19px;color:#f3c768;text-shadow:0 0 10px rgba(243,199,104,.35)}
+.lastplay .lp-empty{margin-top:6px;background:linear-gradient(180deg,rgba(14,24,20,.82),rgba(10,18,15,.9));border:1px solid rgba(0,0,0,.5);border-radius:8px;padding:9px 11px;box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 2px 6px rgba(0,0,0,.3);font-size:12px}
+.lastplay .lp-best{display:flex;justify-content:space-between;align-items:baseline;margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,.06)} .lastplay .lp-best b{font-family:var(--display);font-size:18px;font-weight:500;color:#f3c768}
+.lastplay .lp-bestdesc{font-size:11px;margin-top:2px}
 /* the rail sits in the gap around the board (negative margin = padding), so every zone keeps its size */
 .board{margin:0;align-self:start;padding:8px;border-radius:16px;background:linear-gradient(180deg,#5a3d22,#3c2814);box-shadow:inset 0 2px 0 rgba(255,220,160,.22),inset 0 -3px 0 rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.5)}
 .zone{position:relative;background:radial-gradient(140% 120% at 50% 0%,#1f5a45 0%,#174635 55%,#113526 100%);border:1px solid #0c2a1e;box-shadow:inset 0 2px 8px rgba(0,0,0,.45)}
@@ -977,11 +993,11 @@ body.reducemotion *,body.reducemotion *::before,body.reducemotion *::after,body.
   <h1 data-notr>Tenpai<span>MAHJONG ROGUELITE · PLAYTEST BUILD</span></h1>
   <div class="spacer"></div>
   <nav class="hdr-nav">
-    <button id="btnYaku" data-notr>Run Info</button>
-    <button id="btnCollection">Collection</button>
-    <button id="btnRules">Rules</button>
-    <button id="btnSettings" class="ghost" title="Terminology, helper, debug tools">Settings</button>
-    <button id="btnNewRun" class="ghost">New Run</button>
+    <button id="btnYaku" data-notr><svg class="hico" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.3" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M8 7.2v4.3M8 4.6v.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span>Run Info</span></button>
+    <button id="btnCollection"><svg class="hico" viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="3.5" width="7.5" height="10" rx="1.4" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M11.5 3.2l2.6 1.1-3.3 8.8" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg><span>Collection</span></button>
+    <button id="btnRules"><svg class="hico" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 3.5c2-1 3.8-1 5.5.4 1.7-1.4 3.5-1.4 5.5-.4v9c-2-1-3.8-1-5.5.4-1.7-1.4-3.5-1.4-5.5-.4z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M8 3.9v9.4" stroke="currentColor" stroke-width="1.2"/></svg><span>Rules</span></button>
+    <button id="btnSettings" class="ghost" title="Terminology, helper, debug tools"><svg class="hico" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="2.2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M8 1.8v2M8 12.2v2M1.8 8h2M12.2 8h2M3.6 3.6l1.4 1.4M11 11l1.4 1.4M3.6 12.4 5 11M11 5l1.4-1.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><span>Settings</span></button>
+    <button id="btnNewRun" class="ghost"><svg class="hico" viewBox="0 0 16 16" aria-hidden="true"><path d="M13 8a5 5 0 1 1-1.5-3.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M12.6 1.8v3h-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>New Run</span></button>
   </nav>
 </header>
 <main>
@@ -3087,7 +3103,7 @@ function render() {
   renderBlind(); renderTalismans(); renderConsumables(); renderOpen(); renderRiver(); renderHand(); renderActions(); renderLast();
   $('#msg').textContent = S.msg || ''; $('#msg').className = 'msg' + (S.msgErr ? ' err' : '');
   if (S.phase === 'cashout') { showModal(cashoutHTML(), false, 'cashmodal traymodal'); placeOverlay(true); animateCashout(); } else if (S.phase === 'shop' && S.pack) { showModal(packHTML(), false, 'packmodal traymodal'); placeOverlay(true, 'shop'); fillPackTiles(); fillPackHand(); trayIn('pack'); } else if (S.phase === 'shop') { showModal(shopHTML(), false, 'shopmodal traymodal'); placeOverlay(true, 'shop'); tweenWallet(); trayIn('shop'); } else if (S.phase === 'select') { showModal(selectHTML(), false, 'selectmodal'); anteUp(); } else if (S.phase === 'gameover') { showModal(overHTML(false), false, 'overmodal'); tallyOver(); } else if (S.phase === 'win') { showModal(overHTML(true), false, 'overmodal winmodal'); tallyOver(); } else if (!modalPinned) hideModal();
-  $('#btnYaku').textContent = 'Run Info';
+  $('#btnYaku span').textContent = 'Run Info';
   document.querySelectorAll('.zhead > .muted').forEach(e => { e.title = e.textContent; });   // full text on hover when a header is truncated
   translateDOM($('#app')); fitNumbers(); fitHead('talSell'); fitHead('conSell');
   if ($('#overlay').classList.contains('inflow')) placeOverlay(true, S.phase === 'shop' ? 'shop' : undefined);   // terms and fitted numbers can change the left column's height, so a tray that is part of the page is measured again
@@ -3630,12 +3646,12 @@ const lineCls = l => (l.zero ? ' bad' : '') + (l.yaku ? ' yaku' : '') + (l.tal ?
 const lastSummaryHTML = c => `<div class="formula num" style="margin-top:6px">${c.han} Han → ${c.tier} ×${c.baseMult}${c.xmult !== 1 ? ` · tiles ×${fmtMult(c.xmult)}` : ''}${c.mult !== c.baseMult * c.xmult ? ` → ×${fmtMult(c.mult)} after Talismans${c.furiten ? ' and Furiten' : ''}` : ''}</div><div class="total num">${c.chips} × ${fmtMult(c.mult)} = ${fmtN(c.total)}</div>`;
 function renderLast() {
   const c = S.lastPlay; const box = $('#lastPlay');
-  if (!c) { box.innerHTML = `<div class="label">Last Play</div><div class="muted" style="font-size:12px;margin-top:4px">Nothing scored yet. Best this run: ${fmtN(S.stats.best)}${S.stats.bestDesc ? ' (' + S.stats.bestDesc + ')' : ''}</div>`; return; }
-  let h = `<div class="label">Last Play</div><div style="font-family:var(--display);font-size:15px;margin:2px 0 6px">${c.desc}</div>`;
+  if (!c) { box.innerHTML = `<div class="label">Last Play</div><div class="lp-empty"><div class="muted">No play yet this Blind.</div><div class="lp-best"><span class="label">Best this run</span><b class="num">${fmtN(S.stats.best)}</b></div>${S.stats.bestDesc ? `<div class="muted lp-bestdesc">${S.stats.bestDesc}</div>` : ''}</div>`; return; }
+  let h = `<div class="label">Last Play</div><div class="lp-title">${c.desc}</div>`;
   if (c.kind === 'meld' && c.nMelds >= 2) h += `<div class="muted" style="font-size:11px;margin:-4px 0 6px">${c.nChi ? c.nChi + ' Chi ' : ''}${c.nPon ? c.nPon + ' Pon ' : ''}${c.nKan ? c.nKan + ' Kan ' : ''}${c.hasPair ? '+ pair' : ''}</div>`;
   // Same order and colours as the animated log left them (c.order), so the panel does not change when scoring ends.
   const order = c.order ? c.order.concat(c.lines.map((_, i) => i).filter(i => !c.order.includes(i))) : c.lines.map((_, i) => i);
-  for (const i of order) { const l = c.lines[i]; h += `<div class="row lrow${lineCls(l)}"><span>${l.label}</span><span class="num">${l.val}</span></div>`; }
+  h += '<div class="lp-lines">'; for (const i of order) { const l = c.lines[i]; h += `<div class="row lrow${lineCls(l)}"><span>${l.label}</span><span class="num">${l.val}</span></div>`; } h += '</div>';
   h += lastSummaryHTML(c);
   box.innerHTML = h;
 }
@@ -3748,7 +3764,7 @@ async function animateScore(ctx) {
   const label = ctx.kind === 'hand' ? (ctx.yaku.length ? ctx.yaku.map(y => y.name).join(', ') : 'Complete Hand') : ctx.rungName;
   box.innerHTML = `${titleHTML(tr(label || ''), playLevel(ctx.kind, ctx.meldType), ctx.claimed)}${mathBoxes(0, 1, 0)}`; box.title = 'Click anywhere to skip'; fitTitle(box.querySelector('.hb-title'));
   // the breakdown streams into the Last Play panel as it happens
-  const lp = $('#lastPlay'); lp.innerHTML = `<div class="label">Last Play</div><div style="font-family:var(--display);font-size:15px;margin:2px 0 6px">${tr(ctx.desc)}</div><div class="lp-lines"></div>`;
+  const lp = $('#lastPlay'); lp.innerHTML = `<div class="label">Last Play</div><div class="lp-title">${tr(ctx.desc)}</div><div class="lp-lines"></div>`;
   const chipsBox = box.querySelector('.chipbox'), multBox = box.querySelector('.multbox'), chipsEl = chipsBox.querySelector('.nv'), multEl = multBox.querySelector('.nv'), totEl = box.querySelector('.hb-tot'), totWrap = totEl, nameEl = box.querySelector('.hb-title'), linesBox = lp.querySelector('.lp-lines'), mathEl = box.querySelector('.hb-math'), hanEl = box.querySelector('.hanval'), hanPill = box.querySelector('.hanfoot'), tierEl = box.querySelector('.hanfoot .hantier');
   const tileEls = new Map(); document.querySelectorAll('#hand .tile[data-id], #open .tile[data-id]').forEach(e => tileEls.set(+e.dataset.id, e));
   let chips = 0, han = 0, tileX = 1, tileM = 0, mult = null;

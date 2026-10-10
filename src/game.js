@@ -1033,7 +1033,7 @@ function render() {
   renderBlind(); renderTalismans(); renderConsumables(); renderOpen(); renderRiver(); renderHand(); renderActions(); renderLast();
   $('#msg').textContent = S.msg || ''; $('#msg').className = 'msg' + (S.msgErr ? ' err' : '');
   if (S.phase === 'cashout') { showModal(cashoutHTML(), false, 'cashmodal traymodal'); placeOverlay(true); animateCashout(); } else if (S.phase === 'shop' && S.pack) { showModal(packHTML(), false, 'packmodal traymodal'); placeOverlay(true, 'shop'); fillPackTiles(); fillPackHand(); trayIn('pack'); } else if (S.phase === 'shop') { showModal(shopHTML(), false, 'shopmodal traymodal'); placeOverlay(true, 'shop'); tweenWallet(); trayIn('shop'); } else if (S.phase === 'select') { showModal(selectHTML(), false, 'selectmodal'); anteUp(); } else if (S.phase === 'gameover') { showModal(overHTML(false), false, 'overmodal'); tallyOver(); } else if (S.phase === 'win') { showModal(overHTML(true), false, 'overmodal winmodal'); tallyOver(); } else if (!modalPinned) hideModal();
-  $('#btnYaku').textContent = 'Run Info';
+  $('#btnYaku span').textContent = 'Run Info';
   document.querySelectorAll('.zhead > .muted').forEach(e => { e.title = e.textContent; });   // full text on hover when a header is truncated
   translateDOM($('#app')); fitNumbers(); fitHead('talSell'); fitHead('conSell');
   if ($('#overlay').classList.contains('inflow')) placeOverlay(true, S.phase === 'shop' ? 'shop' : undefined);   // terms and fitted numbers can change the left column's height, so a tray that is part of the page is measured again
@@ -1576,12 +1576,12 @@ const lineCls = l => (l.zero ? ' bad' : '') + (l.yaku ? ' yaku' : '') + (l.tal ?
 const lastSummaryHTML = c => `<div class="formula num" style="margin-top:6px">${c.han} Han → ${c.tier} ×${c.baseMult}${c.xmult !== 1 ? ` · tiles ×${fmtMult(c.xmult)}` : ''}${c.mult !== c.baseMult * c.xmult ? ` → ×${fmtMult(c.mult)} after Talismans${c.furiten ? ' and Furiten' : ''}` : ''}</div><div class="total num">${c.chips} × ${fmtMult(c.mult)} = ${fmtN(c.total)}</div>`;
 function renderLast() {
   const c = S.lastPlay; const box = $('#lastPlay');
-  if (!c) { box.innerHTML = `<div class="label">Last Play</div><div class="muted" style="font-size:12px;margin-top:4px">Nothing scored yet. Best this run: ${fmtN(S.stats.best)}${S.stats.bestDesc ? ' (' + S.stats.bestDesc + ')' : ''}</div>`; return; }
-  let h = `<div class="label">Last Play</div><div style="font-family:var(--display);font-size:15px;margin:2px 0 6px">${c.desc}</div>`;
+  if (!c) { box.innerHTML = `<div class="label">Last Play</div><div class="lp-empty"><div class="muted">No play yet this Blind.</div><div class="lp-best"><span class="label">Best this run</span><b class="num">${fmtN(S.stats.best)}</b></div>${S.stats.bestDesc ? `<div class="muted lp-bestdesc">${S.stats.bestDesc}</div>` : ''}</div>`; return; }
+  let h = `<div class="label">Last Play</div><div class="lp-title">${c.desc}</div>`;
   if (c.kind === 'meld' && c.nMelds >= 2) h += `<div class="muted" style="font-size:11px;margin:-4px 0 6px">${c.nChi ? c.nChi + ' Chi ' : ''}${c.nPon ? c.nPon + ' Pon ' : ''}${c.nKan ? c.nKan + ' Kan ' : ''}${c.hasPair ? '+ pair' : ''}</div>`;
   // Same order and colours as the animated log left them (c.order), so the panel does not change when scoring ends.
   const order = c.order ? c.order.concat(c.lines.map((_, i) => i).filter(i => !c.order.includes(i))) : c.lines.map((_, i) => i);
-  for (const i of order) { const l = c.lines[i]; h += `<div class="row lrow${lineCls(l)}"><span>${l.label}</span><span class="num">${l.val}</span></div>`; }
+  h += '<div class="lp-lines">'; for (const i of order) { const l = c.lines[i]; h += `<div class="row lrow${lineCls(l)}"><span>${l.label}</span><span class="num">${l.val}</span></div>`; } h += '</div>';
   h += lastSummaryHTML(c);
   box.innerHTML = h;
 }
@@ -1694,7 +1694,7 @@ async function animateScore(ctx) {
   const label = ctx.kind === 'hand' ? (ctx.yaku.length ? ctx.yaku.map(y => y.name).join(', ') : 'Complete Hand') : ctx.rungName;
   box.innerHTML = `${titleHTML(tr(label || ''), playLevel(ctx.kind, ctx.meldType), ctx.claimed)}${mathBoxes(0, 1, 0)}`; box.title = 'Click anywhere to skip'; fitTitle(box.querySelector('.hb-title'));
   // the breakdown streams into the Last Play panel as it happens
-  const lp = $('#lastPlay'); lp.innerHTML = `<div class="label">Last Play</div><div style="font-family:var(--display);font-size:15px;margin:2px 0 6px">${tr(ctx.desc)}</div><div class="lp-lines"></div>`;
+  const lp = $('#lastPlay'); lp.innerHTML = `<div class="label">Last Play</div><div class="lp-title">${tr(ctx.desc)}</div><div class="lp-lines"></div>`;
   const chipsBox = box.querySelector('.chipbox'), multBox = box.querySelector('.multbox'), chipsEl = chipsBox.querySelector('.nv'), multEl = multBox.querySelector('.nv'), totEl = box.querySelector('.hb-tot'), totWrap = totEl, nameEl = box.querySelector('.hb-title'), linesBox = lp.querySelector('.lp-lines'), mathEl = box.querySelector('.hb-math'), hanEl = box.querySelector('.hanval'), hanPill = box.querySelector('.hanfoot'), tierEl = box.querySelector('.hanfoot .hantier');
   const tileEls = new Map(); document.querySelectorAll('#hand .tile[data-id], #open .tile[data-id]').forEach(e => tileEls.set(+e.dataset.id, e));
   let chips = 0, han = 0, tileX = 1, tileM = 0, mult = null;
