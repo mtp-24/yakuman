@@ -2128,7 +2128,7 @@ const conSellValue = c => Math.max(1, Math.floor(CONS[c.key].cost / 2)) + (c.bon
 // Balatro's dissolve: a copy of the card burns away where it stood, then the board redraws without it.
 function dissolveTal(k) {
   if (!motionOK) return; const i = S.talismans.indexOf(k); const el = (document.querySelector(`[data-sell="${k}"]`) || {}).closest ? document.querySelector(`[data-sell="${k}"]`).closest('.shopcard') : [...document.querySelectorAll('#talismans .slot')][i];
-  holdRow('#talismans', i); dissolveEl(el);
+  holdRow('#talismans .slot.filled', i); holdRow('#modal .owned-card.talisman', i); dissolveEl(el);
 }
 const DISSOLVE_MS = 520;
 function dissolveEl(el) {
@@ -2138,10 +2138,10 @@ function dissolveEl(el) {
 // When a card leaves a row (sold or destroyed), the cards after it wait where they were until the dissolve has burned out,
 // then slide into the gap, so they never pass over the burning card. Positions are taken before the redraw and played after it.
 let rowHolds = [];
-function holdRow(sel, gone) { if (motionOK && gone >= 0) rowHolds.push({ sel, gone, t: performance.now(), rects: [...document.querySelectorAll(`${sel} .slot.filled`)].map(e => e.getBoundingClientRect()) }); }
+function holdRow(sel, gone) { if (motionOK && gone >= 0) rowHolds.push({ sel, gone, t: performance.now(), rects: [...document.querySelectorAll(sel)].map(e => e.getBoundingClientRect()) }); }
 function playRowHolds() {
   const holds = rowHolds; rowHolds = [];
-  for (const h of holds) if (performance.now() - h.t < 1000) [...document.querySelectorAll(`${h.sel} .slot.filled`)].forEach((el, j) => {
+  for (const h of holds) if (performance.now() - h.t < 1000) [...document.querySelectorAll(h.sel)].forEach((el, j) => {
     const was = h.rects[j < h.gone ? j : j + 1]; if (!was) return; const now = el.getBoundingClientRect(), dx = was.left - now.left, dy = was.top - now.top;
     if (Math.abs(dx) > 1 || Math.abs(dy) > 1) el.animate([{ transform: `translate(${dx}px,${dy}px)` }, { transform: 'none' }], { duration: 280, delay: DISSOLVE_MS - 60, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' });
   });
@@ -2622,7 +2622,7 @@ function sellEffect(k) {
   return '';
 }
 function sellTalisman(k) { const i = S.talismans.indexOf(k); if (i < 0) return; if (isEternal(k)) { setMsg(`${TAL[k].name} is Eternal and can never be sold.`, true); return render(); } if (S.stickers) delete S.stickers[k]; if (S.phase === 'blind') S.leafCut = true; if (S.crimsonOff === k) S.crimsonOff = null; const v = talSellValue(k); dissolveTal(k); S.talismans.splice(i, 1); const eff = sellEffect(k); if (S.sellBonus) delete S.sellBonus[k]; S.money += v; sfx('sell'); delete S.editions[k]; S.selTal = null; for (const t of S.talismans) if (TAL[t].onSell) TAL[t].onSell(S); PROFILE.sold++; saveProfile(); setMsg(`Sold ${TAL[k].name} for ¥${v}.${eff}`); render(); }
-function sellConsumable(i) { const c = S.consumables[i]; if (!c) return; const v = conSellValue(c); const b = document.querySelector(`[data-sellcon="${i}"]`); holdRow('#consumables', i); dissolveEl(b && b.closest('.shopcard') || [...document.querySelectorAll('#consumables .slot')][i]); S.consumables.splice(i, 1); S.money += v; sfx('sell'); setMsg(`Sold ${CONS[c.key].name} for ¥${v}.`); render(); }
+function sellConsumable(i) { const c = S.consumables[i]; if (!c) return; const v = conSellValue(c); const b = document.querySelector(`[data-sellcon="${i}"]`); holdRow('#consumables .slot.filled', i); holdRow('#modal .owned-card:not(.talisman)', i); dissolveEl(b && b.closest('.shopcard') || [...document.querySelectorAll('#consumables .slot')][i]); S.consumables.splice(i, 1); S.money += v; sfx('sell'); setMsg(`Sold ${CONS[c.key].name} for ¥${v}.`); render(); }
 
 // ===================== SHOP =====================
 function rollCard() {
