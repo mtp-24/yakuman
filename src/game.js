@@ -1683,6 +1683,7 @@ let trayShown = '';
 function trayIn(kind) { const id = kind + ':' + S.ante + ':' + S.blindIndex + ':' + (S.pack ? S.pack.key : ''); if (trayShown === id || !motionOK || !$('#overlay').classList.contains('boardonly')) { trayShown = id; return; } trayShown = id; $('#modal').animate([{ transform: 'translateY(105%)' }, { transform: 'none' }], { duration: 340, easing: 'cubic-bezier(.2,.8,.2,1)' }); }
 function placeOverlay(boardOnly, mode) {
   const ov = $('#overlay'); ov.classList.remove('boardonly', 'shoptray'); ['left', 'top', 'width', 'height'].forEach(k => ov.style[k] = '');
+  document.documentElement.classList.remove('traylock');
   const board = document.querySelector('.board'); if (board) board.classList.remove('cashdim', 'shopdim'); if (!boardOnly || !board || innerWidth <= 900 || (mode === 'shop' && !shopTray)) return;
   const b = board.getBoundingClientRect(), top = Math.max(b.top, 0), bottom = innerHeight;   // runs to the screen's bottom edge, where the receipt rises from
   // The dimming sits on the board itself, so the page background below it keeps its colour. The Talismans stay lightly dimmed; the rest is darker.
@@ -1690,6 +1691,8 @@ function placeOverlay(boardOnly, mode) {
   board.classList.add('cashdim'); board.classList.toggle('shopdim', mode === 'shop'); board.style.setProperty('--cut', cut + 'px');
   // The Shop tray starts right under the Talisman row, measured on screen, so it stays snug when the page is scrolled.
   const otop = mode === 'shop' ? Math.max(0, tz ? tz.getBoundingClientRect().bottom + 6 : top + cut + 2) : top;
+  // While a tray is up only the tray scrolls: the page behind it holds still, so there is one scrollbar, not two.
+  document.documentElement.classList.add('traylock');
   ov.classList.add('boardonly'); ov.classList.toggle('shoptray', mode === 'shop'); Object.assign(ov.style, { left: b.left + 'px', top: otop + 'px', width: b.width + 'px', height: (bottom - otop) + 'px' });
   if (mode === 'shop') { ov.style.setProperty('--reach', '0px'); return; }   // the tray spans the board's full width, border to border
   // The tray grows up from the screen's bottom edge until its contents sit around the middle of the screen
