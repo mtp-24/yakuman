@@ -533,6 +533,18 @@ const CHALLENGES = [
   { key: 'inflation', name: 'Inflation', desc: 'Every purchase raises all shop prices by ¥1 for the rest of the run.', rules: { inflation: true } },
   { key: 'simple', name: 'Simple Life', desc: 'Your Wall has no 1s, 9s or Honors (Tanyao every time), but every target is ×1.5.', rules: { target: 1.5 },
     setup: S => { S.deck = S.deck.filter(t => t.suit !== 'z' && t.rank !== 1 && t.rank !== 9); } },
+  { key: 'nestegg', name: 'Nest Egg', desc: 'Start with Tsuchinoko and Otoshidama, but you never earn interest.', rules: { noInterest: true }, setup: S => { S.talismans.push('tsuchinoko', 'otoshidama'); } },
+  { key: 'shortlives', name: 'Short Lives', desc: 'Every Talisman you get is Perishable: it stops working after 5 Blinds.', rules: { allPerish: true } },
+  { key: 'onecolour', name: 'One Colour', desc: 'Your Wall has only Characters and Honors (Honitsu everywhere), but every target is ×1.5.', rules: { target: 1.5 }, setup: S => { S.deck = S.deck.filter(t => t.suit === 'm' || t.suit === 'z'); } },
+  { key: 'honorguard', name: 'Honor Guard', desc: 'Your Wall has only 1s, 9s and Honors. Start with Kirin.', setup: S => { S.deck = S.deck.filter(t => isHonor(t) || isTerminal(t)); S.talismans.push('kirin'); } },
+  { key: 'cruelty', name: 'Cruelty', desc: 'Every Small and Big Blind has a random Boss rule too.', rules: { cruelty: true } },
+  { key: 'luxury', name: 'Luxury Tax', desc: '−1 hand size for every ¥5 you hold (never below 8).', rules: { luxury: true } },
+  { key: 'stonegarden', name: 'Stone Garden', desc: 'Your Wall starts with 16 extra Stone tiles. Start with ¥15.', setup: S => { S.money = 15; for (let i = 0; i < 16; i++) { const t = mkTile('p', 1 + (i % 9)); t.eng = 'stone'; S.deck.push(t); } } },
+  { key: 'unpaid', name: 'Unpaid Work', desc: 'Blinds and unused Plays pay nothing. Start with ¥20 and Maneki-neko.', rules: { noBlindPay: true }, setup: S => { S.money = 20; S.talismans.push('maneki'); } },
+  { key: 'blindfold', name: 'Blindfold', desc: 'Every tile in your hand is face down until you play or discard it.', rules: { blindfold: true } },
+  { key: 'wildfire', name: 'Wildfire', desc: '20 random suited tiles in your Wall are Wild, but every target is ×1.5.', rules: { target: 1.5 }, setup: S => { for (const t of shuffle(S.deck.filter(x => x.suit !== 'z')).slice(0, 20)) t.eng = 'wild'; } },
+  { key: 'rentday', name: 'Rent Day', desc: 'Every Talisman you get is a Rental (¥1 to buy, ¥3 every Blind). Start with ¥20.', rules: { allRental: true }, setup: S => { S.money = 20; } },
+  { key: 'lonewolf', name: 'Lone Wolf', desc: 'Only 1 Talisman slot, but +2 Plays every Blind.', rules: { slots: 1, plusPlays: 2 } },
 ];
 const CHAL = {}; CHALLENGES.forEach(c => CHAL[c.key] = c);
 // ===================== YAKU CHEAT SHEET =====================

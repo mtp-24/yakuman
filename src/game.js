@@ -76,7 +76,7 @@ function newState(opts = {}) {
 }
 const blindKind = () => ['small', 'big', 'boss'][S.blindIndex];
 const hasF = k => S.flowers.includes(k);
-const handSize = () => Math.max(8, CFG.handSize + (S.handMod || 0) + (hasF('plum') ? 1 : 0) + (hasF('plum2') ? 1 : 0) + (S.deckKey === 'abundant' ? 2 : 0) + (S.blindMods && S.blindMods.handSize || 0) - (S.boss === 'miser' && S.phase === 'blind' ? 3 : 0));
+const handSize = () => Math.max(8, CFG.handSize + (S.handMod || 0) - (chal('luxury') ? Math.floor(S.money / 5) : 0) + (hasF('plum') ? 1 : 0) + (hasF('plum2') ? 1 : 0) + (S.deckKey === 'abundant' ? 2 : 0) + (S.blindMods && S.blindMods.handSize || 0) - (S.boss === 'miser' && S.phase === 'blind' ? 3 : 0));
 const capacity = () => handSize() - 3 * S.open.length;
 const neededConcealed = () => 14 - 3 * S.open.length;
 // The Purist: is a face-down tile selected? Then the scoring box and the Play button must not reveal what the tiles make.
@@ -89,7 +89,7 @@ const canClaim = () => S.boss !== 'fisherman' && liveTals(S).some(k => TAL[k].ri
 const claimTile = () => (S.selRiver && canClaim()) ? S.river.find(t => t.id === S.selRiver) || null : null;
 const conSlots = () => CFG.consumableSlots + (hasF('spring') ? 1 : 0) + (hasF('spring2') ? 1 : 0) + (S.deckKey === 'merchant' ? 1 : 0);
 const price = c => { let p = c + (S.inflation || 0); if (S.deckKey === 'merchant') p = Math.ceil(p * 1.25); if (hasF('chrys2')) p = Math.ceil(p * 0.6); else if (hasF('chrysanthemum')) p = Math.ceil(p * 0.8); return Math.max(1, p); };
-const talSlots = () => CFG.talismanSlots + S.talismans.filter(k => S.editions[k] === 'neg').length + (hasF('camellia2') ? 1 : 0);
+const talSlots = () => (chal('slots') || CFG.talismanSlots) + S.talismans.filter(k => S.editions[k] === 'neg').length + (hasF('camellia2') ? 1 : 0);
 // Flower helpers shared by the Blind, the select screen and the shop.
 const interestCap = () => hasF('winter2') ? 20 : hasF('winter') ? 10 : CFG.interestCap;
 const shopSlots = () => 2 + (hasF('lotus') ? 1 : 0) + (hasF('lotus2') ? 1 : 0);
@@ -103,7 +103,7 @@ function destroyTalisman(k) {
   S.talState = freshTalState(k); if (S.crimsonOff === k) S.crimsonOff = null; if (S.selTal === k) S.selTal = null;
   return true;
 }
-const blindPlays = () => chal('plays') ? chal('plays') : Math.max(1, CFG.playsPerBlind + S.bonusPlays + talMod('plays') + (hasF('bamboo') ? 1 : 0) + (hasF('bamboo2') ? 1 : 0) - (hasF('wisteria') ? 1 : 0) + (S.deckKey === 'gambler' ? 1 : 0) - (S.deckKey === 'abundant' || S.deckKey === 'lean' ? 1 : 0));
+const blindPlays = () => chal('plays') ? chal('plays') : Math.max(1, (chal('plusPlays') || 0) + CFG.playsPerBlind + S.bonusPlays + talMod('plays') + (hasF('bamboo') ? 1 : 0) + (hasF('bamboo2') ? 1 : 0) - (hasF('wisteria') ? 1 : 0) + (S.deckKey === 'gambler' ? 1 : 0) - (S.deckKey === 'abundant' || S.deckKey === 'lean' ? 1 : 0));
 const blindDiscards = () => Math.max(0, (chal('discards') || 0) + CFG.discardsPerBlind + S.bonusDiscards + talMod('discards') + (hasF('orchid') ? 1 : 0) + (hasF('orchid2') ? 1 : 0) - (hasF('wisteria2') ? 1 : 0) - (stakeLevel(S.stake) >= 4 ? 1 : 0) - (S.deckKey === 'gambler' ? 1 : 0));
 const rerollPrice = () => S.shop && (S.shop.freeReroll || S.shop.firstFree) ? 0 : S.shop && S.shop.d6 ? S.shop.rerolls || 0 : rerollCost();
 // Stakes stack like Balatro's: each one keeps every penalty of the Stakes below it.
@@ -117,6 +117,7 @@ const stakeTalCost = () => stakeLevel(S.stake) >= 3 ? 2 : 0;
 // Stickers for a shop or pack Talisman: Eternal from Black Stake, Perishable from Orange (never both), Rental from Gold.
 // Shōjō leaves by itself and Legendaries come from Hitodama, so they never carry one.
 function rollSticker(k) {
+  if (chal('allPerish') || chal('allRental')) return k === 'shojo' ? null : Object.assign({}, chal('allPerish') ? { perish: 5 } : {}, chal('allRental') ? { rental: true } : {});
   const lv = stakeLevel(S.stake); if (lv < 3 || k === 'shojo' || talRarity(k) === 'legendary') return null;
   const st = {}, r = rand(); if (r < 0.3) st.eternal = true; else if (lv >= 6 && r < 0.6) st.perish = 5;
   if (lv >= 7 && rand() < 0.3) st.rental = true; return Object.keys(st).length ? st : null;
@@ -283,7 +284,7 @@ function rollCrimson() { const pool = S.talismans.filter(k => k !== S.crimsonOff
 function startBlind() {
   S.phase = 'blind';
   const kind = blindKind();
-  S.boss = kind === 'boss' ? S.bossOrder[S.ante - 1] : null; if (S.boss && !S.stats.bosses.includes(S.boss)) S.stats.bosses.push(S.boss);
+  S.boss = kind === 'boss' ? S.bossOrder[S.ante - 1] : chal('cruelty') ? rollBoss(S.ante % CFG.antes === 0 ? S.ante - 1 : S.ante, [S.bossOrder[S.ante - 1]]) : null; if (S.boss && !S.stats.bosses.includes(S.boss)) S.stats.bosses.push(S.boss);
   ensureBosses(); S.target = blindTarget(kind);
   S.plays = blindPlays();
   S.discards = blindDiscards();
@@ -311,7 +312,7 @@ function collectDeck() {
 function winBlind() {
   S.crimsonOff = null;   // the Boss is beaten: a Talisman The Crimson Oni silenced works again, and still pays at cash-out
   const kind = blindKind();
-  const base = (kind === 'small' && smallPaysNothing()) ? 0 : CFG.blindReward[kind], left = S.plays, interest = Math.min(interestCap(), Math.floor(S.money / CFG.interestPer));
+  const base = (kind === 'small' && smallPaysNothing()) || chal('noBlindPay') ? 0 : CFG.blindReward[kind], left = chal('noBlindPay') ? 0 : S.plays, interest = chal('noInterest') ? 0 : Math.min(interestCap(), Math.floor(S.money / CFG.interestPer));
   // Each paying Talisman gets its own cash-out row, like Jokers in Balatro.
   const talPay = []; for (const k of liveTals(S)) if (TAL[k].onBlindEnd) { const v = TAL[k].onBlindEnd(S) || 0; if (v) talPay.push([k, v]); }
   const tal = talPay.reduce((a, [, v]) => a + v, 0);
@@ -1470,7 +1471,7 @@ function hideModal() { modalPinned = false; $('#modal').getAnimations().forEach(
 // Its state lives under its own key, or its key plus a capitalised suffix (kasaobake, shiroSuit).
 const ownsState = (k, x) => x === k || (x.startsWith(k) && /[A-Z]/.test(x[k.length] || ''));   // 'shiro' owns 'shiroSuit', but 'hoshi' does not own 'hoshizora'
 const freshTalState = k => Object.fromEntries(Object.entries(S.talState || {}).filter(([x]) => !ownsState(k, x)));
-function gainTalisman(k, sticker) { S.talState = freshTalState(k); S.talismans.push(k); if (S.sellBonus) delete S.sellBonus[k]; S.stickers = S.stickers || {}; delete S.stickers[k]; if (sticker) S.stickers[k] = Object.assign({}, sticker); }
+function gainTalisman(k, sticker) { if (!sticker && (chal('allPerish') || chal('allRental'))) sticker = rollSticker(k); S.talState = freshTalState(k); S.talismans.push(k); if (S.sellBonus) delete S.sellBonus[k]; S.stickers = S.stickers || {}; delete S.stickers[k]; if (sticker) S.stickers[k] = Object.assign({}, sticker); }
 // What a Talisman's live value would be the moment you buy it (same text its card shows once owned).
 function talPreview(k) {
   const d = TAL[k]; if (!d) return '';
