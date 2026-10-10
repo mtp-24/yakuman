@@ -123,7 +123,7 @@ function destroyTalisman(k) {
 }
 const blindPlays = () => chal('plays') ? chal('plays') : Math.max(1, (chal('plusPlays') || 0) + CFG.playsPerBlind + S.bonusPlays + talMod('plays') + (hasF('bamboo') ? 1 : 0) + (hasF('bamboo2') ? 1 : 0) - (hasF('wisteria') ? 1 : 0) + (S.deckKey === 'gambler' ? 1 : 0) - (S.deckKey === 'abundant' || S.deckKey === 'lean' ? 1 : 0));
 const blindDiscards = () => Math.max(0, (chal('discards') || 0) + CFG.discardsPerBlind + S.bonusDiscards + talMod('discards') + (hasF('orchid') ? 1 : 0) + (hasF('orchid2') ? 1 : 0) - (hasF('wisteria2') ? 1 : 0) - (stakeLevel(S.stake) >= 4 ? 1 : 0) - (S.deckKey === 'gambler' ? 1 : 0));
-const rerollPrice = () => S.shop && (S.shop.freeReroll || S.shop.firstFree) ? 0 : S.shop && S.shop.d6 ? S.shop.rerolls || 0 : rerollCost();
+const rerollPrice = () => S.shop && S.shop.freeReroll ? 0 : S.shop && S.shop.d6 ? S.shop.rerolls || 0 : rerollCost() + ((S.shop && S.shop.rerolls) || 0);
 // Stakes stack like Balatro's: each one keeps every penalty of the Stakes below it.
 const STAKE_KEYS = Object.keys(STAKES);
 const stakeLevel = k => STAKE_KEYS.indexOf(k);
@@ -162,7 +162,8 @@ const stickerTags = st => !st ? '' : (st.eternal ? '<span class="stk stk-eternal
 // A Challenge rule for this run, or undefined.
 const chal = r => S && S.challenge && CHAL[S.challenge] && CHAL[S.challenge].rules ? CHAL[S.challenge].rules[r] : undefined;
 const isEternal = k => !!(chal('noSell') || (S.stickers && S.stickers[k] && S.stickers[k].eternal));
-const rerollCost = () => hasF('autumn') ? 2 : CFG.rerollCost;
+// Rerolls start at ¥5 (Autumn ¥3, Harvest Moon ¥1) and cost ¥1 more each time in the same shop, as in Balatro.
+const rerollCost = () => hasF('autumn2') ? 1 : hasF('autumn') ? 3 : CFG.rerollCost;
 function talMod(f) { return liveTals(S).reduce((a, k) => a + (TAL[k][f] || 0), 0); }
 function selTiles() { return S.selected.map(id => S.hand.find(t => t.id === id)).filter(Boolean); }
 function openTiles() { return S.open.flatMap(m => m.tiles); }
@@ -273,7 +274,7 @@ function markSeen() {
   const item = it => { if (it) add(it.kind === 'talisman' ? 'tal' : it.kind, it.key); };
   S.talismans.forEach(k => add('tal', baseKey(k))); (S.consumables || []).forEach(c => CONS[c.key] && add(CONS[c.key].kind, c.key)); (S.flowers || []).forEach(k => add('flower', k));
   for (const [t, lv] of Object.entries(S.scrolls || {})) for (const k of Object.keys(lv || {})) add('scroll', `${t === 'meld' ? 'm' : 'y'}:${k}`);
-  if (S.phase === 'shop' && S.shop) { S.shop.cards.forEach(item); item(S.shop.scroll); item(S.shop.flower); item(S.shop.pack); (S.shop.freePacks || []).forEach(k => add('pack', k)); }
+  if (S.phase === 'shop' && S.shop) { S.shop.cards.forEach(item); item(S.shop.flower); (S.shop.packs || []).forEach(item); (S.shop.freePacks || []).forEach(k => add('pack', k)); }
   if (S.pack) { add('pack', S.pack.key); (S.pack.choices || []).forEach(item); }
   (S.tags || []).forEach(k => add('tag', k));
   if (S.phase === 'select' && S.skipTags) { add('tag', S.skipTags.small); add('tag', S.skipTags.big); }
@@ -594,9 +595,10 @@ function sellConsumable(i) { const c = S.consumables[i]; if (!c) return; const v
 
 // ===================== SHOP =====================
 function rollCard() {
-  const r = rand(), w = S.deckKey === 'ghost' ? { talisman: 0.45, omikuji: 0.2, kami: 0.35 } : CFG.shopWeights;   // seeded, so a shared seed replays the same shop cards
+  const r = rand(), w = S.deckKey === 'ghost' ? { talisman: 0.55, omikuji: 0.13, scroll: 0.12, kami: 0.2 } : CFG.shopWeights;   // seeded, so a shared seed replays the same shop cards
   if (r < w.talisman) { const pool = talPool(); if (pool.length) { const key = pickTalisman(pool).key; return { kind: 'talisman', key, edition: rollEdition(editionMult()), sticker: rollSticker(key) }; } }
   if (r < w.talisman + w.omikuji) return { kind: 'omikuji', key: pick(OMIKUJI).key };
+  if (r < w.talisman + w.omikuji + w.scroll || !w.kami) return { kind: 'scroll', key: pick(SCROLLS).key };
   return { kind: 'kami', key: pickKami().key };
 }
 function genShop() {
@@ -604,10 +606,10 @@ function genShop() {
   if (!S.anteFlower || S.anteFlower.ante !== S.ante) { const pool = flowerPool(S.flowers).filter(f => S.ante > 1 || !f.key.startsWith('wisteria'));   // Wisteria cannot go back from Ante 1
     S.anteFlower = { ante: S.ante, key: pool.length ? pick(pool).key : null, sold: false }; }
   const fl = S.anteFlower.key && !S.anteFlower.sold && !S.flowers.includes(S.anteFlower.key) ? [FLW[S.anteFlower.key]] : [];
-  // Normal packs are the most common, Jumbo less so, Mega rarest; Kami packs are rarer than the rest.
-  const PACK_ODDS = ['omikuji', 'omikuji', 'omikuji', 'jumboomikuji', 'mega', 'scroll', 'scroll', 'scroll', 'jumboscroll', 'megascroll', 'talisman', 'talisman', 'jumbotalisman', 'megatalisman', 'kami', 'jumbokami', 'megakami', 'tile', 'tile', 'tile', 'jumbotile', 'megatile'];
-  const packKey = pick(PACK_ODDS.filter(k => PACKS[k].type !== 'talisman' || !chal('noTalismans')));
-  S.shop = { cards: Array.from({ length: shopSlots() }, rollCard), firstFree: hasF('autumn2'), scroll: { kind: 'scroll', key: pick(SCROLLS).key }, flower: fl.length ? { kind: 'flower', key: pick(fl).key } : null, pack: { kind: 'pack', key: packKey }, coupon: false, freeReroll: false, freePacks: [] };
+  // Two Booster Packs per shop by Balatro's weights; the run's first shop always has a Talisman pack, like Balatro's Buffoon pack.
+  const noTal = chal('noTalismans') ? 'talisman' : null, packs = [rollPack(noTal), rollPack(noTal)];
+  if (!S.firstShopDone && !noTal) packs[0] = 'talisman'; S.firstShopDone = true;
+  S.shop = { cards: Array.from({ length: shopSlots() }, rollCard), firstFree: hasF('autumn2'), flower: fl.length ? { kind: 'flower', key: pick(fl).key } : null, packs: packs.map(k => ({ kind: 'pack', key: k })), coupon: false, freeReroll: false, freePacks: [] };
   // consume tags that act on this shop
   const take = t => { const i = S.tags.indexOf(t); if (i >= 0) { S.tags.splice(i, 1); return true; } return false; };
   if (take('coupon')) S.shop.coupon = true;
@@ -1760,8 +1762,10 @@ function cashoutHTML() {
 }
 // Same look as the play area's purse: the coin, the amount, and JPY or HKD underneath.
 const walletHTML = () => `<span class="wallet purse"><span class="coin" aria-hidden="true">${coinSVG()}</span><span class="wtx"><span class="pv num">¥${S.money}</span><span class="wl" data-notr>${LANG === 'hk' ? 'HKD' : 'JPY'}</span></span></span>`;
+// Everything on sale, in display order: the card slots, the Flower, then the Booster Packs. Older saves had one pack and a Scroll slot.
+function shopItems() { const sh = S.shop; if (!sh.packs) { sh.packs = sh.pack ? [sh.pack] : []; if (sh.scroll) sh.cards.push(sh.scroll); delete sh.pack; delete sh.scroll; } return [...sh.cards, sh.flower, ...sh.packs].filter(Boolean); }
 function shopHTML() {
-  const r = S.reward; const items = [...S.shop.cards, S.shop.scroll, S.shop.flower, S.shop.pack].filter(Boolean);
+  const r = S.reward; const items = shopItems();
   const next = ({ small: 'Small Blind', big: 'Big Blind', boss: 'Boss Blind' })[blindKind()];
   const nextBoss = blindKind() === 'boss' ? BOSSES[S.bossOrder[S.ante - 1]] : null;
   let h = `<div class="noren"><div class="norenbar"><h2>Shop</h2>${walletHTML()}</div><div class="norenflaps" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div></div>`;
@@ -1774,8 +1778,9 @@ function shopHTML() {
     <button id="mReroll" class="ghost railbtn rerollbtn" ${canReroll ? '' : 'disabled title="Not enough money to reroll"'}><span class="rbl"><svg class="rbico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8M4 4v4h4M4 13a8 8 0 0 0 14.3 4.9L20 16M20 20v-4h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Reroll Cards</span><b class="num">${rerollPrice() ? '¥' + rerollPrice() : 'Free'}</b></button>
     <button id="mDeck" class="ghost railbtn"><span class="rbl"><span class="wallico" aria-hidden="true"><i></i><i></i><i></i></span>View Wall</span><b class="num">${(S.deck || []).length}</b></button>
     <button id="mRunInfo" class="ghost railbtn"><span class="rbl"><svg class="rbico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 11v6M12 7.5v.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>Run Info</span><b class="num"></b></button></aside>
-    <div class="shopmain"><div class="shelf"><div class="shelflabel">Cards</div><div class="shelfrow">${[...S.shop.cards, S.shop.scroll].map(it => cardHTML(it, at(it))).join('')}</div></div>
-    <div class="shelf"><div class="shelflabel">${S.shop.flower ? 'Flower and Booster Pack' : 'Booster Pack'}</div><div class="shelfrow">${[S.shop.flower, S.shop.pack].filter(Boolean).map(it => cardHTML(it, at(it))).join('')}</div></div>
+    <div class="shopmain"><div class="shelf"><div class="shelflabel">Cards</div><div class="shelfrow">${S.shop.cards.map(it => cardHTML(it, at(it))).join('')}</div></div>
+    <div class="shopbottom"><div class="shelf vouchshelf"><div class="shelflabel">Flower · this Ante</div><div class="shelfrow">${S.shop.flower ? cardHTML(S.shop.flower, at(S.shop.flower)) : '<div class="emptyvouch muted">Bought. A new Flower arrives next Ante.</div>'}</div></div>
+    <div class="shelf"><div class="shelflabel">Booster Packs</div><div class="shelfrow">${S.shop.packs.map(it => cardHTML(it, at(it))).join('')}</div></div></div>
     ${S.shop.freePacks.length ? `<div class="freepacks">${S.shop.freePacks.map((pk, i) => `<button class="primary" data-freepack="${i}">Open Free ${PACKS[pk].name}</button>`).join('')}</div>` : ''}</div></div>`;
   h += `<div class="msg${S.msgErr ? ' err' : ''}" style="min-height:18px;margin:6px 0">${S.msg || ''}</div>`;
   h += ownedHTML();
@@ -1875,7 +1880,7 @@ function fullRulesHTML() {
   <p><b>Editions.</b> Shop Talismans sometimes come in an edition: ${Object.values(EDITIONS).map(e => `${e.name} (${e.desc})`).join(', ')}.</p>
   <h3>Between Blinds</h3>
   <p><b>Money.</b> Beating a Blind pays ¥${R.small} for a Small Blind, ¥${R.big} for a Big Blind and ¥${R.boss} for a Boss, plus ¥1 for each unused Play and ¥1 interest for every ¥${CFG.interestPer} you hold (at most ¥${CFG.interestCap}). From Red Stake up, Small Blinds pay nothing.</p>
-  <p><b>Shop.</b> Spend money on Talismans (passive, ${CFG.talismanSlots} slots), Omikuji and Kami (consumables, ${CFG.consumableSlots} slots, used on selected hand tiles), Scrolls of Mastery (permanent upgrades), Flowers (run-long perks) and one booster pack (open it and keep one or two of what's inside). Every pack comes in three sizes: Normal, Jumbo (more cards) and Mega (more cards and two picks). Tile Packs add new tiles to your Wall, some engraved, sealed or with an edition. One Flower is offered per Ante and waits in every shop of that Ante until you buy it; upgrades appear once you own the first Flower. Talismans and consumables can also gain sell value (Tsuchinoko, Otoshidama). Omikuji Packs and Kami Packs also deal ${PACK_HAND} random tiles from your Wall: select some and press Use on a card to change them for the rest of the run, or Keep the card for a Blind. After your last pick the pack stays open with the changed tiles outlined; press Done to return to the shop. ${CONS.indicator.name} and ${CONS.amaterasu.name} only work during a Blind. ${CONS.wealth.name} and ${CONS.raijin.name} can also be used from your slots in the shop; there ${CONS.raijin.name} destroys 2 random tiles from your Wall. Every shop has two random cards (Talismans ${Math.round(CFG.shopWeights.talisman * 100)}%, Omikuji ${Math.round(CFG.shopWeights.omikuji * 100)}%, Kami ${Math.round(CFG.shopWeights.kami * 100)}% each), plus one Scroll, one Flower and one booster pack in fixed spots. A reroll changes only the two random cards and costs ¥${CFG.rerollCost}. Selling returns half the item's value: click a Talisman on the board and press Sell, or sell from inside the shop.</p>
+  <p><b>Shop.</b> Spend money on Talismans (passive, ${CFG.talismanSlots} slots), Omikuji and Kami (consumables, ${CFG.consumableSlots} slots, used on selected hand tiles), Scrolls of Mastery (permanent upgrades), Flowers (run-long perks) and Booster Packs (open one and keep one or two of what's inside). Like Balatro, each shop has two card slots (Talismans about 71%, Omikuji and Scrolls about 14% each; Kami come from packs, or the shop with the Ghost Wall), one Flower for the whole Ante, and two Booster Packs; the first shop of a run always has a Talisman pack. Rerolling changes only the cards: it costs ¥5, then ¥1 more each time in the same shop. Every pack comes in three sizes: Normal, Jumbo (more cards) and Mega (more cards and two picks). Tile Packs add new tiles to your Wall, some engraved, sealed or with an edition. One Flower is offered per Ante and waits in every shop of that Ante until you buy it; upgrades appear once you own the first Flower. Talismans and consumables can also gain sell value (Tsuchinoko, Otoshidama). Omikuji Packs and Kami Packs also deal ${PACK_HAND} random tiles from your Wall: select some and press Use on a card to change them for the rest of the run, or Keep the card for a Blind. After your last pick the pack stays open with the changed tiles outlined; press Done to return to the shop. ${CONS.indicator.name} and ${CONS.amaterasu.name} only work during a Blind. ${CONS.wealth.name} and ${CONS.raijin.name} can also be used from your slots in the shop; there ${CONS.raijin.name} destroys 2 random tiles from your Wall. Every shop has two random cards (Talismans ${Math.round(CFG.shopWeights.talisman * 100)}%, Omikuji ${Math.round(CFG.shopWeights.omikuji * 100)}%, Kami ${Math.round(CFG.shopWeights.kami * 100)}% each), plus one Scroll, one Flower and one booster pack in fixed spots. A reroll changes only the two random cards and costs ¥${CFG.rerollCost}. Selling returns half the item's value: click a Talisman on the board and press Sell, or sell from inside the shop.</p>
   <p><b>Blind Select.</b> After the shop you see the Ante's three blinds with their targets, rewards and the Boss's rule. A Small or Big Blind can be skipped for the Tag on its card instead of its money: free packs, editions, coupons, money, a bigger hand, a different Boss, free Rare or Uncommon Talismans, Scroll levels, a second Flower (Voucher Tag), and a Double Tag that copies the next Tag you get. Tags you hold show in the side panel.</p>
   <p><b>Setup.</b> A new run lets you choose a Wall (deck), a Stake (difficulty) and a seed. Sharing a seed replays the same Wall, shops and bosses for players with the same unlocks. Each Stake keeps every penalty of the ones below it. Winning on a Stake with a Wall unlocks the next Stake for that Wall. From Black Stake, shop Talismans can carry stickers: Eternal (can't be sold), Perishable (stops working after 5 Blinds, from Orange) and Rental (¥1 to buy, ¥3 every Blind, from Gold).</p>
   <p><b>Special Talismans.</b> Some fade: Kakigōri loses Chips with each play, Senbei loses Mult each Blind, Ramen weakens as you discard, and each leaves when it runs out. Daikoku doubles every listed chance. Yūrei saves a lost Blind once if you scored at least a quarter of the target. Selling Rikishi during a Boss Blind disables the Boss, selling Ramune gives a Double Tag, and selling Kakuremino after 2 Blinds copies another Talisman. With Kabuki, Talismans you already own can turn up again, so you can hold two copies; each copy works on its own.</p>
@@ -2284,7 +2289,7 @@ function bindEvents() {
     else if (t.dataset.packuse != null) usePackCard(+t.dataset.packuse);
     else if (t.id === 'mPackDone') { S.pack = null; render(); }
     else if (t.id === 'mDeck') { showModal(deckHTML(), true); $('#mClose').onclick = () => { modalPinned = false; render(); }; }
-    else if (t.dataset.buy != null) { const items = [...S.shop.cards, S.shop.scroll, S.shop.flower, S.shop.pack].filter(Boolean); buy(items[+t.dataset.buy]); }
+    else if (t.dataset.buy != null) buy(shopItems()[+t.dataset.buy]);
     else if (t.dataset.sell) sellTalisman(t.dataset.sell);
     else if (t.dataset.sellcon != null) sellConsumable(+t.dataset.sellcon);
     else if (t.dataset.usecon != null) useConsumable(+t.dataset.usecon);

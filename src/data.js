@@ -33,7 +33,10 @@ const CFG = {
   // Playtest 23: Talismans fire in slot order after the Han table; flat +Mult class; drag to reorder Talismans.
   hanTable: [1, 2, 4, 8, 15, 15, 25, 25, 40, 40, 40, 60, 60, 100],
   tierNames: ['None', 'Standard', 'Advanced', 'Master', 'Mangan', 'Mangan', 'Haneman', 'Haneman', 'Baiman', 'Baiman', 'Baiman', 'Sanbaiman', 'Sanbaiman', 'Yakuman'],
-  shopWeights: { talisman: 0.5, omikuji: 0.35, kami: 0.15 },
+  // Shop card odds, as in Balatro (Jokers 20, Tarot 4, Planet 4, no Spectrals): Talismans 71%, Omikuji 14%, Scrolls 14%.
+  shopWeights: { talisman: 20 / 28, omikuji: 4 / 28, scroll: 4 / 28, kami: 0 },
+  // Booster pack weights per type, Normal / Jumbo / Mega, as in Balatro (Arcana, Celestial, Standard, Buffoon, Spectral).
+  packWeights: { omikuji: [4, 2, .5], scroll: [4, 2, .5], tile: [4, 2, .5], talisman: [1.2, .6, .15], kami: [.6, .3, .07] },
   // Talisman rarity odds in shops and packs, as in Balatro (Legendaries only come from Hitodama).
   rarityWeights: { common: 0.70, uncommon: 0.25, rare: 0.05 },
   soulOdds: 0.04,   // chance a Kami roll is Hitodama
@@ -470,7 +473,7 @@ const FLOWERS = [
   { key: 'bamboo', name: 'Bamboo', cost: 10, desc: '+1 Play every Blind.' },
   { key: 'chrysanthemum', name: 'Chrysanthemum', cost: 10, desc: 'Shop prices reduced by 20%.' },
   { key: 'spring', name: 'Spring', cost: 10, desc: '+1 consumable slot.' },
-  { key: 'autumn', name: 'Autumn', cost: 10, desc: 'Rerolls cost ¥2 instead of ¥5.' },
+  { key: 'autumn', name: 'Autumn', cost: 10, desc: 'Rerolls start at ¥3 instead of ¥5 (each reroll in a shop still costs ¥1 more).' },
   { key: 'winter', name: 'Winter', cost: 10, desc: 'Interest cap raised from ¥5 to ¥10 per Blind.' },
   { key: 'summer', name: 'Summer', cost: 10, desc: '+¥2 reward for every Blind defeated.' },
   // New Flowers (Balatro's Overstock, Director's Cut, Hieroglyph, Hone and Blank).
@@ -485,7 +488,7 @@ const FLOWERS = [
   { key: 'bamboo2', name: 'Bamboo Grove', cost: 10, needs: 'bamboo', desc: '+1 more Play every Blind.' },
   { key: 'chrys2', name: 'Golden Chrysanthemum', cost: 10, needs: 'chrysanthemum', desc: 'Shop prices reduced by 40% in total.' },
   { key: 'spring2', name: 'Late Spring', cost: 10, needs: 'spring', desc: '+1 more consumable slot.' },
-  { key: 'autumn2', name: 'Harvest Moon', cost: 10, needs: 'autumn', desc: 'The first reroll in every shop is free.' },
+  { key: 'autumn2', name: 'Harvest Moon', cost: 10, needs: 'autumn', desc: 'Rerolls start ¥2 cheaper again, at ¥1.' },
   { key: 'winter2', name: 'Deep Winter', cost: 10, needs: 'winter', desc: 'Interest cap raised to ¥20 per Blind.' },
   { key: 'summer2', name: 'Midsummer', cost: 10, needs: 'summer', desc: '+¥2 more reward for every Blind defeated (¥4 in all).' },
   { key: 'lotus2', name: 'Sacred Lotus', cost: 10, needs: 'lotus', desc: '+1 more card slot in the shop.' },
@@ -537,6 +540,8 @@ const PACK_TYPES = {
   tile: { label: 'Tile', show: 4, cost: 4, desc: (n, k) => `Open ${n} tiles and add ${k} to your Wall. Some come engraved or sealed.` },
 };
 const PACKS = {};
+// One Booster Pack for a shop slot, by Balatro's weights.
+function rollPack(skipType) { const opts = []; for (const [type, w] of Object.entries(CFG.packWeights)) if (type !== skipType) ['', 'jumbo', 'mega'].forEach((sz, i) => opts.push([sz === '' ? type : sz === 'mega' && type === 'omikuji' ? 'mega' : sz + type, w[i]])); let r = rand() * opts.reduce((a, o) => a + o[1], 0); for (const [k, w] of opts) { if ((r -= w) < 0) return k; } return opts[0][0]; }
 for (const [type, t] of Object.entries(PACK_TYPES)) {
   const mk = (size, show, keep, cost) => ({ type, size, name: `${size ? size + ' ' : ''}${t.label} Pack`, show, keep, cost, desc: t.desc(show, keep) });
   PACKS[type] = mk('', t.show, 1, t.cost);
