@@ -1951,17 +1951,47 @@ function overHTML(won) {
 function deckHTML() {
   const inBlind = S.phase === 'blind';
   const all = inBlind ? [...S.hand, ...S.wall, ...S.river, ...openTiles(), ...S.played, ...S.indicators] : S.deck;
-  const counts = new Array(34).fill(0), inWall = new Array(34).fill(0), reds = new Array(34).fill(0);
-  for (const t of all) { counts[idx(t)]++; if (t.red) reds[idx(t)]++; } for (const t of S.wall) inWall[idx(t)]++;
   const eng = all.filter(t => t.eng), sealed = all.filter(t => t.seal), edTiles = all.filter(t => t.ed), redTotal = all.filter(t => t.red).length;
+  // Every copy that is not plain (a Red Five, an engraving, a seal or an edition) gets its own tile beside the face's plain
+  // copies, so you can see, and hover, exactly which tile carries what. Identical copies share one tile with a count.
+  const vkey = t => [t.red ? 'r' : '', t.eng || '', t.seal || '', t.ed || ''].join('|'), PLAIN = '|||';
+  const faces = Array.from({ length: 34 }, () => new Map());
+  for (const t of all) { const g = faces[idx(t)], k = vkey(t); if (!g.has(k)) g.set(k, { t, n: 0, wall: 0 }); g.get(k).n++; }
+  for (const t of S.wall) { const v = faces[idx(t)].get(vkey(t)); if (inBlind && v) v.wall++; }
   const stat = (label, v) => `<div class="stat"><div class="label">${label}</div><div class="v num">${v}</div></div>`;
-  let h = `<div class="shophead"><h2>The Wall</h2></div><p class="muted" style="margin:2px 0 10px">${inBlind ? 'Under each tile: copies still face down in the Wall, out of copies in your deck.' : 'Under each tile: how many copies are in your deck.'}</p>`;
+  let h = `<div class="shophead"><h2>The Wall</h2></div><p class="muted" style="margin:2px 0 10px">${inBlind ? 'Under each tile: copies still face down in the Wall, out of copies in your deck.' : 'Under each tile: how many copies are in your deck.'} Special copies (Red Fives, engravings, seals, editions) stand beside the plain ones: hover one for details, or pick a chip below to find them.</p>`;
   h += `<div class="overstats wallstats">${stat('Tiles', all.length)}${inBlind ? stat('Still in the Wall', S.wall.length) : ''}${stat('Red Fives', redTotal)}${stat('Engraved', eng.length)}${sealed.length ? stat('Sealed', sealed.length) : ''}${edTiles.length ? stat('Editions', edTiles.length) : ''}</div>`;
+  h += '<div class="wallgrid">';
   for (const [label, from, to] of [['Manzu', 0, 9], ['Pinzu', 9, 18], ['Souzu', 18, 27], ['Honors', 27, 34]]) h += `<div class="label" style="margin:12px 0 6px">${label}</div><div class="wallrow" data-from="${from}" data-to="${to}"></div>`;
-  if (eng.length) { const byEng = {}; for (const t of eng) byEng[t.eng] = (byEng[t.eng] || 0) + 1; h += `<div class="label" style="margin:12px 0 6px">Engravings</div><div class="overtals">${Object.entries(byEng).map(([k, n]) => `<span class="tagchip" title="${eng.filter(t => t.eng === k).map(tileName).join(', ')}">${ENG[k].name} ×${n}</span>`).join('')}</div>`; }
-  if (sealed.length) { const by = {}; for (const t of sealed) by[t.seal] = (by[t.seal] || 0) + 1; h += `<div class="label" style="margin:12px 0 6px">Seals</div><div class="overtals">${Object.entries(by).map(([k, n]) => `<span class="tagchip" title="${sealed.filter(t => t.seal === k).map(tileName).join(', ')}">${SEALS[k].name} ×${n}</span>`).join('')}</div>`; }
-  h += `<button id="mClose" hidden>Close</button>`;
-  setTimeout(() => { document.querySelectorAll('#modal .wallrow').forEach(g => { for (let i = +g.dataset.from; i < +g.dataset.to; i++) { const c = document.createElement('div'); c.className = 'wallcell' + (counts[i] === 0 || (inBlind && inWall[i] === 0) ? ' out' : ''); const t = tileFromIdx(i); c.appendChild(tileEl(t, { small: true })); const b = document.createElement('div'); b.className = 'wcount num' + (reds[i] ? ' hasred' : ''); b.innerHTML = `<span>${inBlind ? `${inWall[i]}/${counts[i]}` : `×${counts[i]}`}</span>`; b.title = (inBlind ? `${inWall[i]} of ${counts[i]} still in the Wall` : `${counts[i]} in your deck`) + (reds[i] ? ` · ${reds[i]} Red Five${reds[i] > 1 ? 's' : ''}` : ''); c.appendChild(b); g.appendChild(c); } translateDOM(g); }); }, 0);
+  // The chips filter the grid: pick one and only the tiles that carry it stay lit.
+  const chips = (title, list, key, nameOf) => { if (!list.length) return ''; const by = {}; for (const t of list) by[t[key]] = (by[t[key]] || 0) + 1; return `<div class="label" style="margin:12px 0 6px">${title}</div><div class="overtals">${Object.entries(by).map(([k, n]) => `<button class="tagchip wfilter" data-f="${key}:${k}">${nameOf(k)} ×${n}</button>`).join('')}</div>`; };
+  if (redTotal) h += `<div class="label" style="margin:12px 0 6px">Red Fives</div><div class="overtals"><button class="tagchip wfilter" data-f="red:1">Red Five ×${redTotal}</button></div>`;
+  h += chips('Engravings', eng, 'eng', k => ENG[k] ? ENG[k].name : k) + chips('Seals', sealed, 'seal', k => SEALS[k] ? SEALS[k].name : k) + chips('Editions', edTiles, 'ed', k => EDITIONS[k] ? EDITIONS[k].name : k);
+  h += `</div><button id="mClose" hidden>Close</button>`;
+  setTimeout(() => {
+    const grid = $('#modal .wallgrid'); if (!grid) return;
+    grid.querySelectorAll('.wallrow').forEach(g => {
+      for (let i = +g.dataset.from; i < +g.dataset.to; i++) {
+        const face = document.createElement('div'); face.className = 'wallface';
+        const vs = [...faces[i].entries()].sort(([a], [b]) => (a === PLAIN ? -1 : b === PLAIN ? 1 : a < b ? -1 : 1));
+        if (!vs.length || vs[0][0] !== PLAIN) vs.unshift([PLAIN, { t: tileFromIdx(i), n: 0, wall: 0, none: true }]);   // a face with no plain copies still shows its ×0
+        for (const [k, v] of vs) {
+          if (k === PLAIN && v.none && vs.length > 1) continue;   // only special copies left: show just those
+          const c = document.createElement('div'); c.className = 'wallcell' + (k === PLAIN ? '' : ' special') + (v.n === 0 || (inBlind && v.wall === 0) ? ' out' : '');
+          Object.assign(c.dataset, { red: v.t.red ? 1 : '', eng: v.t.eng || '', seal: v.t.seal || '', ed: v.t.ed || '' });
+          c.appendChild(tileEl(v.t, { small: true }));
+          const b = document.createElement('div'); b.className = 'wcount num'; b.innerHTML = `<span>${inBlind ? `${v.wall}/${v.n}` : `×${v.n}`}</span>`;
+          b.title = inBlind ? `${v.wall} of ${v.n} still in the Wall` : `${v.n} in your deck`; c.appendChild(b); face.appendChild(c);
+        }
+        g.appendChild(face);
+      }
+      translateDOM(g);
+    });
+    grid.querySelectorAll('.wfilter').forEach(btn => btn.onclick = () => {
+      const on = !btn.classList.contains('on'); grid.querySelectorAll('.wfilter').forEach(x => x.classList.remove('on')); btn.classList.toggle('on', on); grid.classList.toggle('filtering', on);
+      const [key, val] = btn.dataset.f.split(':'); grid.querySelectorAll('.wallcell').forEach(c => c.classList.toggle('hit', on && c.dataset[key] === val));
+    });
+  }, 0);
   return h;
 }
 function hanTableText() {

@@ -644,6 +644,12 @@ button.pulse{animation:btnpulse 1s ease-in-out infinite;box-shadow:0 0 0 0 rgba(
 .wallcell{display:flex;flex-direction:column;align-items:center;padding-top:0} .wallrow{gap:12px 8px}
 .wcount{margin-top:7px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:12px;font-weight:600;color:var(--fg);line-height:1} .wcount.hasred span:last-child{color:#ff9d93}
 .wallcell.out .wcount{color:var(--muted)}
+/* The Wall: each face is a little group, its plain copies first and any special copies beside them */
+.wallface{display:flex;gap:4px;align-items:flex-start;border-radius:8px} .wallface:has(.special){background:rgba(217,164,65,.08);box-shadow:inset 0 0 0 1px rgba(217,164,65,.22);padding:4px 4px 2px;margin:-4px 0 -2px}
+.wallcell.special .wcount{color:var(--accent)}
+.wfilter{cursor:pointer;font:inherit;font-size:11px;font-weight:600} .wfilter.on{background:var(--accent);color:#1a1206;border-color:var(--accent)}
+.wallgrid.filtering .wallcell:not(.hit){opacity:.22;filter:grayscale(.8)} .wallgrid.filtering .wallcell.hit .tile{box-shadow:0 0 0 2px var(--accent),0 3px 0 #8f815f,0 0 14px rgba(217,164,65,.55)}
+.wallgrid .wallcell{transition:opacity .15s}
 
 /* ===== Play field theme A, "Mahjong Parlour": felt table in a wooden rail, brass name plates ===== */
 body{background:radial-gradient(120% 80% at 50% 0%,#1c2b25,#0b1210) fixed}
