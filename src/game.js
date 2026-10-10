@@ -4,6 +4,9 @@ let SHOW_DOTS = false; try { SHOW_DOTS = localStorage.getItem('yakuman.dots') ==
 // Display settings: animated background (on by default) and high-contrast tiles (off by default).
 let BG_ANIM = true; try { BG_ANIM = localStorage.getItem('yakuman.bganim') !== 'off'; } catch (e) { }
 let HIGH_CONTRAST = false; try { HIGH_CONTRAST = localStorage.getItem('yakuman.hc') === 'on'; } catch (e) { }
+// Screen shake on big scores (on by default) and a CRT filter (off by default), like Balatro's options.
+let SHAKE = true; try { SHAKE = localStorage.getItem('yakuman.shake') !== 'off'; } catch (e) { }
+let CRT = false; try { CRT = localStorage.getItem('yakuman.crt') === 'on'; } catch (e) { }
 // Helper hints under the hand: tiles away / complete hand ready is on by default; waits and what a selected discard does are off.
 let HINTS = { away: true, waits: false, without: false };
 // Corner numbers on tiles: 'all', 'some' (Characters and Winds, the default) or 'none'. Dots and Bamboo can be counted by their pips.
@@ -49,6 +52,8 @@ function settingsHTML() {
   <div class="setrow"><div><b>Music</b><div class="muted">A laid-back synth groove in the style of Balatro, with a brighter Shop theme and a heavier Boss theme that crossfade as you play. Separate from Sound, and starts after your first click.</div></div><div class="setbtns"><button class="${MUSIC ? 'primary' : ''}" data-setmusic="on">On</button><button class="${!MUSIC ? 'primary' : ''}" data-setmusic="off">Off</button></div></div>
   <div class="setsec">Display</div>
   <div class="setrow"><div><b>Animated background</b><div class="muted">Slowly drifting light behind the table, like Balatro's swirl. Turned off automatically if your device asks for reduced motion.</div></div><div class="setbtns"><button class="${BG_ANIM ? 'primary' : ''}" data-setbg="on">On</button><button class="${!BG_ANIM ? 'primary' : ''}" data-setbg="off">Off</button></div></div>
+  <div class="setrow"><div><b>Screen shake</b><div class="muted">The table shakes a little when a play scores three times the target or more.</div></div><div class="setbtns"><button class="${SHAKE ? 'primary' : ''}" data-setshake="on">On</button><button class="${!SHAKE ? 'primary' : ''}" data-setshake="off">Off</button></div></div>
+  <div class="setrow"><div><b>CRT filter</b><div class="muted">Faint scanlines and a soft vignette, like an old arcade screen.</div></div><div class="setbtns"><button class="${CRT ? 'primary' : ''}" data-setcrt="on">On</button><button class="${!CRT ? 'primary' : ''}" data-setcrt="off">Off</button></div></div>
   <div class="setrow"><div><b>High-contrast tiles</b><div class="muted">One strong colour per suit (Characters red, Dots blue, Bamboo green), with the number on every suited tile. Red Fives stay red with a red corner number.</div></div><div class="setbtns"><button class="${HIGH_CONTRAST ? 'primary' : ''}" data-sethc="on">On</button><button class="${!HIGH_CONTRAST ? 'primary' : ''}" data-sethc="off">Off</button></div></div>
   <div class="setrow"><div><b>Terminology</b><div class="muted" data-notr>Riichi uses Japanese names (Chi, Pon, Kan, Han, Yaku, ¥). Hong Kong uses English names (Chow, Pung, Kong, Faan, $).</div></div><div class="setbtns"><button class="${LANG === 'ja' ? 'primary' : ''}" data-setlang="ja">Riichi</button><button class="${LANG === 'hk' ? 'primary' : ''}" data-setlang="hk">Hong Kong</button></div></div>
   <div class="setrow"><div><b>Tile numbers</b><div class="muted">The small number or letter in a tile's corner. Characters and Winds is the default: Dots and Bamboo are counted by their pips. With All Tiles, some numbers sit over the Dots and Bamboo art.</div></div><div class="setbtns">${[['all', 'All Tiles'], ['some', 'Characters and Winds'], ['none', 'None']].map(([k, n]) => `<button class="${TILE_NUMS === k ? 'primary' : ''}" data-settilenums="${k}">${n}</button>`).join('')}</div></div>
@@ -58,9 +63,10 @@ function settingsHTML() {
   <div class="setrow"><div><b>Delete current run</b><div class="muted">Ends the run in progress so it can't be continued. Your profile, unlocks and settings stay.</div></div><div class="setbtns solo"><button class="danger" id="mDeleteRun"${hasRunSave() ? '' : ' disabled'}>Delete Run</button></div></div>
   <div class="setrow"><div><b>Reset profile</b><div class="muted">Clears lifetime stats and locks everything you have unlocked again. Your current run and settings stay.</div></div><div class="setbtns solo"><button class="danger" id="mResetProfile">Reset Profile</button></div></div>
   <div class="setsec">Advanced</div>
-  <div class="setrow"><div><b>Dead-tile dots (assist)</b><div class="muted">Off by default. When on, green dots mark tiles you can discard without losing progress toward a complete hand. A sizeable help: it solves the discard choice for you.</div></div><div class="setbtns"><button class="${SHOW_DOTS ? 'primary' : ''}" data-setdots="on">On</button><button class="${!SHOW_DOTS ? 'primary' : ''}" data-setdots="off">Off</button></div></div>
+  <div class="setrow"><div><b>Dead-tile dots</b><div class="muted">Green dots mark tiles you can discard without losing progress toward a complete hand.</div></div><div class="setbtns"><button class="${SHOW_DOTS ? 'primary' : ''}" data-setdots="on">On</button><button class="${!SHOW_DOTS ? 'primary' : ''}" data-setdots="off">Off</button></div></div>
   <div class="setrow"><div><b>Debug tools</b><div class="muted">A bar under the board with money, plays, items, bosses and editions for playtesting.</div></div><div class="setbtns"><button class="${dbgOn ? 'primary' : ''}" data-setdbg="on">Show</button><button class="${!dbgOn ? 'primary' : ''}" data-setdbg="off">Hide</button></div></div>
   <div class="setrow"><div><b>Unlock everything</b><div class="muted">For playtesting. Every Talisman, Wall and Stake is available and the whole Collection is revealed, whatever your profile says. Progress keeps counting.</div></div><div class="setbtns"><button class="${UNLOCK_ALL ? 'primary' : ''}" data-setunlock="on">On</button><button class="${!UNLOCK_ALL ? 'primary' : ''}" data-setunlock="off">Off</button></div></div>
+  <div class="setrow"><div><b>Reset settings</b><div class="muted">Puts every setting on this page back to its default. Your run, profile and unlocks are not touched.</div></div><div class="setbtns solo"><button class="ghost" id="mResetSettings">Reset to Defaults</button></div></div>
   <button id="mClose" hidden>Close</button>`;
 }
 // ===================== STATE =====================
@@ -82,7 +88,7 @@ function newState(opts = {}) {
 }
 const blindKind = () => ['small', 'big', 'boss'][S.blindIndex];
 const hasF = k => S.flowers.includes(k);
-const handSize = () => Math.max(8, CFG.handSize + (S.handMod || 0) - (chal('luxury') ? Math.floor(S.money / 5) : 0) + (hasF('plum') ? 1 : 0) + (hasF('plum2') ? 1 : 0) + (S.deckKey === 'abundant' ? 2 : 0) + (S.blindMods && S.blindMods.handSize || 0) - (S.boss === 'miser' && S.phase === 'blind' ? 3 : 0));
+const handSize = () => Math.max(8, CFG.handSize + (S.deckKey === 'painted' ? 2 : 0) + (S.handMod || 0) - (chal('luxury') ? Math.floor(S.money / 5) : 0) + (hasF('plum') ? 1 : 0) + (hasF('plum2') ? 1 : 0) + (S.deckKey === 'abundant' ? 2 : 0) + (S.blindMods && S.blindMods.handSize || 0) - (S.boss === 'miser' && S.phase === 'blind' ? 3 : 0));
 const capacity = () => handSize() - 3 * S.open.length;
 const neededConcealed = () => 14 - 3 * S.open.length;
 // The Purist: is a face-down tile selected? Then the scoring box and the Play button must not reveal what the tiles make.
@@ -95,7 +101,7 @@ const canClaim = () => S.boss !== 'fisherman' && liveTals(S).some(k => TAL[k].ri
 const claimTile = () => (S.selRiver && canClaim()) ? S.river.find(t => t.id === S.selRiver) || null : null;
 const conSlots = () => CFG.consumableSlots + (hasF('spring') ? 1 : 0) + (hasF('spring2') ? 1 : 0) + (S.deckKey === 'merchant' ? 1 : 0);
 const price = c => { let p = c + (S.inflation || 0); if (S.deckKey === 'merchant') p = Math.ceil(p * 1.25); if (hasF('chrys2')) p = Math.ceil(p * 0.6); else if (hasF('chrysanthemum')) p = Math.ceil(p * 0.8); return Math.max(1, p); };
-const talSlots = () => (chal('slots') || CFG.talismanSlots) + S.talismans.filter(k => S.editions[k] === 'neg').length + (hasF('camellia2') ? 1 : 0);
+const talSlots = () => (chal('slots') || CFG.talismanSlots) - (S.deckKey === 'painted' ? 1 : 0) + S.talismans.filter(k => S.editions[k] === 'neg').length + (hasF('camellia2') ? 1 : 0);
 // Flower helpers shared by the Blind, the select screen and the shop.
 const interestCap = () => hasF('winter2') ? 20 : hasF('winter') ? 10 : CFG.interestCap;
 const shopSlots = () => 2 + (hasF('lotus') ? 1 : 0) + (hasF('lotus2') ? 1 : 0);
@@ -103,8 +109,14 @@ const editionMult = () => hasF('sakura2') ? 4 : hasF('sakura') ? 2 : 1;
 const talSellValue = k => Math.max(1, Math.floor(talValue(k) / 2)) + (hasF('camellia') ? 1 : 0) + ((S.sellBonus && S.sellBonus[k]) || 0);
 const conSellValue = c => Math.max(1, Math.floor(CONS[c.key].cost / 2)) + (c.bonus || 0);
 // Destroys a Talisman (Kamikiri, Izanagi, Izanami) and clears everything it owned. Eternal Talismans cannot be destroyed.
+// Balatro's dissolve: a copy of the card burns away where it stood, then the board redraws without it.
+function dissolveTal(k) {
+  if (!motionOK) return; const i = S.talismans.indexOf(k); const el = (document.querySelector(`[data-sell="${k}"]`) || {}).closest ? document.querySelector(`[data-sell="${k}"]`).closest('.shopcard') : [...document.querySelectorAll('#talismans .slot')][i];
+  if (!el) return; const r = el.getBoundingClientRect(), g = el.cloneNode(true); Object.assign(g.style, { position: 'fixed', left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px', margin: 0, zIndex: 60, pointerEvents: 'none' }); document.body.appendChild(g);
+  g.animate([{ opacity: 1, filter: 'none', transform: 'none' }, { opacity: .9, filter: 'brightness(1.6) sepia(.6) saturate(3) blur(.5px)', transform: 'scale(1.03)', offset: .3 }, { opacity: 0, filter: 'brightness(2) saturate(4) blur(6px)', transform: 'scale(.92) translateY(-10px)' }], { duration: 520, easing: 'ease-in' }).onfinish = () => g.remove(); setTimeout(() => g.remove(), 900);
+}
 function destroyTalisman(k) {
-  if (!S.talismans.includes(k) || isEternal(k)) return false;
+  if (!S.talismans.includes(k) || isEternal(k)) return false; dissolveTal(k);
   S.talismans = S.talismans.filter(x => x !== k); delete S.editions[k]; if (S.stickers) delete S.stickers[k]; if (S.sellBonus) delete S.sellBonus[k];
   S.talState = freshTalState(k); if (S.crimsonOff === k) S.crimsonOff = null; if (S.selTal === k) S.selTal = null;
   return true;
@@ -118,7 +130,7 @@ const stakeLevel = k => STAKE_KEYS.indexOf(k);
 const smallPaysNothing = () => stakeLevel(S.stake) >= 1;
 const stakeTargets = () => (stakeLevel(S.stake) >= 2 ? 1.3 : 1) * (stakeLevel(S.stake) >= 5 ? 1 + 0.05 * (S.ante - 1) : 1);
 // Monk's Wall pays for its easy flushes with doubled targets, like Balatro's Plasma Deck.
-const wallTargets = () => S.deckKey === 'monk' ? 2 : 1;
+const wallTargets = () => S.deckKey === 'monk' || S.deckKey === 'plasma' ? 2 : 1;
 const stakeTalCost = () => stakeLevel(S.stake) >= 3 ? 2 : 0;
 // Stickers for a shop or pack Talisman: Eternal from Black Stake, Perishable from Orange (never both), Rental from Gold.
 // Shōjō leaves by itself and Legendaries come from Hitodama, so they never carry one.
@@ -162,7 +174,7 @@ function hasRunSave() { try { return !!localStorage.getItem(SAVE_KEY) && !!S && 
 // ===================== PLAYER PROFILE =====================
 // Lifetime progress that outlives runs (New Run and Wipe save leave it alone). Unlocks will build on this.
 const PROFILE_KEY = 'yakuman.profile.v1';
-function blankProfile() { return { v: 1, created: Date.now(), runs: 0, wins: 0, bestAnte: 0, bestPlay: 0, bestPlayDesc: '', hands: 0, blinds: 0, stakesWon: {}, wallsWon: {}, bosses: {}, yaku: {}, unlocked: [], calls: 0, sold: 0, scrollsUsed: 0, furitenHands: 0, openHands3: 0, mostMoney: 0, wallStakes: {}, seen: {}, achieved: [], challengesWon: {}, legendaries: 0, shattered: 0, tilesAdded: 0 }; }
+function blankProfile() { return { v: 1, created: Date.now(), runs: 0, wins: 0, bestAnte: 0, bestPlay: 0, bestPlayDesc: '', hands: 0, blinds: 0, stakesWon: {}, wallsWon: {}, bosses: {}, yaku: {}, unlocked: [], calls: 0, sold: 0, scrollsUsed: 0, furitenHands: 0, openHands3: 0, mostMoney: 0, wallStakes: {}, seen: {}, achieved: [], challengesWon: {}, legendaries: 0, shattered: 0, tilesAdded: 0, kamiUsed: 0, omikujiUsed: 0, skips: 0, lastPlayWins: 0, noDiscardWins: 0, onePlayWins: 0, bigYakuHands: 0, maxTals: 0, talsBought: 0, losses: 0 }; }
 let PROFILE = (() => { try { return Object.assign(blankProfile(), JSON.parse(localStorage.getItem(PROFILE_KEY) || '{}')); } catch (e) { return blankProfile(); } })();
 function saveProfile() { try { localStorage.setItem(PROFILE_KEY, JSON.stringify(PROFILE)); } catch (e) { } }
 const bump = (obj, k, n = 1) => { obj[k] = (obj[k] || 0) + n; };
@@ -188,6 +200,24 @@ const UNLOCKS = [
   { kind: 'tal', key: 'kirin', goal: 'Beat 5 different Bosses', prog: P => [Object.keys(P.bosses).length, 5] },
   { kind: 'tal', key: 'hannya', goal: 'Reach Ante 6', prog: P => [P.bestAnte, 6] },
   { kind: 'tal', key: 'utsushi', goal: 'Win a run', prog: P => [P.wins, 1] },
+  { kind: 'wall', key: 'plasma', goal: 'Win a run on Green Stake or higher', prog: P => [STAKE_KEYS.slice(2).reduce((n, k) => n + (P.stakesWon[k] || 0), 0), 1] },
+  { kind: 'wall', key: 'erratic', goal: 'Play 100 Complete Hands', prog: P => [P.hands, 100] },
+  { kind: 'wall', key: 'ghost', goal: 'Use 10 Kami Spirits', prog: P => [P.kamiUsed || 0, 10] },
+  { kind: 'wall', key: 'magic', goal: 'Use 30 Omikuji', prog: P => [P.omikujiUsed || 0, 30] },
+  { kind: 'wall', key: 'anaglyph', goal: 'Skip 10 Blinds', prog: P => [P.skips || 0, 10] },
+  { kind: 'wall', key: 'painted', goal: 'Win with 3 different Walls', prog: P => [Object.keys(P.wallsWon).length, 3] },
+  { kind: 'tal', key: 'shojo', goal: 'Play 50 Complete Hands', prog: P => [P.hands, 50] },
+  { kind: 'tal', key: 'omagatoki', goal: 'Win 5 Blinds on your last Play', prog: P => [P.lastPlayWins || 0, 5] },
+  { kind: 'tal', key: 'kotodama', goal: 'Use 25 Scrolls of Mastery', prog: P => [P.scrollsUsed, 25] },
+  { kind: 'tal', key: 'itako', goal: 'Score a Complete Hand with 4 or more Yaku', prog: P => [P.bigYakuHands || 0, 1] },
+  { kind: 'tal', key: 'kamikiri', goal: 'Sell 20 Talismans', prog: P => [P.sold, 20] },
+  { kind: 'tal', key: 'binbogami', goal: 'Win 10 Blinds without using a Discard', prog: P => [P.noDiscardWins || 0, 10] },
+  { kind: 'tal', key: 'kamaitachi', goal: 'Win 5 Blinds with your first Play', prog: P => [P.onePlayWins || 0, 5] },
+  { kind: 'tal', key: 'kabuki', goal: 'Hold 5 Talismans at once', prog: P => [P.maxTals || 0, 5] },
+  { kind: 'tal', key: 'kakuremino', goal: 'Beat 10 different Bosses', prog: P => [Object.keys(P.bosses).length, 10] },
+  { kind: 'tal', key: 'daikoku', goal: 'Shatter 5 Glass tiles', prog: P => [P.shattered || 0, 5] },
+  { kind: 'tal', key: 'hyakki', goal: 'Buy 30 Talismans', prog: P => [P.talsBought || 0, 30] },
+  { kind: 'tal', key: 'yurei', goal: 'Lose 5 runs', prog: P => [P.losses || 0, 5] },
   { kind: 'tal', key: 'kagami', goal: 'Win a run on Red Stake or higher', prog: P => [STAKE_KEYS.slice(1).reduce((n, k) => n + (P.stakesWon[k] || 0), 0), 1] },
 ];
 const LOCKS = {}; UNLOCKS.forEach(u => LOCKS[`${u.kind}:${u.key}`] = u);
@@ -260,6 +290,7 @@ function lockHTML(u) { const p = unlockProg(u); return `<div class="lockgoal"><s
 function checkUnlocks() {
   let dirty = false;
   if (S && S.money > (PROFILE.mostMoney || 0)) { PROFILE.mostMoney = S.money; dirty = true; }
+  if (S && S.talismans && !S.placeholder && S.talismans.length > (PROFILE.maxTals || 0)) { PROFILE.maxTals = S.talismans.length; dirty = true; }
   if (markSeen()) dirty = true;
   const fresh = [];
   for (const u of UNLOCKS) { const id = `${u.kind}:${u.key}`; if (PROFILE.unlocked.includes(id)) continue; const p = unlockProg(u); if (p.have >= p.need) { PROFILE.unlocked.push(id); fresh.push(u); } }
@@ -323,6 +354,7 @@ function winBlind() {
   const talPay = []; for (const k of liveTals(S)) if (TAL[k].onBlindEnd) { const v = TAL[k].onBlindEnd(S) || 0; if (v) talPay.push([k, v]); }
   const tal = talPay.reduce((a, [, v]) => a + v, 0);
   const summer = (hasF('summer') ? 2 : 0) + (hasF('summer2') ? 2 : 0);
+  if (kind === 'boss' && S.deckKey === 'anaglyph') S.tags.push('double');
   let invest = 0; if (kind === 'boss' && S.tags.includes('investment')) { invest = 25; S.tags = S.tags.filter(t => t !== 'investment'); }
   // Gold Stake Rentals charge ¥3 each; Perishables count down one Blind.
   const rent = S.talismans.filter(k => S.stickers && S.stickers[k] && S.stickers[k].rental).map(k => [k, 3]);
@@ -335,6 +367,7 @@ function winBlind() {
   collectDeck();
   const finished = S.ante === CFG.antes && S.blindIndex === 2 && !S.endless;
   S.blindIndex++; if (S.blindIndex > 2) { S.blindIndex = 0; S.ante++; S.antePlayed = []; rollAnteTags(); ensureBosses(); if (!finished) PROFILE.bestAnte = Math.max(PROFILE.bestAnte, S.ante); }
+  if (S.plays === 0) bump(PROFILE, 'lastPlayWins'); if (!S.discardsUsed) bump(PROFILE, 'noDiscardWins'); if (S.playsMade === 1) bump(PROFILE, 'onePlayWins');
   PROFILE.blinds++; if (kind === 'boss' && (S.boss || S.bossOff)) bump(PROFILE.bosses, S.boss || S.bossOff);
   if (finished && S.challenge) { PROFILE.challengesWon = PROFILE.challengesWon || {}; bump(PROFILE.challengesWon, S.challenge); setTimeout(() => toast(`<div class="label">Challenge complete</div><b>${CHAL[S.challenge].name}</b>`), 200); }
   if (finished && !S.challenge) { PROFILE.wins++; bump(PROFILE.stakesWon, S.stake); bump(PROFILE.wallsWon, S.deckKey); PROFILE.bestAnte = Math.max(PROFILE.bestAnte, CFG.antes);
@@ -345,10 +378,12 @@ function winBlind() {
   if (finished) { S.phase = 'win'; return; }
   genShop(); S.phase = 'cashout';
 }
-function loseRun() { S.phase = 'gameover'; PROFILE.bestAnte = Math.max(PROFILE.bestAnte, S.ante); saveProfile(); }
+function loseRun() { S.phase = 'gameover'; PROFILE.losses = (PROFILE.losses || 0) + 1; PROFILE.bestAnte = Math.max(PROFILE.bestAnte, S.ante); saveProfile(); }
 function rollAnteTags() { S.skipTags = { small: pick(Object.keys(TAGS)), big: pick(Object.keys(TAGS)) }; }
 function blindTarget(kind) { return Math.floor(anteBase(S.ante) * CFG.blindMult[kind] * stakeTargets() * wallTargets() * (chal('target') || 1) * (kind === 'boss' ? bossTarget(S.bossOrder[S.ante - 1]) : 1)); }
-function newRun(opts) { S = newState(opts || {}); if (S.challenge && CHAL[S.challenge].setup) CHAL[S.challenge].setup(S); PROFILE.runs++; saveProfile(); rollAnteTags(); S.phase = 'select'; render(); }
+function newRun(opts) { S = newState(opts || {}); S.stats.seen0 = Object.keys(PROFILE.seen || {}).length; if (S.challenge && CHAL[S.challenge].setup) CHAL[S.challenge].setup(S);
+  if (S.deckKey === 'ghost') S.consumables.push({ kind: 'kami', key: 'izanami' });
+  if (S.deckKey === 'magic') { S.flowers.push('spring'); S.consumables.push({ kind: 'omikuji', key: 'echo' }, { kind: 'omikuji', key: 'echo' }); } PROFILE.runs++; saveProfile(); rollAnteTags(); S.phase = 'select'; render(); }
 
 // ===================== ACTIONS =====================
 function setMsg(m, err) { S.msg = m; S.msgErr = !!err; }
@@ -430,9 +465,10 @@ async function doPlay() {
   S.usedTypes = (S.usedTypes || []).concat(ctx.meldType); if (!S.mouthType) S.mouthType = ctx.meldType; S.firstPlayDone = true;
   S.stats.rungs[ctx.meldType] = (S.stats.rungs[ctx.meldType] || 0) + 1; for (const yk of ctx.yaku) S.stats.yaku[yk.key] = (S.stats.yaku[yk.key] || 0) + 1;
   if (ctx.total > S.stats.best) { S.stats.best = ctx.total; S.stats.bestDesc = ctx.desc; }
-  if (ctx.kind === 'hand') { PROFILE.hands++; if (ctx.furiten) PROFILE.furitenHands++; if (S.open.length >= 3) PROFILE.openHands3++; } for (const yk of ctx.yaku) bump(PROFILE.yaku, yk.key); if (ctx.total > PROFILE.bestPlay) { PROFILE.bestPlay = ctx.total; PROFILE.bestPlayDesc = ctx.desc; } saveProfile();
+  if (ctx.kind === 'hand') { PROFILE.hands++; if (ctx.yaku.length >= 4) bump(PROFILE, 'bigYakuHands'); if (ctx.furiten) PROFILE.furitenHands++; if (S.open.length >= 3) PROFILE.openHands3++; } for (const yk of ctx.yaku) bump(PROFILE.yaku, yk.key); if (ctx.total > PROFILE.bestPlay) { PROFILE.bestPlay = ctx.total; PROFILE.bestPlayDesc = ctx.desc; } saveProfile();
   const keep = t => !ctx.shatter.includes(t.id);
   S.antePlayed = (S.antePlayed || []).concat(sel.map(t => t.id));
+  S.stats.tilesPlayed = (S.stats.tilesPlayed || 0) + sel.length;
   S.played.push(...sel.filter(keep)); S.hand = S.hand.filter(t => !sel.includes(t));
   if (opt.type === 'hand') { S.played.push(...openTiles().filter(keep)); S.open = []; }
   if (leftovers.length) { S.hand = S.hand.filter(t => !leftovers.includes(t)); S.river.push(...leftovers); }
@@ -464,7 +500,7 @@ function doDiscard() {
     if (S.money < 1) { setMsg('The Loan Shark has locked your discards: ¥0 left.', true); return render(); }
     S.money -= 1;
   }
-  S.discards--; S.discardsUsed = (S.discardsUsed || 0) + 1; S.stats.discards++; S.river.push(...sel); S.hand = S.hand.filter(t => !sel.includes(t)); S.selected = []; draw(); sfxDiscard(sel.length);
+  S.discards--; S.discardsUsed = (S.discardsUsed || 0) + 1; S.stats.discards++; S.stats.tilesDiscarded = (S.stats.tilesDiscarded || 0) + sel.length; S.river.push(...sel); S.hand = S.hand.filter(t => !sel.includes(t)); S.selected = []; draw(); sfxDiscard(sel.length);
   for (const k of liveTals(S)) if (TAL[k].onDiscard) TAL[k].onDiscard(S, sel);
   const got = purpleSeals(sel);
   setMsg(`Discarded ${sel.length} tile${sel.length > 1 ? 's' : ''} to the River.${got.length ? ` Purple Seal: gained ${got.join(', ')}.` : ''}`); render();
@@ -526,7 +562,7 @@ function useConsumable(i) {
     const before = S.deck ? S.deck.length : 0; S.gotLegend = null;
     const after = useOnWallTiles(def, S.deck || [], []);
     if (!after) { setMsg(def.soul ? 'Hitodama needs a free Talisman slot.' : 'That cannot be used right now.', true); return render(); }
-    if (c.key !== 'echo') S.lastCons = c.key;
+    if (c.key !== 'echo') S.lastCons = c.key; bump(PROFILE, def.kind === 'kami' ? 'kamiUsed' : 'omikujiUsed');
     S.consumables.splice(S.consumables.indexOf(c), 1);
     const lost = before - S.deck.length;
     setMsg(`${def.name} used.${c.key === 'fortune' ? (S.fortuneHit ? ` ${TAL[S.fortuneHit].name} is now ${EDITIONS[S.editions[S.fortuneHit]].name}!` : ' Nothing this time.') : ''}${S.gotLegend ? ` ${TAL[S.gotLegend].name} joins your Talismans.` : ''}${lost > 0 ? ` ${lost} tile${lost > 1 ? 's' : ''} left your Wall.` : ''}`); S.gotLegend = null; return render();
@@ -539,7 +575,7 @@ function useConsumable(i) {
   for (const t of S.hand) if (t.d === undefined) t.d = ++S.drawSeq;
   if (S.hand.length > before) for (const k of liveTals(S)) if (TAL[k].onTileAdded) TAL[k].onTileAdded(S, S.hand.length - before);
   if (S.pendingDiscard) { S.pendingDiscard = Math.max(0, S.hand.length - capacity()); if (!S.pendingDiscard) { draw(); setMsg(`${def.name} used. Your Call is settled.`); render(); return; } }
-  if (c.key !== 'echo') S.lastCons = c.key;
+  if (c.key !== 'echo') S.lastCons = c.key; bump(PROFILE, def.kind === 'kami' ? 'kamiUsed' : 'omikujiUsed');
   S.consumables.splice(S.consumables.indexOf(c), 1); S.selected = []; if (S.phase === 'blind') draw();
   const fortune = c.key === 'fortune' ? (S.fortuneHit ? ` ${TAL[S.fortuneHit].name} is now ${EDITIONS[S.editions[S.fortuneHit]].name}!` : ' Nothing this time.') : '';
   setMsg(`${def.name} used.${S.gotLegend ? ` ${TAL[S.gotLegend].name} joins your Talismans.` : ''}${fortune}`); S.gotLegend = null; render();
@@ -553,12 +589,12 @@ function sellEffect(k) {
   if (b === 'kakuremino' && (S.talState.kakuremino || 0) >= 2) { const others = S.talismans.filter(x => x !== k); if (!others.length) return ''; const src = pick(others); const ed = S.editions[src]; const copy = newAlias(S, baseKey(src)); S.talismans.push(copy); if (ed && ed !== 'neg') S.editions[copy] = ed; return ` Kakuremino copies ${TAL[src].name}.`; }
   return '';
 }
-function sellTalisman(k) { const i = S.talismans.indexOf(k); if (i < 0) return; if (isEternal(k)) { setMsg(`${TAL[k].name} is Eternal and can never be sold.`, true); return render(); } if (S.stickers) delete S.stickers[k]; if (S.phase === 'blind') S.leafCut = true; if (S.crimsonOff === k) S.crimsonOff = null; const v = talSellValue(k); S.talismans.splice(i, 1); const eff = sellEffect(k); if (S.sellBonus) delete S.sellBonus[k]; S.money += v; sfx('sell'); delete S.editions[k]; S.selTal = null; for (const t of S.talismans) if (TAL[t].onSell) TAL[t].onSell(S); PROFILE.sold++; saveProfile(); setMsg(`Sold ${TAL[k].name} for ¥${v}.${eff}`); render(); }
+function sellTalisman(k) { const i = S.talismans.indexOf(k); if (i < 0) return; if (isEternal(k)) { setMsg(`${TAL[k].name} is Eternal and can never be sold.`, true); return render(); } if (S.stickers) delete S.stickers[k]; if (S.phase === 'blind') S.leafCut = true; if (S.crimsonOff === k) S.crimsonOff = null; const v = talSellValue(k); dissolveTal(k); S.talismans.splice(i, 1); const eff = sellEffect(k); if (S.sellBonus) delete S.sellBonus[k]; S.money += v; sfx('sell'); delete S.editions[k]; S.selTal = null; for (const t of S.talismans) if (TAL[t].onSell) TAL[t].onSell(S); PROFILE.sold++; saveProfile(); setMsg(`Sold ${TAL[k].name} for ¥${v}.${eff}`); render(); }
 function sellConsumable(i) { const c = S.consumables[i]; if (!c) return; const v = conSellValue(c); S.consumables.splice(i, 1); S.money += v; sfx('sell'); setMsg(`Sold ${CONS[c.key].name} for ¥${v}.`); render(); }
 
 // ===================== SHOP =====================
 function rollCard() {
-  const r = rand(), w = CFG.shopWeights;   // seeded, so a shared seed replays the same shop cards
+  const r = rand(), w = S.deckKey === 'ghost' ? { talisman: 0.45, omikuji: 0.2, kami: 0.35 } : CFG.shopWeights;   // seeded, so a shared seed replays the same shop cards
   if (r < w.talisman) { const pool = talPool(); if (pool.length) { const key = pickTalisman(pool).key; return { kind: 'talisman', key, edition: rollEdition(editionMult()), sticker: rollSticker(key) }; } }
   if (r < w.talisman + w.omikuji) return { kind: 'omikuji', key: pick(OMIKUJI).key };
   return { kind: 'kami', key: pickKami().key };
@@ -582,6 +618,7 @@ function genShop() {
   // Rare and Uncommon Tags add a free Talisman of that rarity; D6 makes rerolls start at ¥0.
   for (const r of ['uncommon', 'rare']) while (take(r)) { const pool = talPool().filter(t => talRarity(t.key) === r); if (pool.length) { const key = pick(pool).key; S.shop.cards.unshift({ kind: 'talisman', key, edition: rollEdition(editionMult()), sticker: rollSticker(key), free: true }); } }
   if (take('d6')) { S.shop.d6 = true; S.shop.rerolls = 0; }
+  while (take('voucher')) { const pool = flowerPool(S.flowers).filter(f => (!S.shop.flower || f.key !== S.shop.flower.key) && !S.shop.cards.some(c => c.key === f.key)); if (pool.length) S.shop.cards.push({ kind: 'flower', key: pick(pool).key }); }
 }
 function openPack(key, free) {
   const def = PACKS[key], type = def.type; let pool;
@@ -636,7 +673,7 @@ function usePackCard(i) {
   // Row to display: the previous order with removed tiles left in place (greyed), new tiles at the end.
   S.pack.view = order.map(id => after.some(t => t.id === id) ? { id } : { id, gone: snap.get(id) }).concat(after.filter(t => !snap.has(t.id)).map(t => ({ id: t.id })));
   S.pack.marks = marks; S.pack.hand = after.map(t => t.id); S.pack.sel = [];
-  it.sold = true; it.used = true; S.pack.left--; if (it.key !== 'echo') S.lastCons = it.key;
+  it.sold = true; it.used = true; S.pack.left--; if (it.key !== 'echo') S.lastCons = it.key; bump(PROFILE, def.kind === 'kami' ? 'kamiUsed' : 'omikujiUsed');
   const gained = S.money - m0, list = a0 => { const c = {}; for (const n of a0) c[n] = (c[n] || 0) + 1; const a = Object.entries(c).map(([n, k]) => k > 1 ? `${n} ×${k}` : n); return a.length > 1 ? a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1] : a[0]; };
   const parts = []; if (changed.length) parts.push(`used on ${list(changed)}`); if (added.length) parts.push(`added ${list(added)}`); if (gone.length) parts.push(`removed ${list(gone.map(g => g.name))}`); if (gained) parts.push(`+¥${gained}`);
   setMsg(`${def.name}${parts.length ? ': ' + parts.join('; ') : (sel.length ? ' used: no tiles changed' : ' used')}.`);
@@ -677,11 +714,11 @@ function buy(it) {
   if (S.money < p) { setMsg(`Not enough YEN: ${def.name} costs ¥${p}.`, true); return render(); }
   const inflate = () => { if (chal('inflation') && !S.quiet) S.inflation = (S.inflation || 0) + 1; };
   if (it.kind === 'pack') { S.money -= p; it.sold = true; inflate(); if (!S.quiet) sfx('buy'); openPack(it.key, false); return render(); }
-  if (it.kind === 'talisman') { if (S.talismans.length >= talSlots()) { setMsg(`All ${talSlots()} Talisman slots are full. Sell one first.`, true); return render(); } gainTalisman(it.key, it.sticker); if (it.edition) S.editions[it.key] = it.edition; }
+  if (it.kind === 'talisman') { if (S.talismans.length >= talSlots()) { setMsg(`All ${talSlots()} Talisman slots are full. Sell one first.`, true); return render(); } if (!S.quiet) bump(PROFILE, 'talsBought'); gainTalisman(it.key, it.sticker); if (it.edition) S.editions[it.key] = it.edition; }
   else if (it.kind === 'omikuji' || it.kind === 'kami') { if (S.consumables.length >= conSlots()) { setMsg('Consumable slots are full. Use one first.', true); return render(); } S.consumables.push({ kind: it.kind, key: it.key }); }
   else if (it.kind === 'scroll') { const [t, k] = it.key.split(':'); S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] = (S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] || 0) + 1; for (const tk of liveTals(S)) if (TAL[tk].onScroll) TAL[tk].onScroll(S); PROFILE.scrollsUsed++; saveProfile(); }
   else if (it.kind === 'flower') { S.flowers.push(it.key); if (S.anteFlower && S.anteFlower.key === it.key) S.anteFlower.sold = true; if (it.key === 'wisteria' || it.key === 'wisteria2') goBackAnte(); }
-  S.money -= p; it.sold = true; inflate(); if (!S.quiet) sfx('buy'); setMsg(`Bought ${def.name}.`); render();
+  S.money -= p; it.sold = true; inflate(); if (!S.quiet) { sfx('buy'); S.stats.bought = (S.stats.bought || 0) + 1; } setMsg(`Bought ${def.name}.`); render();
 }
 function itemPrice(it) { if (it.free) return 0; if (it.sticker && it.sticker.rental && it.kind === 'talisman') return S.shop && S.shop.coupon ? 0 : 1; const def = itemDef(it); let base = def.cost + (it.edition ? EDITIONS[it.edition].price : 0); if (it.kind === 'talisman') base += stakeTalCost(); if (S.shop && S.shop.coupon && (it.kind === 'talisman' || it.kind === 'omikuji' || it.kind === 'kami')) return 0; return price(base); }
 // Wisteria: back one Ante, like Balatro's Hieroglyph. You stay on the same Blind of the earlier Ante, which gets a fresh Boss.
@@ -689,13 +726,14 @@ function goBackAnte() { if (S.ante <= 1) return; S.ante--; S.bossOrder[S.ante - 
 // Peony: reroll the Boss for ¥10, once per Ante (Tree Peony: any number of times).
 const canRerollBoss = () => hasF('peony') && S.money >= 10 && (hasF('peony2') || S.bossRerollAnte !== S.ante);
 function rerollBoss() { if (!canRerollBoss()) return; S.money -= 10; S.bossRerollAnte = S.ante; const old = S.bossOrder[S.ante - 1]; S.bossOrder[S.ante - 1] = rollBoss(S.ante, [old]); sfx('reroll'); setMsg(`${BOSSES[old].name} rerolled into ${BOSSES[S.bossOrder[S.ante - 1]].name}.`); render(); }
-function reroll() { const c = rerollPrice(); if (S.money < c) { setMsg(`Reroll costs ¥${c}.`, true); return render(); } S.money -= c; S.shop.firstFree = false; S.shop.rerolls = (S.shop.rerolls || 0) + 1; S.shop.cards = Array.from({ length: shopSlots() }, rollCard); sfx('reroll'); render(); }
+function reroll() { const c = rerollPrice(); if (S.money < c) { setMsg(`Reroll costs ¥${c}.`, true); return render(); } S.money -= c; S.shop.firstFree = false; S.shop.rerolls = (S.shop.rerolls || 0) + 1; S.stats.rerolls = (S.stats.rerolls || 0) + 1; S.shop.cards = Array.from({ length: shopSlots() }, rollCard); sfx('reroll'); render(); }
 function skipBlind() {
   if (S.phase !== 'select' || blindKind() === 'boss') return;
   const tag = (S.skipTags && S.skipTags[blindKind()]) || pick(Object.keys(TAGS)); S.stats.skipped++;
   // A Double Tag held makes the next Tag count twice (each Double held adds one more copy).
   let copies = 1; if (tag !== 'double') while (S.tags.includes('double')) { S.tags.splice(S.tags.indexOf('double'), 1); copies++; }
   for (let i = 0; i < copies; i++) applyTag(tag);
+  PROFILE.skips = (PROFILE.skips || 0) + 1;
   S.blindIndex++; S.shop = null; S.pack = null; S.phase = 'select';
   setMsg(`Skipped for the ${TAGS[tag].name}${copies > 1 ? ` ×${copies}` : ''}: ${TAGS[tag].desc}`); render();
 }
@@ -1486,6 +1524,7 @@ async function animateScore(ctx) {
   const heat = () => {
     const tot = Math.max(0, chips) * curMult(), q = S.target ? tot / S.target : 0, lvl = q >= 10 ? 3 : q >= 3 ? 2 : q >= 1 ? 1 : 0;
     if (lvl <= fire) return; const prev = fire; fire = lvl; box.dataset.fire = lvl; box.classList.toggle('hot', lvl >= 1);
+    if (lvl >= 2 && SHAKE && motionOK) { const bd = document.querySelector('.board'); if (bd) bd.animate([{ transform: 'none' }, { transform: 'translate(-3px,1px)' }, { transform: 'translate(3px,-2px)' }, { transform: 'translate(-2px,2px)' }, { transform: 'translate(2px,-1px)' }, { transform: 'none' }], { duration: lvl === 3 ? 420 : 300, easing: 'ease-out' }); }
     // The original fire: embers rising behind the Chips and Mult boxes (8 at 1x the target, 6 more at 3x and at 10x).
     let embers = box.querySelector('.emberlayer'); if (!embers) { embers = document.createElement('div'); embers.className = 'emberlayer'; embers.setAttribute('aria-hidden', 'true'); box.insertBefore(embers, box.firstChild); }
     const addN = [0, 8, 14, 20][lvl] - [0, 8, 14, 20][prev]; for (let i = 0; i < addN; i++) { const em = document.createElement('i'); em.className = 'ember'; em.style.left = (8 + Math.random() * 84) + '%'; em.style.animationDelay = (Math.random() * 1.2) + 's'; em.style.animationDuration = (1 + Math.random()) + 's'; embers.appendChild(em); }
@@ -1774,6 +1813,9 @@ function overHTML(won) {
   let h = `<div class="overhead"><div class="label">${won ? 'Run complete' : S.endless ? 'Endless run over' : 'Run over'}</div><h2 class="${won ? '' : 'lost'}">${won ? 'You broke the bank!' : 'The syndicate collects.'}</h2></div>${won ? '<div class="herotiles small" id="heroTiles"></div>' : ''}`;
   h += won ? `<p class="muted">All ${CFG.antes} Antes cleared on ${STAKES[S.stake].name} with the ${DECKS[S.deckKey].name}.</p>` : `<p class="muted">${S.endless ? `You won the run, then reached Ante ${S.ante} in Endless Mode. Out of Plays against ${where}.` : `Out of Plays on Ante ${S.ante} against ${where}.`}</p><div class="overscore"><div class="row"><span class="label">Round Score</span><span class="num"><b>${fmtN(S.score)}</b> <span class="muted">of ${fmtN(S.target)}</span></span></div><div class="overbar"><i style="width:${pct}%"></i></div></div>`;
   h += `<div class="overstats">${stat('Ante reached', S.endless ? `${S.ante}` : `${Math.min(S.ante, CFG.antes)} / ${CFG.antes}`)}${stat('Blinds won', st.blinds)}${stat('Complete Hands', st.hands)}${stat('Partial Plays', st.melds)}${stat('YEN', '¥' + S.money)}</div>`;
+  // Like Balatro's run summary: what you did this run, and how much of the Collection it revealed.
+  const found = S.stats.seen0 != null ? Object.keys(PROFILE.seen || {}).length - S.stats.seen0 : null, most = mostPlayedRung();
+  h += `<div class="overstats">${stat('Tiles played', st.tilesPlayed || 0)}${stat('Tiles discarded', st.tilesDiscarded || 0)}${stat('Bought', st.bought || 0)}${stat('Rerolls', st.rerolls || 0)}${found != null ? stat('New discoveries', found) : ''}</div>${most ? `<p class="muted" style="margin:6px 0 0">Most played: <b>${rungLabel(most)}</b> ×${st.rungs[most]}${st.skipped ? ` · Blinds skipped: <b>${st.skipped}</b>` : ''}</p>` : ''}`;
   h += `<div class="overbest"><div><div class="label">Best Play</div><div class="v num">${fmtN(st.best)}</div></div>${st.bestDesc ? `<div class="muted">${st.bestDesc}</div>` : ''}</div>`;
   if (S.newUnlocks && S.newUnlocks.length) h += `<div class="label" style="margin:14px 0 6px">Unlocked this run</div><div class="overtals">${S.newUnlocks.map(unlockLabel).filter(Boolean).map(l => `<span class="overtal newunlock"><span class="muted" style="font-size:11px">${l.kind}</span>${l.name}</span>`).join('')}</div>`;
   h += `<div class="label" style="margin:14px 0 6px">Talismans</div><div class="overtals">${S.talismans.length ? S.talismans.map((k, i) => `<span class="overtal"><span class="order">${i + 1}</span>${TAL[k].name}</span>`).join('') : '<span class="muted">None</span>'}</div>`;
@@ -1930,7 +1972,7 @@ function profileHTML() {
 }
 // ===================== EXPORT / IMPORT =====================
 // One save = profile + settings + current run, as gzip + base64 text ("YKM1Z:...") or plain JSON.
-const SETTING_KEYS = ['yakuman.lang', 'yakuman.speed', 'yakuman.dots', 'yakuman.hints', 'yakuman.tilenums', 'yakuman.unlockall', 'yakuman.sound', 'yakuman.music', 'yakuman.bganim', 'yakuman.hc'];
+const SETTING_KEYS = ['yakuman.lang', 'yakuman.speed', 'yakuman.dots', 'yakuman.hints', 'yakuman.tilenums', 'yakuman.unlockall', 'yakuman.sound', 'yakuman.music', 'yakuman.bganim', 'yakuman.hc', 'yakuman.shake', 'yakuman.crt'];
 function exportPayload() { const settings = {}; for (const k of SETTING_KEYS) { try { const v = localStorage.getItem(k); if (v != null) settings[k] = v; } catch (e) { } } save(); let run = null; try { run = localStorage.getItem(SAVE_KEY); } catch (e) { } return { app: 'yakuman', v: 1, exported: new Date().toISOString(), profile: PROFILE, settings, run }; }
 async function toCode(obj) {
   const bytes = new TextEncoder().encode(JSON.stringify(obj)); let out = bytes, gz = false;
@@ -2025,8 +2067,8 @@ let setupSel = { deck: 0, stake: 0 }, setupDir = { deck: 0, stake: 0 };
 function setupKeys(name) { return Object.keys(name === 'deck' ? DECKS : STAKES); }
 function setupKey(name) { const keys = setupKeys(name), n = keys.length; return keys[((setupSel[name] % n) + n) % n]; }
 // Card art and rule chips for the carousels. Tiles are written like hands: digits then suit, 'r' marks a Red Five.
-const WALL_ART = { standard: '1m 5pr 9s 1z', red: '5mr 5pr 5sr', lean: '3m 7p 7z', monk: '2m 5p 8s', gambler: '7m 7p 7s', merchant: '8m 6z 8p', abundant: '2s 3s 4s 5s 6s' };
-const WALL_FACTS = () => ({ standard: [['136 tiles'], ['4 Red Fives']], red: [['136 tiles'], ['12 Red Fives', 'good']], lean: [['100 tiles'], ['No Souzu'], ['−1 Play', 'bad']], monk: [['108 tiles'], ['No Honors'], ['Targets ×2', 'bad']], gambler: [['+1 Play', 'good'], ['−1 Discard', 'bad']], merchant: [[`Start ¥${CFG.startMoney + 16}`, 'good'], ['+1 consumable slot', 'good'], ['Prices +25%', 'bad']], abundant: [['+2 hand size', 'good'], ['−1 Play', 'bad']] });
+const WALL_ART = { standard: '1m 5pr 9s 1z', red: '5mr 5pr 5sr', lean: '3m 7p 7z', monk: '2m 5p 8s', gambler: '7m 7p 7s', merchant: '8m 6z 8p', abundant: '2s 3s 4s 5s 6s', plasma: '5p 5z 5p', erratic: '9m 2p 6z 4s', ghost: '5z 5z 5z', magic: '1z 7z 1z', anaglyph: '3m 3p', painted: '1s 2s 3s 4s 5s 6s' };
+const WALL_FACTS = () => ({ standard: [['136 tiles'], ['4 Red Fives']], red: [['136 tiles'], ['12 Red Fives', 'good']], lean: [['100 tiles'], ['No Souzu'], ['−1 Play', 'bad']], monk: [['108 tiles'], ['No Honors'], ['Targets ×2', 'bad']], gambler: [['+1 Play', 'good'], ['−1 Discard', 'bad']], merchant: [[`Start ¥${CFG.startMoney + 16}`, 'good'], ['+1 consumable slot', 'good'], ['Prices +25%', 'bad']], abundant: [['+2 hand size', 'good'], ['−1 Play', 'bad']], plasma: [['Chips and Mult averaged', 'good'], ['Targets ×2', 'bad']], erratic: [['136 random tiles']], ghost: [['Kami often in shops', 'good'], ['Start with Izanami', 'good']], magic: [['Start with Spring', 'good'], ['2 Slips of Echoes', 'good']], anaglyph: [['Double Tag after each Boss', 'good']], painted: [['+2 hand size', 'good'], ['−1 Talisman slot', 'bad']] });
 // Stakes stack: earlier penalties show dimmed, the new one in red.
 // Each Stake lists what it adds (bad) under everything it keeps from the Stakes below (old).
 const STAKE_NEW = { red: ['Small Blinds pay nothing'], green: ['Targets ×1.3'], black: ['Talismans cost ¥2 more', 'Eternal Talismans'], blue: ['−1 Discard'], purple: ['Targets +5% per Ante'], orange: ['Perishable Talismans'], gold: ['Rental Talismans'] };
@@ -2156,6 +2198,16 @@ function copySeed(btn) {
   try { navigator.clipboard.writeText(txt).then(done, () => fallback()); } catch (e) { fallback(); }
   function fallback() { const r = document.createRange(); const code = btn.previousElementSibling; if (code) { r.selectNodeContents(code); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r); btn.textContent = 'Selected'; setTimeout(() => { btn.textContent = 'Copy'; }, 1200); } }
 }
+// Balatro-style hover: Talisman and shop cards tilt toward the mouse with a soft shine. Off while dragging or with reduced motion.
+let tiltEl = null;
+document.addEventListener('pointermove', e => {
+  if (!motionOK || drag || slotDrag) { if (tiltEl) tiltEl.classList.remove('tilting'); tiltEl = null; return; }
+  const el = e.target.closest && e.target.closest('.shelf .shopcard, .packmodal .shop-grid:not(.owned-grid) .shopcard, #talismans .slot.filled');
+  if (tiltEl && tiltEl !== el) tiltEl.classList.remove('tilting'); tiltEl = el; if (!el) return;
+  el.classList.add('tiltcard', 'tilting'); if (!el.querySelector('.cshine')) el.insertAdjacentHTML('beforeend', '<span class="cshine" aria-hidden="true"></span>');
+  const r = el.getBoundingClientRect(), x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+  el.style.setProperty('--rx', ((.5 - y) * 10).toFixed(1) + 'deg'); el.style.setProperty('--ry', ((x - .5) * 12).toFixed(1) + 'deg'); el.style.setProperty('--mx', (x * 100).toFixed(0) + '%'); el.style.setProperty('--my', (y * 100).toFixed(0) + '%');
+});
 function bindEvents() {
   $('#btnPlay').onclick = doPlay; $('#btnDiscard').onclick = doDiscard; $('#btnCall').onclick = doCall; $('#btnKan').onclick = doDeclareKan;
   $('#btnClear').onclick = () => { S.selected = []; S.selRiver = null; render(); };
@@ -2186,6 +2238,10 @@ function bindEvents() {
     if (t.dataset.settilenums) { TILE_NUMS = t.dataset.settilenums; try { localStorage.setItem('yakuman.tilenums', TILE_NUMS); } catch (e) { } render(); showModal(settingsHTML(), true); return; }
     if (t.dataset.sethint) { HINTS[t.dataset.sethint] = !HINTS[t.dataset.sethint]; try { localStorage.setItem('yakuman.hints', JSON.stringify(HINTS)); } catch (e) { } render(); showModal(settingsHTML(), true); return; }
     if (t.dataset.setsound) { SOUND = t.dataset.setsound === 'on'; try { localStorage.setItem('yakuman.sound', SOUND ? 'on' : 'off'); } catch (e) { } if (SOUND) { audioCtx(); setTimeout(() => sfx('select'), 30); } showModal(settingsHTML(), true); return; }
+    // Reset settings: the first click asks, the second clears every saved setting and reloads with the defaults (the run is saved first).
+    if (t.id === 'mResetSettings') { if (t.dataset.armed) { save(); for (const k of SETTING_KEYS) { try { localStorage.removeItem(k); } catch (e) { } } location.reload(); return; } t.dataset.armed = '1'; t.textContent = 'Click again to reset'; t.classList.add('danger'); return; }
+    if (t.dataset.setshake) { SHAKE = t.dataset.setshake === 'on'; try { localStorage.setItem('yakuman.shake', SHAKE ? 'on' : 'off'); } catch (e) { } showModal(settingsHTML(), true); return; }
+    if (t.dataset.setcrt) { CRT = t.dataset.setcrt === 'on'; try { localStorage.setItem('yakuman.crt', CRT ? 'on' : 'off'); } catch (e) { } document.body.classList.toggle('crt', CRT); showModal(settingsHTML(), true); return; }
     if (t.dataset.setmusic) { MUSIC = t.dataset.setmusic === 'on'; try { localStorage.setItem('yakuman.music', MUSIC ? 'on' : 'off'); } catch (e) { } if (MUSIC) musicStart(); else musicStop(); showModal(settingsHTML(), true); return; }
     if (t.dataset.setbg) { BG_ANIM = t.dataset.setbg === 'on'; try { localStorage.setItem('yakuman.bganim', BG_ANIM ? 'on' : 'off'); } catch (e) { } document.body.classList.toggle('bganim', BG_ANIM); showModal(settingsHTML(), true); return; }
     if (t.dataset.sethc) { HIGH_CONTRAST = t.dataset.sethc === 'on'; try { localStorage.setItem('yakuman.hc', HIGH_CONTRAST ? 'on' : 'off'); } catch (e) { } render(); showModal(settingsHTML(), true); return; }
@@ -2238,7 +2294,7 @@ function bindEvents() {
   });
 }
 function boot(saved) {
-  bindEvents(); document.body.classList.toggle('bganim', BG_ANIM);
+  bindEvents(); document.body.classList.toggle('bganim', BG_ANIM); document.body.classList.toggle('crt', CRT);
   if (saved && saved.phase && saved.deck) { S = saved; S.talState = S.talState || {}; (S.talismans || []).forEach(k => { if (String(k).includes('#')) talAlias(k); });
     // Resume the tile id counter above every id in the saved run, so tiles created later never collide with existing ones.
     let maxId = 0; for (const t of [...S.deck, ...S.hand, ...S.wall, ...S.river, ...S.played, ...(S.indicators || []), ...S.open.flatMap(m => m.tiles), ...((S.pack && S.pack.choices) || []).filter(c => c.tile).map(c => c.tile)]) if (t.id > maxId) maxId = t.id; tileSeq = Math.max(tileSeq, maxId);

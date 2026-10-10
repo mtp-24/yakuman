@@ -768,7 +768,7 @@ button.pulse{animation:btnpulse2 2.6s ease-out infinite}
 @media (prefers-reduced-motion:reduce){.slot[class*="ed-"]::before,.shopcard[class*="ed-"]::before,.slot[class*="ed-"]::after,.shopcard[class*="ed-"]::after{animation:none}}
 /* Edition overlays sit behind the card's text and contents, so names and descriptions stay crisp */
 .slot[class*="ed-"]::before,.shopcard[class*="ed-"]::before{z-index:0}
-.slot[class*="ed-"] > :not(.pricetag):not(.talpop):not(.offtag):not(.stkcorner),.shopcard[class*="ed-"] > :not(.pricetag):not(.talpop):not(.stkcorner){position:relative;z-index:1}
+.slot[class*="ed-"] > :not(.pricetag):not(.talpop):not(.offtag):not(.stkcorner):not(.cshine),.shopcard[class*="ed-"] > :not(.pricetag):not(.talpop):not(.stkcorner):not(.cshine){position:relative;z-index:1}
 .slot > .talpop{position:absolute;z-index:40}
 .shopcard[class*="ed-"] > .pricetag{z-index:2}
 /* The kind line (order, type, edition pill) stays on one row: the pill keeps its size at the right, the type label gives way */
@@ -867,4 +867,9 @@ button.pulse{animation:btnpulse2 2.6s ease-out infinite}
 body.bganim::before{content:'';position:fixed;inset:-25%;z-index:-1;pointer-events:none;background:radial-gradient(35% 30% at 30% 35%,rgba(64,160,130,.22),transparent 70%),radial-gradient(30% 28% at 72% 65%,rgba(217,164,65,.14),transparent 70%),radial-gradient(28% 26% at 60% 20%,rgba(120,80,170,.12),transparent 70%);animation:bgswirl 70s ease-in-out infinite alternate;will-change:transform}
 @keyframes bgswirl{0%{transform:rotate(0deg) scale(1)}50%{transform:rotate(14deg) scale(1.08) translate(2%,-1%)}100%{transform:rotate(-10deg) scale(1.04) translate(-2%,1%)}}
 @media (prefers-reduced-motion: reduce){body.bganim::before{animation:none}}
+/* Card hover tilt and shine (shop, pack and board Talismans), following the mouse */
+.tiltcard{transform-style:preserve-3d;transition:transform .12s ease-out} .shopcard.tiltcard.tilting,.slot.tiltcard.tilting{transform:perspective(700px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg)) translateY(-3px)!important}
+.tiltcard .cshine{position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:5;opacity:0;transition:opacity .15s;background:radial-gradient(circle at var(--mx,50%) var(--my,50%),rgba(255,255,255,.22),transparent 55%)} .tiltcard.tilting .cshine{opacity:1}
+/* CRT filter */
+body.crt::after{content:'';position:fixed;inset:0;z-index:90;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.14) 0 1px,transparent 1px 3px),radial-gradient(ellipse at center,transparent 60%,rgba(0,0,0,.45) 100%);mix-blend-mode:multiply}
 </style>

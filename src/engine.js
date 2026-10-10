@@ -321,6 +321,8 @@ function scoreCtxInner(S, kind, tiles, info) {
   if (S.boss === 'gatekeeper' && !S.firstPlayDone) { ctx.chips = 0; L('The Gatekeeper', 'first Play of the Blind: 0 Chips', { zero: true }); }
   if (ctx.furiten) { ctx.mult *= 0.5; L(ctx.claimed ? `Furiten (${ctx.winningTile} claimed from your River)` : `Furiten (${ctx.winningTile} is in your River)`, '×0.5 Mult', { xmult: 0.5 }); }
   ctx.mult = Math.round(ctx.mult * 100) / 100; ctx.chips = Math.max(0, ctx.chips);
+  // Plasma Wall: Chips and Mult meet in the middle before they multiply.
+  if (S.deckKey === 'plasma' && ctx.chips > 0) { const avg = Math.round((ctx.chips + ctx.mult) / 2 * 100) / 100; L('Plasma Wall', `balanced: ${fmtX(avg)} × ${fmtX(avg)}`, { info: true }); ctx.chips = avg; ctx.mult = avg; }
   ctx.total = Math.floor(ctx.chips * ctx.mult);
   return ctx;
 }

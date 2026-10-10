@@ -71,6 +71,13 @@ const DECKS = {
   gambler: { name: "Gambler's Wall", desc: '+1 Play and −1 Discard every Blind.' },
   merchant: { name: "Merchant's Wall", desc: `Start with ¥${CFG.startMoney + 16} and +1 consumable slot, but shop prices are +25%.` },
   abundant: { name: 'Abundant Wall', desc: '+2 hand size, −1 Play every Blind.' },
+  // Balatro's Plasma, Erratic, Ghost, Magic, Anaglyph and Painted Decks.
+  plasma: { name: 'Plasma Wall', desc: 'Chips and Mult are balanced (averaged) before they multiply, but every target is ×2.' },
+  erratic: { name: 'Erratic Wall', desc: '136 tiles drawn at random: some tiles turn up more than four times, others not at all.' },
+  ghost: { name: 'Ghost Wall', desc: 'Kami turn up in the shop far more often. Start with Izanami.' },
+  magic: { name: 'Magic Wall', desc: 'Start with Spring (+1 consumable slot) and two Slips of Echoes.' },
+  anaglyph: { name: 'Anaglyph Wall', desc: 'Gain a Double Tag after every Boss Blind you beat.' },
+  painted: { name: 'Painted Wall', desc: '+2 hand size, but −1 Talisman slot.' },
 };
 const STAKES = {
   white: { name: 'White Stake', desc: 'The standard game.' },
@@ -89,6 +96,7 @@ const STICKERS = {
   rental: { name: 'Rental', desc: 'Costs ¥3 at the end of every Blind.' },
 };
 function buildDeck(deckKey = 'standard') {
+  if (deckKey === 'erratic') { const d = []; for (let i = 0; i < 136; i++) { const n = Math.floor(rand() * 34), t = mkTile(SUITS[Math.floor(n / 9)], n % 9 + 1); if (t.suit !== 'z' && t.rank === 5 && rand() < .25) t.red = true; d.push(t); } return d; }
   const d = []; const suits = deckKey === 'lean' ? ['m', 'p'] : ['m', 'p', 's'];
   for (const s of suits) for (let r = 1; r <= 9; r++) for (let c = 0; c < 4; c++) {
     const red = r === 5 && (deckKey === 'red' || c === 0 || (s === 'p' && c === 1));
@@ -508,6 +516,7 @@ const TAGS = {
   boss: { name: 'Boss Tag', desc: 'Rerolls the next Boss.' },
   speed: { name: 'Speed Tag', desc: '+¥5 for every Blind you have skipped this run, right away.' },
   tile: { name: 'Tile Tag', desc: 'A free Mega Tile Pack opens in the next shop.' },
+  voucher: { name: 'Voucher Tag', desc: 'The next shop offers a second Flower.' },
   uncommon: { name: 'Uncommon Tag', desc: 'The next shop has a free Uncommon Talisman.' },
   rare: { name: 'Rare Tag', desc: 'The next shop has a free Rare Talisman.' },
   double: { name: 'Double Tag', desc: 'The next Tag you get counts twice (except another Double Tag).' },
