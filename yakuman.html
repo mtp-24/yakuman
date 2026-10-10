@@ -884,6 +884,7 @@ body.crt-full #app,body.crt-full #overlay{filter:url(#crtfx)} #crtbezel{display:
 /* The Shop and packs keep their usual look (noren banner, felt shelves, rail) and slide up as a tray to the screen's bottom edge */
 .overlay.shoptray .modal.traymodal{min-height:100%;max-width:none;width:100%;box-sizing:border-box;background:var(--panel);border:1px solid var(--line);border-bottom:0;border-radius:12px 12px 0 0;box-shadow:0 -12px 34px rgba(0,0,0,.6)}
 .slot.filled.sel{outline:2px solid var(--accent);outline-offset:1px}
+.overlay.shoptray{padding:0} .overlay.shoptray .modal.shopmodal{padding-top:0} .overlay.shoptray .modal.packmodal{padding-top:20px}
 /* Shop: the buttons in a bar under the banner, the shelves side by side. Each shelf is as wide as its cards (--n of them) and they wrap. */
 .shoprail.shopbar{flex-direction:row;flex-wrap:wrap;position:static;gap:10px;margin:0 0 22px} .shopbar button{width:auto;flex:1 1 150px} .shopbar .nextbtn{flex:1.6 1 220px}
 .shoprail.shopbar .nextbtn.primary{min-height:0;padding:10px 16px;justify-content:center} .shopbar .railbtn{min-height:0}
@@ -3620,7 +3621,8 @@ function placeOverlay(boardOnly, mode) {
   board.classList.add('cashdim'); board.classList.toggle('shopdim', mode === 'shop'); board.style.setProperty('--cut', cut + 'px');
   const otop = mode === 'shop' ? Math.max(0, top + cut + 2) : top;
   ov.classList.add('boardonly'); ov.classList.toggle('shoptray', mode === 'shop'); Object.assign(ov.style, { left: b.left + 'px', top: otop + 'px', width: b.width + 'px', height: (bottom - otop) + 'px' });
-  if (mode === 'shop') { ov.style.setProperty('--reach', '0px'); return; }
+  // The Shop tray lines up with the Talisman and consumable row above it.
+  if (mode === 'shop') { if (tz) { const t = tz.getBoundingClientRect(); Object.assign(ov.style, { left: t.left + 'px', width: t.width + 'px' }); } ov.style.setProperty('--reach', '0px'); return; }
   // The tray grows up from the screen's bottom edge until its contents sit around the middle of the screen
   // (and always far enough to cover the action bar).
   const m = $('#modal'), kids = [...m.children], ac = board.querySelector('.actions');

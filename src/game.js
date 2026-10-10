@@ -1641,7 +1641,8 @@ function placeOverlay(boardOnly, mode) {
   board.classList.add('cashdim'); board.classList.toggle('shopdim', mode === 'shop'); board.style.setProperty('--cut', cut + 'px');
   const otop = mode === 'shop' ? Math.max(0, top + cut + 2) : top;
   ov.classList.add('boardonly'); ov.classList.toggle('shoptray', mode === 'shop'); Object.assign(ov.style, { left: b.left + 'px', top: otop + 'px', width: b.width + 'px', height: (bottom - otop) + 'px' });
-  if (mode === 'shop') { ov.style.setProperty('--reach', '0px'); return; }
+  // The Shop tray lines up with the Talisman and consumable row above it.
+  if (mode === 'shop') { if (tz) { const t = tz.getBoundingClientRect(); Object.assign(ov.style, { left: t.left + 'px', width: t.width + 'px' }); } ov.style.setProperty('--reach', '0px'); return; }
   // The tray grows up from the screen's bottom edge until its contents sit around the middle of the screen
   // (and always far enough to cover the action bar).
   const m = $('#modal'), kids = [...m.children], ac = board.querySelector('.actions');
