@@ -1082,6 +1082,8 @@ body.reducemotion *,body.reducemotion *::before,body.reducemotion *::after,body.
 .menumodal .herogrid button:hover{border-color:rgba(243,199,104,.75);background:linear-gradient(180deg,rgba(243,199,104,.12),rgba(243,199,104,.03)),rgba(10,18,15,.5);transform:translateY(-1px)}
 .menumodal .herofoot{margin-top:18px;animation:herofade .6s ease-out 1.4s both}
 @media (max-width:520px){.menumodal .herotitle{font-size:64px} .menumodal .herotiles .tile{--tw:44px;--th:calc(44px * 1.36)} .menumodal .herotiles{height:92px}}
+.rrow .rcnt{display:inline-block;margin-left:6px;padding:0 7px;border-radius:6px;background:rgba(43,108,176,.35);border:1px solid rgba(111,176,240,.55);color:#cfe6ff;font-family:var(--display);font-weight:600}
+.flowerchip{position:relative;display:inline-block} .flowerchip.flowpop{animation:slotpop .3s cubic-bezier(.25,.8,.35,1)} .flowerchip > .bpop{position:absolute;z-index:40}
 </style>
 <div id="app">
 <header>
@@ -2179,7 +2181,12 @@ let HINTS = { away: true, waits: false, without: false };
 let TILE_NUMS = 'some'; try { TILE_NUMS = localStorage.getItem('yakuman.tilenums') || 'some'; } catch (e) { } try { Object.assign(HINTS, JSON.parse(localStorage.getItem('yakuman.hints') || '{}')); } catch (e) { }
 // Animation speed stretches or shortens everything you wait on (scoring, trays, flights, deal-ins); Instant scoring
 // is separate and skips the scoring animation only. An old 'instant' speed becomes Normal with Instant scoring on.
-const SPEEDS = { slow: 2, normal: 1, fast: 0.5 };
+// Normal runs everything at 1.5x the original pace (chosen in the popup lab); Slow and Fast are half and double that.
+const SPEEDS = { slow: 4 / 3, normal: 2 / 3, fast: 1 / 3 };
+// Chained scoring popups: a tile's scores come one at a time, and each popup pops its tile, plays its sound and adds its
+// value at that moment; the next waits for this one's hold time. Tuned in mockups/popup-lab.html.
+let CHAIN_POPS = true;
+const popHold = text => 360 + Math.min(8, String(text).length) * 10;
 let ANIM_SPEED = 'normal', INSTANT_SCORE = false;
 try { const v = localStorage.getItem('yakuman.speed'); if (SPEEDS[v] !== undefined) ANIM_SPEED = v; INSTANT_SCORE = localStorage.getItem('yakuman.instantscore') === 'on' || v === 'instant'; if (v === 'instant') { localStorage.setItem('yakuman.instantscore', 'on'); localStorage.removeItem('yakuman.speed'); } } catch (e) { }
 let HK_RE = null, HK_MAP = null;
@@ -3663,7 +3670,7 @@ function renderBlind() {
   const extras = [];
   if (S.indicators.length) extras.push(`<div class="sx-row"><span class="label">Dora</span><div class="sx-val" id="doraRow"></div></div>`);
   if (S.tags && S.tags.length) extras.push(`<div class="sx-row"><span class="label">Tags</span><div class="sx-val tags">${S.tags.map(t => `<span class="tagchip" data-hc-kind="Tag" data-hc-title="${TAGS[t].name}" data-hc-body="${TAGS[t].desc.replace(/"/g, '&quot;')}">${TAGS[t].name}</span>`).join('')}</div></div>`);
-  if (S.flowers.length) extras.push(`<div class="sx-row"><span class="label">Flowers</span><div class="sx-val flowers">${S.flowers.map(f => `<span class="flowerchip" data-hc-kind="Flower" data-hc-title="${FLW[f].name}" data-hc-body="${FLW[f].desc.replace(/"/g, '&quot;')}">${FLW[f].name}</span>`).join('')}</div></div>`);
+  if (S.flowers.length) extras.push(`<div class="sx-row"><span class="label">Flowers</span><div class="sx-val flowers">${S.flowers.map(f => `<span class="flowerchip" data-flw="${f}" data-hc-kind="Flower" data-hc-title="${FLW[f].name}" data-hc-body="${FLW[f].desc.replace(/"/g, '&quot;')}">${FLW[f].name}</span>`).join('')}</div></div>`);
   if (extras.length) h += `<div class="sidextra">${extras.join('')}</div>`;
   $('#blindCard').innerHTML = h;
   if (S.indicators.length) { const row = $('#doraRow'); for (const t of S.indicators) { const e = tileEl(t, { small: true }); e.style.cursor = 'default'; const d = tileFromIdx(nextDora(idx(t))); e.title = 'Indicator: ' + tileName(t) + ' → Dora is ' + tileName(d); row.appendChild(e); } row.insertAdjacentHTML('beforeend', `<span class="sx-note">→ ${S.dora.map(i => tileName(tileFromIdx(i))).join(', ')}</span>`); }
@@ -4049,11 +4056,12 @@ async function animateScore(ctx) {
   const curMult = () => mult === null ? hanMult(han) * tileX + tileM : mult;
   let lastChips = null, lastMult = null, lastHan = null; const fitLen = { c: 0, m: 0 }; let chipN = 0, multN = 0;
   const bump = (el, cls) => { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); };
-  const setMath = () => {
+  // quiet: a chained popup plays the sound for this change itself
+  const setMath = quiet => {
     const c = Math.max(0, Math.round(chips)), m = fmtMult(curMult());
     chipsEl.textContent = c; multEl.textContent = m;
     // Like Balatro: the numbers pop and wobble, the boxes stay put.
-    if (lastChips !== null && c !== lastChips) { juice(chipsEl); sfx('chip', chipN++); } if (lastMult !== null && m !== lastMult) { juice(multEl, 1.15); sfx(+m >= +lastMult * 1.4 && lastMult > 1 ? 'xmult' : 'mult', multN++); }
+    if (lastChips !== null && c !== lastChips) { juice(chipsEl); if (!quiet) sfx('chip', chipN++); } if (lastMult !== null && m !== lastMult) { juice(multEl, 1.15); if (!quiet) sfx(+m >= +lastMult * 1.4 && lastMult > 1 ? 'xmult' : 'mult', multN++); }
     const hv = Math.round(han); hanEl.textContent = hv; tierEl.textContent = tr(tierText(hv)); hanPill.classList.toggle('done', mult !== null);
     if (lastHan !== null && hv !== lastHan) juice(hanPill.querySelector('.hanline'), .6);
     // Re-fit only when the number of characters changes, so layout isn't recalculated on every tick.
@@ -4062,8 +4070,14 @@ async function animateScore(ctx) {
   };
   const showLine = l => { const d = document.createElement('div'); d.className = 'row sline' + lineCls(l); d.dataset.li = ctx.lines.indexOf(l); d.innerHTML = `<span>${tr(l.label)}</span><span class="num">${tr(l.val)}</span>`; linesBox.appendChild(d); if (l.tal && !/retrigger/.test(l.label)) { const slot = document.querySelector(`.slot[data-tal="${l.tal}"]`); if (slot) { slot.classList.remove('bounce'); void slot.offsetWidth; slot.classList.add('bounce');
       // the Talisman's effect pops under its slot, coloured like the tile badges
-      const v = /retrigger/.test(l.label) ? '' : tr(l.val || ''); if (v) scorePop(slot, /×|^x/i.test(v) ? 'x' : /Mult/.test(v) ? 'mult' : /Chip/.test(v) ? 'chips' : /Han|Faan/.test(v) ? 'han' : /[¥$]/.test(v) ? 'money' : 'info', v, true); } } };
-  const applyLine = l => { if (l.zero) chips = 0; else { chips += l.chips || 0; han += l.han || 0; if (l.convert) mult = hanMult(han) * tileX + tileM; if (l.mult) mult = (mult === null ? hanMult(han) * tileX + tileM : mult) + l.mult; if (l.xmult && mult !== null) mult *= l.xmult; } setMath(); };
+      const v = /retrigger/.test(l.label) ? '' : tr(l.val || ''); if (v) { const kind = /×|^x/i.test(v) ? 'x' : /Mult/.test(v) ? 'mult' : /Chip/.test(v) ? 'chips' : /Han|Faan/.test(v) ? 'han' : /[¥$]/.test(v) ? 'money' : 'info'; scorePop(slot, kind, v, true); lastPop = { kind, v }; if (kind === 'money') bumpPurse(+((v.match(/[¥$](\d+)/) || [])[1] || 0)); } } } };
+  let lastPop = null;
+  // The play's money is banked once scoring ends, but the purse counts up as each +¥ popup appears, with a bounce
+  let purse = S.money;
+  const bumpPurse = v => { if (!(v > 0)) return; purse += v; const el = $('#purseVal'); if (!el) return; el.textContent = money(LANG === 'hk' ? '$' : '¥', purse); fitText(el); juice(el, .7); };
+  // the sound of a chained popup, climbing with each Chips or Mult popup in the play
+  const popSound = kind => kind === 'chips' ? sfx('chip', chipN++) : kind === 'han' || kind === 'mult' ? sfx('mult', multN++) : kind === 'x' ? sfx('xmult') : kind === 'money' ? sfx('coin') : kind === 'again' ? sfx('call') : null;
+  const applyLine = (l, quiet) => { if (l.zero) chips = 0; else { chips += l.chips || 0; han += l.han || 0; if (l.convert) mult = hanMult(han) * tileX + tileM; if (l.mult) mult = (mult === null ? hanMult(han) * tileX + tileM : mult) + l.mult; if (l.xmult && mult !== null) mult *= l.xmult; } setMath(quiet); };
   let fire = 0;
   // Hanabi: once a play beats the target, rockets shoot up from below the Chips and Mult boxes and burst above them.
   // One rocket at 1x the target, two more at 3x, three more at 10x and then one every 0.7 s until scoring ends.
@@ -4110,12 +4124,20 @@ async function animateScore(ctx) {
   // reveal changes; the totals are the engine's.
   const perOf = h => ({ chips: h.chips / h.times, han: h.han / h.times, x: Math.pow(h.xmult, 1 / h.times), m: (h.mult || 0) / h.times, money: (h.money || 0) / h.times });
   const popSlot = (el, text, cls) => { if (!el) return; el.classList.remove('bounce'); void el.offsetWidth; el.classList.add('bounce'); scorePop(el, cls, text, true); };
-  const hitOnce = async (h, again) => {
+  // byCharm: a Talisman caused this retrigger and has shown Again! on its own slot, so the tile does not repeat it
+  const hitOnce = async (h, again, byCharm) => {
     const e = tileEls.get(h.id), per = perOf(h);
+    if (CHAIN_POPS && e) {
+      logHit(h, per);
+      const steps = [again && !byCharm ? ['again', 'Again!', () => { }] : null, per.chips ? ['chips', `+${Math.round(per.chips)}`, () => { chips += per.chips; }] : null, per.han ? ['han', tr(`+${per.han} Han`), () => { han += per.han; }] : null, per.m ? ['mult', `+${fmtMult(per.m)} Mult`, () => { tileM += per.m; }] : null, per.x !== 1 ? ['x', `×${fmtMult(per.x)}`, () => { tileX *= per.x; }] : null, per.money >= 1 ? ['money', `+¥${Math.round(per.money)}`, () => bumpPurse(Math.round(per.money))] : null].filter(Boolean);
+      for (const [c, t, add] of steps) { e.classList.remove('hit'); void e.offsetWidth; e.classList.add('hit'); scorePop(e, c, tr(t)); popSound(c); add(); setMath(true); heat(); await wait(popHold(t)); }
+      if (!steps.length) await wait(150);
+      return;
+    }
     if (e) { e.classList.remove('hit'); void e.offsetWidth; e.classList.add('hit');
       const pills = [again ? ['again', 'Again!'] : null, per.chips ? ['chips', `+${Math.round(per.chips)}`] : null, per.han ? ['han', tr(`+${per.han} Han`)] : null, per.m ? ['mult', `+${fmtMult(per.m)} Mult`] : null, per.x !== 1 ? ['x', `×${fmtMult(per.x)}`] : null, per.money >= 1 ? ['money', `+¥${Math.round(per.money)}`] : null].filter(Boolean);
       // one after another, each clearing the one before it on this tile
-      pills.forEach(([c, t], k) => k ? setTimeout(() => scorePop(e, c, tr(t)), spd(k * 110)) : scorePop(e, c, tr(t))); }
+      pills.forEach(([c, t], k) => { const go = () => { scorePop(e, c, tr(t)); if (c === 'money') bumpPurse(Math.round(per.money)); }; if (k) setTimeout(go, spd(k * 110)); else go(); }); }
     chips += per.chips; han += per.han; tileX *= per.x; tileM += per.m; setMath(); heat(); logHit(h, per);
     await wait(again ? 220 : 150);
   };
@@ -4148,16 +4170,19 @@ async function animateScore(ctx) {
   const sources = {};
   for (const h of ctx.hits) {
     for (let r = 0; r < h.times; r++) {
+      let byCharm = false;
       if (r > 0) { const src = (h.who || [])[r - 1] || 'Red Seal'; sources[src] = (sources[src] || 0) + 1;
-        if (charmNames.has(src)) popSlot(document.querySelector(`.slot[data-tal="${src}"]`), 'Again!', 'again');
+        // a Talisman's retrigger shows Again! on the Talisman; a Red Seal's shows it on the tile
+        byCharm = charmNames.has(src) && !!document.querySelector(`.slot[data-tal="${src}"]`);
+        if (byCharm) { popSlot(document.querySelector(`.slot[data-tal="${src}"]`), 'Again!', 'again'); if (CHAIN_POPS) { popSound('again'); await wait(popHold('Again!')); } }
         liveRow(src, `${src}: retrigger ×${sources[src]}`, 'tiles scored again', 'tal'); }
-      await hitOnce(h, r > 0);
+      await hitOnce(h, r > 0, byCharm);
     }
     const e = tileEls.get(h.id); if (e) e.classList.remove('hit');
   }
   const liveKey = keyOf;
   for (const l of ctx.lines) { const k = liveKey(l); if (k && live.has(k)) liveRow(k, l.label, l.val); }
-  for (const l of ctx.lines) { const k = liveKey(l); if (isStart(l) || (k && live.has(k))) continue; if (l.tiles) continue; showLine(l); if (!l.info) applyLine(l); heat(); await wait(180); }
+  for (const l of ctx.lines) { const k = liveKey(l); if (isStart(l) || (k && live.has(k))) continue; if (l.tiles) continue; lastPop = null; showLine(l); const pk = CHAIN_POPS && lastPop; if (pk) popSound(pk.kind); if (!l.info) applyLine(l, !!pk); heat(); await wait(pk ? popHold(pk.v) : 180); }
   chips = ctx.chips; han = ctx.han; mult = ctx.mult; setMath(); heat();
   await wait(350);
   // the total replaces the play name, then counts down into the round score
@@ -4410,9 +4435,9 @@ function animateCashout() {
   rows.forEach((x, i) => setTimeout(() => {
     x.style.opacity = ''; x.animate([{ opacity: 0, transform: 'translateY(18px) rotate(-1.5deg) scale(.96)' }, { opacity: 1, transform: 'translateY(-2px) scale(1.01)', offset: .7 }, { opacity: 1, transform: 'none' }], { duration: 300, easing: 'cubic-bezier(.2,.8,.2,1)' });   // dealt in like the Shop's cards
     countUp(x.querySelector('b'), 0, vals[i], 220, cur, 'coin');
-    // a Talisman's line makes that Talisman bounce and pop its amount, as in scoring
-    const sl = x.dataset.tal && document.querySelector(`#talismans .slot[data-key="${x.dataset.tal}"]`);
-    if (sl && sl.getClientRects().length) { sl.classList.remove('bounce'); void sl.offsetWidth; sl.classList.add('bounce'); scorePop(sl, vals[i] < 0 ? 'mult' : 'money', (vals[i] < 0 ? '' : '+') + money(cur, vals[i]), true); }
+    // the Talisman (or Flower) that paid this line bounces and pops its amount, as in scoring
+    const src = x.dataset.src && document.querySelector(x.dataset.src);
+    if (src && src.getClientRects().length) { const cls = src.classList.contains('slot') ? 'bounce' : 'flowpop'; src.classList.remove(cls); void src.offsetWidth; src.classList.add(cls); scorePop(src, vals[i] < 0 ? 'mult' : 'money', (vals[i] < 0 ? '' : '+') + money(cur, vals[i]), true); }
   }, spd(260 + i * 260)));
   const tStart = 260 + rows.length * 260 + 80;
   setTimeout(() => countUp(amt, 0, r.total, 380, cur, 'coin'), spd(tStart));
@@ -4445,13 +4470,16 @@ function cashoutHTML() {
   const r = S.reward; const names = { small: 'Small Blind', big: 'Big Blind', boss: 'Boss Blind' };
   const bossName = r.kind === 'boss' && S.stats.bosses.length ? BOSSES[S.stats.bosses[S.stats.bosses.length - 1]].name : null;
   const cap = interestCap();
-  const talRows = r.talPay ? r.talPay.map(([k, v]) => [TAL[k] ? TAL[k].name : k, 'Talisman', v, k]) : r.tal ? [['Talismans', 'end-of-Blind payouts', r.tal]] : [];   // older saves only kept the total
-  const rows = [['Blind reward', names[r.kind], r.base], ['Unused Plays', `${r.left} × ¥1`, r.left], ['Interest', `¥1 per ¥${CFG.interestPer} held, up to ¥${cap}`, r.interest], ...talRows, r.summer ? ['Summer', 'Flower', r.summer] : null, r.invest ? ['Investment Tag', 'Boss bonus', r.invest] : null, ...(r.rent || []).map(([k, v]) => [TAL[k] ? TAL[k].name : k, 'Rental', -v, k])].filter(Boolean);
+  // Each row: label, note, amount, and what paid it (it pops as the row counts in). Older saves only kept the Talisman total.
+  const talSlot = k => `#talismans .slot[data-key="${k}"]`;
+  const talRows = r.talPay ? r.talPay.map(([k, v]) => [TAL[k] ? TAL[k].name : k, 'Talisman', v, talSlot(k)]) : r.tal ? [['Talismans', 'end-of-Blind payouts', r.tal]] : [];
+  const rows = [['Blind reward', names[r.kind], r.base], [`Unused Plays <span class="rcnt">${r.left}</span>`, '¥1 each', r.left], ['Interest', `¥1 per ¥${CFG.interestPer} held, up to ¥${cap}`, r.interest], ...talRows, r.summer ? ['Summer', 'Flower', r.summer, '.sidextra .flowerchip[data-flw^="summer"]'] : null, r.invest ? ['Investment Tag', 'Boss bonus', r.invest] : null, ...(r.rent || []).map(([k, v]) => [TAL[k] ? TAL[k].name : k, 'Rental', -v, talSlot(k)])].filter(Boolean);
   const cur = LANG === 'hk' ? '$' : '¥';
   let h = `<div class="drawhead"><h2>${bossName ? bossName + ' beaten' : 'Blind cleared'}</h2></div>`;
   // Like Balatro, the Cash Out button sits on top and the reward rows fill in beneath it, so the button never moves.
   h += `<button id="mCashOut" class="primary cashbtn">Cash Out <span class="cashamt"><span class="coin" aria-hidden="true">${coinSVG()}</span><span class="num">${money(cur, r.total)}</span></span></button>`;
-  h += `<div class="receipt">${rows.map(([k, d, v, tk]) => `<div class="rrow"${tk ? ` data-tal="${tk}"` : ''}><span class="rl">${k}</span><span class="rd muted">${d}</span><span class="rlead" aria-hidden="true"></span><b class="num${v < 0 ? ' neg' : ''}" data-v="${v}">${money('¥', v)}</b></div>`).join('')}</div>`;
+  const amt = v => `<b class="num${v < 0 ? ' neg' : ''}" data-v="${v}">${money('¥', v)}</b>`;
+  h += `<div class="receipt">${rows.map(([k, d, v, src]) => `<div class="rrow"${src ? ` data-src='${src}'` : ''}><span class="rl">${k}</span><span class="rd muted">${d}</span><span class="rlead" aria-hidden="true"></span>${amt(v)}</div>`).join('')}</div>`;
   return h;
 }
 // Same look as the play area's purse: the coin, the amount, and JPY or HKD underneath.
