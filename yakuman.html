@@ -891,6 +891,9 @@ button.pulse{animation:btnpulse2 2.6s ease-out infinite}
 .lrow{display:flex;justify-content:space-between;gap:10px;padding:2px 0} .lrow.yaku{color:var(--accent);font-weight:600} .lrow.tal{color:var(--info)} .lrow.bad{color:var(--bad)} .lrow.convert{color:var(--accent);border-top:1px dashed var(--line);margin-top:2px;padding-top:4px}
 /* Embers behind the Chips and Mult boxes (they sit at z-index 2), clipped to the scoring box */
 .emberlayer{position:absolute;inset:0;overflow:hidden;border-radius:inherit;pointer-events:none;z-index:1}
+/* The hotter the play (--heat 0 to 1, set while scoring), the bigger and brighter the embers and the stronger the glow under them */
+.emberlayer::before{content:'';position:absolute;left:-10%;right:-10%;bottom:-20%;height:75%;background:radial-gradient(ellipse 60% 70% at 50% 100%,rgba(255,120,30,.55),rgba(255,60,0,.18) 55%,transparent 75%);opacity:var(--heat,0);transition:opacity .3s}
+.emberlayer .ember{width:calc(5px + var(--heat,0) * 6px);height:calc(5px + var(--heat,0) * 6px);box-shadow:0 0 calc(var(--heat,0) * 10px) rgba(255,140,40,calc(.2 + var(--heat,0) * .6))}
 .emberlayer .ember{z-index:auto}
 /* Collection engravings: wide cards, the sample tile on a felt pad at the left, name and effect beside it */
 .colgrid.enggrid{grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
@@ -1085,16 +1088,8 @@ body.reducemotion *,body.reducemotion *::before,body.reducemotion *::after,body.
 @media (max-width:520px){.menumodal .herotitle{font-size:64px} .menumodal .herotiles .tile{--tw:44px;--th:calc(44px * 1.36)} .menumodal .herotiles{height:92px}}
 .rrow .rcnt{display:inline-block;margin-left:6px;padding:0 7px;border-radius:6px;background:rgba(43,108,176,.35);border:1px solid rgba(111,176,240,.55);color:#cfe6ff;font-family:var(--display);font-weight:600}
 .flowerchip{position:relative;display:inline-block} .flowerchip.flowpop{animation:slotpop .3s cubic-bezier(.25,.8,.35,1)} .flowerchip > .bpop{position:absolute;z-index:40}
-.handbox .boxwrap{position:relative;isolation:isolate} .handbox .hb-head{position:relative;z-index:2}
-/* Flames licking up from the top of the Chips (blue) and Mult (red) boxes; their size follows --heat (0 to 1) */
-.boxflame{position:absolute;left:3%;right:3%;bottom:calc(100% - 10px);height:64px;z-index:-1;pointer-events:none;transform-origin:50% 100%;transform:scaleY(var(--heat,0));opacity:min(1,calc(var(--heat,0) * 3));transition:transform .3s ease-out,opacity .3s}
-.boxflame b{position:absolute;bottom:0;width:30%;height:100%;border-radius:50% 50% 40% 40% / 70% 70% 30% 30%;background:radial-gradient(ellipse 50% 75% at 50% 100%,var(--f1) 0%,var(--f2) 45%,transparent 75%);transform-origin:50% 100%;animation:boxflick .36s ease-in-out infinite alternate;mix-blend-mode:screen}
-.boxflame b:nth-child(1){left:-4%;height:70%;animation-duration:.31s} .boxflame b:nth-child(2){left:16%;height:92%;animation-duration:.39s;animation-delay:-.1s} .boxflame b:nth-child(3){left:35%;height:100%;animation-duration:.34s;animation-delay:-.2s} .boxflame b:nth-child(4){left:54%;height:88%;animation-duration:.41s;animation-delay:-.05s} .boxflame b:nth-child(5){left:74%;height:72%;animation-duration:.33s;animation-delay:-.15s}
-.chipwrap .boxflame{--f1:#eaf6ff;--f2:#2f8fff} .multwrap .boxflame{--f1:#fff2c9;--f2:#ff4a1a}
-@keyframes boxflick{from{transform:scaleY(.8) scaleX(1.06) translateY(2px)}to{transform:scaleY(1.15) scaleX(.9) translateY(-2px)}}
+
 .handbox.hot .tot{text-shadow:0 0 calc(6px + var(--heat,0) * 14px) #ff6b1a,0 0 calc(14px + var(--heat,0) * 30px) #ff3d00}
-@media (prefers-reduced-motion:reduce){.boxflame b{animation:none}}
-body.reducemotion .boxflame b{animation:none}
 </style>
 </head><body>
 <div id="app">
@@ -3541,23 +3536,7 @@ function sWhoosh(t, dur = .2, g = .18, from = 500, to = 2400) {
   const env = AC.createGain(); env.gain.setValueAtTime(0, t); env.gain.linearRampToValueAtTime(g, t + dur * .4); env.gain.exponentialRampToValueAtTime(.0008, t + dur);
   src.connect(bp).connect(env).connect(MASTER); src.start(t); src.stop(t + dur + .02);
 }
-const SFX_GAP = { fwlaunch: .08, fwburst: .07, burn: .09, flip: .05, coin: .045, tick: .035, wall: .04, draw: .035, chip: .03, mult: .05, pop: .06, select: .02, deselect: .02 };
-// The fire under the score boxes: a looping, low-passed noise roar with crackles that swells with the flames (h from 0 to
-// 1) and fades out when scoring ends.
-let FIRE = null;
-function fireSound(h) {
-  const ac = audioCtx(); if (!ac || ac.state !== 'running' || !(h > 0)) return; const now = ac.currentTime;
-  if (!FIRE) {
-    const src = AC.createBufferSource(); src.buffer = NOISE; src.loop = true; const lp = AC.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 500; lp.Q.value = .7;
-    const g = AC.createGain(); g.gain.value = 0; src.connect(lp).connect(g).connect(MASTER); src.start();
-    FIRE = { src, lp, g, h: 0, tick: setInterval(() => { if (FIRE && AC.state === 'running' && Math.random() < .35 + FIRE.h * .6) sClack(AC.currentTime, 700 + Math.random() * 1500, .015, .03 + FIRE.h * .09); }, 70) };
-  }
-  FIRE.h = h; FIRE.g.gain.setTargetAtTime(.03 + .14 * h, now, .12); FIRE.lp.frequency.setTargetAtTime(500 + 2200 * h, now, .15);
-}
-function fireStop() {
-  if (!FIRE) return; const f = FIRE; FIRE = null; clearInterval(f.tick);
-  try { const now = AC.currentTime; f.g.gain.setTargetAtTime(0, now, .15); f.src.stop(now + .8); } catch (e) { }
-}
+const SFX_GAP = { burn: .09, flip: .05, coin: .045, tick: .035, wall: .04, draw: .035, chip: .03, mult: .05, pop: .06, select: .02, deselect: .02 };
 function sfx(name, n = 0) {
   const ac = audioCtx(); if (!ac || ac.state !== 'running') return;
   const now = ac.currentTime; if (SFX_LAST[name] && now - SFX_LAST[name] < (SFX_GAP[name] || .015)) return; SFX_LAST[name] = now;
@@ -3588,13 +3567,6 @@ function sfx(name, n = 0) {
       const env = AC.createGain(); env.gain.setValueAtTime(0, now); env.gain.linearRampToValueAtTime(.2, now + .06); env.gain.exponentialRampToValueAtTime(.0008, now + d + .12); src.connect(lp).connect(env).connect(MASTER); src.start(now); src.stop(now + d + .15);
       for (let k = 0; k < 9; k++) sClack(now + .04 + Math.random() * d * .9, 900 + Math.random() * 1600, .02, .1 + Math.random() * .1); break; }
     case 'flip': sClack(now, 3000, .035, .18); break;
-    // Fireworks: a rising whistle as the rocket climbs; the burst is a sharp crack over a low boom, then falling crackles
-    case 'fwlaunch': { const o = AC.createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(900, now); o.frequency.exponentialRampToValueAtTime(2600, now + .42);
-      const e = AC.createGain(); e.gain.setValueAtTime(0, now); e.gain.linearRampToValueAtTime(.035, now + .05); e.gain.linearRampToValueAtTime(.02, now + .38); e.gain.exponentialRampToValueAtTime(.0008, now + .46); o.connect(e).connect(MASTER); o.start(now); o.stop(now + .5);
-      sWhoosh(now, .42, .05, 1200, 5000); break; }
-    case 'fwburst': { const src = AC.createBufferSource(); src.buffer = NOISE; const hp = AC.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 900; const e = AC.createGain(); e.gain.setValueAtTime(.3, now); e.gain.exponentialRampToValueAtTime(.0008, now + .09); src.connect(hp).connect(e).connect(MASTER); src.start(now); src.stop(now + .12);
-      sTone(now, 95, 'sine', .45, .22, 45);
-      for (let k = 0; k < 10; k++) sClack(now + .12 + Math.random() * .6, 2400 + Math.random() * 2600, .012, .05 + Math.random() * .06); break; }
     case 'reroll': sWhoosh(now, .18, .14, 800, 3000); sClack(now + .08, 2600, .04, .2); sClack(now + .13, 3000, .04, .18); break;
     case 'pop': { const src = AC.createBufferSource(); src.buffer = NOISE; const lp = AC.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 900; const env = AC.createGain(); env.gain.setValueAtTime(.18, now); env.gain.exponentialRampToValueAtTime(.0008, now + .18); src.connect(lp).connect(env).connect(MASTER); src.start(now); src.stop(now + .2); break; }
   }
@@ -4121,7 +4093,7 @@ async function animateScore(ctx) {
   const FW = ['#ffd27a', '#7fd0ff', '#ff8a7a', '#f6b6c8', '#c9a7e8', '#bff3d1'];
   let fwTimer = null;
   const burst = (x, y, col) => {
-    if (!fx.isConnected) return; sfx('fwburst');
+    if (!fx.isConnected) return; sfx('pop');
     const n = 16 + fire * 4, R = 24 + fire * 9;
     const fl = document.createElement('i'); fl.className = 'fwflash'; fl.style.cssText = `left:${x}px;top:${y}px;--c:${col}`; fx.appendChild(fl);
     fl.animate([{ transform: 'translate(-50%,-50%) scale(.2)', opacity: .95 }, { transform: 'translate(-50%,-50%) scale(1.7)', opacity: 0 }], { duration: 380, easing: 'ease-out', fill: 'both' }).onfinish = () => fl.remove();
@@ -4135,21 +4107,22 @@ async function animateScore(ctx) {
   const launch = () => {
     if (!motionOK || skipAnim || !fx.isConnected) return;
     const W = box.clientWidth, top = mathEl.offsetTop, y0 = top + mathEl.offsetHeight - 4, x = W * (.12 + Math.random() * .76), y1 = top - 18 - Math.random() * 46, col = FW[Math.floor(Math.random() * FW.length)];
-    sfx('fwlaunch'); const r = document.createElement('i'); r.className = 'fwrocket'; r.style.cssText = `left:${x}px;top:${y0}px;--c:${col}`; fx.appendChild(r);
+    const r = document.createElement('i'); r.className = 'fwrocket'; r.style.cssText = `left:${x}px;top:${y0}px;--c:${col}`; fx.appendChild(r);
     r.animate([{ transform: 'translateY(0)', opacity: 1 }, { transform: `translateY(${y1 - y0}px)`, opacity: 1 }], { duration: 420 + Math.random() * 140, easing: 'cubic-bezier(.25,.6,.45,1)', fill: 'both' }).onfinish = () => { r.remove(); burst(x, y1, col); };
   };
-  // The flames grow smoothly with how far past the target the play is, as in Balatro: blue on Chips and red on Mult, lit at
-  // 1x the target and at full size by 30x, with embers and the fire's roar growing with them. The fireworks and the
-  // screen shake still come in steps, at 1x, 3x and 10x.
+  // The fire grows smoothly with how far past the target the play is, as in Balatro: the embers behind the Chips and Mult
+  // boxes (more of them, bigger, brighter and faster), a heat glow under them and the total's glow start at 1x the target
+  // and keep building to full strength at 100x. The fireworks and
+  // the screen shake still come in steps, at 1x, 3x and 10x.
   let flameH = 0;
   const heat = () => {
     const tot = Math.max(0, chips) * curMult(), q = S.target ? tot / S.target : 0, lvl = q >= 10 ? 3 : q >= 3 ? 2 : q >= 1 ? 1 : 0;
-    const h = q < 1 ? 0 : Math.min(1, .15 + .85 * Math.log10(q) / Math.log10(30));
+    const h = q < 1 ? 0 : Math.min(1, .15 + .85 * Math.log10(q) / 2);
     if (h > flameH) {
-      flameH = h; box.style.setProperty('--heat', h.toFixed(3)); fireSound(h);
-      if (!box.querySelector('.boxflame')) box.querySelectorAll('.chipwrap, .multwrap').forEach(w => w.insertAdjacentHTML('afterbegin', `<i class="boxflame" aria-hidden="true">${'<b></b>'.repeat(5)}</i>`));
+      flameH = h; box.style.setProperty('--heat', h.toFixed(3));
       let embers = box.querySelector('.emberlayer'); if (!embers) { embers = document.createElement('div'); embers.className = 'emberlayer'; embers.setAttribute('aria-hidden', 'true'); box.insertBefore(embers, box.firstChild); }
-      const want = Math.round(6 + h * 22); for (let i = embers.children.length; i < want; i++) { const em = document.createElement('i'); em.className = 'ember'; em.style.left = (8 + Math.random() * 84) + '%'; em.style.animationDelay = (Math.random() * 1.2) + 's'; em.style.animationDuration = (1.4 - h * .5 + Math.random() * .8) + 's'; embers.appendChild(em); }
+      const want = Math.round(6 + h * 54); for (let i = embers.querySelectorAll('.ember').length; i < want; i++) { const em = document.createElement('i'); em.className = 'ember'; em.style.left = (4 + Math.random() * 92) + '%'; em.style.animationDelay = (Math.random() * 1.2) + 's'; em.style.animationDuration = (1.5 - h * .8 + Math.random() * .6) + 's'; embers.appendChild(em); }
+      embers.querySelectorAll('.ember').forEach(em => { em.style.animationDuration = (1.5 - h * .8 + Math.random() * .6).toFixed(2) + 's'; });
     }
     if (lvl <= fire) return; const prev = fire; fire = lvl; box.dataset.fire = lvl; box.classList.toggle('hot', lvl >= 1);
     if (lvl >= 2 && SHAKE && motionOK) { const bd = document.querySelector('.board'); if (bd) bd.animate([{ transform: 'none' }, { transform: 'translate(-3px,1px)' }, { transform: 'translate(3px,-2px)' }, { transform: 'translate(-2px,2px)' }, { transform: 'translate(2px,-1px)' }, { transform: 'none' }], { duration: lvl === 3 ? 420 : 300, easing: 'ease-out' }); }
@@ -4237,7 +4210,7 @@ async function animateScore(ctx) {
   if (dur > 0) { const t0 = performance.now(); await new Promise(res => { const step = now => { const k = Math.min(1, (now - t0) / dur); const e = 1 - Math.pow(1 - k, 3); totEl.textContent = fmtN(Math.round(ctx.total * (1 - e))); if (rsEl) { const v = from + (to - from) * e; rsEl.textContent = fmtN(Math.round(v)); sfx('tick'); rsEl.classList.toggle('met', v >= S.target); const bar = $('#roundBar'); if (bar) bar.style.width = Math.min(100, 100 * v / S.target) + '%'; } if (k < 1) requestAnimationFrame(step); else res(); }; requestAnimationFrame(step); setTimeout(res, dur + 500); }); }
   if (rsEl) { rsEl.textContent = fmtN(to); fitText(rsEl); rsEl.classList.remove('bump'); void rsEl.offsetWidth; rsEl.classList.add('bump'); }
   await wait(250);
-  if (fwTimer) clearInterval(fwTimer); fireStop();
+  if (fwTimer) clearInterval(fwTimer);
   skipAnim = false;
 }
 // ===================== MODALS =====================
