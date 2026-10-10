@@ -173,6 +173,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 162: Collection engravings use wide cards: the sample tile sits on a felt pad at the left, the name and effect beside it, an accent edge in each engraving's colour, two or three cards per row.
 - Build 163: Engraving cards drop the coloured accent edge.
 - Build 164: Flowers in the side panel use the same hover card as tiles (a Flower label, the name and the effect) instead of the plain tooltip; the hover card now works for any element with data-hc-title.
+- Build 176: Music rebuilt in Balatro's style: one laid-back synth groove (D minor, 96 BPM, Dm7 – B♭maj7 – Gm7 – A7) with layers that crossfade: Normal (wobbly electric piano, syncopated bass, soft drums, a lead), Shop (adds a bouncy square arpeggio; also packs and cash-out) and Boss (adds a distorted driving bass, four-on-the-floor kick and a dark drone).
 - Build 175: Second Balatro batch (first-draft names and numbers).
   - Talisman labels redesigned with one shared renderer: rarity as coloured text, edition on the right, stickers as small corner badges (∞ Eternal, a number for Perishable, ✕ Perished, ¥ Rental). Board slots colour the order circle by rarity and use short edition names.
   - Normal, Jumbo and Mega sizes for every pack type. Eight new Tags: Uncommon, Rare, Double, Orbital, Top-up, D6, Handy, Garbage.

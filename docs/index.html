@@ -1957,7 +1957,7 @@ function settingsHTML() {
   <div class="setsec">Gameplay</div>
   <div class="setrow"><div><b>Helper hints</b><div class="muted">Shown under your hand. Tiles Away (on by default) says how many tiles you are from a complete hand. Waiting On lists the tiles you need, and Without These says whether the tiles you select can go without setting you back.</div></div><div class="setbtns">${[['away', 'Tiles Away'], ['waits', 'Waiting On'], ['without', 'Without These']].map(([k, n]) => `<button class="${HINTS[k] ? 'primary' : ''}" data-sethint="${k}">${n}</button>`).join('')}</div></div>
   <div class="setrow"><div><b>Sound</b><div class="muted">Tile clacks, scoring chimes and counters. Sound starts after your first click.</div></div><div class="setbtns"><button class="${SOUND ? 'primary' : ''}" data-setsound="on">On</button><button class="${!SOUND ? 'primary' : ''}" data-setsound="off">Off</button></div></div>
-  <div class="setrow"><div><b>Music</b><div class="muted">A quiet koto and pad loop in the Japanese In scale. Separate from Sound, and starts after your first click.</div></div><div class="setbtns"><button class="${MUSIC ? 'primary' : ''}" data-setmusic="on">On</button><button class="${!MUSIC ? 'primary' : ''}" data-setmusic="off">Off</button></div></div>
+  <div class="setrow"><div><b>Music</b><div class="muted">A laid-back synth groove in the style of Balatro, with a brighter Shop theme and a heavier Boss theme that crossfade as you play. Separate from Sound, and starts after your first click.</div></div><div class="setbtns"><button class="${MUSIC ? 'primary' : ''}" data-setmusic="on">On</button><button class="${!MUSIC ? 'primary' : ''}" data-setmusic="off">Off</button></div></div>
   <div class="setsec">Display</div>
   <div class="setrow"><div><b>Animated background</b><div class="muted">Slowly drifting light behind the table, like Balatro's swirl. Turned off automatically if your device asks for reduced motion.</div></div><div class="setbtns"><button class="${BG_ANIM ? 'primary' : ''}" data-setbg="on">On</button><button class="${!BG_ANIM ? 'primary' : ''}" data-setbg="off">Off</button></div></div>
   <div class="setrow"><div><b>High-contrast tiles</b><div class="muted">One strong colour per suit (Characters red, Dots blue, Bamboo green), with the number on every suited tile. Red Fives stay red with a red corner number.</div></div><div class="setbtns"><button class="${HIGH_CONTRAST ? 'primary' : ''}" data-sethc="on">On</button><button class="${!HIGH_CONTRAST ? 'primary' : ''}" data-sethc="off">Off</button></div></div>
@@ -2750,7 +2750,7 @@ function tileSVG(t) {
   return `<svg viewBox="0 0 54 74" aria-hidden="true">${body}</svg>`;
 }
 function render() {
-  if (!S) return; if (S.bossOrder) ensureBosses(); setRules(S); checkUnlocks();
+  if (!S) return; if (S.bossOrder) ensureBosses(); setRules(S); checkUnlocks(); if (musicTimer) musicSetMode(musicTheme());
   const motionBefore = tileSnapshot(), freshTiles = new Set(S.newIds || []);
   renderBlind(); renderTalismans(); renderConsumables(); renderOpen(); renderRiver(); renderHand(); renderActions(); renderLast();
   $('#msg').textContent = S.msg || ''; $('#msg').className = 'msg' + (S.msgErr ? ' err' : '');
@@ -2782,31 +2782,74 @@ function audioBase() {
 }
 ['pointerdown', 'keydown'].forEach(ev => document.addEventListener(ev, () => { if (SOUND) audioCtx(); if (MUSIC) musicStart(); }, true));
 // ===================== MUSIC =====================
-// A quiet generated loop in the Japanese In scale (D Eb G A Bb): slow pad chords and a low drone under sparse koto-like plucks.
-// It uses its own random numbers, never the run's, so seeds are unaffected. Starts after the first click, pauses in a hidden tab.
+// Balatro-style: one laid-back synth groove whose layers crossfade with the game, rather than separate tracks.
+// D minor at 96 BPM over Dm7 – B♭maj7 – Gm7 – A7. Normal: wobbly electric piano, syncopated bass, soft drums and a lead.
+// Shop: adds a bouncy square arpeggio. Boss Blind: adds a driving distorted bass, four-on-the-floor kick and a dark drone.
+// Uses its own random numbers, never the run's, so seeds are unaffected. Starts after the first click, pauses in a hidden tab.
 let MUSIC = (() => { try { return localStorage.getItem('yakuman.music') !== 'off'; } catch (e) { return true; } })();
-let MUSIC_GAIN = null, musicTimer = 0, musicStep = 0, musicAt = 0;
-const IN_SCALE = [293.66, 311.13, 392.0, 440.0, 466.16];
-function mNote(t, f, type, dur, g, attack = .01) {
-  const o = AC.createOscillator(); o.type = type; o.frequency.setValueAtTime(f, t);
-  const lp = AC.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = type === 'triangle' ? 2200 : 900;
-  const env = AC.createGain(); env.gain.setValueAtTime(0, t); env.gain.linearRampToValueAtTime(g, t + attack); env.gain.exponentialRampToValueAtTime(.0005, t + dur);
-  o.connect(lp).connect(env).connect(MUSIC_GAIN); o.start(t); o.stop(t + dur + .05);
+let MUSIC_GAIN = null, musicTimer = 0, musicStep = 0, musicAt = 0, MUSIC_BUS = null, MUSIC_LFO = null, musicMode = 'normal';
+const BPM = 96, STEP = 60 / BPM / 4;   // one 16th note
+const mf = n => 440 * Math.pow(2, (n - 69) / 12);
+const PROG = [{ root: 38, chord: [50, 53, 57, 60] }, { root: 34, chord: [46, 50, 53, 57] }, { root: 31, chord: [43, 46, 50, 53] }, { root: 33, chord: [45, 49, 52, 55] }];
+// Lead melody over the 4 bars: [bar, step, midi, length in steps]
+const LEAD = [[0, 0, 69, 4], [0, 4, 72, 2], [0, 6, 74, 6], [0, 12, 72, 2], [0, 14, 69, 2], [1, 0, 70, 6], [1, 6, 69, 2], [1, 8, 65, 8], [2, 0, 67, 4], [2, 4, 70, 2], [2, 6, 74, 4], [2, 10, 72, 2], [2, 12, 70, 4], [3, 0, 69, 6], [3, 6, 67, 2], [3, 8, 64, 4], [3, 12, 61, 4]];
+const BASS_STEPS = [[0, 0], [3, 0], [6, 12], [8, 0], [10, 7], [11, 0], [14, 12]];
+const MIX = { normal: { base: 1, shop: 0, boss: 0 }, shop: { base: .85, shop: 1, boss: 0 }, boss: { base: .9, shop: 0, boss: 1 } };
+function musicLayer(name) { return MUSIC_BUS[name]; }
+function mOsc(dest, t, f, type, dur, g, o = {}) {
+  const osc = AC.createOscillator(); osc.type = type; osc.frequency.setValueAtTime(f, t); if (o.detune) osc.detune.value = o.detune;
+  if (o.wobble && MUSIC_LFO) { MUSIC_LFO.connect(osc.detune); osc.onended = () => { try { MUSIC_LFO.disconnect(osc.detune); } catch (e) { } }; }   // let finished notes go
+  const env = AC.createGain(); env.gain.setValueAtTime(0, t); env.gain.linearRampToValueAtTime(g, t + (o.attack || .006)); env.gain.setTargetAtTime(g * (o.sustain ?? .6), t + (o.attack || .006), (o.decay || .12)); env.gain.setTargetAtTime(.0001, t + dur, o.release || .08);
+  let node = osc;
+  if (o.lp) { const lp = AC.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = o.lp; lp.Q.value = o.q || .7; node.connect(lp); node = lp; }
+  if (o.drive) { const ws = AC.createWaveShaper(); const c = new Float32Array(256); for (let k = 0; k < 256; k++) { const x = k / 128 - 1; c[k] = Math.tanh(x * o.drive); } ws.curve = c; node.connect(ws); node = ws; }
+  node.connect(env).connect(dest); osc.start(t); osc.stop(t + dur + (o.release || .08) * 6);
 }
+function mNoise(dest, t, dur, g, f, type = 'highpass') {
+  const src = AC.createBufferSource(); src.buffer = NOISE; const flt = AC.createBiquadFilter(); flt.type = type; flt.frequency.value = f;
+  const env = AC.createGain(); env.gain.setValueAtTime(g, t); env.gain.exponentialRampToValueAtTime(.0005, t + dur); src.connect(flt).connect(env).connect(dest); src.start(t); src.stop(t + dur + .02);
+}
+function mKick(dest, t, g) { const o = AC.createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(130, t); o.frequency.exponentialRampToValueAtTime(42, t + .14); const e = AC.createGain(); e.gain.setValueAtTime(g, t); e.gain.exponentialRampToValueAtTime(.001, t + .32); o.connect(e).connect(dest); o.start(t); o.stop(t + .35); }
 function musicTick() {
   if (!AC || !MUSIC_GAIN) return;
-  while (musicAt < AC.currentTime + .5) {
-    const t = musicAt, st = musicStep++;
-    if (st % 32 === 0) { const root = IN_SCALE[[0, 2, 3, 0][(st / 32) % 4]] / 2; mNote(t, root, 'sine', 9, .05, 2); mNote(t, root * 1.5, 'sine', 9, .03, 2.5); mNote(t, root / 2, 'sine', 9, .05, 1.5); }
-    if (st % 2 === 0 && Math.random() < .42) { const f = IN_SCALE[Math.floor(Math.random() * 5)] * (Math.random() < .3 ? 2 : 1); mNote(t, f, 'triangle', 1.6, .045); mNote(t, f * 2, 'sine', .8, .012); }
-    musicAt += .42;
+  const B = MUSIC_BUS;
+  while (musicAt < AC.currentTime + .4) {
+    const t = musicAt, st = musicStep++, bar = Math.floor(st / 16) % 4, s16 = st % 16, P = PROG[bar];
+    // Normal layer: electric piano comping (tremolo through the shared wobble), bass, soft drums, the lead.
+    if (s16 === 0 || s16 === 6 || s16 === 10) { const len = s16 === 0 ? STEP * 5 : STEP * 2.5; P.chord.forEach((n, k) => { mOsc(B.base, t + k * .008, mf(n), 'sine', len, .045, { wobble: true, lp: 2400, sustain: .5, decay: .25 }); mOsc(B.base, t + k * .008, mf(n) * 2, 'triangle', len * .6, .012, { lp: 3000 }); }); }
+    for (const [bs, iv] of BASS_STEPS) if (s16 === bs) mOsc(B.base, t, mf(P.root + iv), 'sawtooth', STEP * 1.6, .11, { lp: 520, q: 4, sustain: .4, decay: .09 });
+    if (s16 === 0 || s16 === 8) mKick(B.base, t, .5);
+    if (s16 === 4 || s16 === 12) mNoise(B.base, t, .14, .07, 1800, 'bandpass');
+    if (s16 % 2 === 0) mNoise(B.base, t, .04, s16 % 4 === 2 ? .025 : .012, 7000);
+    for (const [lb, ls, ln, ll] of LEAD) if (lb === bar && ls === s16) mOsc(B.base, t, mf(ln), 'triangle', STEP * ll * .95, .05, { wobble: true, lp: 3200, attack: .02, sustain: .75, decay: .3 });
+    // Shop layer: a bouncy square arpeggio over the chord, an octave up, plus a little offbeat shaker.
+    if (s16 % 2 === 0) { const arp = P.chord.concat([P.chord[0] + 12, P.chord[2] + 12]); const n = arp[(s16 / 2 + bar) % arp.length] + 12; mOsc(B.shop, t, mf(n), 'square', STEP * 1.2, .022, { lp: 2800, sustain: .3, decay: .06 }); }
+    if (s16 % 4 === 2) mNoise(B.shop, t, .06, .03, 5000);
+    // Boss layer: driving distorted bass in 8ths, four-on-the-floor kick, and a dark drone a semitone above the root.
+    if (s16 % 2 === 0) mOsc(B.boss, t, mf(P.root + (s16 % 8 === 6 ? 12 : 0)), 'sawtooth', STEP * 1.8, .07, { lp: 900, drive: 3, sustain: .5, decay: .1 });
+    if (s16 % 4 === 0) mKick(B.boss, t, .55);
+    if (s16 === 0) { mOsc(B.boss, t, mf(P.root + 25), 'sawtooth', STEP * 15, .018, { lp: 700, attack: .6, sustain: .9, decay: 1, release: .4 }); mOsc(B.boss, t, mf(P.root + 24), 'square', STEP * 15, .012, { lp: 600, attack: .8, sustain: .9, decay: 1, release: .4 }); }
+    if (s16 === 14 && bar === 3) mNoise(B.boss, t, .3, .06, 900, 'lowpass');
+    musicAt += STEP;
   }
+}
+// The theme for what is on screen: the Shop (and packs and cash-out), a Boss Blind, or everything else.
+function musicTheme() { if (!S || S.placeholder) return 'normal'; if (['shop', 'cashout'].includes(S.phase)) return 'shop'; if (S.phase === 'blind' && blindKind() === 'boss') return 'boss'; return 'normal'; }
+function musicSetMode(mode) {
+  if (!MUSIC_BUS || mode === musicMode) { musicMode = mode; return; } musicMode = mode; const now = AC.currentTime;
+  for (const [k, g] of Object.entries(MIX[mode])) { const p = MUSIC_BUS[k].gain; p.cancelScheduledValues(now); p.setTargetAtTime(g, now, .6); }
 }
 function musicStart() {
   if (!MUSIC || musicTimer || document.hidden) return; const ac = audioBase(); if (!ac) return;
-  if (!MUSIC_GAIN) { MUSIC_GAIN = AC.createGain(); MUSIC_GAIN.connect(AC.destination); }
-  MUSIC_GAIN.gain.cancelScheduledValues(AC.currentTime); MUSIC_GAIN.gain.setValueAtTime(0, AC.currentTime); MUSIC_GAIN.gain.linearRampToValueAtTime(.55, AC.currentTime + 2);
-  musicAt = AC.currentTime + .1; musicTimer = setInterval(musicTick, 200);
+  if (!MUSIC_GAIN) {
+    MUSIC_GAIN = AC.createGain(); const warm = AC.createBiquadFilter(); warm.type = 'lowpass'; warm.frequency.value = 6000; MUSIC_GAIN.connect(warm).connect(AC.destination);
+    MUSIC_BUS = {}; for (const k of ['base', 'shop', 'boss']) { MUSIC_BUS[k] = AC.createGain(); MUSIC_BUS[k].gain.value = 0; MUSIC_BUS[k].connect(MUSIC_GAIN); }
+    // A slow pitch wobble shared by the keys and the lead, like a worn tape.
+    MUSIC_LFO = AC.createOscillator(); MUSIC_LFO.frequency.value = 4.2; const depth = AC.createGain(); depth.gain.value = 7; MUSIC_LFO.connect(depth); MUSIC_LFO.start(); MUSIC_LFO = depth;
+  }
+  musicMode = ''; musicSetMode(musicTheme());
+  MUSIC_GAIN.gain.cancelScheduledValues(AC.currentTime); MUSIC_GAIN.gain.setValueAtTime(0, AC.currentTime); MUSIC_GAIN.gain.linearRampToValueAtTime(.42, AC.currentTime + 2);
+  musicAt = AC.currentTime + .1; musicStep = 0; musicTimer = setInterval(musicTick, 120);
 }
 function musicStop() { if (!musicTimer) return; clearInterval(musicTimer); musicTimer = 0; if (MUSIC_GAIN && AC) { MUSIC_GAIN.gain.cancelScheduledValues(AC.currentTime); MUSIC_GAIN.gain.setTargetAtTime(0, AC.currentTime, .3); } }
 document.addEventListener('visibilitychange', () => { if (document.hidden) musicStop(); else if (MUSIC && AC) musicStart(); });
