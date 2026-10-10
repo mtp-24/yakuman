@@ -1,5 +1,5 @@
 <title>Tenpai</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
 <style>
 /* Layout: a dark felt table. Left rail = blind status, right = the board (talismans, open melds, river, hand). Shop and menus are full overlays. */
 :root{
@@ -1037,4 +1037,10 @@ body.reducemotion *,body.reducemotion *::before,body.reducemotion *::after,body.
 .blindbtns button:hover{transform:translateY(-1px);filter:brightness(1.08)} .blindbtns button:active{transform:translateY(2px);box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 1px 0 rgba(0,0,0,.5)}
 .blindbtns button svg{flex:none}
 .usering{position:fixed;z-index:63;pointer-events:none;width:96px;height:96px;margin:-48px 0 0 -48px;border-radius:50%;border:2px solid rgba(var(--uc),.9);box-shadow:0 0 20px rgba(var(--uc),.8),inset 0 0 20px rgba(var(--uc),.55)}
+.bpop{position:absolute;left:50%;bottom:calc(100% + 8px);transform:translateX(-50%);z-index:41;pointer-events:none;white-space:nowrap;font:800 24px/1 'Shippori Mincho','Hiragino Mincho ProN',Georgia,serif;letter-spacing:.01em}
+.bpop.below{bottom:auto;top:calc(100% - 4px);font-size:20px}
+.bpop .bg{position:absolute;left:40%;top:50%;width:2em;height:2em;margin:-1em 0 0 -1em;color:var(--c)} .bpop .bg svg{width:100%;height:100%;display:block}
+.bpop .txt{position:relative;display:inline-flex;color:#fff;text-shadow:.05em .09em 0 var(--s),-.03em .04em 0 var(--s),0 0 .3em rgba(0,0,0,.25)} .bpop .txt span{display:inline-block;transform-origin:50% 70%}
+.slot > .bpop{z-index:40}
+.burnember{z-index:62;pointer-events:none;width:5px;height:5px;background:#ffb347;box-shadow:0 0 8px 2px rgba(255,140,40,.8)}
 </style>

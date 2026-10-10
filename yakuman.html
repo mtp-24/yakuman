@@ -1,6 +1,6 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Tenpai</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
 <style>
 /* Layout: a dark felt table. Left rail = blind status, right = the board (talismans, open melds, river, hand). Shop and menus are full overlays. */
 :root{
@@ -1038,6 +1038,12 @@ body.reducemotion *,body.reducemotion *::before,body.reducemotion *::after,body.
 .blindbtns button:hover{transform:translateY(-1px);filter:brightness(1.08)} .blindbtns button:active{transform:translateY(2px);box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 1px 0 rgba(0,0,0,.5)}
 .blindbtns button svg{flex:none}
 .usering{position:fixed;z-index:63;pointer-events:none;width:96px;height:96px;margin:-48px 0 0 -48px;border-radius:50%;border:2px solid rgba(var(--uc),.9);box-shadow:0 0 20px rgba(var(--uc),.8),inset 0 0 20px rgba(var(--uc),.55)}
+.bpop{position:absolute;left:50%;bottom:calc(100% + 8px);transform:translateX(-50%);z-index:41;pointer-events:none;white-space:nowrap;font:800 24px/1 'Shippori Mincho','Hiragino Mincho ProN',Georgia,serif;letter-spacing:.01em}
+.bpop.below{bottom:auto;top:calc(100% - 4px);font-size:20px}
+.bpop .bg{position:absolute;left:40%;top:50%;width:2em;height:2em;margin:-1em 0 0 -1em;color:var(--c)} .bpop .bg svg{width:100%;height:100%;display:block}
+.bpop .txt{position:relative;display:inline-flex;color:#fff;text-shadow:.05em .09em 0 var(--s),-.03em .04em 0 var(--s),0 0 .3em rgba(0,0,0,.25)} .bpop .txt span{display:inline-block;transform-origin:50% 70%}
+.slot > .bpop{z-index:40}
+.burnember{z-index:62;pointer-events:none;width:5px;height:5px;background:#ffb347;box-shadow:0 0 8px 2px rgba(255,140,40,.8)}
 </style>
 </head><body>
 <div id="app">
@@ -2312,17 +2318,17 @@ function growRows(was) {
   const ov = $('#overlay'); if (was.top && ov.classList.contains('inflow') && ov.style.top !== was.top && parseFloat(ov.style.top) > parseFloat(was.top)) ov.animate([{ top: was.top }, { top: ov.style.top }], ease);
 }
 let rowHolds = [];
-function holdRow(sel, box, gone) {
+function holdRow(sel, box, gone, hold) {
   if (!motionOK || gone < 0) return; const b = document.querySelector(box);
   const ov = $('#overlay');
-  rowHolds.push({ sel, box, gone, top: ov.classList.contains('inflow') ? ov.style.top : null, t: performance.now(), rects: [...document.querySelectorAll(sel)].filter(e => !e.classList.contains('rowghost')).map(e => e.getBoundingClientRect()), h: b ? b.getBoundingClientRect().height : 0 });
+  rowHolds.push({ sel, box, gone, hold, top: ov.classList.contains('inflow') ? ov.style.top : null, t: performance.now(), rects: [...document.querySelectorAll(sel)].filter(e => !e.classList.contains('rowghost')).map(e => e.getBoundingClientRect()), h: b ? b.getBoundingClientRect().height : 0 });
 }
 function playRowHolds() {
   const holds = rowHolds; rowHolds = [];
   for (const h of holds) {
-    if (performance.now() - h.t > spd(1000)) continue;
+    if (performance.now() - h.t > spd(Math.max(1000, (h.hold || 0) + 200))) continue;
     const box = document.querySelector(h.box); if (!box) continue;
-    const br = box.getBoundingClientRect(), nowH = br.height, wait = DISSOLVE_MS - 60, total = wait + 280;
+    const br = box.getBoundingClientRect(), nowH = br.height, wait = (h.hold || DISSOLVE_MS) - 60, total = wait + 280;
     // The row's box keeps its old height while the card burns (a list that loses a whole row would otherwise jump), then
     // eases to its new height as the cards slide. Rows stay packed at the top meanwhile instead of stretching to fill it.
     box.classList.add('reflowing'); setTimeout(() => box.classList.remove('reflowing'), spd(total + 80));
@@ -2786,67 +2792,58 @@ function doDeclareKan() {
   render();
 }
 // A used consumable burns away from its slot on the board (the cards after it wait, then slide in), like a sold one.
-// Using a consumable, like playing a Tarot in Balatro: the card lifts out of its slot and glides to just above its target
-// (the selected tiles, the hand, or above its own slot in the Shop), swells and glows in its colour, and bursts into a ring
-// of light. Sparks fly to the tiles it touched, which turn over to show what they became; tiles it destroyed burn away;
-// anything it created flies out of the burst into its slot while the other cards close up.
-const USE_MS = 900, USE_BURST = 620, USE_COL = { omikuji: '255,214,120', kami: '214,190,255' };
+// Using a consumable: the card stays in its slot, charges up (a growing shake and glow), flashes, and burns away with
+// embers. As it flashes, the tiles it changed flip over one after another to their new face with a little jiggle; tiles
+// it destroyed burn away the same way; anything it created pops into its slot. The rest of the row waits until the card
+// has burned out before closing up.
+const USE_CHARGE = 360, USE_BURN = 520, USE_HOLD = USE_CHARGE + 70 + USE_BURN;
 let useCtx = null;
+// Burns an element away where it stands: holes open from a few points and spread until nothing is left, while it browns
+// and embers rise from it. Works on a fixed copy, so the layout under it can redraw.
+function burnAway(g, delay = 0) {
+  const seeds = Array.from({ length: 4 }, () => [Math.random() * 100, Math.random() * 100]), dur = spd(USE_BURN);
+  const go = () => {
+    const t0 = performance.now(), step = now => { if (!g.isConnected) return; const k = Math.min(1, (now - t0) / dur), r = k * 90;
+      g.style.webkitMaskImage = g.style.maskImage = seeds.map(([x, y]) => `radial-gradient(circle at ${x}% ${y}%, transparent ${r}%, #000 ${r + 6}%)`).join(',');
+      g.style.webkitMaskComposite = 'source-in'; g.style.maskComposite = 'intersect'; g.style.filter = `brightness(${1.6 - k * .4}) sepia(${k}) saturate(${1 + k * 2})`;
+      if (k < 1) requestAnimationFrame(step); else g.remove(); };
+    requestAnimationFrame(step); setTimeout(() => g.remove(), dur + 150);
+    const r = g.getBoundingClientRect();
+    for (let n = 0; n < 12; n++) { const m = document.createElement('i'); m.className = 'burnember'; m.style.cssText = `position:fixed;left:${r.left + Math.random() * r.width}px;top:${r.top + Math.random() * r.height}px`; document.body.appendChild(m);
+      m.animate([{ transform: 'none', opacity: 1 }, { transform: `translate(${(Math.random() - .5) * 30}px,${-30 - Math.random() * 40}px) scale(.3)`, opacity: 0 }], { duration: 500 + Math.random() * 300, delay: Math.random() * 300, fill: 'both' }).onfinish = () => m.remove();
+      setTimeout(() => m.remove(), spd(1300)); }
+  };
+  if (delay) setTimeout(go, spd(delay)); else go();
+}
+const flashEl = el => el.animate([{ filter: 'brightness(1)' }, { filter: 'brightness(3) saturate(0)', offset: .3 }, { filter: 'brightness(1)' }], { duration: 200 });
 function burnSlot(i) {
   if (i < 0 || compactScreen() || !motionOK) return; const slot = [...document.querySelectorAll('#consumables .slot')][i]; if (!slot) return;
-  holdRow('#consumables .slot.filled', '#consumables', i);
-  const kind = (S.consumables[i] && S.consumables[i].kind) || 'omikuji', col = USE_COL[kind] || USE_COL.omikuji, r = slot.getBoundingClientRect();
+  holdRow('#consumables .slot.filled', '#consumables', i, USE_HOLD);
+  const g = ghostOf(slot), fr = [];
+  for (let k = 0; k <= 12; k++) { const a = k / 12; fr.push({ transform: `translate(${(Math.random() - .5) * 7 * a}px,${(Math.random() - .5) * 5 * a}px) rotate(${(Math.random() - .5) * 6 * a}deg) scale(${1 + .08 * a})`, filter: `brightness(${1 + .8 * a}) drop-shadow(0 0 ${14 * a}px rgba(255,236,170,${.9 * a}))` }); }
+  const ch = g.animate(fr, { duration: USE_CHARGE, easing: 'linear', fill: 'forwards' }); sfx('charge', spd(USE_CHARGE));
+  setTimeout(() => { flashEl(g); setTimeout(() => { ch.cancel(); burnAway(g); sfx('burn', spd(USE_BURN)); }, spd(70)); }, spd(USE_CHARGE));
+  setTimeout(() => g.remove(), spd(USE_HOLD + 600));
   const tiles = S.phase === 'blind' ? S.selected.map(id => document.querySelector(`#hand .tile[data-id="${id}"], #open .tile[data-id="${id}"]`)).filter(Boolean) : [];
-  let fx, fy;
-  if (tiles.length) { const rs = tiles.map(t => t.getBoundingClientRect()); fx = (Math.min(...rs.map(x => x.left)) + Math.max(...rs.map(x => x.right))) / 2; fy = Math.min(...rs.map(x => x.top)) - r.height * .55 - 12; }
-  else if (S.phase === 'blind' && $('#hand')) { const h = $('#hand').getBoundingClientRect(); fx = h.left + h.width / 2; fy = h.top - r.height * .55 - 12; }
-  else { fx = r.left + r.width / 2; fy = r.top + r.height / 2 - 70; }
-  fy = Math.max(r.height * .6 + 8, fy);
-  const g = ghostOf(slot), dx = fx - (r.left + r.width / 2), dy = fy - (r.top + r.height / 2), at = `translate(${dx}px,${dy}px)`;
-  g.style.zIndex = 62; g.style.setProperty('--uc', col);
-  g.animate([
-    { transform: 'none', filter: 'none', opacity: 1 },
-    { transform: 'translateY(-10px) scale(1.06)', filter: 'brightness(1.1)', opacity: 1, offset: .1 },
-    { transform: `${at} scale(1.16) rotate(-2deg)`, filter: 'brightness(1.15)', opacity: 1, offset: .45 },
-    { transform: `${at} scale(1.24) rotate(0)`, filter: `brightness(1.8) drop-shadow(0 0 16px rgba(${col},.95))`, opacity: 1, offset: .66 },
-    { transform: `${at} scale(1.1)`, filter: `brightness(2.2) drop-shadow(0 0 22px rgba(${col},1)) blur(1px)`, opacity: .85, offset: .74 },
-    { transform: `${at} scale(.55)`, filter: 'brightness(2.6) blur(4px)', opacity: 0 }], { duration: USE_MS, easing: 'cubic-bezier(.35,.1,.3,1)', fill: 'forwards' }).onfinish = () => g.remove();
-  setTimeout(() => g.remove(), spd(USE_MS + 500));
-  setTimeout(() => useBurst(fx, fy, col), spd(USE_BURST));
-  useCtx = { t: performance.now(), fx, fy, col, conBefore: document.querySelectorAll('#consumables .slot.filled').length, tiles: tiles.map(t => ({ id: +t.dataset.id, rect: t.getBoundingClientRect(), node: t.cloneNode(true) })) };
+  useCtx = { t: performance.now(), conBefore: document.querySelectorAll('#consumables .slot.filled').length, tiles: tiles.map(t => ({ id: +t.dataset.id, rect: t.getBoundingClientRect(), node: t.cloneNode(true) })) };
 }
-function useBurst(x, y, col) {
-  const ring = document.createElement('div'); ring.className = 'usering'; ring.style.cssText = `left:${x}px;top:${y}px;--uc:${col}`; document.body.appendChild(ring);
-  ring.animate([{ transform: 'scale(.2)', opacity: .95 }, { transform: 'scale(1.7)', opacity: 0 }], { duration: 460, easing: 'cubic-bezier(.2,.7,.3,1)' }).onfinish = () => ring.remove(); setTimeout(() => ring.remove(), spd(900));
-  for (let k = 0; k < 14; k++) {
-    const a = k / 14 * Math.PI * 2 + Math.random() * .3, d = 40 + Math.random() * 50, m = document.createElement('i'); m.className = 'mote';
-    m.style.cssText = `left:${x}px;top:${y}px;background:rgb(${col});box-shadow:0 0 8px 2px rgba(${col},.85)`; document.body.appendChild(m);
-    m.animate([{ transform: 'translate(-50%,-50%) scale(1)', opacity: 1 }, { transform: `translate(calc(-50% + ${Math.cos(a) * d}px),calc(-50% + ${Math.sin(a) * d}px)) scale(.4)`, opacity: 0 }], { duration: 520 + Math.random() * 200, easing: 'cubic-bezier(.15,.7,.3,1)' }).onfinish = () => m.remove();
-    setTimeout(() => m.remove(), spd(1200));
-  }
-}
-// After the redraw that follows a use: the touched tiles wait edge-on until their spark lands, then turn over; destroyed
-// tiles burn where they stood; new consumables fly from the burst into their slots.
+// After the redraw that follows a use. A changed tile is shown with its old face (a copy laid over it) turning edge-on,
+// then the tile itself turns in with its new face; a destroyed tile's copy burns away where it stood.
 function afterUse() {
   const u = useCtx; useCtx = null; if (!u || performance.now() - u.t > spd(400)) return;
-  const land = USE_BURST + 170;
-  for (const t of u.tiles) {
-    const tx = t.rect.left + t.rect.width / 2, ty = t.rect.top + t.rect.height / 2, sp = document.createElement('i'); sp.className = 'mote';
-    sp.style.cssText = `left:${u.fx}px;top:${u.fy}px;width:9px;height:9px;background:#fff;box-shadow:0 0 12px 4px rgba(${u.col},.95)`; document.body.appendChild(sp);
-    sp.animate([{ transform: 'translate(-50%,-50%)', opacity: 0 }, { transform: 'translate(-50%,-50%)', opacity: 1, offset: .01 }, { transform: `translate(calc(-50% + ${tx - u.fx}px),calc(-50% + ${ty - u.fy}px))`, opacity: 1 }], { duration: 170, delay: USE_BURST, easing: 'ease-in', fill: 'both' }).onfinish = () => sp.remove();
-    setTimeout(() => sp.remove(), spd(land + 400));
-    const el = document.querySelector(`#hand .tile[data-id="${t.id}"], #open .tile[data-id="${t.id}"]`);
-    if (el) el.animate([{ transform: 'perspective(500px) rotateY(90deg)', filter: 'brightness(1.9)' }, { transform: 'perspective(500px) rotateY(0)', filter: 'brightness(1.4)', offset: .6 }, { transform: 'none', filter: 'none' }], { duration: 340, delay: land, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' });
-    else {
-      const g = t.node; Object.assign(g.style, { position: 'fixed', left: t.rect.left + 'px', top: t.rect.top + 'px', width: t.rect.width + 'px', height: t.rect.height + 'px', margin: 0, zIndex: 61, pointerEvents: 'none' }); document.body.appendChild(g);
-      g.animate([{ opacity: 1, filter: 'none', transform: 'none' }, { opacity: 1, filter: 'none', transform: 'none', offset: land / (land + 480) }, { opacity: .9, filter: 'brightness(1.6) sepia(.6) saturate(3) blur(.5px)', transform: 'scale(1.04)', offset: (land + 150) / (land + 480) }, { opacity: 0, filter: 'brightness(2) saturate(4) blur(6px)', transform: 'scale(.9) translateY(-10px)' }], { duration: land + 480, easing: 'ease-in' }).onfinish = () => g.remove();
-      setTimeout(() => g.remove(), spd(land + 900));
-    }
-  }
-  [...document.querySelectorAll('#consumables .slot.filled:not(.rowghost)')].slice(Math.max(0, u.conBefore - 1)).forEach((el, k) => {
-    const r = el.getBoundingClientRect(), dx = u.fx - (r.left + r.width / 2), dy = u.fy - (r.top + r.height / 2);
-    el.animate([{ transform: `translate(${dx}px,${dy}px) scale(.3)`, opacity: 0, filter: 'brightness(2)' }, { transform: `translate(${dx * .45}px,${dy * .45 - 30}px) scale(.85)`, opacity: 1, filter: 'brightness(1.5)', offset: .5 }, { transform: 'none', opacity: 1, filter: 'none' }], { duration: 460, delay: USE_BURST + 90 + k * 110, easing: 'cubic-bezier(.3,.7,.3,1)', fill: 'backwards' });
+  const at = USE_CHARGE + 120;
+  u.tiles.forEach((t, k) => {
+    const el = document.querySelector(`#hand .tile[data-id="${t.id}"], #open .tile[data-id="${t.id}"]`), d = at + k * 130, g = t.node;
+    g.classList.remove('sel', 'hit'); const r = el ? el.getBoundingClientRect() : t.rect;
+    Object.assign(g.style, { position: 'fixed', left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px', margin: 0, zIndex: 61, pointerEvents: 'none' }); document.body.appendChild(g);
+    if (!el) { setTimeout(() => { flashEl(g); sfx('burn', spd(USE_BURN)); }, spd(d)); burnAway(g, d + 80); return; }
+    setTimeout(() => sfx('flip'), spd(d + 110));
+    g.animate([{ transform: 'translateY(-12px) rotateY(0)' }, { transform: 'translateY(-12px) rotateY(0)', offset: d / (d + 110) }, { transform: 'translateY(-16px) rotateY(90deg) scale(1.05)' }], { duration: d + 110, easing: 'ease-in', fill: 'forwards' }).onfinish = () => g.remove();
+    setTimeout(() => g.remove(), spd(d + 500));
+    el.animate([{ transform: 'translateY(-16px) rotateY(-90deg) scale(1.05)', filter: 'brightness(2)' }, { transform: 'translateY(-4px) rotateY(0) scale(1.12) rotate(-5deg)', filter: 'brightness(1.3)', offset: .55 }, { transform: 'scale(1.06) rotate(3deg)', offset: .78 }, { transform: 'none', filter: 'none' }], { duration: 360, delay: d + 110, easing: 'ease-out', fill: 'backwards' });
   });
+  [...document.querySelectorAll('#consumables .slot.filled:not(.rowghost)')].slice(Math.max(0, u.conBefore - 1)).forEach((el, k) =>
+    el.animate([{ transform: 'scale(.3)', opacity: 0, filter: 'brightness(2)' }, { transform: 'scale(1.12)', opacity: 1, filter: 'brightness(1.4)', offset: .55 }, { transform: 'none', opacity: 1, filter: 'none' }], { duration: 320, delay: USE_CHARGE + 80 + k * 110, easing: 'cubic-bezier(.3,.7,.3,1)', fill: 'backwards' }));
 }
 function useConsumable(i) {
   if (S.busy) return;
@@ -3488,7 +3485,7 @@ function sWhoosh(t, dur = .2, g = .18, from = 500, to = 2400) {
   const env = AC.createGain(); env.gain.setValueAtTime(0, t); env.gain.linearRampToValueAtTime(g, t + dur * .4); env.gain.exponentialRampToValueAtTime(.0008, t + dur);
   src.connect(bp).connect(env).connect(MASTER); src.start(t); src.stop(t + dur + .02);
 }
-const SFX_GAP = { coin: .045, tick: .035, wall: .04, draw: .035, chip: .03, mult: .05, pop: .06, select: .02, deselect: .02 };
+const SFX_GAP = { burn: .09, flip: .05, coin: .045, tick: .035, wall: .04, draw: .035, chip: .03, mult: .05, pop: .06, select: .02, deselect: .02 };
 function sfx(name, n = 0) {
   const ac = audioCtx(); if (!ac || ac.state !== 'running') return;
   const now = ac.currentTime; if (SFX_LAST[name] && now - SFX_LAST[name] < (SFX_GAP[name] || .015)) return; SFX_LAST[name] = now;
@@ -3511,6 +3508,14 @@ function sfx(name, n = 0) {
     case 'kaching': sClack(now, 1800, .05, .35); [1318, 1760, 2637].forEach((f, k) => sTone(now + .04 + k * .025, f, 'triangle', .6, .1)); sTone(now + .04, 3520, 'sine', .35, .04); break;
     case 'buy': sClack(now, 1600, .05, .3); sTone(now + .03, 2100, 'triangle', .12, .1); sTone(now + .09, 1600, 'triangle', .14, .09); break;
     case 'sell': [1500, 2000, 2500].forEach((f, k) => sTone(now + k * .06, f, 'triangle', .12, .09)); break;
+    // Using a consumable: a rising whoosh and shimmer while the card charges (n is the charge in ms), then a soft ignition
+    // thump and a fiery roar with crackles while it burns away (n is the burn in ms); flip is a changed tile turning over.
+    case 'charge': { const d = (n || 360) / 1000; sWhoosh(now, d, .12, 300, 2600); sTone(now, 440, 'sine', d, .05, 1320); break; }
+    case 'burn': { const d = (n || 520) / 1000; sTone(now, 160, 'sine', .14, .12, 70);
+      const src = AC.createBufferSource(); src.buffer = NOISE; src.loop = true; const lp = AC.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.setValueAtTime(1600, now); lp.frequency.exponentialRampToValueAtTime(450, now + d);
+      const env = AC.createGain(); env.gain.setValueAtTime(0, now); env.gain.linearRampToValueAtTime(.2, now + .06); env.gain.exponentialRampToValueAtTime(.0008, now + d + .12); src.connect(lp).connect(env).connect(MASTER); src.start(now); src.stop(now + d + .15);
+      for (let k = 0; k < 9; k++) sClack(now + .04 + Math.random() * d * .9, 900 + Math.random() * 1600, .02, .1 + Math.random() * .1); break; }
+    case 'flip': sClack(now, 3000, .035, .18); break;
     case 'reroll': sWhoosh(now, .18, .14, 800, 3000); sClack(now + .08, 2600, .04, .2); sClack(now + .13, 3000, .04, .18); break;
     case 'pop': { const src = AC.createBufferSource(); src.buffer = NOISE; const lp = AC.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 900; const env = AC.createGain(); env.gain.setValueAtTime(.18, now); env.gain.exponentialRampToValueAtTime(.0008, now + .18); src.connect(lp).connect(env).connect(MASTER); src.start(now); src.stop(now + .2); break; }
   }
@@ -3945,6 +3950,28 @@ const spd = ms => motionOK ? ms * SPEEDS[ANIM_SPEED] : ms;
 }
 let skipAnim = false, skipArmed = false;
 function wait(ms) { return new Promise(r => setTimeout(r, (motionOK && !skipAnim) ? Math.round(ms * SPEEDS[ANIM_SPEED]) : 0)); }
+// Scoring popups, Balatro style: the number in the title font sits on a cherry blossom in its colour and spills past it.
+// It punches in with a shake; the blossom fades in growing, keeps growing and fades out; the letters vanish left to right,
+// each fading as it shrinks. A new popup on the same tile or slot clears the one before it, so rapid scores never stack.
+const POP_COL = { chips: ['#0d8ff0', '#063b73'], han: ['#f2a93b', '#6a3d05'], mult: ['#f05050', '#6e1414'], x: ['#e02f2f', '#5c0b0b'], again: ['#f08a2a', '#6b3006'], money: ['#f2c43a', '#6b4a06'], info: ['#5a6b62', '#1e2823'] };
+const BLOSSOM = '<svg viewBox="0 0 100 100" aria-hidden="true">' + [0, 72, 144, 216, 288].map(a => `<path d="M50 50C38 40 34 22 43 10l7 7 7-7c9 12 5 30-7 40z" fill="currentColor" transform="rotate(${a} 50 50)"/>`).join('') + '<circle cx="50" cy="50" r="9" fill="rgba(255,255,255,.45)"/></svg>';
+function scorePop(host, kind, text, below) {
+  if (!host || !text) return; const [c, sh] = POP_COL[kind] || POP_COL.info, el = document.createElement('div');
+  el.className = 'bpop' + (below ? ' below' : ''); el.style.setProperty('--c', c); el.style.setProperty('--s', sh);
+  el.innerHTML = `<i class="bg">${BLOSSOM}</i><span class="txt">${[...String(text)].map(ch => `<span>${ch === ' ' ? '&nbsp;' : ch}</span>`).join('')}</span>`;
+  for (const old of host.querySelectorAll(':scope > .bpop')) if (!old.dataset.going) { old.dataset.going = '1'; old.animate([{ opacity: 1 }, { opacity: 0, transform: 'translateX(-50%) translateY(-6px) scale(.85)' }], { duration: 110, easing: 'ease-in', fill: 'forwards' }).onfinish = () => old.remove(); setTimeout(() => old.remove(), spd(400)); }
+  host.appendChild(el); const letters = [...el.querySelectorAll('.txt span')], life = 640;
+  setTimeout(() => el.remove(), spd(life + letters.length * 38 + 160));
+  if (!motionOK) return;
+  const bg = el.querySelector('.bg'), tilt = (Math.random() < .5 ? -1 : 1) * (14 + Math.random() * 14), shake = [];
+  for (let k = 0; k <= 8; k++) { const a = 1 - k / 8; shake.push({ transform: `translateX(-50%) translate(${(Math.random() - .5) * 8 * a}px,${(Math.random() - .5) * 6 * a}px) rotate(${(Math.random() - .5) * 14 * a}deg)` }); }
+  el.animate(shake, { duration: 240, easing: 'linear' });
+  bg.animate([{ transform: `rotate(${tilt}deg) scale(.45)`, opacity: 0 }, { transform: `rotate(${tilt}deg) scale(1.05)`, opacity: 1, offset: .14 }, { transform: `rotate(${tilt}deg) scale(1.15)`, opacity: 1, offset: .6 }, { transform: `rotate(${tilt}deg) scale(1.4)`, opacity: 0 }], { duration: life - 40, easing: 'ease-out', fill: 'forwards' });
+  letters.forEach((l, i) => {
+    l.animate([{ transform: 'scale(0)', opacity: 0 }, { transform: 'scale(1.35)', opacity: 1, offset: .45 }, { transform: 'scale(1)', opacity: 1 }], { duration: 130, delay: i * 10, easing: 'ease-out', fill: 'backwards' });
+    l.animate([{ transform: 'scale(1)', opacity: 1 }, { transform: 'scale(.2) translateY(-3px)', opacity: 0 }], { duration: 140, delay: (life - 40) * .6 + i * 38, easing: 'ease-in', fill: 'forwards' });
+  });
+}
 // Balatro's "juice", copied from its curve: size wobbles as sin(50.8 t) fading with (1 - t/T)^3 and tilt as sin(40.8 t)
 // fading with (1 - t/T)^2, over T = 0.4 s. Each kick is its own wave that starts at zero and they add up, so a run of
 // fast hits keeps wobbling without ever snapping back. One rAF loop drives every juiced element.
@@ -3998,7 +4025,7 @@ async function animateScore(ctx) {
   };
   const showLine = l => { const d = document.createElement('div'); d.className = 'row sline' + lineCls(l); d.dataset.li = ctx.lines.indexOf(l); d.innerHTML = `<span>${tr(l.label)}</span><span class="num">${tr(l.val)}</span>`; linesBox.appendChild(d); if (l.tal && !/retrigger/.test(l.label)) { const slot = document.querySelector(`.slot[data-tal="${l.tal}"]`); if (slot) { slot.classList.remove('bounce'); void slot.offsetWidth; slot.classList.add('bounce');
       // the Talisman's effect pops under its slot, coloured like the tile badges
-      const v = /retrigger/.test(l.label) ? '' : tr(l.val || ''); if (v) { const kind = /×|^x/i.test(v) ? 'x' : /Mult/.test(v) ? 'mult' : /Chip/.test(v) ? 'chips' : /Han|Faan/.test(v) ? 'han' : /[¥$]/.test(v) ? 'money' : 'info'; const f = document.createElement('div'); f.className = 'talpop num'; f.innerHTML = `<span class="hp ${kind}">${v}</span>`; slot.appendChild(f); setTimeout(() => f.remove(), spd(1100)); } } } };
+      const v = /retrigger/.test(l.label) ? '' : tr(l.val || ''); if (v) scorePop(slot, /×|^x/i.test(v) ? 'x' : /Mult/.test(v) ? 'mult' : /Chip/.test(v) ? 'chips' : /Han|Faan/.test(v) ? 'han' : /[¥$]/.test(v) ? 'money' : 'info', v, true); } } };
   const applyLine = l => { if (l.zero) chips = 0; else { chips += l.chips || 0; han += l.han || 0; if (l.convert) mult = hanMult(han) * tileX + tileM; if (l.mult) mult = (mult === null ? hanMult(han) * tileX + tileM : mult) + l.mult; if (l.xmult && mult !== null) mult *= l.xmult; } setMath(); };
   let fire = 0;
   // Hanabi: once a play beats the target, rockets shoot up from below the Chips and Mult boxes and burst above them.
@@ -4045,12 +4072,13 @@ async function animateScore(ctx) {
   // Talismans fire left to right, each popping with Again! and replaying the tiles it affects. Only the order of the
   // reveal changes; the totals are the engine's.
   const perOf = h => ({ chips: h.chips / h.times, han: h.han / h.times, x: Math.pow(h.xmult, 1 / h.times), m: (h.mult || 0) / h.times, money: (h.money || 0) / h.times });
-  const popSlot = (el, text, cls) => { if (!el) return; el.classList.remove('bounce'); void el.offsetWidth; el.classList.add('bounce'); const g = document.createElement('div'); g.className = 'talpop num'; g.innerHTML = `<span class="hp ${cls}">${text}</span>`; el.appendChild(g); setTimeout(() => g.remove(), spd(900)); };
+  const popSlot = (el, text, cls) => { if (!el) return; el.classList.remove('bounce'); void el.offsetWidth; el.classList.add('bounce'); scorePop(el, cls, text, true); };
   const hitOnce = async (h, again) => {
     const e = tileEls.get(h.id), per = perOf(h);
     if (e) { e.classList.remove('hit'); void e.offsetWidth; e.classList.add('hit');
       const pills = [again ? ['again', 'Again!'] : null, per.chips ? ['chips', `+${Math.round(per.chips)}`] : null, per.han ? ['han', tr(`+${per.han} Han`)] : null, per.m ? ['mult', `+${fmtMult(per.m)} Mult`] : null, per.x !== 1 ? ['x', `×${fmtMult(per.x)}`] : null, per.money >= 1 ? ['money', `+¥${Math.round(per.money)}`] : null].filter(Boolean);
-      const f = document.createElement('div'); f.className = 'hitpop num'; f.innerHTML = pills.map(([c, t]) => `<span class="hp ${c}">${t}</span>`).join(''); e.appendChild(f); setTimeout(() => f.remove(), spd(950)); }
+      // one after another, each clearing the one before it on this tile
+      pills.forEach(([c, t], k) => k ? setTimeout(() => scorePop(e, c, tr(t)), spd(k * 110)) : scorePop(e, c, tr(t))); }
     chips += per.chips; han += per.han; tileX *= per.x; tileM += per.m; setMath(); heat(); logHit(h, per);
     await wait(again ? 220 : 150);
   };
@@ -4345,6 +4373,9 @@ function animateCashout() {
   rows.forEach((x, i) => setTimeout(() => {
     x.style.opacity = ''; x.animate([{ opacity: 0, transform: 'translateY(18px) rotate(-1.5deg) scale(.96)' }, { opacity: 1, transform: 'translateY(-2px) scale(1.01)', offset: .7 }, { opacity: 1, transform: 'none' }], { duration: 300, easing: 'cubic-bezier(.2,.8,.2,1)' });   // dealt in like the Shop's cards
     countUp(x.querySelector('b'), 0, vals[i], 220, cur, 'coin');
+    // a Talisman's line makes that Talisman bounce and pop its amount, as in scoring
+    const sl = x.dataset.tal && document.querySelector(`#talismans .slot[data-key="${x.dataset.tal}"]`);
+    if (sl && sl.getClientRects().length) { sl.classList.remove('bounce'); void sl.offsetWidth; sl.classList.add('bounce'); scorePop(sl, vals[i] < 0 ? 'mult' : 'money', (vals[i] < 0 ? '' : '+') + money(cur, vals[i]), true); }
   }, spd(260 + i * 260)));
   const tStart = 260 + rows.length * 260 + 80;
   setTimeout(() => countUp(amt, 0, r.total, 380, cur, 'coin'), spd(tStart));
@@ -4377,13 +4408,13 @@ function cashoutHTML() {
   const r = S.reward; const names = { small: 'Small Blind', big: 'Big Blind', boss: 'Boss Blind' };
   const bossName = r.kind === 'boss' && S.stats.bosses.length ? BOSSES[S.stats.bosses[S.stats.bosses.length - 1]].name : null;
   const cap = interestCap();
-  const talRows = r.talPay ? r.talPay.map(([k, v]) => [TAL[k] ? TAL[k].name : k, 'Talisman', v]) : r.tal ? [['Talismans', 'end-of-Blind payouts', r.tal]] : [];   // older saves only kept the total
-  const rows = [['Blind reward', names[r.kind], r.base], ['Unused Plays', `${r.left} × ¥1`, r.left], ['Interest', `¥1 per ¥${CFG.interestPer} held, up to ¥${cap}`, r.interest], ...talRows, r.summer ? ['Summer', 'Flower', r.summer] : null, r.invest ? ['Investment Tag', 'Boss bonus', r.invest] : null, ...(r.rent || []).map(([k, v]) => [TAL[k] ? TAL[k].name : k, 'Rental', -v])].filter(Boolean);
+  const talRows = r.talPay ? r.talPay.map(([k, v]) => [TAL[k] ? TAL[k].name : k, 'Talisman', v, k]) : r.tal ? [['Talismans', 'end-of-Blind payouts', r.tal]] : [];   // older saves only kept the total
+  const rows = [['Blind reward', names[r.kind], r.base], ['Unused Plays', `${r.left} × ¥1`, r.left], ['Interest', `¥1 per ¥${CFG.interestPer} held, up to ¥${cap}`, r.interest], ...talRows, r.summer ? ['Summer', 'Flower', r.summer] : null, r.invest ? ['Investment Tag', 'Boss bonus', r.invest] : null, ...(r.rent || []).map(([k, v]) => [TAL[k] ? TAL[k].name : k, 'Rental', -v, k])].filter(Boolean);
   const cur = LANG === 'hk' ? '$' : '¥';
   let h = `<div class="drawhead"><h2>${bossName ? bossName + ' beaten' : 'Blind cleared'}</h2></div>`;
   // Like Balatro, the Cash Out button sits on top and the reward rows fill in beneath it, so the button never moves.
   h += `<button id="mCashOut" class="primary cashbtn">Cash Out <span class="cashamt"><span class="coin" aria-hidden="true">${coinSVG()}</span><span class="num">${money(cur, r.total)}</span></span></button>`;
-  h += `<div class="receipt">${rows.map(([k, d, v]) => `<div class="rrow"><span class="rl">${k}</span><span class="rd muted">${d}</span><span class="rlead" aria-hidden="true"></span><b class="num${v < 0 ? ' neg' : ''}" data-v="${v}">${money('¥', v)}</b></div>`).join('')}</div>`;
+  h += `<div class="receipt">${rows.map(([k, d, v, tk]) => `<div class="rrow"${tk ? ` data-tal="${tk}"` : ''}><span class="rl">${k}</span><span class="rd muted">${d}</span><span class="rlead" aria-hidden="true"></span><b class="num${v < 0 ? ' neg' : ''}" data-v="${v}">${money('¥', v)}</b></div>`).join('')}</div>`;
   return h;
 }
 // Same look as the play area's purse: the coin, the amount, and JPY or HKD underneath.
