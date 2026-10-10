@@ -173,6 +173,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 162: Collection engravings use wide cards: the sample tile sits on a felt pad at the left, the name and effect beside it, an accent edge in each engraving's colour, two or three cards per row.
 - Build 163: Engraving cards drop the coloured accent edge.
 - Build 164: Flowers in the side panel use the same hover card as tiles (a Flower label, the name and the effect) instead of the plain tooltip; the hover card now works for any element with data-hc-title.
+- Build 194: Resizing the window while the cash-out is up (or the Shop or a pack) always places it again, so after being narrow it goes back to rising from the bottom of the board instead of staying stuck as a centred box.
 - Build 193: Every screen (Settings, Rules, Collection, Run Info, the title menu and the rest), not just the trays, now stops the page behind it from scrolling, so there is one scrollbar.
 - Build 192: While the Shop, a pack or the cash-out tray is up, the page behind it stops scrolling, so only the tray's own scrollbar shows (no double scrollbar). The scrollbar's space is always reserved, so the board doesn't shift when a tray opens.
 - Build 191: Talismans and consumables bought in the Shop or taken from a pack fly from their card into their new slot on the board, shrinking to fit, and the slot pops in. The Shop tray stays snug under the Talisman row when the page is scrolled (it used to leave a dark band), and the board below that row darkens gradually like the cash-out.

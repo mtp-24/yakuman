@@ -3698,7 +3698,14 @@ function placeOverlay(boardOnly, mode) {
   let trayTop = innerHeight / 2 - contentH / 2; if (ac) trayTop = Math.min(trayTop, ac.getBoundingClientRect().top - 14);
   ov.style.setProperty('--reach', Math.max(0, trayTop - top) + 'px');
 }
-['resize', 'scroll'].forEach(ev => window.addEventListener(ev, () => { const ov = $('#overlay'); if (ev === 'resize' && !ov.hidden && /\b(shopmodal|packmodal)\b/.test($('#modal').className) && useTray() !== shopTray) { render(); return; } if (ov.classList.contains('boardonly')) placeOverlay(true, ov.classList.contains('shoptray') ? 'shop' : undefined); }));
+// On resize or scroll, a tray screen (cash-out, Shop, pack) is placed again from scratch, so it can go back to being a tray
+// after the window was narrow; the Shop and packs redraw when they cross between tray and full screen.
+['resize', 'scroll'].forEach(ev => window.addEventListener(ev, () => {
+  const ov = $('#overlay'), cls = $('#modal').className, shop = /\b(shopmodal|packmodal)\b/.test(cls);
+  if (ov.hidden || !/\btraymodal\b/.test(cls)) return;
+  if (ev === 'resize' && shop && useTray() !== shopTray) { render(); return; }
+  placeOverlay(true, shop ? 'shop' : undefined);
+}));
 // Any leftover animation is cancelled first: the cash-out drawer's slide-down holds its end position, and the next modal must not inherit it.
 function showModal(html, pinned, cls) {
   placeOverlay(false); modalPinned = !!pinned; $('#modal').getAnimations().forEach(an => an.cancel()); $('#modal').className = 'modal' + (cls ? ' ' + cls : ''); $('#modal').innerHTML = html; if ($('#modal #mClose')) $('#modal').insertAdjacentHTML('afterbegin', CLOSE_X); decorateBanner(cls); syncEditions(); fillHero($('#modal')); fillColTiles($('#modal')); fillTileArt($('#modal')); $('#overlay').hidden = false; document.documentElement.classList.add('modallock'); fillExamples($('#modal')); translateDOM($('#modal')); }
