@@ -1350,11 +1350,12 @@ function renderBlind() {
   const pct = S.target ? Math.min(100, 100 * S.score / S.target) : 0;
   const reward = cleared ? S.reward.base : (kind === 'small' && smallPaysNothing()) ? 0 : CFG.blindReward[kind];
   const targetVal = show ? S.target : blindTarget(kind);
-  let h = `<div class="blindplate${bossShown ? ' bossplate' : ''}${cleared ? ' cleared' : ''}"><div class="bp-top"><span class="label">${anteLabel(cleared && kind === 'boss' ? S.ante - 1 : S.ante)}</span><span class="label">${cleared ? 'Defeated' : inBlind ? (kind === 'boss' ? (BOSSES[S.boss || S.bossOff] && BOSSES[S.boss || S.bossOff].showdown ? 'Showdown Boss' : 'Boss Blind') : '') : 'Next up'}</span></div><div class="blind-name${bossShown ? ' boss' : ''}">${name}</div>`;
+  let h = `<div class="blindplate${bossShown ? ' bossplate' : ''}${cleared ? ' cleared' : ''}"><div class="bp-top"><span class="label">${anteLabel(cleared && kind === 'boss' ? S.ante - 1 : S.ante)}</span><span class="label">${cleared ? 'Defeated' : inBlind ? (kind === 'boss' ? (BOSSES[S.boss || S.bossOff] && BOSSES[S.boss || S.bossOff].showdown ? 'Showdown Boss' : 'Boss Blind') : '') : 'Next up'}</span></div><div class="bp-namerow"><div class="blind-name${bossShown ? ' boss' : ''}">${name}</div><div class="bp-reward" title="Plus ¥1 per unused Play and ¥1 interest per ¥5 held (max ¥5)"><div class="label">Reward</div><div class="num">¥${reward}<span class="muted" style="font-size:11px;font-family:var(--body)"> +extras</span></div></div></div>`;
   if (offBoss) h += `<div class="boss-desc"><b>Disabled by Tamamo-no-Mae.</b></div>`;
   if (bossShown) h += `<div class="boss-desc">${BOSSES[S.boss].desc}${S.boss === 'collector' && S.bossSuit ? ` <b>This Blind: ${SUIT_EN[S.bossSuit]}.</b>` : ''}${S.boss === 'gatekeeper' ? (S.firstPlayDone ? ' <b>First Play done.</b>' : '') : ''}</div>`;
-  h += `<div class="bp-row"><div><div class="label">Score at least</div><div class="target num">${fmtN(targetVal)}</div></div><div class="bp-reward" title="Plus ¥1 per unused Play and ¥1 interest per ¥5 held (max ¥5)"><div class="label">Reward</div><div class="num">¥${reward}<span class="muted" style="font-size:11px;font-family:var(--body)"> +extras</span></div></div></div></div>`;
-  if (show) h += `<div class="roundscore"><div class="label">Round Score</div><div class="rs num${S.score >= S.target ? ' met' : ''}" id="roundScore">${fmtN(S.score)}</div><div class="rsbar"><i id="roundBar" style="width:${pct}%"></i></div></div>`;
+  // The round's score sits in the Blind plate beside its target, with the progress bar along the plate's bottom edge.
+  const targetHTML = `<div class="bp-target"><div class="label">Score at least</div><div class="target num">${fmtN(targetVal)}</div></div>`;
+  h += show ? `<div class="bp-row bp-score"><div class="roundscore"><div class="label">Round score</div><div class="rs num${S.score >= S.target ? ' met' : ''}" id="roundScore">${fmtN(S.score)}</div></div>${targetHTML}</div><div class="rsbar"><i id="roundBar" style="width:${pct}%"></i></div></div>` : `<div class="bp-row">${targetHTML}</div></div>`;
   if (inBlind) {
     const pv = PREVIEW;
     if (S.busy) h += `<div class="handbox scoring" id="scorebox"></div>`;
@@ -1378,7 +1379,7 @@ function renderBlind() {
   const wallN = S.phase === 'blind' ? S.wall.length : unpaid && S.reward.wallLeft != null ? S.reward.wallLeft : (S.deck || []).length;
   h += `<div class="stats"><div class="stat plays"><div class="label">Plays</div><div class="v num">${S.plays}</div></div><div class="stat discards"><div class="label">Discards</div><div class="v num">${S.discards}</div></div></div>`;
   h += `<div class="stats purserow"><div class="purse" title="Interest: +¥${interest} at the next cash-out (¥1 for every ¥${CFG.interestPer} you hold, up to ¥${interestCap()})"><span class="coin" aria-hidden="true">${coinSVG()}</span><span class="wtx"><span class="pv num" id="purseVal">¥${unpaid ? (S.reward.before ?? S.money - S.reward.total) : S.money}</span><span class="wl" data-notr>${LANG === 'hk' ? 'HKD' : 'JPY'}</span></span></div><button class="wallbtn" id="wallBtn" title="${S.phase === 'blind' ? 'Tiles still face down in the Wall. Click to see every tile.' : 'Tiles in your Wall. Click to see every tile.'}"><span class="wallico" aria-hidden="true"><i></i><i></i><i></i></span><span class="wtx"><span class="wv num">${wallN}</span><span class="wl">Wall</span></span></button></div>`;
-  h += `<button class="sidebtn" id="sideRunInfo">${INFO_ICO}<span>Run Info</span></button>`;   // run-related screens live in the sidebar, beside the run
+  h += `<button class="sidebtn" id="sideRunInfo"><span class="runico" aria-hidden="true"></span><span>Run Info</span></button>`;   // run-related screens live in the sidebar, beside the run
   // The extras in one plate at the bottom, one labelled row each: the Dora (Bonus Tile) indicators, Tags held, and Flowers.
   const extras = [];
   if (S.indicators.length) extras.push(`<div class="sx-row"><span class="label">Dora</span><div class="sx-val" id="doraRow"></div></div>`);
@@ -1578,6 +1579,7 @@ function renderActions() {
 const lineCls = l => (l.zero ? ' bad' : '') + (l.yaku ? ' yaku' : '') + (l.tal ? ' tal' : '') + (l.convert ? ' convert' : '');
 // The result frame: how the multiplier was built, as a small caption, over the final Chips × Mult = score.
 const lastSummaryHTML = c => `<div class="total"><div class="formula num">${c.han} Han → ${c.tier} ×${c.baseMult}${c.xmult !== 1 ? ` · tiles ×${fmtMult(c.xmult)}` : ''}${c.mult !== c.baseMult * c.xmult ? ` → ×${fmtMult(c.mult)} after Talismans${c.furiten ? ' and Furiten' : ''}` : ''}</div><div class="lp-result num">${c.chips} × ${fmtMult(c.mult)} = ${fmtN(c.total)}</div></div>`;
+const LP_FOLD = 4; let lpOpen = false, lpFor = null;
 function renderLast() {
   const c = S.lastPlay; const box = $('#lastPlay');
   if (!c) { box.innerHTML = `<div class="label">Last Play</div><div class="lp-empty"><div class="muted">No play yet this Blind.</div><div class="lp-best"><span class="label">Best this run</span><b class="num">${fmtN(S.stats.best)}</b></div>${S.stats.bestDesc ? `<div class="muted lp-bestdesc">${S.stats.bestDesc}</div>` : ''}</div>`; return; }
@@ -1585,7 +1587,12 @@ function renderLast() {
   if (c.kind === 'meld' && c.nMelds >= 2) h += `<div class="muted" style="font-size:11px;margin:-4px 0 6px">${c.nChi ? c.nChi + ' Chi ' : ''}${c.nPon ? c.nPon + ' Pon ' : ''}${c.nKan ? c.nKan + ' Kan ' : ''}${c.hasPair ? '+ pair' : ''}</div>`;
   // Same order and colours as the animated log left them (c.order), so the panel does not change when scoring ends.
   const order = c.order ? c.order.concat(c.lines.map((_, i) => i).filter(i => !c.order.includes(i))) : c.lines.map((_, i) => i);
-  h += '<div class="lp-lines">'; for (const i of order) { const l = c.lines[i]; h += `<div class="row lrow${lineCls(l)}"><span>${l.label}</span><span class="num">${l.val}</span></div>`; } h += '</div>';
+  // Long breakdowns fold to their first lines (with Show all), so a big hand does not stretch the sidebar; each new play starts folded.
+  if (c !== lpFor) { lpFor = c; lpOpen = false; }
+  const fold = order.length > LP_FOLD + 1 && !lpOpen, shown = fold ? order.slice(0, LP_FOLD) : order;
+  h += '<div class="lp-lines">'; for (const i of shown) { const l = c.lines[i]; h += `<div class="row lrow${lineCls(l)}"><span>${l.label}</span><span class="num">${l.val}</span></div>`; }
+  if (order.length > LP_FOLD + 1) h += `<button class="lp-more" data-lpmore>${lpOpen ? 'Show less' : `Show all (${order.length} lines)`}</button>`;
+  h += '</div>';
   h += lastSummaryHTML(c);
   box.innerHTML = h;
 }
@@ -2603,7 +2610,7 @@ function bindEvents() {
   $('#btnSortMode').onclick = () => { S.sortMode = S.sortMode === 'rank' ? 'suit' : 'rank'; S.sortHand = true; S.hand = sortHandTiles(S.hand); render(); };
 
   // The Wall tile-stack in the side panel opens the Wall screen (the panel is redrawn on render, so the click is delegated).
-  document.addEventListener('click', e => { if (e.target.closest('#wallBtn')) showModal(deckHTML(), true); else if (e.target.closest('#sideRunInfo')) showModal(yakuHTML(), true); });
+  document.addEventListener('click', e => { if (e.target.closest('#wallBtn')) showModal(deckHTML(), true); else if (e.target.closest('#sideRunInfo')) showModal(yakuHTML(), true); else if (e.target.closest('[data-lpmore]')) { lpOpen = !lpOpen; renderLast(); translateDOM($('#lastPlay')); } });
   $('#btnRules').onclick = () => showModal(rulesHTML(), true);
   $('#btnCollection').onclick = () => showModal(collectionHTML(), true, 'colmodal');
   // Collection search filters the current tab by the cards' visible text (works in both terminologies).

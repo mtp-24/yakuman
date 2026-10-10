@@ -692,6 +692,26 @@ aside .blindplate.bossplate{border-color:rgba(201,69,58,.6);background:linear-gr
 aside .handbox.empty{border-style:solid}
 aside .card > .label{color:#cfe0d4;text-shadow:0 1px 1px rgba(0,0,0,.5)}
 aside .lastplay{color:#e8efe9}
+/* Blind plate: reward beside the name, Round score beside its target, the progress bar along the plate's bottom edge */
+aside .blindplate{position:relative;overflow:hidden;padding-bottom:12px}
+.bp-namerow{display:flex;justify-content:space-between;align-items:flex-start;gap:10px} .bp-namerow .blind-name{margin:2px 0 0;min-width:0}
+.bp-namerow .bp-reward{flex:none;font-size:16px;line-height:1.15}
+aside .blindplate .bp-row{margin-top:8px;padding-top:8px}
+aside .blindplate .roundscore{background:none;border:0;box-shadow:none;padding:0!important;margin:0;position:static;min-width:0}
+.bp-score{align-items:flex-end} .bp-target{text-align:right} .bp-target .label{text-align:right}
+.bp-score .roundscore .rs{font-size:26px;line-height:1.1} .bp-score .target{font-size:18px;color:rgba(239,230,210,.8)}
+aside .blindplate .rsbar{position:absolute;left:0;right:0;bottom:0;height:4px;background:rgba(255,255,255,.07)}
+aside .blindplate:has(.rs.met) .rsbar i{background:var(--good)}
+/* Chips x Mult: a lower title line and boxes, same layout */
+aside .handbox .hb-head{height:26px;margin:-2px 0 6px} aside .handbox .hb-head .hb-title{font-size:17px} aside .handbox .hb-head .hb-tot{font-size:24px;line-height:26px}
+aside .handbox .boxwrap > .chipbox,aside .handbox .boxwrap > .multbox{font-size:26px;padding:5px 10px}
+/* Plays and Discards: label and number on one line */
+aside .stats:not(.purserow) .stat{display:flex;flex-direction:row;align-items:center;justify-content:space-between;padding-top:7px;padding-bottom:7px}
+aside .stats:not(.purserow) .stat .v{font-size:20px;line-height:1}
+/* Run Info: a slim utility button */
+aside .sidebtn{height:32px;font-size:12.5px}
+/* Last Play: Show all / Show less under folded lines */
+.lp-more{display:block;width:100%;margin:2px 0 0;padding:5px 0 4px;background:none;border:0;border-top:1px solid rgba(255,255,255,.06);border-radius:0;color:var(--info);font-size:11.5px;cursor:pointer} .lp-more:hover{color:#cfe6ff}
 /* Even spacing: every box in the side panel sits 8px from the next */
 aside .blindplate,aside .roundscore,aside .handbox,aside .stats .stat,aside .sidextra{padding-left:12px;padding-right:12px}
 aside #blindCard{display:flex;flex-direction:column;gap:8px} aside #blindCard > *{margin-top:0!important;margin-bottom:0!important}
@@ -724,7 +744,11 @@ aside .sidextra{background:linear-gradient(180deg,rgba(14,24,20,.82),rgba(10,18,
 .stats.purserow{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
 .wallbtn{display:flex;align-items:center;justify-content:center;gap:10px;padding:8px 12px;border-radius:8px;background:linear-gradient(180deg,#2c3a33,#1c2621);border:1px solid #4d6a5c;box-shadow:inset 0 1px 0 rgba(255,255,255,.12);color:var(--fg);min-width:0;transition:filter .12s,transform .08s}
 .wallbtn:hover{filter:brightness(1.15)}
-.sidebtn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:36px;padding:0 12px;border-radius:8px;background:linear-gradient(180deg,#2c3a33,#1c2621);border:1px solid #4d6a5c;box-shadow:inset 0 1px 0 rgba(255,255,255,.12);color:var(--fg);font-size:13px} .sidebtn:hover{filter:brightness(1.15)} .sidebtn .qico{width:16px;height:16px;color:#9ec5e8} .wallbtn:active{transform:translateY(1px)}
+.sidebtn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:36px;padding:0 12px;border-radius:8px;background:linear-gradient(180deg,#2c3a33,#1c2621);border:1px solid #4d6a5c;box-shadow:inset 0 1px 0 rgba(255,255,255,.12);color:var(--fg);font-size:13px} .sidebtn:hover{filter:brightness(1.15)} .sidebtn .qico{width:16px;height:16px;color:#9ec5e8}
+/* Run Info's icon is drawn like the Wall's tiles: a cream ledger card with ruled lines, a blue underside and a red bookmark */
+.runico{position:relative;width:20px;height:23px;flex:none}
+.runico::before{content:'';position:absolute;left:1px;top:1px;width:15px;height:19px;border-radius:3px;background:repeating-linear-gradient(180deg,rgba(120,95,50,.55) 0 1px,transparent 1px 4px) 3px 5px/9px 11px no-repeat,linear-gradient(180deg,#fffaf0,#e9dec3);border:1px solid #cdbb90;box-shadow:0 2px 0 #2b5c8f,0 3px 4px rgba(0,0,0,.35)}
+.runico::after{content:'';position:absolute;left:11px;top:0;width:5px;height:9px;background:linear-gradient(180deg,#e2463a,#a8221a);clip-path:polygon(0 0,100% 0,100% 100%,50% 72%,0 100%)} .wallbtn:active{transform:translateY(1px)}
 .wallico{position:relative;width:26px;height:28px;flex:0 0 auto} .wallico i{position:absolute;width:16px;height:21px;border-radius:3px;background:linear-gradient(180deg,#fffaf0,#e9dec3);border:1px solid #cdbb90;box-shadow:0 2px 0 #2b5c8f}
 .wallico i:nth-child(1){left:0;top:5px} .wallico i:nth-child(2){left:5px;top:2px} .wallico i:nth-child(3){left:10px;top:0}
 .wtx{display:flex;flex-direction:column;align-items:flex-start;line-height:1} .wallbtn .wv{font-family:var(--display);font-size:24px;color:var(--fg)} .wallbtn .wl{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-top:3px}
@@ -1006,7 +1030,7 @@ body.reducemotion *,body.reducemotion *::before,body.reducemotion *::after,body.
   <nav class="hdr-nav">
     <button id="btnCollection"><svg class="hico" viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="3.5" width="7.5" height="10" rx="1.4" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M11.5 3.2l2.6 1.1-3.3 8.8" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg><span>Collection</span></button>
     <button id="btnRules"><svg class="hico" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 3.5c2-1 3.8-1 5.5.4 1.7-1.4 3.5-1.4 5.5-.4v9c-2-1-3.8-1-5.5.4-1.7-1.4-3.5-1.4-5.5-.4z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M8 3.9v9.4" stroke="currentColor" stroke-width="1.2"/></svg><span>Rules</span></button>
-    <button id="btnSettings" class="ghost" title="Terminology, helper, debug tools"><svg class="hico" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="2.2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M8 1.8v2M8 12.2v2M1.8 8h2M12.2 8h2M3.6 3.6l1.4 1.4M11 11l1.4 1.4M3.6 12.4 5 11M11 5l1.4-1.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><span>Settings</span></button>
+    <button id="btnSettings" class="ghost" title="Terminology, helper, debug tools"><svg class="hico" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.06 6.43 L14.86 6.60 L14.86 9.40 L13.06 9.57 L12.69 10.47 L13.84 11.86 L11.86 13.84 L10.47 12.69 L9.57 13.06 L9.40 14.86 L6.60 14.86 L6.43 13.06 L5.53 12.69 L4.14 13.84 L2.16 11.86 L3.31 10.47 L2.94 9.57 L1.14 9.40 L1.14 6.60 L2.94 6.43 L3.31 5.53 L2.16 4.14 L4.14 2.16 L5.53 3.31 L6.43 2.94 L6.60 1.14 L9.40 1.14 L9.57 2.94 L10.47 3.31 L11.86 2.16 L13.84 4.14 L12.69 5.53 Z M8 5.6 A2.4 2.4 0 1 0 8 10.4 A2.4 2.4 0 1 0 8 5.6 Z" fill="currentColor" fill-rule="evenodd"/></svg><span>Settings</span></button>
     <button id="btnNewRun" class="ghost"><svg class="hico" viewBox="0 0 16 16" aria-hidden="true"><path d="M13 8a5 5 0 1 1-1.5-3.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M12.6 1.8v3h-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>New Run</span></button>
   </nav>
 </header>
@@ -3430,11 +3454,12 @@ function renderBlind() {
   const pct = S.target ? Math.min(100, 100 * S.score / S.target) : 0;
   const reward = cleared ? S.reward.base : (kind === 'small' && smallPaysNothing()) ? 0 : CFG.blindReward[kind];
   const targetVal = show ? S.target : blindTarget(kind);
-  let h = `<div class="blindplate${bossShown ? ' bossplate' : ''}${cleared ? ' cleared' : ''}"><div class="bp-top"><span class="label">${anteLabel(cleared && kind === 'boss' ? S.ante - 1 : S.ante)}</span><span class="label">${cleared ? 'Defeated' : inBlind ? (kind === 'boss' ? (BOSSES[S.boss || S.bossOff] && BOSSES[S.boss || S.bossOff].showdown ? 'Showdown Boss' : 'Boss Blind') : '') : 'Next up'}</span></div><div class="blind-name${bossShown ? ' boss' : ''}">${name}</div>`;
+  let h = `<div class="blindplate${bossShown ? ' bossplate' : ''}${cleared ? ' cleared' : ''}"><div class="bp-top"><span class="label">${anteLabel(cleared && kind === 'boss' ? S.ante - 1 : S.ante)}</span><span class="label">${cleared ? 'Defeated' : inBlind ? (kind === 'boss' ? (BOSSES[S.boss || S.bossOff] && BOSSES[S.boss || S.bossOff].showdown ? 'Showdown Boss' : 'Boss Blind') : '') : 'Next up'}</span></div><div class="bp-namerow"><div class="blind-name${bossShown ? ' boss' : ''}">${name}</div><div class="bp-reward" title="Plus ¥1 per unused Play and ¥1 interest per ¥5 held (max ¥5)"><div class="label">Reward</div><div class="num">¥${reward}<span class="muted" style="font-size:11px;font-family:var(--body)"> +extras</span></div></div></div>`;
   if (offBoss) h += `<div class="boss-desc"><b>Disabled by Tamamo-no-Mae.</b></div>`;
   if (bossShown) h += `<div class="boss-desc">${BOSSES[S.boss].desc}${S.boss === 'collector' && S.bossSuit ? ` <b>This Blind: ${SUIT_EN[S.bossSuit]}.</b>` : ''}${S.boss === 'gatekeeper' ? (S.firstPlayDone ? ' <b>First Play done.</b>' : '') : ''}</div>`;
-  h += `<div class="bp-row"><div><div class="label">Score at least</div><div class="target num">${fmtN(targetVal)}</div></div><div class="bp-reward" title="Plus ¥1 per unused Play and ¥1 interest per ¥5 held (max ¥5)"><div class="label">Reward</div><div class="num">¥${reward}<span class="muted" style="font-size:11px;font-family:var(--body)"> +extras</span></div></div></div></div>`;
-  if (show) h += `<div class="roundscore"><div class="label">Round Score</div><div class="rs num${S.score >= S.target ? ' met' : ''}" id="roundScore">${fmtN(S.score)}</div><div class="rsbar"><i id="roundBar" style="width:${pct}%"></i></div></div>`;
+  // The round's score sits in the Blind plate beside its target, with the progress bar along the plate's bottom edge.
+  const targetHTML = `<div class="bp-target"><div class="label">Score at least</div><div class="target num">${fmtN(targetVal)}</div></div>`;
+  h += show ? `<div class="bp-row bp-score"><div class="roundscore"><div class="label">Round score</div><div class="rs num${S.score >= S.target ? ' met' : ''}" id="roundScore">${fmtN(S.score)}</div></div>${targetHTML}</div><div class="rsbar"><i id="roundBar" style="width:${pct}%"></i></div></div>` : `<div class="bp-row">${targetHTML}</div></div>`;
   if (inBlind) {
     const pv = PREVIEW;
     if (S.busy) h += `<div class="handbox scoring" id="scorebox"></div>`;
@@ -3458,7 +3483,7 @@ function renderBlind() {
   const wallN = S.phase === 'blind' ? S.wall.length : unpaid && S.reward.wallLeft != null ? S.reward.wallLeft : (S.deck || []).length;
   h += `<div class="stats"><div class="stat plays"><div class="label">Plays</div><div class="v num">${S.plays}</div></div><div class="stat discards"><div class="label">Discards</div><div class="v num">${S.discards}</div></div></div>`;
   h += `<div class="stats purserow"><div class="purse" title="Interest: +¥${interest} at the next cash-out (¥1 for every ¥${CFG.interestPer} you hold, up to ¥${interestCap()})"><span class="coin" aria-hidden="true">${coinSVG()}</span><span class="wtx"><span class="pv num" id="purseVal">¥${unpaid ? (S.reward.before ?? S.money - S.reward.total) : S.money}</span><span class="wl" data-notr>${LANG === 'hk' ? 'HKD' : 'JPY'}</span></span></div><button class="wallbtn" id="wallBtn" title="${S.phase === 'blind' ? 'Tiles still face down in the Wall. Click to see every tile.' : 'Tiles in your Wall. Click to see every tile.'}"><span class="wallico" aria-hidden="true"><i></i><i></i><i></i></span><span class="wtx"><span class="wv num">${wallN}</span><span class="wl">Wall</span></span></button></div>`;
-  h += `<button class="sidebtn" id="sideRunInfo">${INFO_ICO}<span>Run Info</span></button>`;   // run-related screens live in the sidebar, beside the run
+  h += `<button class="sidebtn" id="sideRunInfo"><span class="runico" aria-hidden="true"></span><span>Run Info</span></button>`;   // run-related screens live in the sidebar, beside the run
   // The extras in one plate at the bottom, one labelled row each: the Dora (Bonus Tile) indicators, Tags held, and Flowers.
   const extras = [];
   if (S.indicators.length) extras.push(`<div class="sx-row"><span class="label">Dora</span><div class="sx-val" id="doraRow"></div></div>`);
@@ -3658,6 +3683,7 @@ function renderActions() {
 const lineCls = l => (l.zero ? ' bad' : '') + (l.yaku ? ' yaku' : '') + (l.tal ? ' tal' : '') + (l.convert ? ' convert' : '');
 // The result frame: how the multiplier was built, as a small caption, over the final Chips × Mult = score.
 const lastSummaryHTML = c => `<div class="total"><div class="formula num">${c.han} Han → ${c.tier} ×${c.baseMult}${c.xmult !== 1 ? ` · tiles ×${fmtMult(c.xmult)}` : ''}${c.mult !== c.baseMult * c.xmult ? ` → ×${fmtMult(c.mult)} after Talismans${c.furiten ? ' and Furiten' : ''}` : ''}</div><div class="lp-result num">${c.chips} × ${fmtMult(c.mult)} = ${fmtN(c.total)}</div></div>`;
+const LP_FOLD = 4; let lpOpen = false, lpFor = null;
 function renderLast() {
   const c = S.lastPlay; const box = $('#lastPlay');
   if (!c) { box.innerHTML = `<div class="label">Last Play</div><div class="lp-empty"><div class="muted">No play yet this Blind.</div><div class="lp-best"><span class="label">Best this run</span><b class="num">${fmtN(S.stats.best)}</b></div>${S.stats.bestDesc ? `<div class="muted lp-bestdesc">${S.stats.bestDesc}</div>` : ''}</div>`; return; }
@@ -3665,7 +3691,12 @@ function renderLast() {
   if (c.kind === 'meld' && c.nMelds >= 2) h += `<div class="muted" style="font-size:11px;margin:-4px 0 6px">${c.nChi ? c.nChi + ' Chi ' : ''}${c.nPon ? c.nPon + ' Pon ' : ''}${c.nKan ? c.nKan + ' Kan ' : ''}${c.hasPair ? '+ pair' : ''}</div>`;
   // Same order and colours as the animated log left them (c.order), so the panel does not change when scoring ends.
   const order = c.order ? c.order.concat(c.lines.map((_, i) => i).filter(i => !c.order.includes(i))) : c.lines.map((_, i) => i);
-  h += '<div class="lp-lines">'; for (const i of order) { const l = c.lines[i]; h += `<div class="row lrow${lineCls(l)}"><span>${l.label}</span><span class="num">${l.val}</span></div>`; } h += '</div>';
+  // Long breakdowns fold to their first lines (with Show all), so a big hand does not stretch the sidebar; each new play starts folded.
+  if (c !== lpFor) { lpFor = c; lpOpen = false; }
+  const fold = order.length > LP_FOLD + 1 && !lpOpen, shown = fold ? order.slice(0, LP_FOLD) : order;
+  h += '<div class="lp-lines">'; for (const i of shown) { const l = c.lines[i]; h += `<div class="row lrow${lineCls(l)}"><span>${l.label}</span><span class="num">${l.val}</span></div>`; }
+  if (order.length > LP_FOLD + 1) h += `<button class="lp-more" data-lpmore>${lpOpen ? 'Show less' : `Show all (${order.length} lines)`}</button>`;
+  h += '</div>';
   h += lastSummaryHTML(c);
   box.innerHTML = h;
 }
@@ -4683,7 +4714,7 @@ function bindEvents() {
   $('#btnSortMode').onclick = () => { S.sortMode = S.sortMode === 'rank' ? 'suit' : 'rank'; S.sortHand = true; S.hand = sortHandTiles(S.hand); render(); };
 
   // The Wall tile-stack in the side panel opens the Wall screen (the panel is redrawn on render, so the click is delegated).
-  document.addEventListener('click', e => { if (e.target.closest('#wallBtn')) showModal(deckHTML(), true); else if (e.target.closest('#sideRunInfo')) showModal(yakuHTML(), true); });
+  document.addEventListener('click', e => { if (e.target.closest('#wallBtn')) showModal(deckHTML(), true); else if (e.target.closest('#sideRunInfo')) showModal(yakuHTML(), true); else if (e.target.closest('[data-lpmore]')) { lpOpen = !lpOpen; renderLast(); translateDOM($('#lastPlay')); } });
   $('#btnRules').onclick = () => showModal(rulesHTML(), true);
   $('#btnCollection').onclick = () => showModal(collectionHTML(), true, 'colmodal');
   // Collection search filters the current tab by the cards' visible text (works in both terminologies).

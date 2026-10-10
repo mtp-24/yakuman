@@ -691,6 +691,26 @@ aside .blindplate.bossplate{border-color:rgba(201,69,58,.6);background:linear-gr
 aside .handbox.empty{border-style:solid}
 aside .card > .label{color:#cfe0d4;text-shadow:0 1px 1px rgba(0,0,0,.5)}
 aside .lastplay{color:#e8efe9}
+/* Blind plate: reward beside the name, Round score beside its target, the progress bar along the plate's bottom edge */
+aside .blindplate{position:relative;overflow:hidden;padding-bottom:12px}
+.bp-namerow{display:flex;justify-content:space-between;align-items:flex-start;gap:10px} .bp-namerow .blind-name{margin:2px 0 0;min-width:0}
+.bp-namerow .bp-reward{flex:none;font-size:16px;line-height:1.15}
+aside .blindplate .bp-row{margin-top:8px;padding-top:8px}
+aside .blindplate .roundscore{background:none;border:0;box-shadow:none;padding:0!important;margin:0;position:static;min-width:0}
+.bp-score{align-items:flex-end} .bp-target{text-align:right} .bp-target .label{text-align:right}
+.bp-score .roundscore .rs{font-size:26px;line-height:1.1} .bp-score .target{font-size:18px;color:rgba(239,230,210,.8)}
+aside .blindplate .rsbar{position:absolute;left:0;right:0;bottom:0;height:4px;background:rgba(255,255,255,.07)}
+aside .blindplate:has(.rs.met) .rsbar i{background:var(--good)}
+/* Chips x Mult: a lower title line and boxes, same layout */
+aside .handbox .hb-head{height:26px;margin:-2px 0 6px} aside .handbox .hb-head .hb-title{font-size:17px} aside .handbox .hb-head .hb-tot{font-size:24px;line-height:26px}
+aside .handbox .boxwrap > .chipbox,aside .handbox .boxwrap > .multbox{font-size:26px;padding:5px 10px}
+/* Plays and Discards: label and number on one line */
+aside .stats:not(.purserow) .stat{display:flex;flex-direction:row;align-items:center;justify-content:space-between;padding-top:7px;padding-bottom:7px}
+aside .stats:not(.purserow) .stat .v{font-size:20px;line-height:1}
+/* Run Info: a slim utility button */
+aside .sidebtn{height:32px;font-size:12.5px}
+/* Last Play: Show all / Show less under folded lines */
+.lp-more{display:block;width:100%;margin:2px 0 0;padding:5px 0 4px;background:none;border:0;border-top:1px solid rgba(255,255,255,.06);border-radius:0;color:var(--info);font-size:11.5px;cursor:pointer} .lp-more:hover{color:#cfe6ff}
 /* Even spacing: every box in the side panel sits 8px from the next */
 aside .blindplate,aside .roundscore,aside .handbox,aside .stats .stat,aside .sidextra{padding-left:12px;padding-right:12px}
 aside #blindCard{display:flex;flex-direction:column;gap:8px} aside #blindCard > *{margin-top:0!important;margin-bottom:0!important}
@@ -723,7 +743,11 @@ aside .sidextra{background:linear-gradient(180deg,rgba(14,24,20,.82),rgba(10,18,
 .stats.purserow{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
 .wallbtn{display:flex;align-items:center;justify-content:center;gap:10px;padding:8px 12px;border-radius:8px;background:linear-gradient(180deg,#2c3a33,#1c2621);border:1px solid #4d6a5c;box-shadow:inset 0 1px 0 rgba(255,255,255,.12);color:var(--fg);min-width:0;transition:filter .12s,transform .08s}
 .wallbtn:hover{filter:brightness(1.15)}
-.sidebtn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:36px;padding:0 12px;border-radius:8px;background:linear-gradient(180deg,#2c3a33,#1c2621);border:1px solid #4d6a5c;box-shadow:inset 0 1px 0 rgba(255,255,255,.12);color:var(--fg);font-size:13px} .sidebtn:hover{filter:brightness(1.15)} .sidebtn .qico{width:16px;height:16px;color:#9ec5e8} .wallbtn:active{transform:translateY(1px)}
+.sidebtn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:36px;padding:0 12px;border-radius:8px;background:linear-gradient(180deg,#2c3a33,#1c2621);border:1px solid #4d6a5c;box-shadow:inset 0 1px 0 rgba(255,255,255,.12);color:var(--fg);font-size:13px} .sidebtn:hover{filter:brightness(1.15)} .sidebtn .qico{width:16px;height:16px;color:#9ec5e8}
+/* Run Info's icon is drawn like the Wall's tiles: a cream ledger card with ruled lines, a blue underside and a red bookmark */
+.runico{position:relative;width:20px;height:23px;flex:none}
+.runico::before{content:'';position:absolute;left:1px;top:1px;width:15px;height:19px;border-radius:3px;background:repeating-linear-gradient(180deg,rgba(120,95,50,.55) 0 1px,transparent 1px 4px) 3px 5px/9px 11px no-repeat,linear-gradient(180deg,#fffaf0,#e9dec3);border:1px solid #cdbb90;box-shadow:0 2px 0 #2b5c8f,0 3px 4px rgba(0,0,0,.35)}
+.runico::after{content:'';position:absolute;left:11px;top:0;width:5px;height:9px;background:linear-gradient(180deg,#e2463a,#a8221a);clip-path:polygon(0 0,100% 0,100% 100%,50% 72%,0 100%)} .wallbtn:active{transform:translateY(1px)}
 .wallico{position:relative;width:26px;height:28px;flex:0 0 auto} .wallico i{position:absolute;width:16px;height:21px;border-radius:3px;background:linear-gradient(180deg,#fffaf0,#e9dec3);border:1px solid #cdbb90;box-shadow:0 2px 0 #2b5c8f}
 .wallico i:nth-child(1){left:0;top:5px} .wallico i:nth-child(2){left:5px;top:2px} .wallico i:nth-child(3){left:10px;top:0}
 .wtx{display:flex;flex-direction:column;align-items:flex-start;line-height:1} .wallbtn .wv{font-family:var(--display);font-size:24px;color:var(--fg)} .wallbtn .wl{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-top:3px}
