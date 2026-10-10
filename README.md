@@ -173,6 +173,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 162: Collection engravings use wide cards: the sample tile sits on a felt pad at the left, the name and effect beside it, an accent edge in each engraving's colour, two or three cards per row.
 - Build 163: Engraving cards drop the coloured accent edge.
 - Build 164: Flowers in the side panel use the same hover card as tiles (a Flower label, the name and the effect) instead of the plain tooltip; the hover card now works for any element with data-hc-title.
+- Build 180: In Hong Kong mode the Ready Hand play is called Teng Paai (was Listening Hand), matching the hints.
 - Build 179: The game is now called Tenpai (聴牌 in Riichi mode, 聽牌 in Hong Kong mode on the title screen). Hong Kong hints say "teng paai" instead of "listening". Save keys, the repo and file names are unchanged.
 - Build 178: Third Balatro batch (first-draft names and numbers).
   - Music is a four-minute song in twelve sections before it loops (intro, four A themes, two B and two C progressions, a breakdown and an outro), with fills and small random variations; Shop and Boss layers still crossfade on top.

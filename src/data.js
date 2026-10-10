@@ -634,7 +634,7 @@ const HK_TERMS = {
   'Daisuushii': '大四喜 Big Four Winds', 'Chinroutou': '清幺九 All Terminals', 'Ryuuiisou': '綠一色 All Green', 'Suukantsu': '十八羅漢 Eighteen Arhats', 'Sanshoku': '三色同順 Triple Chow',
   'Scrolls of Mastery': '秘笈 Manuals', 'Scroll of Mastery': '秘笈 Manual', 'Scrolls': 'Manuals', 'Scroll': 'Manual', 'Flowers & Seasons': '花牌 Flowers', 'Flower / Season': '花牌 Flower', 'Flowers': '花牌 Flowers',
   'Kami Spirit': '神 Deity', 'Kami': '神 Deity', 'Omikuji': '求籤 Fortune Stick', 'Talismans': '符 Charms', 'Talisman': '符 Charm',
-  'Complete Hands': '食糊 Winning Hands', 'Complete Hand': '食糊 Winning Hand', 'Complete hands': 'Winning hands', 'Complete hand': 'Winning hand', 'complete hands': 'winning hands', 'complete hand': 'winning hand', 'Ready Hand': '聽牌 Listening Hand',
+  'Complete Hands': '食糊 Winning Hands', 'Complete Hand': '食糊 Winning Hand', 'Complete hands': 'Winning hands', 'Complete hand': 'Winning hand', 'complete hands': 'winning hands', 'complete hand': 'winning hand', 'Ready Hand': '聽牌 Teng Paai',
   'Red Fives': '紅五 Red Fives', 'Red Five': '紅五 Red Five', 'Yakuhai': '番牌 Honor Set', 'Yakuman': '限糊 Limit Hand', 'Yaku': 'Faan Patterns', 'Han': 'Faan', 'Dora': '寶牌 Bonus Tile', 'Furiten': '振聽 Discard Lock', 'tenpai': '聽牌 teng paai',
   'Chis': 'Chows', 'Chi': 'Chow 上', 'Pons': 'Pungs', 'Pon': 'Pung 碰', 'Kans': 'Kongs', 'Kan': 'Kong 槓', 'Manzu': '萬子 Characters', 'Pinzu': '筒子 Dots', 'Souzu': '索子 Bamboo', 'Man': 'Characters', 'Pin': 'Dots', 'Sou': 'Bamboo',
   'East Wind': '東風 East', 'South Wind': '南風 South', 'West Wind': '西風 West', 'North Wind': '北風 North', 'White Dragon': '白板 White Dragon', 'Green Dragon': '發財 Green Dragon', 'Red Dragon': '紅中 Red Dragon',
