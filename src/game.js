@@ -731,7 +731,7 @@ function takeFromPack(i) {
   else if (it.kind === 'tile') { queueWallFlight($(`#modal .packtileart[data-pt="${i}"]`), it.tile); S.deck.push(it.tile); PROFILE.tilesAdded = (PROFILE.tilesAdded || 0) + 1; saveProfile(); for (const k of liveTals(S)) if (TAL[k].onTileAdded) TAL[k].onTileAdded(S, 1); }
   else { if (S.consumables.length >= conSlots()) { setMsg('Consumable slots are full. Use or sell one first.', true); return render(); } S.consumables.push({ kind: it.kind, key: it.key }); }
   if (it.kind === 'talisman' || it.kind === 'omikuji' || it.kind === 'kami') { const b = $(`#modal [data-take="${i}"]`); if (b) queueSlotFlight(b.closest('.shopcard'), it.kind === 'talisman' ? 'tal' : 'con'); }
-  if (it.kind === 'scroll') { const b = $(`#modal [data-take="${i}"]`); if (b) queueSlotFlight(b.closest('.shopcard'), 'info'); }   // a Manual flies into Run Info, where hand levels live
+  if (it.kind === 'scroll') { const b = $(`#modal [data-take="${i}"]`); if (b) queueLevelStamp(b.closest('.shopcard'), it.key); }   // a Manual stamps its new level over the card
   it.sold = true; S.pack.left--; setMsg(it.kind === 'tile' ? `Added ${itemDef(it).name} to your Wall.` : `Took ${itemDef(it).name}.`);
   if (S.pack.left <= 0) closePackSoon(PACK_CLOSE_MS);
   render();
@@ -748,7 +748,8 @@ function buy(it) {
   else if (it.kind === 'omikuji' || it.kind === 'kami') { if (S.consumables.length >= conSlots()) { setMsg('Consumable slots are full. Use one first.', true); return render(); } S.consumables.push({ kind: it.kind, key: it.key }); }
   else if (it.kind === 'scroll') { const [t, k] = it.key.split(':'); S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] = (S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] || 0) + 1; for (const tk of liveTals(S)) if (TAL[tk].onScroll) TAL[tk].onScroll(S); PROFILE.scrollsUsed++; saveProfile(); }
   else if (it.kind === 'flower') { S.flowers.push(it.key); if (S.anteFlower && S.anteFlower.key === it.key) S.anteFlower.sold = true; if (it.key === 'wisteria' || it.key === 'wisteria2') goBackAnte(); }
-  if (!S.quiet && card && (it.kind === 'talisman' || it.kind === 'omikuji' || it.kind === 'kami' || it.kind === 'scroll')) queueSlotFlight(card.closest('.shopcard'), it.kind === 'talisman' ? 'tal' : it.kind === 'scroll' ? 'info' : 'con');
+  if (!S.quiet && card && (it.kind === 'talisman' || it.kind === 'omikuji' || it.kind === 'kami' || it.kind === 'flower')) queueSlotFlight(card.closest('.shopcard'), it.kind === 'talisman' ? 'tal' : it.kind === 'flower' ? 'flower' : 'con');
+  if (!S.quiet && card && it.kind === 'scroll') queueLevelStamp(card.closest('.shopcard'), it.key);
   S.money -= p; it.sold = true; inflate(); if (!S.quiet) { sfx('buy'); S.stats.bought = (S.stats.bought || 0) + 1; } setMsg(`Bought ${def.name}.`); render();
 }
 function itemPrice(it) { if (it.free) return 0; if (it.sticker && it.sticker.rental && it.kind === 'talisman') return S.shop && S.shop.coupon ? 0 : 1; const def = itemDef(it); let base = def.cost + (it.edition ? EDITIONS[it.edition].price : 0); if (it.kind === 'talisman') base += stakeTalCost(); if (S.shop && S.shop.coupon && (it.kind === 'talisman' || it.kind === 'omikuji' || it.kind === 'kami')) return 0; return price(base); }
@@ -788,7 +789,7 @@ function selectHTML() {
   const plays = blindPlays(), discards = blindDiscards();
   // Ante progress: one pip per Ante, filled for cleared Antes, ringed for this one.
   const pips = S.ante > CFG.antes ? '<span class="endlessbadge">Endless</span>' : Array.from({ length: CFG.antes }, (_, i) => `<i class="${i + 1 < S.ante ? 'done' : i + 1 === S.ante ? 'now' : ''}"></i>`).join('');
-  let h = `<div class="shophead"><h2>Ante ${S.ante}${S.ante > CFG.antes ? '' : ` <span class="muted sub">of ${CFG.antes}</span>`}</h2><span class="antepips" title="${anteLabel()}">${pips}</span></div><p class="muted" style="margin:2px 0 12px">${S.challenge ? `Challenge: <b>${CHAL[S.challenge].name}</b> · ${CHAL[S.challenge].desc}` : `${DECKS[S.deckKey].name} · ${STAKES[S.stake].name}`}</p><div class="blindsel">`;
+  let h = `<div class="shophead"><h2>Ante ${S.ante}${S.ante > CFG.antes ? '' : ` <span class="muted sub">of ${CFG.antes}</span>`}</h2><span class="antepips" title="${anteLabel()}">${pips}</span></div><div class="selsub"><p class="muted">${S.challenge ? `Challenge: <b>${CHAL[S.challenge].name}</b> · ${CHAL[S.challenge].desc}` : `${DECKS[S.deckKey].name} · ${STAKES[S.stake].name}`}</p><span class="selbtns"><button id="mDeck" class="ghost quietbtn"><span class="wallico" aria-hidden="true"><i></i><i></i><i></i></span>View Wall <b class="num">${(S.deck || []).length}</b></button><button id="mRunInfo" class="ghost quietbtn">Run Info</button></span></div><div class="blindsel">`;
   kinds.forEach((k, i) => {
     const state = i < S.blindIndex ? 'done' : i === S.blindIndex ? 'current' : 'next';
     const reward = (k === 'small' && smallPaysNothing()) ? 0 : CFG.blindReward[k];
@@ -803,7 +804,7 @@ function selectHTML() {
   });
   h += `</div>`;
   if (S.tags.length) h += `<div class="label" style="margin:12px 0 6px">Tags held</div><div class="overtals">${S.tags.map(t => `<span class="tagchip" data-hc-kind="Tag" data-hc-title="${TAGS[t].name}" data-hc-body="${TAGS[t].desc.replace(/"/g, '&quot;')}">${TAGS[t].name}</span>`).join('')}</div>`;
-  h += `<div class="msg${S.msgErr ? ' err' : ''}" style="margin-top:8px;min-height:18px">${S.msg || ''}</div><div class="shopfoot"><button id="mDeck" class="ghost railbtn"><span class="rbl"><span class="wallico" aria-hidden="true"><i></i><i></i><i></i></span>View Wall</span><b class="num">${(S.deck || []).length}</b></button><button id="mRunInfo" class="ghost railbtn"><span class="rbl"><svg class="rbico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 11v6M12 7.5v.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>Run Info</span></button>${hasF('peony') ? `<span style="flex:1"></span><button id="mRerollBoss" class="ghost" ${canRerollBoss() ? '' : `disabled title="${S.money < 10 ? 'Needs ¥10' : 'Already rerolled this Ante'}"`}>Reroll Boss ¥10</button>` : ''}</div>`;
+  h += `<div class="msg${S.msgErr ? ' err' : ''}" style="margin-top:8px;min-height:18px">${S.msg || ''}</div>${hasF('peony') ? `<div class="shopfoot"><span style="flex:1"></span><button id="mRerollBoss" class="ghost" ${canRerollBoss() ? '' : `disabled title="${S.money < 10 ? 'Needs ¥10' : 'Already rerolled this Ante'}"`}>Reroll Boss ¥10</button></div>` : ''}`;
   return h;
 }
 
@@ -967,17 +968,30 @@ function animateWall() {
 // A Talisman or consumable bought or taken flies from its card into its new slot on the board, shrinking to fit, then the slot
 // pops in. The card is copied before the Shop redraws; the copy sits in a bare shelf so it keeps the shop card's look.
 let slotFlights = [];
+// A Manual has no slot to fly to: its new level is stamped over the card instead, rising and fading, as a confirmation.
+function queueLevelStamp(card, key) {
+  if (!card || !motionOK) return; const [t, k] = key.split(':'), n = (S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] || 0);
+  slotFlights.push({ stamp: true, rect: card.getBoundingClientRect(), text: t === 'y' ? `+${n} Han` : `Lv.${n + 1}`, name: itemDef({ kind: 'scroll', key }).name });
+}
+function playLevelStamp(f) {
+  const el = document.createElement('div'); el.className = 'lvstamp'; el.innerHTML = `<small>${f.name}</small><b>${f.text}</b>`;
+  el.style.cssText = `left:${f.rect.left + f.rect.width / 2}px;top:${f.rect.top + f.rect.height * .42}px`; document.body.appendChild(el); translateDOM(el);
+  const a = el.animate([{ transform: 'translate(-50%,-50%) scale(.6) rotate(-6deg)', opacity: 0 }, { transform: 'translate(-50%,-50%) scale(1.12) rotate(-6deg)', opacity: 1, offset: .25 }, { transform: 'translate(-50%,-50%) scale(1) rotate(-6deg)', opacity: 1, offset: .6 }, { transform: 'translate(-50%,-90%) scale(1) rotate(-6deg)', opacity: 0 }], { duration: 900, easing: 'ease-out' });
+  a.onfinish = () => el.remove(); setTimeout(() => el.remove(), 1500);
+}
 function queueSlotFlight(card, row) { if (card && motionOK) slotFlights.push({ rect: card.getBoundingClientRect(), node: card.cloneNode(true), row }); }
 function animateSlots() {
   const flights = slotFlights; slotFlights = []; if (!flights.length || S.quiet) return;
   const filled = { tal: [...document.querySelectorAll('#talismans .slot.filled')], con: [...document.querySelectorAll('#consumables .slot.filled')] };
   flights.forEach((f, k) => {
-    const dest = f.row === 'info' ? $('#btnYaku') : filled[f.row].pop(); if (!dest) return;
+    if (f.stamp) return playLevelStamp(f);
+    const dest = f.row === 'flower' ? [...document.querySelectorAll('main > aside .flowers .flowerchip')].pop() : filled[f.row].pop(); if (!dest) return;
     const to = dest.getBoundingClientRect(), fly = document.createElement('div');
     fly.className = 'slotfly shelf'; fly.style.cssText = `left:${f.rect.left}px;top:${f.rect.top}px;width:${f.rect.width}px;height:${f.rect.height}px`;
     f.node.style.cssText = 'width:100%;height:100%;margin:0;box-sizing:border-box'; f.node.querySelectorAll('.buy,.pricetag').forEach(e => e.remove());
-    fly.appendChild(f.node); document.body.appendChild(fly); if (f.row !== 'info') dest.style.visibility = 'hidden';
-    const dx = to.left - f.rect.left, dy = to.top - f.rect.top, sx = to.width / f.rect.width, sy = to.height / f.rect.height;
+    fly.appendChild(f.node); document.body.appendChild(fly); dest.style.visibility = 'hidden';
+    let dx = to.left - f.rect.left, dy = to.top - f.rect.top, sx = to.width / f.rect.width, sy = to.height / f.rect.height;
+    if (f.row === 'flower') { sx = sy = Math.min(.22, (to.height * 2) / f.rect.height); dx = to.left + to.width / 2 - f.rect.left - f.rect.width * sx / 2; dy = to.top + to.height / 2 - f.rect.top - f.rect.height * sy / 2; }   // a pill is too flat to stretch a card into
     const land = () => { fly.remove(); if (!dest.isConnected) return; dest.style.visibility = ''; dest.animate([{ transform: 'scale(.86)', filter: 'brightness(1.6)' }, { transform: 'scale(1.04)', filter: 'brightness(1.2)', offset: .6 }, { transform: 'none', filter: 'none' }], { duration: 320, easing: 'ease-out' }); };
     const a = fly.animate([{ transform: 'none', opacity: 1 }, { transform: `translate(${dx * .4}px,${dy * .4 - 40}px) scale(${(1 + sx) / 2},${(1 + sy) / 2}) rotate(-3deg)`, opacity: 1, offset: .45 }, { transform: `translate(${dx}px,${dy}px) scale(${sx},${sy})`, opacity: .4 }],
       { duration: 620, delay: k * 120, easing: 'cubic-bezier(.45,0,.4,1)', fill: 'backwards' });
