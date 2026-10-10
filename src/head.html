@@ -468,7 +468,7 @@ button.pulse{animation:btnpulse 1s ease-in-out infinite;box-shadow:0 0 0 0 rgba(
   header{padding:6px 12px;gap:6px}
   header h1{font-size:18px} header h1 span{display:none}
   header button{padding:5px 8px;font-size:12px}
-  .hdr-nav{width:100%;display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+  .hdr-nav{width:100%;display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
   .hdr-nav button{width:100%;padding:7px 4px;font-size:12px}
   header .hdr-stat{font-size:12px}
   main{display:flex;flex-direction:column;gap:10px;padding:10px 12px}
@@ -722,7 +722,8 @@ aside .sidextra{background:linear-gradient(180deg,rgba(14,24,20,.82),rgba(10,18,
 @media (max-width:1400px){.act-s{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;min-height:28px}}
 .stats.purserow{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
 .wallbtn{display:flex;align-items:center;justify-content:center;gap:10px;padding:8px 12px;border-radius:8px;background:linear-gradient(180deg,#2c3a33,#1c2621);border:1px solid #4d6a5c;box-shadow:inset 0 1px 0 rgba(255,255,255,.12);color:var(--fg);min-width:0;transition:filter .12s,transform .08s}
-.wallbtn:hover{filter:brightness(1.15)} .wallbtn:active{transform:translateY(1px)}
+.wallbtn:hover{filter:brightness(1.15)}
+.sidebtn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:36px;padding:0 12px;border-radius:8px;background:linear-gradient(180deg,#2c3a33,#1c2621);border:1px solid #4d6a5c;box-shadow:inset 0 1px 0 rgba(255,255,255,.12);color:var(--fg);font-size:13px} .sidebtn:hover{filter:brightness(1.15)} .sidebtn .qico{width:16px;height:16px;color:#9ec5e8} .wallbtn:active{transform:translateY(1px)}
 .wallico{position:relative;width:26px;height:28px;flex:0 0 auto} .wallico i{position:absolute;width:16px;height:21px;border-radius:3px;background:linear-gradient(180deg,#fffaf0,#e9dec3);border:1px solid #cdbb90;box-shadow:0 2px 0 #2b5c8f}
 .wallico i:nth-child(1){left:0;top:5px} .wallico i:nth-child(2){left:5px;top:2px} .wallico i:nth-child(3){left:10px;top:0}
 .wtx{display:flex;flex-direction:column;align-items:flex-start;line-height:1} .wallbtn .wv{font-family:var(--display);font-size:24px;color:var(--fg)} .wallbtn .wl{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-top:3px}

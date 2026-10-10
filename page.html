@@ -468,7 +468,7 @@ button.pulse{animation:btnpulse 1s ease-in-out infinite;box-shadow:0 0 0 0 rgba(
   header{padding:6px 12px;gap:6px}
   header h1{font-size:18px} header h1 span{display:none}
   header button{padding:5px 8px;font-size:12px}
-  .hdr-nav{width:100%;display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+  .hdr-nav{width:100%;display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
   .hdr-nav button{width:100%;padding:7px 4px;font-size:12px}
   header .hdr-stat{font-size:12px}
   main{display:flex;flex-direction:column;gap:10px;padding:10px 12px}
@@ -722,7 +722,8 @@ aside .sidextra{background:linear-gradient(180deg,rgba(14,24,20,.82),rgba(10,18,
 @media (max-width:1400px){.act-s{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;min-height:28px}}
 .stats.purserow{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
 .wallbtn{display:flex;align-items:center;justify-content:center;gap:10px;padding:8px 12px;border-radius:8px;background:linear-gradient(180deg,#2c3a33,#1c2621);border:1px solid #4d6a5c;box-shadow:inset 0 1px 0 rgba(255,255,255,.12);color:var(--fg);min-width:0;transition:filter .12s,transform .08s}
-.wallbtn:hover{filter:brightness(1.15)} .wallbtn:active{transform:translateY(1px)}
+.wallbtn:hover{filter:brightness(1.15)}
+.sidebtn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:36px;padding:0 12px;border-radius:8px;background:linear-gradient(180deg,#2c3a33,#1c2621);border:1px solid #4d6a5c;box-shadow:inset 0 1px 0 rgba(255,255,255,.12);color:var(--fg);font-size:13px} .sidebtn:hover{filter:brightness(1.15)} .sidebtn .qico{width:16px;height:16px;color:#9ec5e8} .wallbtn:active{transform:translateY(1px)}
 .wallico{position:relative;width:26px;height:28px;flex:0 0 auto} .wallico i{position:absolute;width:16px;height:21px;border-radius:3px;background:linear-gradient(180deg,#fffaf0,#e9dec3);border:1px solid #cdbb90;box-shadow:0 2px 0 #2b5c8f}
 .wallico i:nth-child(1){left:0;top:5px} .wallico i:nth-child(2){left:5px;top:2px} .wallico i:nth-child(3){left:10px;top:0}
 .wtx{display:flex;flex-direction:column;align-items:flex-start;line-height:1} .wallbtn .wv{font-family:var(--display);font-size:24px;color:var(--fg)} .wallbtn .wl{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-top:3px}
@@ -1001,7 +1002,6 @@ body.reducemotion *,body.reducemotion *::before,body.reducemotion *::after,body.
   <h1 data-notr>Tenpai<span>MAHJONG ROGUELITE · PLAYTEST BUILD</span></h1>
   <div class="spacer"></div>
   <nav class="hdr-nav">
-    <button id="btnYaku" data-notr><svg class="hico" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.3" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M8 7.2v4.3M8 4.6v.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span>Run Info</span></button>
     <button id="btnCollection"><svg class="hico" viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="3.5" width="7.5" height="10" rx="1.4" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M11.5 3.2l2.6 1.1-3.3 8.8" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg><span>Collection</span></button>
     <button id="btnRules"><svg class="hico" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 3.5c2-1 3.8-1 5.5.4 1.7-1.4 3.5-1.4 5.5-.4v9c-2-1-3.8-1-5.5.4-1.7-1.4-3.5-1.4-5.5-.4z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M8 3.9v9.4" stroke="currentColor" stroke-width="1.2"/></svg><span>Rules</span></button>
     <button id="btnSettings" class="ghost" title="Terminology, helper, debug tools"><svg class="hico" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="2.2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M8 1.8v2M8 12.2v2M1.8 8h2M12.2 8h2M3.6 3.6l1.4 1.4M11 11l1.4 1.4M3.6 12.4 5 11M11 5l1.4-1.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><span>Settings</span></button>
@@ -3111,7 +3111,6 @@ function render() {
   renderBlind(); renderTalismans(); renderConsumables(); renderOpen(); renderRiver(); renderHand(); renderActions(); renderLast();
   $('#msg').textContent = S.msg || ''; $('#msg').className = 'msg' + (S.msgErr ? ' err' : '');
   if (S.phase === 'cashout') { showModal(cashoutHTML(), false, 'cashmodal traymodal'); placeOverlay(true); animateCashout(); } else if (S.phase === 'shop' && S.pack) { showModal(packHTML(), false, 'packmodal traymodal'); placeOverlay(true, 'shop'); fillPackTiles(); fillPackHand(); trayIn('pack'); } else if (S.phase === 'shop') { showModal(shopHTML(), false, 'shopmodal traymodal'); placeOverlay(true, 'shop'); tweenWallet(); trayIn('shop'); } else if (S.phase === 'select') { showModal(selectHTML(), false, 'selectmodal'); anteUp(); } else if (S.phase === 'gameover') { showModal(overHTML(false), false, 'overmodal'); tallyOver(); } else if (S.phase === 'win') { showModal(overHTML(true), false, 'overmodal winmodal'); tallyOver(); } else if (!modalPinned) hideModal();
-  $('#btnYaku span').textContent = 'Run Info';
   document.querySelectorAll('.zhead > .muted').forEach(e => { e.title = e.textContent; });   // full text on hover when a header is truncated
   translateDOM($('#app')); fitNumbers(); fitHead('talSell'); fitHead('conSell');
   if ($('#overlay').classList.contains('inflow')) placeOverlay(true, S.phase === 'shop' ? 'shop' : undefined);   // terms and fitted numbers can change the left column's height, so a tray that is part of the page is measured again
@@ -3457,6 +3456,7 @@ function renderBlind() {
   const wallN = S.phase === 'blind' ? S.wall.length : unpaid && S.reward.wallLeft != null ? S.reward.wallLeft : (S.deck || []).length;
   h += `<div class="stats"><div class="stat plays"><div class="label">Plays</div><div class="v num">${S.plays}</div></div><div class="stat discards"><div class="label">Discards</div><div class="v num">${S.discards}</div></div></div>`;
   h += `<div class="stats purserow"><div class="purse" title="Interest: +¥${interest} at the next cash-out (¥1 for every ¥${CFG.interestPer} you hold, up to ¥${interestCap()})"><span class="coin" aria-hidden="true">${coinSVG()}</span><span class="wtx"><span class="pv num" id="purseVal">¥${unpaid ? (S.reward.before ?? S.money - S.reward.total) : S.money}</span><span class="wl" data-notr>${LANG === 'hk' ? 'HKD' : 'JPY'}</span></span></div><button class="wallbtn" id="wallBtn" title="${S.phase === 'blind' ? 'Tiles still face down in the Wall. Click to see every tile.' : 'Tiles in your Wall. Click to see every tile.'}"><span class="wallico" aria-hidden="true"><i></i><i></i><i></i></span><span class="wtx"><span class="wv num">${wallN}</span><span class="wl">Wall</span></span></button></div>`;
+  h += `<button class="sidebtn" id="sideRunInfo">${INFO_ICO}<span>Run Info</span></button>`;   // run-related screens live in the sidebar, beside the run
   // The extras in one plate at the bottom, one labelled row each: the Dora (Bonus Tile) indicators, Tags held, and Flowers.
   const extras = [];
   if (S.indicators.length) extras.push(`<div class="sx-row"><span class="label">Dora</span><div class="sx-val" id="doraRow"></div></div>`);
@@ -4681,13 +4681,12 @@ function bindEvents() {
   $('#btnSortMode').onclick = () => { S.sortMode = S.sortMode === 'rank' ? 'suit' : 'rank'; S.sortHand = true; S.hand = sortHandTiles(S.hand); render(); };
 
   // The Wall tile-stack in the side panel opens the Wall screen (the panel is redrawn on render, so the click is delegated).
-  document.addEventListener('click', e => { if (e.target.closest('#wallBtn')) showModal(deckHTML(), true); });
+  document.addEventListener('click', e => { if (e.target.closest('#wallBtn')) showModal(deckHTML(), true); else if (e.target.closest('#sideRunInfo')) showModal(yakuHTML(), true); });
   $('#btnRules').onclick = () => showModal(rulesHTML(), true);
   $('#btnCollection').onclick = () => showModal(collectionHTML(), true, 'colmodal');
   // Collection search filters the current tab by the cards' visible text (works in both terminologies).
   document.addEventListener('change', e => { if (e.target.id !== 'importFile' || !e.target.files[0]) return; const f = e.target.files[0]; const r = new FileReader(); r.onload = () => { $('#importCode').value = String(r.result || ''); $('#importFileName').textContent = f.name; }; r.readAsText(f); });
   document.addEventListener('input', e => { if (e.target.id !== 'colSearch') return; const q = e.target.value.trim().toLowerCase(); let shown = 0; document.querySelectorAll('#modal .colcard').forEach(c => { const ok = !q || c.innerText.toLowerCase().includes(q); c.hidden = !ok; if (ok) shown++; }); const none = document.querySelector('#modal .colnone'); if (none) none.hidden = shown > 0; });
-  $('#btnYaku').onclick = () => showModal(yakuHTML(), true);
 
   $('#btnSettings').onclick = () => showModal(settingsHTML(), true);
   $('#btnNewRun').onclick = () => showModal(`<div class="shophead"><h2>Start a New Run?</h2></div><p class="muted" style="margin:4px 0 0">Your current run will be lost.</p><div class="shopfoot"><button id="mClose" class="ghost">Cancel</button><span style="flex:1"></span><button id="mNewRun" class="danger">New Run</button></div>`, true, 'confirmmodal');
