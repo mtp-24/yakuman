@@ -578,7 +578,7 @@ button.pulse{animation:btnpulse 1s ease-in-out infinite;box-shadow:0 0 0 0 rgba(
 .modal>.banner.bn-indigo{--pc:140,162,240} .modal>.banner.bn-teal{--pc:100,200,170} .modal>.banner.bn-ink{--pc:200,208,206} .modal>.banner.bn-red{--pc:232,110,92}
 .modal>.banner.bn-gold{--pc:243,199,104} .modal>.banner.bn-gold h2{text-shadow:0 0 18px rgba(255,220,140,.35)}
 .modal>.banner .cashscore b{color:#bff3d1}
-.modal.hasbanner .modal-x{z-index:5;float:none;display:flex;margin:-6px -6px -38px auto;background:rgba(0,0,0,.28);border-color:rgba(255,255,255,.22)}
+.modal.hasbanner .modal-x{z-index:5;float:none;display:flex;margin:-6px -6px -46px auto;background:rgba(0,0,0,.28);border-color:rgba(255,255,255,.22)}
 .modal.hasbanner>.banner.shophead{padding-right:64px}
 .overmodal>.banner,.cashmodal>.banner{text-align:left}
 /* Ante screen chips */
@@ -664,7 +664,7 @@ header .hdr-nav .hico{width:14px;height:14px;flex:none;color:#d9a441}
 .lastplay .total .formula{font-family:var(--body);font-size:11px;text-align:left;color:rgba(233,220,192,.6);text-shadow:none;padding-bottom:5px;margin-bottom:4px;border-bottom:1px solid rgba(217,164,65,.2)}
 .lastplay .total{margin-top:8px;padding:7px 12px;border-radius:9px;background:linear-gradient(180deg,rgba(0,0,0,.4),rgba(0,0,0,.25));border:1px solid rgba(217,164,65,.55);box-shadow:inset 0 1px 0 rgba(255,220,160,.12),0 0 14px rgba(217,164,65,.15);}
 .lastplay .lp-calc{text-align:right;font-size:12px;color:rgba(233,220,192,.75);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.lastplay .lp-result{text-align:right;font-family:var(--display);font-size:22px;line-height:1.15;color:#f3c768;text-shadow:0 0 10px rgba(243,199,104,.35);white-space:nowrap;overflow:hidden}
+.lastplay .lp-result{text-align:right;font-family:var(--display);font-size:28px;line-height:1.15;color:#f3c768;text-shadow:0 0 10px rgba(243,199,104,.35);white-space:nowrap;overflow:hidden}
 .lastplay .lp-empty{margin-top:6px;background:linear-gradient(180deg,rgba(14,24,20,.82),rgba(10,18,15,.9));border:1px solid rgba(0,0,0,.5);border-radius:8px;padding:9px 11px;box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 2px 6px rgba(0,0,0,.3);font-size:12px}
 .lastplay .lp-best{display:flex;justify-content:space-between;align-items:baseline;margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,.06)} .lastplay .lp-best b{font-family:var(--display);font-size:18px;font-weight:500;color:#f3c768}
 .lastplay .lp-bestdesc{font-size:11px;margin-top:2px}
@@ -695,7 +695,7 @@ aside .blindplate .roundscore{background:none;border:0;box-shadow:none;padding:0
 aside .blindplate .rsbar{position:absolute;left:0;right:0;bottom:0;height:4px;background:rgba(255,255,255,.07)}
 aside .blindplate:has(.rs.met) .rsbar i{background:var(--good)}
 /* Chips x Mult: a lower title line and boxes, same layout */
-aside .handbox .hb-head{height:26px;margin:-2px 0 6px} aside .handbox .hb-head .hb-title{font-size:17px} aside .handbox .hb-head .hb-tot{font-size:24px;line-height:26px}
+aside .handbox .hb-head{height:30px;margin:-2px 0 6px} aside .handbox .hb-head .hb-title{font-size:20px} aside .handbox .hb-head .hb-tot{font-size:28px;line-height:30px}
 aside .handbox .boxwrap > .chipbox,aside .handbox .boxwrap > .multbox{font-size:26px;padding:5px 10px}
 /* Plays and Discards: label and number on one line */
 aside .stats:not(.purserow) .stat{display:flex;flex-direction:row;align-items:center;justify-content:space-between;padding-top:7px;padding-bottom:7px}
@@ -2998,13 +2998,22 @@ let rerolling = false;
 function reroll() {
   const c = rerollPrice(); if (rerolling) return; if (S.money < c) { setMsg(`Reroll costs ¥${c}.`, true); return render(); }
   S.money -= c; S.shop.firstFree = false; S.shop.rerolls = (S.shop.rerolls || 0) + 1; S.stats.rerolls = (S.stats.rerolls || 0) + 1; sfx('reroll');
-  const roll = () => { S.shop.cards = Array.from({ length: shopSlots() }, rollCard); render(); flipIn(); };
+  const roll = () => { const first = document.querySelector('#modal .cardshelf .shopcard'), from = first ? first.offsetHeight : 0; S.shop.cards = Array.from({ length: shopSlots() }, rollCard); render(); flipIn(); easeCardHeight(from); };
   const old = [...document.querySelectorAll('#modal .cardshelf .shopcard')];
   if (!motionOK || !old.length) return roll();
   rerolling = true; const m = $('#modal'); m.style.pointerEvents = 'none'; let done = false;
   const go = () => { if (done) return; done = true; rerolling = false; m.style.pointerEvents = ''; roll(); };
   old.forEach((el, i) => el.animate([{ transform: 'perspective(700px) rotateY(0)', opacity: 1 }, { transform: 'perspective(700px) rotateY(90deg) scale(.96)', opacity: .5 }], { duration: 150, delay: i * 45, easing: 'ease-in', fill: 'forwards' }));
   setTimeout(go, spd(150 + (old.length - 1) * 45 + 10));
+}
+// New cards that are taller or shorter than the old ones grow or shrink to their height instead of jumping, and the
+// shelves below follow. Only the bottom is clipped while they grow, so price tags above the cards stay in view.
+function easeCardHeight(from) {
+  if (!motionOK || !from) return; const cards = [...document.querySelectorAll('#modal .cardshelf .shopcard')], to = cards.length ? cards[0].offsetHeight : 0;
+  if (!to || Math.abs(to - from) < 2) return;
+  const clear = () => cards.forEach(c => { c.style.clipPath = ''; });
+  cards.forEach(c => { c.style.clipPath = 'inset(-40px -40px 0 -40px)'; c.animate([{ height: from + 'px' }, { height: to + 'px' }], { duration: 280, easing: 'cubic-bezier(.2,.8,.2,1)' }); });
+  setTimeout(clear, spd(300));
 }
 function flipIn() {
   if (!motionOK) return;

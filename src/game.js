@@ -891,13 +891,22 @@ let rerolling = false;
 function reroll() {
   const c = rerollPrice(); if (rerolling) return; if (S.money < c) { setMsg(`Reroll costs ¥${c}.`, true); return render(); }
   S.money -= c; S.shop.firstFree = false; S.shop.rerolls = (S.shop.rerolls || 0) + 1; S.stats.rerolls = (S.stats.rerolls || 0) + 1; sfx('reroll');
-  const roll = () => { S.shop.cards = Array.from({ length: shopSlots() }, rollCard); render(); flipIn(); };
+  const roll = () => { const first = document.querySelector('#modal .cardshelf .shopcard'), from = first ? first.offsetHeight : 0; S.shop.cards = Array.from({ length: shopSlots() }, rollCard); render(); flipIn(); easeCardHeight(from); };
   const old = [...document.querySelectorAll('#modal .cardshelf .shopcard')];
   if (!motionOK || !old.length) return roll();
   rerolling = true; const m = $('#modal'); m.style.pointerEvents = 'none'; let done = false;
   const go = () => { if (done) return; done = true; rerolling = false; m.style.pointerEvents = ''; roll(); };
   old.forEach((el, i) => el.animate([{ transform: 'perspective(700px) rotateY(0)', opacity: 1 }, { transform: 'perspective(700px) rotateY(90deg) scale(.96)', opacity: .5 }], { duration: 150, delay: i * 45, easing: 'ease-in', fill: 'forwards' }));
   setTimeout(go, spd(150 + (old.length - 1) * 45 + 10));
+}
+// New cards that are taller or shorter than the old ones grow or shrink to their height instead of jumping, and the
+// shelves below follow. Only the bottom is clipped while they grow, so price tags above the cards stay in view.
+function easeCardHeight(from) {
+  if (!motionOK || !from) return; const cards = [...document.querySelectorAll('#modal .cardshelf .shopcard')], to = cards.length ? cards[0].offsetHeight : 0;
+  if (!to || Math.abs(to - from) < 2) return;
+  const clear = () => cards.forEach(c => { c.style.clipPath = ''; });
+  cards.forEach(c => { c.style.clipPath = 'inset(-40px -40px 0 -40px)'; c.animate([{ height: from + 'px' }, { height: to + 'px' }], { duration: 280, easing: 'cubic-bezier(.2,.8,.2,1)' }); });
+  setTimeout(clear, spd(300));
 }
 function flipIn() {
   if (!motionOK) return;
