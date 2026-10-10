@@ -14,7 +14,7 @@ const CFG = {
   blindReward: { small: 3, big: 4, boss: 5 },
   interestPer: 5, interestCap: 5,
   rerollCost: 5,
-  // Base values per play type. Scrolls of Mastery add +10 chips and +1 Han per level.
+  // Base values per play type. Manuals add +10 chips and +1 Han per level.
   meldBase: { single: { chips: 0, han: 0 }, pair: { chips: 5, han: 0 }, twopair: { chips: 15, han: 1 }, chi: { chips: 10, han: 1 }, pon: { chips: 20, han: 1 }, kan: { chips: 40, han: 2 }, hand: { chips: 120, han: 2 } },
   // Multi-meld plays ("ladder B"). Key = melds,pair. A single meld + pair uses the meld's base +10 chips.
   rungs: { '2,0': { name: 'Two Melds', chips: 30, han: 1 }, '2,1': { name: 'Two Melds + Pair', chips: 40, han: 1 }, '3,0': { name: 'Three Melds', chips: 60, han: 2 }, '3,1': { name: 'Ready Hand', chips: 80, han: 2 }, '4,0': { name: 'Four Melds', chips: 100, han: 2 }, '4,1': { name: 'Four Melds + Pair', chips: 110, han: 2 } },
@@ -33,7 +33,7 @@ const CFG = {
   // Playtest 23: Talismans fire in slot order after the Han table; flat +Mult class; drag to reorder Talismans.
   hanTable: [1, 2, 4, 8, 15, 15, 25, 25, 40, 40, 40, 60, 60, 100],
   tierNames: ['None', 'Standard', 'Advanced', 'Master', 'Mangan', 'Mangan', 'Haneman', 'Haneman', 'Baiman', 'Baiman', 'Baiman', 'Sanbaiman', 'Sanbaiman', 'Yakuman'],
-  // Shop card odds, as in Balatro (Jokers 20, Tarot 4, Planet 4, no Spectrals): Talismans 71%, Omikuji 14%, Scrolls 14%.
+  // Shop card odds, as in Balatro (Jokers 20, Tarot 4, Planet 4, no Spectrals): Talismans 71%, Omikuji 14%, Manuals 14%.
   shopWeights: { talisman: 20 / 28, omikuji: 4 / 28, scroll: 4 / 28, kami: 0 },
   // Booster pack weights per type, Normal / Jumbo / Mega, as in Balatro (Arcana, Celestial, Standard, Buffoon, Spectral).
   packWeights: { omikuji: [4, 2, .5], scroll: [4, 2, .5], tile: [4, 2, .5], talisman: [1.2, .6, .15], kami: [.6, .3, .07] },
@@ -156,7 +156,7 @@ function wildVariants(tiles) {
 const SEALS = {
   red: { name: 'Red Seal', desc: 'This tile scores twice.' },
   gold: { name: 'Gold Seal', desc: 'Earn ¥3 whenever this tile scores.' },
-  blue: { name: 'Blue Seal', desc: 'If this tile is still in your hand when you win a Blind, the Scroll for your final play levels up by 1.' },
+  blue: { name: 'Blue Seal', desc: 'If this tile is still in your hand when you win a Blind, the Manual for your final play levels up by 1.' },
   purple: { name: 'Purple Seal', desc: 'When you discard this tile, gain a random Omikuji if you have a free consumable slot.' },
 };
 // Older saves engraved Red Seals; they now live in the seal slot.
@@ -257,7 +257,7 @@ const TALISMANS = [
   { key: 'aobozu', name: 'Aobōzu', cost: 5, desc: '+1 Mult per play, −1 Mult per Discard (never below 0).', onScore: (c, S) => S.talState.aobozu ? { mult: S.talState.aobozu } : null, afterScore: (c, S) => { S.talState.aobozu = (S.talState.aobozu || 0) + 1; }, onDiscard: S => { S.talState.aobozu = Math.max(0, (S.talState.aobozu || 0) - 1); }, status: S => `now +${S.talState.aobozu || 0} Mult` },
   { key: 'shiro', name: 'Shiro', cost: 5, desc: 'Each Blind picks a suit. Gains +3 Chips for every tile of that suit you discard.', onBlindStart: S => { S.talState.shiroSuit = pick(['m', 'p', 's']); }, onDiscard: (S, tiles) => { S.talState.shiro = (S.talState.shiro || 0) + 3 * tiles.filter(t => t.suit === S.talState.shiroSuit).length; }, onScore: (c, S) => S.talState.shiro ? { chips: S.talState.shiro } : null, status: S => `${S.talState.shiroSuit ? SUIT_EN[S.talState.shiroSuit] + ' this Blind, ' : ''}now +${S.talState.shiro || 0} Chips` },
   { key: 'takibi', name: 'Takibi', cost: 6, desc: 'Gains x0.25 Mult every time you sell a Talisman.', onSell: S => { S.talState.takibi = (S.talState.takibi || 0) + 1; }, onScore: (c, S) => S.talState.takibi ? { xmult: 1 + 0.25 * S.talState.takibi } : null, status: S => `now x${(1 + 0.25 * (S.talState.takibi || 0)).toFixed(2)}` },
-  { key: 'hoshizora', name: 'Hoshizora', cost: 6, desc: 'Gains x0.1 Mult every time you use a Scroll of Mastery.', onScroll: S => { S.talState.hoshizora = (S.talState.hoshizora || 0) + 1; }, onScore: (c, S) => S.talState.hoshizora ? { xmult: 1 + 0.1 * S.talState.hoshizora } : null, status: S => `now x${(1 + 0.1 * (S.talState.hoshizora || 0)).toFixed(1)}` },
+  { key: 'hoshizora', name: 'Hoshizora', cost: 6, desc: 'Gains x0.1 Mult every time you use a Manual.', onScroll: S => { S.talState.hoshizora = (S.talState.hoshizora || 0) + 1; }, onScore: (c, S) => S.talState.hoshizora ? { xmult: 1 + 0.1 * S.talState.hoshizora } : null, status: S => `now x${(1 + 0.1 * (S.talState.hoshizora || 0)).toFixed(1)}` },
   { key: 'mabo', name: 'Mabo', cost: 6, desc: 'Gains x0.25 Mult every time a tile is added to your Wall.', onTileAdded: (S, n) => { S.talState.mabo = (S.talState.mabo || 0) + n; }, onScore: (c, S) => S.talState.mabo ? { xmult: 1 + 0.25 * S.talState.mabo } : null, status: S => `now x${(1 + 0.25 * (S.talState.mabo || 0)).toFixed(2)}` },
   { key: 'chochin', name: 'Chōchin', cost: 6, desc: 'x4 Mult on every sixth play.', onScore: (c, S) => (((S.talState.chochin || 0) + 1) % 6 === 0) ? { xmult: 4 } : null, afterScore: (c, S) => { S.talState.chochin = (S.talState.chochin || 0) + 1; }, status: S => { const left = 6 - (((S.talState.chochin || 0)) % 6); return left === 6 ? 'fires in 6 plays' : left === 1 ? 'fires next play' : `fires in ${left} plays`; } },
   // --- Run-info powers
@@ -294,7 +294,7 @@ const TALISMANS = [
     onBlindEnd: S => (S.discardsUsed || 0) === 0 ? 2 * Math.max(0, S.discards) : 0, status: S => S.phase === 'blind' ? (S.discardsUsed ? 'no payout this Blind' : `¥${2 * S.discards} if you keep it up`) : '' },
   { key: 'fukusuke', name: 'Fukusuke', cost: 5, desc: 'Earn ¥1 at the end of each Blind for every three 8 tiles in your Wall.',
     onBlindEnd: S => Math.floor(allTiles(S).filter(t => t.suit !== 'z' && t.rank === 8).length / 3), status: S => `pays ¥${Math.floor(allTiles(S).filter(t => t.suit !== 'z' && t.rank === 8).length / 3)} now` },
-  { key: 'ebisu', name: 'Ebisu', cost: 6, desc: 'Earn ¥1 at the end of each Blind for each different Scroll of Mastery you have used this run.',
+  { key: 'ebisu', name: 'Ebisu', cost: 6, desc: 'Earn ¥1 at the end of each Blind for each different Manual you have used this run.',
     onBlindEnd: S => scrollKinds(S), status: S => `pays ¥${scrollKinds(S)} now` },
   { key: 'kamaitachi', name: 'Kamaitachi', cost: 6, desc: 'Earn ¥5 if you clear the Blind with your first Play.', onBlindEnd: S => S.playsMade === 1 ? 5 : 0 },
   // --- Makers and growers (Balatro's Cartomancer, Riff-raff, Egg, Gift Card, Ceremonial Dagger, Space Joker and Seance).
@@ -310,7 +310,7 @@ const TALISMANS = [
   { key: 'kamikiri', name: 'Kamikiri', cost: 6, desc: 'When a Blind starts, destroys the Talisman to its right (unless Eternal) and permanently gains +Mult equal to twice its sell value.',
     onBlindStart: S => { if (typeof destroyTalisman !== 'function') return; const right = S.talismans[S.talismans.indexOf('kamikiri') + 1]; if (!right) return; const v = talSellValue(right); if (destroyTalisman(right)) S.talState.kamikiri = (S.talState.kamikiri || 0) + 2 * v; },
     onScore: (c, S) => S.talState.kamikiri ? { mult: S.talState.kamikiri } : null, status: S => `+${S.talState.kamikiri || 0} Mult` },
-  { key: 'kotodama', name: 'Kotodama', cost: 6, desc: '1 in 4 chance to level up the Scroll for the play type you score.',
+  { key: 'kotodama', name: 'Kotodama', cost: 6, desc: '1 in 4 chance to level up the Manual for the play type you score.',
     afterScore: (c, S) => { if (rand() >= chance(S, 0.25)) return; const k = c.kind === 'hand' ? 'hand' : c.nKan ? 'kan' : c.nPon ? 'pon' : c.nChi ? 'chi' : 'pair'; S.scrolls.meld[k] = (S.scrolls.meld[k] || 0) + 1; if (typeof toast === 'function') toast(`<div class="label">Kotodama</div><b>${SCR['m:' + k].name}</b><div class="muted" style="font-size:11px">+1 level</div>`); } },
   { key: 'itako', name: 'Itako', cost: 7, desc: 'When you score a Complete Hand with 3 or more Yaku, create a random Kami if you have a free consumable slot.',
     afterScore: (c, S) => { if (c.kind !== 'hand' || c.yaku.length < 3 || typeof conSlots !== 'function' || S.consumables.length >= conSlots()) return; S.consumables.push({ kind: 'kami', key: pick(KAMI.filter(k => !k.soul)).key }); } },
@@ -402,7 +402,7 @@ const OMIKUJI = [
   { key: 'echo', name: 'Slip of Echoes', cost: 3, sel: [0, 0], anywhere: true, desc: 'Create a copy of the last Omikuji or Kami you used (not Slip of Echoes).', use: S => { if (!S.lastCons || !CONS[S.lastCons]) return false; S.consumables.push({ kind: CONS[S.lastCons].kind, key: S.lastCons }); } },
   { key: 'judgement', name: 'Slip of Judgement', cost: 3, sel: [0, 0], anywhere: true, desc: 'Create a random Talisman. Needs a free Talisman slot.', use: S => { if (typeof talPool !== 'function' || S.talismans.length >= talSlots()) return false; const t = pickTalisman(talPool()); if (!t) return false; gainTalisman(t.key); } },
   { key: 'emperor', name: 'Slip of the Emperor', cost: 3, sel: [0, 0], anywhere: true, desc: 'Create up to 2 random Omikuji (room permitting, counting this slot).', use: S => { const room = (typeof conSlots === 'function' ? conSlots() : 2) - S.consumables.length + 1; for (let i = 0; i < Math.min(2, room); i++) S.consumables.push({ kind: 'omikuji', key: pick(OMIKUJI.filter(o => o.key !== 'emperor')).key }); } },
-  { key: 'priestess', name: 'Slip of the Priestess', cost: 3, sel: [0, 0], anywhere: true, desc: '2 random Scrolls of Mastery level up by 1.', use: S => { for (const sc of shuffle(SCROLLS.slice()).slice(0, 2)) { const [t, k] = sc.key.split(':'); const b = S.scrolls[t === 'm' ? 'meld' : 'yaku']; b[k] = (b[k] || 0) + 1; } } },
+  { key: 'priestess', name: 'Slip of the Priestess', cost: 3, sel: [0, 0], anywhere: true, desc: '2 random Manuals level up by 1.', use: S => { for (const sc of shuffle(SCROLLS.slice()).slice(0, 2)) { const [t, k] = sc.key.split(':'); const b = S.scrolls[t === 'm' ? 'meld' : 'yaku']; b[k] = (b[k] || 0) + 1; } } },
   { key: 'hermit', name: 'Slip of the Hermit', cost: 3, sel: [0, 0], anywhere: true, desc: 'Double your money (at most +¥20).', use: S => { S.money += Math.min(20, S.money); } },
   { key: 'temperance', name: 'Slip of Temperance', cost: 3, sel: [0, 0], anywhere: true, desc: 'Gain the total sell value of your Talismans (at most ¥50).', use: S => { if (typeof talSellValue !== 'function') return false; S.money += Math.min(50, S.talismans.reduce((a, k) => a + talSellValue(k), 0)); } },
   { key: 'fortune', name: 'Slip of Fortune', cost: 3, sel: [0, 0], anywhere: true, desc: '1 in 4 chance: a random Talisman with no edition becomes Foil, Holographic or Polychrome.', use: S => { const pool = S.talismans.filter(k => !S.editions[k]); if (!pool.length) return false; if (rand() < chance(S, 0.25)) { const k = pick(pool); S.editions[k] = pick(['foil', 'holo', 'poly']); S.fortuneHit = k; } else S.fortuneHit = null; } },
@@ -420,7 +420,7 @@ const KAMI = [
     use: (S) => { S.revealed = true; S.money = Math.max(0, S.money - 3); for (let i = 0; i < 2 && S.wall.length; i++) { const t = S.wall.pop(); S.indicators.push(t); S.dora.push(nextDora(idx(t))); } } },
   // Seal spirits, like Balatro's Talisman, Trance and Medium Spectral cards.
   { key: 'benzaiten', name: 'Benzaiten', cost: 4, sel: [1, 1], desc: 'Put a Gold Seal on 1 selected tile: earn ¥3 whenever it scores.', use: (S, sel) => { sel[0].seal = 'gold'; } },
-  { key: 'hachiman', name: 'Hachiman', cost: 4, sel: [1, 1], desc: 'Put a Blue Seal on 1 selected tile: if it is still in your hand when you win a Blind, the Scroll for your final play levels up.', use: (S, sel) => { sel[0].seal = 'blue'; } },
+  { key: 'hachiman', name: 'Hachiman', cost: 4, sel: [1, 1], desc: 'Put a Blue Seal on 1 selected tile: if it is still in your hand when you win a Blind, the Manual for your final play levels up.', use: (S, sel) => { sel[0].seal = 'blue'; } },
   { key: 'fujin', name: 'Fūjin', cost: 4, sel: [1, 1], desc: 'Put a Purple Seal on 1 selected tile: discarding it gives you a random Omikuji.', use: (S, sel) => { sel[0].seal = 'purple'; } },
 ];
 KAMI.push({ key: 'hitodama', name: 'Hitodama', cost: 4, sel: [0, 0], anywhere: true, soul: true, rare: true, desc: 'Create a Legendary Talisman. Needs a free Talisman slot.',
@@ -435,7 +435,7 @@ KAMI.push(
     use: S => { const pool = S.talismans.filter(k => !S.editions[k]); if (!pool.length || typeof destroyTalisman !== 'function') return false; const k = pick(pool); S.editions[k] = 'poly'; for (const o of S.talismans.slice()) if (o !== k) destroyTalisman(o); } },
   { key: 'okuninushi', name: 'Ōkuninushi', cost: 4, sel: [0, 0], anywhere: true, desc: 'A random Talisman with no edition becomes Negative (+1 slot). −1 hand size for the rest of the run.',
     use: S => { const pool = S.talismans.filter(k => !S.editions[k]); if (!pool.length) return false; S.editions[pick(pool)] = 'neg'; S.handMod = (S.handMod || 0) - 1; } },
-  { key: 'minakanushi', name: 'Minakanushi', cost: 4, sel: [0, 0], anywhere: true, rare: true, desc: 'Every Scroll of Mastery levels up by 1.',
+  { key: 'minakanushi', name: 'Minakanushi', cost: 4, sel: [0, 0], anywhere: true, rare: true, desc: 'Every Manual levels up by 1.',
     use: S => { for (const sc of SCROLLS) { const [t, k] = sc.key.split(':'); const b = S.scrolls[t === 'm' ? 'meld' : 'yaku']; b[k] = (b[k] || 0) + 1; } } },
   { key: 'hiruko', name: 'Hiruko', cost: 4, sel: [1, 1], desc: 'Create 2 copies of 1 selected tile, engraving, Seal and edition included. They join your hand and stay in your Wall.',
     use: (S, sel) => { const t = sel[0]; for (let i = 0; i < 2; i++) { const c = mkTile(t.suit, t.rank, t.red); c.eng = t.eng; c.seal = t.seal; c.ed = t.ed; S.hand.push(c); } } },
@@ -448,21 +448,21 @@ const CONS = {}; OMIKUJI.forEach(o => CONS[o.key] = Object.assign({ kind: 'omiku
 
 // ===================== SCROLLS OF MASTERY (Planets) =====================
 const SCROLLS = [
-  { key: 'm:pair', name: 'Scroll of Pairs', cost: 3, desc: 'Every Pair in a play: +10 Chips. Any play with a Pair: +1 Han. Permanent, stacks per level.' },
-  { key: 'm:chi', name: 'Scroll of Sequences', cost: 3, desc: 'Every Chi in a play: +10 Chips. Any play with a Chi: +1 Han. Permanent, stacks per level.' },
-  { key: 'm:pon', name: 'Scroll of Triplets', cost: 3, desc: 'Every Pon in a play: +10 Chips. Any play with a Pon: +1 Han. Permanent, stacks per level.' },
-  { key: 'm:kan', name: 'Scroll of Quads', cost: 3, desc: 'Every Kan in a play: +10 Chips. Any play with a Kan: +1 Han. Permanent, stacks per level.' },
-  { key: 'm:hand', name: 'Scroll of Completion', cost: 4, desc: 'Complete Hands: +10 Chips and +1 Han, permanently.' },
-  { key: 'y:tanyao', name: 'Scroll of Tanyao', cost: 3, desc: '+1 Han whenever Tanyao scores.' },
-  { key: 'y:pinfu', name: 'Scroll of Pinfu', cost: 3, desc: '+1 Han whenever Pinfu scores.' },
-  { key: 'y:yakuhai', name: 'Scroll of Yakuhai', cost: 3, desc: '+1 Han for each Yakuhai that scores, including Honor Pon partial plays.' },
-  { key: 'y:honitsu', name: 'Scroll of Honitsu', cost: 3, desc: '+1 Han whenever Honitsu scores.' },
-  { key: 'y:chinitsu', name: 'Scroll of Chinitsu', cost: 3, desc: '+1 Han whenever Chinitsu scores.' },
-  { key: 'y:toitoi', name: 'Scroll of Toitoi', cost: 3, desc: '+1 Han whenever Toitoi scores.' },
-  { key: 'y:chiitoitsu', name: 'Scroll of Seven Pairs', cost: 3, desc: '+1 Han whenever Chiitoitsu scores.' },
-  { key: 'y:sanshoku', name: 'Scroll of Three Colours', cost: 3, desc: '+1 Han whenever Sanshoku Doujun scores.' },
-  { key: 'y:ittsu', name: 'Scroll of the Straight', cost: 3, desc: '+1 Han whenever Ittsu scores.' },
-  { key: 'y:chanta', name: 'Scroll of Edges', cost: 3, desc: '+1 Han whenever Chanta scores.' },
+  { key: 'm:pair', name: 'Pairs Manual', cost: 3, desc: 'Every Pair in a play: +10 Chips. Any play with a Pair: +1 Han. Permanent, stacks per level.' },
+  { key: 'm:chi', name: 'Chi Manual', cost: 3, desc: 'Every Chi in a play: +10 Chips. Any play with a Chi: +1 Han. Permanent, stacks per level.' },
+  { key: 'm:pon', name: 'Pon Manual', cost: 3, desc: 'Every Pon in a play: +10 Chips. Any play with a Pon: +1 Han. Permanent, stacks per level.' },
+  { key: 'm:kan', name: 'Kan Manual', cost: 3, desc: 'Every Kan in a play: +10 Chips. Any play with a Kan: +1 Han. Permanent, stacks per level.' },
+  { key: 'm:hand', name: 'Completion Manual', cost: 4, desc: 'Complete Hands: +10 Chips and +1 Han, permanently.' },
+  { key: 'y:tanyao', name: 'Tanyao Manual', cost: 3, desc: '+1 Han whenever Tanyao scores.' },
+  { key: 'y:pinfu', name: 'Pinfu Manual', cost: 3, desc: '+1 Han whenever Pinfu scores.' },
+  { key: 'y:yakuhai', name: 'Yakuhai Manual', cost: 3, desc: '+1 Han for each Yakuhai that scores, including Honor Pon partial plays.' },
+  { key: 'y:honitsu', name: 'Honitsu Manual', cost: 3, desc: '+1 Han whenever Honitsu scores.' },
+  { key: 'y:chinitsu', name: 'Chinitsu Manual', cost: 3, desc: '+1 Han whenever Chinitsu scores.' },
+  { key: 'y:toitoi', name: 'Toitoi Manual', cost: 3, desc: '+1 Han whenever Toitoi scores.' },
+  { key: 'y:chiitoitsu', name: 'Chiitoitsu Manual', cost: 3, desc: '+1 Han whenever Chiitoitsu scores.' },
+  { key: 'y:sanshoku', name: 'Sanshoku Manual', cost: 3, desc: '+1 Han whenever Sanshoku Doujun scores.' },
+  { key: 'y:ittsu', name: 'Ittsu Manual', cost: 3, desc: '+1 Han whenever Ittsu scores.' },
+  { key: 'y:chanta', name: 'Chanta Manual', cost: 3, desc: '+1 Han whenever Chanta scores.' },
 ];
 const SCR = {}; SCROLLS.forEach(s => SCR[s.key] = s);
 
@@ -510,7 +510,7 @@ const TAGS = {
   poly: { name: 'Polychrome Tag', desc: 'The first Talisman in the next shop is Polychrome.' },
   neg: { name: 'Negative Tag', desc: 'The first Talisman in the next shop is Negative (+1 slot).' },
   omikuji: { name: 'Charm Tag', desc: 'A free Omikuji pack opens in the next shop.' },
-  scroll: { name: 'Scroll Tag', desc: 'A free Scroll pack opens in the next shop.' },
+  scroll: { name: 'Manual Tag', desc: 'A free Manual pack opens in the next shop.' },
   talisman: { name: 'Buffoon Tag', desc: 'A free Talisman pack opens in the next shop.' },
   kami: { name: 'Kami Tag', desc: 'A free Kami pack opens in the next shop.' },
   investment: { name: 'Investment Tag', desc: '+¥25 after you defeat the next Boss.' },
@@ -523,7 +523,7 @@ const TAGS = {
   uncommon: { name: 'Uncommon Tag', desc: 'The next shop has a free Uncommon Talisman.' },
   rare: { name: 'Rare Tag', desc: 'The next shop has a free Rare Talisman.' },
   double: { name: 'Double Tag', desc: 'The next Tag you get counts twice (except another Double Tag).' },
-  orbital: { name: 'Orbital Tag', desc: 'Levels up a random meld Scroll by 3, right away.' },
+  orbital: { name: 'Orbital Tag', desc: 'Levels up a random meld Manual by 3, right away.' },
   topup: { name: 'Top-up Tag', desc: 'Creates up to 2 Common Talismans right away, if you have room.' },
   d6: { name: 'D6 Tag', desc: 'Rerolls in the next shop start at ¥0 and cost ¥1 more each time.' },
   handy: { name: 'Handy Tag', desc: '+¥1 for every Play you have used this run, right away.' },
@@ -534,7 +534,7 @@ const TAGS = {
 // Mega Omikuji ('mega') and Mega Tile ('megatile') keep their old keys so saved runs still open them.
 const PACK_TYPES = {
   omikuji: { label: 'Omikuji', show: 3, cost: 4, desc: (n, k) => `Open ${n} Omikuji. Use ${k === 1 ? '1' : k} on tiles from your Wall now, or keep ${k === 1 ? 'it' : 'them'}.` },
-  scroll: { label: 'Scroll', show: 3, cost: 4, desc: (n, k) => `Open ${n} Scrolls of Mastery, use ${k} now.` },
+  scroll: { label: 'Manual', show: 3, cost: 4, desc: (n, k) => `Open ${n} Manuals, use ${k} now.` },
   talisman: { label: 'Talisman', show: 2, cost: 6, desc: (n, k) => `Open ${n} Talismans, keep ${k}.` },
   kami: { label: 'Kami', show: 2, cost: 6, desc: (n, k) => `Open ${n} Kami Spirits. Use ${k === 1 ? '1' : k} on tiles from your Wall now, or keep ${k === 1 ? 'it' : 'them'}.` },
   tile: { label: 'Tile', show: 4, cost: 4, desc: (n, k) => `Open ${n} tiles and add ${k} to your Wall. Some come engraved or sealed.` },
