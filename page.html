@@ -3480,7 +3480,7 @@ function renderBlind() {
   const unpaid = S.phase === 'cashout' && S.reward && !S.reward.paid;
   const wallN = S.phase === 'blind' ? S.wall.length : unpaid && S.reward.wallLeft != null ? S.reward.wallLeft : (S.deck || []).length;
   h += `<div class="stats"><div class="stat plays"><div class="label">Plays</div><div class="v num">${S.plays}</div></div><div class="stat discards"><div class="label">Discards</div><div class="v num">${S.discards}</div></div></div>`;
-  h += `<div class="stats purserow"><div class="purse" title="Interest: +¥${interest} at the next cash-out (¥1 for every ¥${CFG.interestPer} you hold, up to ¥${interestCap()})"><span class="coin" aria-hidden="true">${coinSVG()}</span><span class="wtx"><span class="pv num" id="purseVal">¥${unpaid ? (S.reward.before ?? S.money - S.reward.total) : S.money}</span><span class="wl" data-notr>${LANG === 'hk' ? 'HKD' : 'JPY'}</span></span></div><button class="wallbtn" id="wallBtn" title="${S.phase === 'blind' ? 'Tiles still face down in the Wall. Click to see every tile.' : 'Tiles in your Wall. Click to see every tile.'}"><span class="wallico" aria-hidden="true"><i></i><i></i><i></i></span><span class="wtx"><span class="wv num">${wallN}</span><span class="wl">Wall</span></span></button></div>`;
+  h += `<div class="stats purserow"><div class="purse" title="Interest: +¥${interest} at the next cash-out (¥1 for every ¥${CFG.interestPer} you hold, up to ¥${interestCap()})"><span class="coin" aria-hidden="true">${coinSVG()}</span><span class="wtx"><span class="pv num" id="purseVal">${money('¥', unpaid ? (S.reward.before ?? S.money - S.reward.total) : S.money)}</span><span class="wl" data-notr>${LANG === 'hk' ? 'HKD' : 'JPY'}</span></span></div><button class="wallbtn" id="wallBtn" title="${S.phase === 'blind' ? 'Tiles still face down in the Wall. Click to see every tile.' : 'Tiles in your Wall. Click to see every tile.'}"><span class="wallico" aria-hidden="true"><i></i><i></i><i></i></span><span class="wtx"><span class="wv num">${wallN}</span><span class="wl">Wall</span></span></button></div>`;
   h += `<button class="sidebtn" id="sideRunInfo"><span class="runico" aria-hidden="true"></span><span>Run Info</span></button>`;   // run-related screens live in the sidebar, beside the run
   // The extras in one plate at the bottom, one labelled row each: the Dora (Bonus Tile) indicators, Tags held, and Flowers.
   const extras = [];
@@ -4124,12 +4124,13 @@ function tweenWallet() {
   const el = $('#modal .wallet .pv'); if (S.quiet) return;
   if (!el || walletShown === null || walletShown === S.money || !motionOK) { walletShown = S.money; return; }
   const cur = LANG === 'hk' ? '$' : '¥', from = walletShown, dur = Math.min(520, 160 + Math.abs(S.money - from) * 30); walletShown = S.money;
-  el.textContent = cur + from; countUp(el, from, S.money, dur, cur, 'coin'); setTimeout(() => juice(el, .6), dur);
+  el.textContent = money(cur, from); countUp(el, from, S.money, dur, cur, 'coin'); setTimeout(() => juice(el, .6), dur);
 }
 // Cash-out plays like Balatro's: the receipt rises, each reward line slides in and counts up with coin clinks, then the
 // amount on the Cash Out button counts up and rings a register. Once per cash-out; about 1.5 s.
 // A money amount with a real minus sign: ¥3, or −¥3 for a Rental charge.
-const money = (prefix, v) => v < 0 ? '−' + prefix + Math.abs(v) : prefix + v;
+// Money with thousands separators (¥1,250), also while it counts up.
+const money = (prefix, v) => (v < 0 ? '−' : '') + prefix + Math.abs(Math.round(v)).toLocaleString('en-US');
 function countUp(el, from, to, dur, prefix, sound) {
   if (!el) return; const t0 = performance.now(); let last = from;
   const step = now => { const k = Math.min(1, (now - t0) / dur), v = Math.round(from + (to - from) * (1 - Math.pow(1 - k, 2))); if (v !== last && sound) sfx(sound); last = v; el.textContent = money(prefix, v); if (k < 1) requestAnimationFrame(step); };
@@ -4167,11 +4168,11 @@ function cashOut() {
   for (let i = 0; i < n; i++) {
     const c = document.createElement('div'); c.className = 'flycoin'; c.innerHTML = coinSVG(); Object.assign(c.style, { left: sx - 13 + 'px', top: sy - 13 + 'px' }); document.body.appendChild(c);
     c.animate(path, { duration: dur, delay: i * gap, easing: 'cubic-bezier(.45,.05,.55,.95)', fill: 'both' }).onfinish = () => c.remove();
-    setTimeout(() => { sfx('coin'); const el = $('#purseVal'); if (el) el.textContent = cur + Math.round(startMoney + (S.money - startMoney) * (i + 1) / n); }, dur + i * gap);
+    setTimeout(() => { sfx('coin'); const el = $('#purseVal'); if (el) el.textContent = money(cur, startMoney + (S.money - startMoney) * (i + 1) / n); }, dur + i * gap);
     setTimeout(() => c.remove(), dur + i * gap + 400);   // in case frames are paused
   }
   const land = dur + (n - 1) * gap;
-  setTimeout(() => { const el = $('#purseVal'); if (el) { el.textContent = cur + S.money; juice(el, .8); } sfx('kaching'); }, land + 20);
+  setTimeout(() => { const el = $('#purseVal'); if (el) { el.textContent = money(cur, S.money); juice(el, .8); } sfx('kaching'); }, land + 20);
   setTimeout(go, land + 380);
 }
 function cashoutHTML() {
@@ -4188,7 +4189,7 @@ function cashoutHTML() {
   return h;
 }
 // Same look as the play area's purse: the coin, the amount, and JPY or HKD underneath.
-const walletHTML = () => `<span class="wallet purse"><span class="coin" aria-hidden="true">${coinSVG()}</span><span class="wtx"><span class="pv num">¥${S.money}</span><span class="wl" data-notr>${LANG === 'hk' ? 'HKD' : 'JPY'}</span></span></span>`;
+const walletHTML = () => `<span class="wallet purse"><span class="coin" aria-hidden="true">${coinSVG()}</span><span class="wtx"><span class="pv num">${money('¥', S.money)}</span><span class="wl" data-notr>${LANG === 'hk' ? 'HKD' : 'JPY'}</span></span></span>`;
 // Everything on sale, in display order: the card slots, the Flower, then the Booster Packs. Older saves had one pack and a Scroll slot.
 function shopItems() { const sh = S.shop; if (!sh.packs) { sh.packs = sh.pack ? [sh.pack] : []; if (sh.scroll) sh.cards.push(sh.scroll); delete sh.pack; delete sh.scroll; } return [...sh.cards, sh.flower, ...sh.packs].filter(Boolean); }
 function shopHTML() {
