@@ -376,7 +376,8 @@ code.seed{font-family:ui-monospace,Menlo,Consolas,monospace;letter-spacing:.08em
 .shopcard.kami{background:linear-gradient(180deg,rgba(201,167,232,.18),rgba(201,167,232,.05)),var(--panel2);border-color:rgba(201,167,232,.4)}
 .shopcard.scroll{background:linear-gradient(180deg,rgba(111,207,151,.16),rgba(111,207,151,.04)),var(--panel2);border-color:rgba(111,207,151,.35)}
 .shopcard.flower{background:linear-gradient(180deg,rgba(240,163,184,.16),rgba(240,163,184,.05)),var(--panel2);border-color:rgba(240,163,184,.4)}
-.shopcard.pack{background:linear-gradient(180deg,rgba(255,159,67,.16),rgba(255,159,67,.05)),var(--panel2);border-color:rgba(255,159,67,.4)} .shopcard.pack .n{color:#ff9f43}
+.shopcard.pack{--pc:255,159,67;background:linear-gradient(180deg,rgba(var(--pc),.16),rgba(var(--pc),.05)),var(--panel2);border-color:rgba(var(--pc),.4)} .shopcard.pack .n{color:rgb(var(--pc))} .shopcard.pack .emblem{color:rgb(var(--pc))}
+.shopcard.pk-omikuji{--pc:127,179,224} .shopcard.pk-kami{--pc:201,167,232} .shopcard.pk-scroll{--pc:111,207,151} .shopcard.pk-talisman{--pc:217,164,65}
 .zone.handzone.pending{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent) inset,0 0 18px rgba(217,164,65,.35)}
 .callbanner{background:var(--accent);color:#1a1200;font-weight:600;font-size:13px;border-radius:6px;padding:6px 10px;margin-bottom:8px;animation:bannerin .3s ease-out}
 @keyframes bannerin{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
@@ -528,14 +529,8 @@ button.pulse{animation:btnpulse 1s ease-in-out infinite;box-shadow:0 0 0 0 rgba(
 .wallstakes{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:6px} .wsrow{display:flex;justify-content:space-between;align-items:center;gap:8px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:13px} .wsrow.lk{opacity:.5}
 .wspips{display:flex;gap:4px} .wspips .sw{width:12px;height:12px} .wspips .sw.off{opacity:.18}
 
-/* ===== Shop: noren banner, action rail, felt shelves, portrait cards with price tags ===== */
+/* ===== Shop: header, action rail, felt shelves, portrait cards with price tags ===== */
 .modal.shopmodal{max-width:1000px;padding-top:0}
-.noren{margin:0 -20px 18px;border-radius:12px 12px 0 0;overflow:hidden}
-.norenbar{position:relative;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:20px 22px 12px;background:radial-gradient(90% 140% at 15% 0%,rgba(255,255,255,.08),transparent 60%),linear-gradient(180deg,#74271f,#561b16)}
-.norenbar::before{content:'';position:absolute;left:0;right:0;top:0;height:7px;background:linear-gradient(#94713f,#5c4426);box-shadow:0 2px 3px rgba(0,0,0,.35)}
-.norenbar h2{margin:0;color:#f6ead2;font-size:30px;letter-spacing:.04em;display:flex;align-items:center;gap:12px}
-.norenbar .wallet{border-color:rgba(246,234,210,.45);background:rgba(0,0,0,.22)} .norenbar .wallet .v{color:#f3c768} .norenbar .wallet .cur{color:rgba(246,234,210,.7)}
-.norenflaps{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;height:20px;background:var(--panel)} .norenflaps i{background:#561b16;border-radius:0 0 7px 7px;box-shadow:inset 0 -2px 0 rgba(0,0,0,.25)}
 .shoplayout{display:grid;grid-template-columns:minmax(0,1fr) 172px;gap:18px;align-items:start} .shoprail{order:2}
 .shoprail{display:flex;flex-direction:column;gap:8px;position:sticky;top:0}
 .shoprail button{width:100%}
@@ -563,7 +558,7 @@ button.pulse{animation:btnpulse 1s ease-in-out infinite;box-shadow:0 0 0 0 rgba(
 .shelf .shopcard.pack::before{top:-1px} .shelf .shopcard.pack::after{bottom:-1px;transform:scaleY(-1)}
 .shelf .shopcard.flower::after{content:'';position:absolute;inset:5px;border:1px dashed rgba(240,163,184,.4);border-radius:9px;pointer-events:none}
 .shelf .shopcard .scrolllv,.shelf .shopcard .talprev{text-align:left}
-@media (max-width:720px){.shoplayout{grid-template-columns:1fr} .shoprail{order:-1;position:static;display:grid;grid-template-columns:1fr 1fr} .nextbtn{grid-column:1/-1;min-height:58px} .shelf .shopcard{min-height:0} .norenbar h2{font-size:24px} .shelfrow{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}}
+@media (max-width:720px){.shoplayout{grid-template-columns:1fr} .shoprail{order:-1;position:static;display:grid;grid-template-columns:1fr 1fr} .nextbtn{grid-column:1/-1;min-height:58px} .shelf .shopcard{min-height:0} .shophd h2{font-size:24px} .shelfrow{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}}
 /* ===== Pack header ===== */
 .packhead{--pc:255,159,67;display:flex;align-items:center;gap:16px;margin:-20px -20px 16px;padding:18px 20px;border-radius:12px 12px 0 0;background:radial-gradient(80% 160% at 0% 0%,rgba(var(--pc),.3),transparent 65%),linear-gradient(180deg,rgba(var(--pc),.1),transparent);border-bottom:1px solid rgba(var(--pc),.35)}
 .packhead.omikuji{--pc:127,179,224} .packhead.kami{--pc:201,167,232} .packhead.scroll{--pc:111,207,151} .packhead.talisman{--pc:217,164,65}
@@ -851,14 +846,14 @@ button.pulse{animation:btnpulse2 2.6s ease-out infinite}
 .slot .kind .edtag{font-size:8.5px;padding:0 5px;letter-spacing:.03em;line-height:14px}
 /* Shop and cash-out money: the purse look (coin, amount, currency underneath) */
 .wallet.purse{display:inline-flex;align-items:center;gap:10px;padding:5px 16px 5px 6px;border-radius:999px;background:linear-gradient(180deg,#3a2a14,#24190b);border:1px solid #8a6a3e;box-shadow:inset 0 1px 0 rgba(255,220,160,.2)}
-.norenbar .wallet.purse{background:rgba(0,0,0,.28);border-color:rgba(246,234,210,.45)}
+.shophd .wallet.purse{background:rgba(0,0,0,.28);border-color:rgba(246,234,210,.45)}
 .wallet.purse .coin{width:30px;height:30px} .wallet.purse .wtx{display:flex;flex-direction:column;align-items:flex-start;line-height:1}
 .wallet.purse .pv{font-size:22px} .wallet.purse .wl{font-size:9.5px;letter-spacing:.12em;color:#c9b48a;margin-top:2px}
 /* Shop rail icons */
 .railbtn .rbl{display:inline-flex;align-items:center;gap:10px}
 .rbico{width:18px;height:18px;color:#9ec5e8;flex:0 0 auto}
 .railbtn .wallico{transform:scale(.72);transform-origin:left center;width:19px;margin-right:2px}
-.norenbar .wallet{transform:translateY(3px)}   /* line the money up with the title's letters rather than its line box */
+.shophd .wallet{transform:translateY(3px)}   /* line the money up with the title's letters rather than its line box */
 /* Collection engraving cards: the sample tile sits at the bottom with the same spacing on every card, so rows line up */
 .colcard .coltile{margin-top:auto;padding-top:12px;display:flex;align-items:flex-end;min-height:76px}
 .colgrid{gap:12px;align-items:stretch}
@@ -871,7 +866,7 @@ button.pulse{animation:btnpulse2 2.6s ease-out infinite}
 .actw > .act{flex:1 1 auto;min-width:0;max-width:none;width:100%}
 .act:disabled{pointer-events:none} .actw:has(.act:disabled){cursor:not-allowed}
 @media (max-width:900px){.actw{flex:1 1 150px;max-width:none}}
-.norenbar .wallet .pv{display:inline-block;transform-origin:50% 60%}
+.shophd .wallet .pv{display:inline-block;transform-origin:50% 60%}
 /* ===== Scoring presentation like Balatro: the scoring tile lifts and wiggles, values pop as coloured badges ===== */
 #hand .tile.hit,#open .tile.hit{z-index:20;animation:hitpop .22s cubic-bezier(.25,.8,.35,1) forwards;box-shadow:var(--bev),var(--body),0 0 0 2px #f3c768,0 0 22px rgba(243,199,104,.75)}
 @keyframes hitwiggle{0%{transform:translateY(0) scale(1)}40%{transform:translateY(-18px) scale(1.2) rotate(-4deg)}70%{transform:translateY(-15px) scale(1.15) rotate(3deg)}100%{transform:translateY(-16px) scale(1.16) rotate(0)}}
@@ -988,7 +983,7 @@ html{scrollbar-gutter:stable} html.modallock{overflow:hidden}
 .shelfbtn b{font-family:var(--display);font-weight:500;color:var(--accent)} .shelfbtn:hover:not(:disabled){border-color:var(--accent);background:var(--panel2)} .shelfbtn:disabled{opacity:.5;cursor:default}
 .packhead .packacts{margin-left:auto} .packhead .hbtn{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,.18)}
 /* In the tray the top corners are square, so the banner's wooden rod meets the board's frame with no dark gaps at the corners */
-.overlay.shoptray .modal.traymodal,.overlay.shoptray .modal .noren,.overlay.shoptray .modal .packhead{border-radius:0} .overlay.shoptray .norenbar::before{display:none}
+.overlay.shoptray .modal.traymodal,.overlay.shoptray .modal .packhead{border-radius:0}
 /* The banner's buttons share one height; View Wall and Run Info share one width */
 .shopacts > button,.packacts > button{height:46px;box-sizing:border-box} .shopacts .hbtn,.packacts .hbtn{min-width:146px;justify-content:center} .packacts .hbtn:disabled{opacity:.55;cursor:default}
 .hnext{justify-content:center;padding:0 18px;min-width:170px}
@@ -996,7 +991,7 @@ html{scrollbar-gutter:stable} html.modallock{overflow:hidden}
 @media (max-width:480px){.shopacts{width:100%;flex-wrap:nowrap} .shopacts .hnext{flex:1 1 auto;min-width:0} .shopacts .hnext small{max-width:100%;overflow:hidden;text-overflow:ellipsis} .shopacts .wallet{flex:0 0 auto}}
 /* The wallet beside Next Blind (full-screen Shop) is the same height and corner shape, on the same line */
 .shopacts .wallet{transform:none;height:46px;box-sizing:border-box;border-radius:9px;padding:0 16px 0 8px;align-self:center}
-@media (max-width:720px){.norenbar{flex-wrap:wrap} .shopacts{justify-content:flex-start} .packhead{flex-wrap:wrap} .packhead .packacts{order:5;width:100%;justify-content:flex-start}}
+@media (max-width:720px){.shophd{flex-wrap:wrap} .shopacts{justify-content:flex-start} .packhead{flex-wrap:wrap} .packhead .packacts{order:5;width:100%;justify-content:flex-start}}
 .shopshelves{display:flex;flex-wrap:wrap;gap:0 16px;align-items:stretch}
 .shopshelves .shelf{--w:164px;flex:var(--n) 1 calc(var(--n) * var(--w) + (var(--n) - 1) * 16px + 30px);min-width:0}
 .shopshelves .shelf.many{--w:132px}
@@ -1024,6 +1019,9 @@ body.reducemotion #hand .tile.hit,body.reducemotion #open .tile.hit{animation:no
 body.reducemotion .hp{animation:none}
 body.reducemotion.bganim::before{animation:none}
 body.reducemotion *,body.reducemotion *::before,body.reducemotion *::after,body.reducemotion::before,body.reducemotion::after{animation:none!important;transition:none!important}
+.setrow.setoff > div:first-child b,.setrow.setoff > div:first-child .muted{opacity:.5} .setrow.setoff .setbtns button{opacity:.45;cursor:default} .setnote{margin-top:4px;font-size:11.5px;color:var(--accent)}
+.packhead.shophd{--pc:226,104,84} .shophd .packart{width:54px;height:54px;transform:rotate(-6deg)} .shophd .packtitle{flex:0 1 auto} .shophd .packtitle h2{margin:0;font-size:30px;letter-spacing:.04em} .shophd .shopacts{margin-left:auto}
+.shophd .wallet{border-color:rgba(246,234,210,.45);background:rgba(0,0,0,.22)} .shophd .wallet .v{color:#f3c768} .shophd .wallet .cur{color:rgba(246,234,210,.7)}
 </style>
 </head><body>
 <div id="app">
@@ -2153,27 +2151,29 @@ function translateDOM(root) {
 }
 function setLang(l) { LANG = l; try { localStorage.setItem('yakuman.lang', l); } catch (e) { } if (modalPinned) hideModal(); render(); }
 function settingsHTML() {
-  const dbgOn = !$('#debugBar').hidden;
+  const dbgOn = !$('#debugBar').hidden, noMotion = !motionOK;   // settings that only animate are greyed out while motion is off
   return `<div class="shophead"><h2>Settings</h2></div>
   <div class="setsec">Gameplay</div>
+  <div class="setrow"><div><b>Terminology</b><div class="muted" data-notr>Riichi uses Japanese names (Chi, Pon, Kan, Han, Yaku, ¥). Hong Kong uses English names (Chow, Pung, Kong, Faan, $).</div></div><div class="setbtns"><button class="${LANG === 'ja' ? 'primary' : ''}" data-setlang="ja">Riichi</button><button class="${LANG === 'hk' ? 'primary' : ''}" data-setlang="hk">Hong Kong</button></div></div>
   <div class="setrow"><div><b>Helper hints</b><div class="muted">Shown under your hand. Tiles Away (on by default) says how many tiles you are from a complete hand. Waiting On lists the tiles you need, and Without These says whether the tiles you select can go without setting you back.</div></div><div class="setbtns">${[['away', 'Tiles Away'], ['waits', 'Waiting On'], ['without', 'Without These']].map(([k, n]) => `<button class="${HINTS[k] ? 'primary' : ''}" data-sethint="${k}">${n}</button>`).join('')}</div></div>
+  <div class="setrow"><div><b>Dead-tile dots</b><div class="muted">Green dots mark tiles you can discard without losing progress toward a complete hand.</div></div><div class="setbtns"><button class="${SHOW_DOTS ? 'primary' : ''}" data-setdots="on">On</button><button class="${!SHOW_DOTS ? 'primary' : ''}" data-setdots="off">Off</button></div></div>
+  <div class="setsec">Sound</div>
   <div class="setrow"><div><b>Sound</b><div class="muted">Tile clacks, scoring chimes and counters. Sound starts after your first click.</div></div><div class="setbtns"><button class="${SOUND ? 'primary' : ''}" data-setsound="on">On</button><button class="${!SOUND ? 'primary' : ''}" data-setsound="off">Off</button></div></div>
   <div class="setrow"><div><b>Music</b><div class="muted">A laid-back synth groove in the style of Balatro, with a brighter Shop theme and a heavier Boss theme that crossfade as you play. Separate from Sound, and starts after your first click.</div></div><div class="setbtns"><button class="${MUSIC ? 'primary' : ''}" data-setmusic="on">On</button><button class="${!MUSIC ? 'primary' : ''}" data-setmusic="off">Off</button></div></div>
   <div class="setsec">Display</div>
-  <div class="setrow"><div><b>Animated background</b><div class="muted">Slowly drifting light behind the table, like Balatro's swirl. Turned off automatically if your device asks for reduced motion.</div></div><div class="setbtns"><button class="${BG_ANIM ? 'primary' : ''}" data-setbg="on">On</button><button class="${!BG_ANIM ? 'primary' : ''}" data-setbg="off">Off</button></div></div>
-  <div class="setrow"><div><b>Screen shake</b><div class="muted">The table shakes a little when a play scores three times the target or more.</div></div><div class="setbtns"><button class="${SHAKE ? 'primary' : ''}" data-setshake="on">On</button><button class="${!SHAKE ? 'primary' : ''}" data-setshake="off">Off</button></div></div>
-  <div class="setrow"><div><b>Reduce motion</b><div class="muted">Turns off all animation: cards flying and dealing in, trays sliding, shimmer, the drifting background and the scoring effects. Everything happens instantly instead. Also on automatically if your device asks for reduced motion.</div></div><div class="setbtns"><button class="${REDUCE_MOTION ? 'primary' : ''}" data-setmotion="reduce">On</button><button class="${!REDUCE_MOTION ? 'primary' : ''}" data-setmotion="full">Off</button></div></div>
-  <div class="setrow"><div><b>CRT filter</b><div class="muted">Light adds faint scanlines and a soft vignette. Full also curves the screen like an old tube, with a soft glow at the edges, like Balatro's CRT; it is heavier and may slow older devices.</div></div><div class="setbtns">${[['off', 'Off'], ['on', 'Light'], ['full', 'Full']].map(([k, n]) => `<button class="${CRT === k ? 'primary' : ''}" data-setcrt="${k}">${n}</button>`).join('')}</div></div>
   <div class="setrow"><div><b>High-contrast tiles</b><div class="muted">One strong colour per suit (Characters red, Dots blue, Bamboo green), with the number on every suited tile. Red Fives stay red with a red corner number.</div></div><div class="setbtns"><button class="${HIGH_CONTRAST ? 'primary' : ''}" data-sethc="on">On</button><button class="${!HIGH_CONTRAST ? 'primary' : ''}" data-sethc="off">Off</button></div></div>
-  <div class="setrow"><div><b>Terminology</b><div class="muted" data-notr>Riichi uses Japanese names (Chi, Pon, Kan, Han, Yaku, ¥). Hong Kong uses English names (Chow, Pung, Kong, Faan, $).</div></div><div class="setbtns"><button class="${LANG === 'ja' ? 'primary' : ''}" data-setlang="ja">Riichi</button><button class="${LANG === 'hk' ? 'primary' : ''}" data-setlang="hk">Hong Kong</button></div></div>
   <div class="setrow"><div><b>Tile numbers</b><div class="muted">The small number or letter in a tile's corner. Characters and Winds is the default: Dots and Bamboo are counted by their pips. With All Tiles, some numbers sit over the Dots and Bamboo art.</div></div><div class="setbtns">${[['all', 'All Tiles'], ['some', 'Characters and Winds'], ['none', 'None']].map(([k, n]) => `<button class="${TILE_NUMS === k ? 'primary' : ''}" data-settilenums="${k}">${n}</button>`).join('')}</div></div>
-  <div class="setrow"><div><b>Scoring animation speed</b><div class="muted">How fast tiles and Talismans score. Instant shows the result at once. Clicking anywhere during scoring also skips.</div></div><div class="setbtns">${Object.keys(SPEEDS).map(k => `<button class="${ANIM_SPEED === k ? 'primary' : ''}" data-setspeed="${k}">${k[0].toUpperCase() + k.slice(1)}</button>`).join('')}</div></div>
+  <div class="setrow"><div><b>CRT filter</b><div class="muted">Light adds faint scanlines and a soft vignette. Full also curves the screen like an old tube, with a soft glow at the edges, like Balatro's CRT; it is heavier and may slow older devices.</div></div><div class="setbtns">${[['off', 'Off'], ['on', 'Light'], ['full', 'Full']].map(([k, n]) => `<button class="${CRT === k ? 'primary' : ''}" data-setcrt="${k}">${n}</button>`).join('')}</div></div>
+  <div class="setsec">Motion</div>
+  <div class="setrow"><div><b>Reduce motion</b><div class="muted">Turns off all animation: cards flying and dealing in, trays sliding, shimmer, the drifting background and the scoring effects. Everything happens instantly instead. Also on automatically if your device asks for reduced motion.</div></div><div class="setbtns"><button class="${REDUCE_MOTION ? 'primary' : ''}" data-setmotion="reduce">On</button><button class="${!REDUCE_MOTION ? 'primary' : ''}" data-setmotion="full">Off</button></div></div>
+  <div class="setrow${noMotion ? ' setoff' : ''}"><div><b>Scoring animation speed</b><div class="muted">How fast tiles and Talismans score. Instant shows the result at once. Clicking anywhere during scoring also skips.${noMotion ? `<div class="setnote">Off while ${deviceReduce && !REDUCE_MOTION ? 'your device asks for reduced motion' : 'Reduce motion is on'}.</div>` : ''}</div></div><div class="setbtns">${Object.keys(SPEEDS).map(k => `<button ${noMotion ? 'disabled ' : ''}class="${ANIM_SPEED === k ? 'primary' : ''}" data-setspeed="${k}">${k[0].toUpperCase() + k.slice(1)}</button>`).join('')}</div></div>
+  <div class="setrow${noMotion ? ' setoff' : ''}"><div><b>Animated background</b><div class="muted">Slowly drifting light behind the table, like Balatro's swirl.${noMotion ? `<div class="setnote">Off while ${deviceReduce && !REDUCE_MOTION ? 'your device asks for reduced motion' : 'Reduce motion is on'}.</div>` : ''}</div></div><div class="setbtns"><button ${noMotion ? 'disabled ' : ''}class="${BG_ANIM ? 'primary' : ''}" data-setbg="on">On</button><button ${noMotion ? 'disabled ' : ''}class="${!BG_ANIM ? 'primary' : ''}" data-setbg="off">Off</button></div></div>
+  <div class="setrow${noMotion ? ' setoff' : ''}"><div><b>Screen shake</b><div class="muted">The table shakes a little when a play scores three times the target or more.${noMotion ? `<div class="setnote">Off while ${deviceReduce && !REDUCE_MOTION ? 'your device asks for reduced motion' : 'Reduce motion is on'}.</div>` : ''}</div></div><div class="setbtns"><button ${noMotion ? 'disabled ' : ''}class="${SHAKE ? 'primary' : ''}" data-setshake="on">On</button><button ${noMotion ? 'disabled ' : ''}class="${!SHAKE ? 'primary' : ''}" data-setshake="off">Off</button></div></div>
   <div class="setsec">Your data</div>
   <div class="setrow"><div><b>Profile</b><div class="muted">${PROFILE.runs} runs · ${PROFILE.wins} wins · best Ante ${PROFILE.bestAnte || '—'} · ${unlockedCount()} of ${UNLOCKS.length} unlocks. Saved in this browser. Export to move it, with your settings and current run, to another device.</div></div><div class="setbtns solo"><button class="ghost" id="mExport">Export</button><button class="ghost" id="mImport">Import</button></div></div>
   <div class="setrow"><div><b>Delete current run</b><div class="muted">Ends the run in progress so it can't be continued. Your profile, unlocks and settings stay.</div></div><div class="setbtns solo"><button class="danger" id="mDeleteRun"${hasRunSave() ? '' : ' disabled'}>Delete Run</button></div></div>
   <div class="setrow"><div><b>Reset profile</b><div class="muted">Clears lifetime stats and locks everything you have unlocked again. Your current run and settings stay.</div></div><div class="setbtns solo"><button class="danger" id="mResetProfile">Reset Profile</button></div></div>
   <div class="setsec">Advanced</div>
-  <div class="setrow"><div><b>Dead-tile dots</b><div class="muted">Green dots mark tiles you can discard without losing progress toward a complete hand.</div></div><div class="setbtns"><button class="${SHOW_DOTS ? 'primary' : ''}" data-setdots="on">On</button><button class="${!SHOW_DOTS ? 'primary' : ''}" data-setdots="off">Off</button></div></div>
   <div class="setrow"><div><b>Debug tools</b><div class="muted">A bar under the board with money, plays, items, bosses and editions for playtesting.</div></div><div class="setbtns"><button class="${dbgOn ? 'primary' : ''}" data-setdbg="on">Show</button><button class="${!dbgOn ? 'primary' : ''}" data-setdbg="off">Hide</button></div></div>
   <div class="setrow"><div><b>Unlock everything</b><div class="muted">For playtesting. Every Talisman, Wall and Stake is available and the whole Collection is revealed, whatever your profile says. Progress keeps counting.</div></div><div class="setbtns"><button class="${UNLOCK_ALL ? 'primary' : ''}" data-setunlock="on">On</button><button class="${!UNLOCK_ALL ? 'primary' : ''}" data-setunlock="off">Off</button></div></div>
   <div class="setrow"><div><b>Reset settings</b><div class="muted">Puts every setting on this page back to its default. Your run, profile and unlocks are not touched.</div></div><div class="setbtns solo"><button class="ghost" id="mResetSettings">Reset to Defaults</button></div></div>
@@ -4131,6 +4131,7 @@ function emblem(kind) {
     kami: '<path d="M6 13c6 2 30 2 36 0l-1.5 5c-6 1.5-27 1.5-33 0z" fill="#c9453a"/><rect x="10" y="22" width="28" height="3.5" rx="1" fill="#c9453a"/><rect x="13" y="16" width="4" height="27" rx="1" fill="#a8362c"/><rect x="31" y="16" width="4" height="27" rx="1" fill="#a8362c"/><rect x="22.5" y="18" width="3" height="5" fill="#a8362c"/>',
     scroll: '<rect x="9" y="13" width="30" height="22" fill="#e9f3e9" stroke="#6fcf97"/><rect x="5" y="10" width="6" height="28" rx="3" fill="#4f9d69"/><rect x="37" y="10" width="6" height="28" rx="3" fill="#4f9d69"/><path d="M15 20h18M15 25h18M15 30h12" stroke="#2e7d4f" stroke-width="1.6" stroke-linecap="round"/>',
     flower: '<g transform="translate(24 24)">' + [0, 72, 144, 216, 288].map(a => `<ellipse cx="0" cy="-10" rx="6.5" ry="10" fill="#f0a3b8" stroke="#d97f99" transform="rotate(${a})"/>`).join('') + '<circle r="5" fill="#d9a441"/></g>',
+    shop: '<rect x="20" y="3" width="8" height="5" rx="1" fill="#3a2a1a"/><ellipse cx="24" cy="25" rx="14" ry="17" fill="currentColor" stroke="rgba(0,0,0,.35)"/><path d="M11 18h26M10 25h28M11 32h26" stroke="rgba(0,0,0,.25)" stroke-width="1.4"/><rect x="18" y="40" width="12" height="4" rx="1" fill="#3a2a1a"/><path d="M24 44v3" stroke="#d9a441" stroke-width="2"/>',
     pack: '<path d="M10 7l3 3 3-3 3 3 3-3 3 3 3-3 3 3 3-3 3 3 1-1v34l-1-1-3 3-3-3-3 3-3-3-3 3-3-3-3 3-3-3-3 3-1-1z" fill="currentColor" stroke="rgba(0,0,0,.35)"/><rect x="10" y="19" width="28" height="10" fill="#1a2420" opacity=".35"/><circle cx="24" cy="24" r="4" fill="#efe6d2"/>',
   };
   return `<svg viewBox="0 0 48 48" aria-hidden="true">${E[kind] || E.pack}</svg>`;
@@ -4141,7 +4142,7 @@ function cardHTML(it, idx) {
   const ed = it.edition ? EDITIONS[it.edition] : null;
   const full = slotsFullMsg(it), no = p > S.money ? `You have ¥${S.money}; this costs ¥${p}` : full;
   const action = it.sold ? '<span class="muted soldnote">Sold</span>' : `<button class="primary" data-buy="${idx}" ${no ? `disabled title="${no}"` : ''}>${it.kind === 'pack' ? 'Open' : full ? 'Slots Full' : 'Buy'}</button>`;
-  return `<div class="shopcard ${it.kind}${it.sold ? ' sold' : ''}${ed ? ' ed-' + it.edition : ''}"><span class="pricetag num${p > S.money && !it.sold ? ' short' : ''}">${p === 0 ? 'Free' : '¥' + p}</span><div class="emblem">${emblem(it.kind)}</div>${it.kind === 'talisman' ? stickerBadges(it.sticker) : ''}<div class="kind">${it.kind === 'talisman' ? talKindRow(it.key, it.edition) : kindLabel + (ed ? `<span class="edtag ed-${it.edition}">${ed.name}</span>` : '')}</div><div class="n">${d.name}</div><div class="d">${d.desc}${ed ? ` <b>${ed.name}: ${ed.desc}.</b>` : ''}</div>${it.kind === 'scroll' ? scrollLevelHTML(it.key) : it.kind === 'talisman' && !it.sold ? talPreview(it.key) : ''}<div class="buy">${action}</div></div>`;
+  return `<div class="shopcard ${it.kind}${it.kind === 'pack' ? ' pk-' + PACKS[it.key].type : ''}${it.sold ? ' sold' : ''}${ed ? ' ed-' + it.edition : ''}"><span class="pricetag num${p > S.money && !it.sold ? ' short' : ''}">${p === 0 ? 'Free' : '¥' + p}</span><div class="emblem">${emblem(it.kind)}</div>${it.kind === 'talisman' ? stickerBadges(it.sticker) : ''}<div class="kind">${it.kind === 'talisman' ? talKindRow(it.key, it.edition) : kindLabel + (ed ? `<span class="edtag ed-${it.edition}">${ed.name}</span>` : '')}</div><div class="n">${d.name}</div><div class="d">${d.desc}${ed ? ` <b>${ed.name}: ${ed.desc}.</b>` : ''}</div>${it.kind === 'scroll' ? scrollLevelHTML(it.key) : it.kind === 'talisman' && !it.sold ? talPreview(it.key) : ''}<div class="buy">${action}</div></div>`;
 }
 // The shop wallet counts from the amount it last showed to the new one (coin clinks), then gives a small bounce.
 let walletShown = null;
@@ -4225,7 +4226,7 @@ function shopHTML() {
   // view, so the wallet and View Wall / Run Info are left out (the left panel and the top bar have them). Full screen keeps the
   // wallet in the banner and puts View Wall and Run Info at the bottom.
   const shopBtns = `<button id="mNext" class="primary hnext"><span class="nb-main">Next Blind <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M3 8h9M8.5 3.5 13 8l-4.5 4.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><small>Ante ${S.ante} · ${nextBoss ? nextBoss.name : next}</small></button>`;
-  let h = `<div class="noren"><div class="norenbar"><h2>Shop</h2><div class="shopacts">${tray ? '' : walletHTML()}${shopBtns}</div></div><div class="norenflaps" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div></div>`;
+  let h = `<div class="packhead shophd"><div class="packart">${emblem('shop')}</div><div class="packtitle"><h2>Shop</h2></div><div class="shopacts">${tray ? '' : walletHTML()}${shopBtns}</div></div>`;
   if (S.shop.coupon) h += `<div class="msg">Coupon Tag: Talismans and consumables are free in this shop.</div>`;
   // The three shelves stand side by side, in Balatro's order: the rerollable
   // cards, the Ante's Flower (its Voucher), then the Booster Packs. They wrap to a new row when the space runs out.
@@ -4524,8 +4525,8 @@ async function saveCodeFile(btn) {
   try { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([EXPORT_CODE], { type: 'text/plain' })); a.download = filename; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); say('Saved'); } catch (e) { say('Could not save: copy the code'); }
 }
 // Screens opened from the title (New Run, Challenges, Collection, Rules) close back to the title, not to the run behind it.
-function backToTitle() { const c = $('#mClose'); if (c) c.onclick = () => { showModal(menuHTML(!!load()), true, 'menumodal'); }; }
-function backToSettings() { $('#mClose').onclick = () => { PENDING_IMPORT = null; showModal(settingsHTML(), true); }; }
+function backToTitle() { const c = $('#mClose'); if (c) { c.dataset.back = '1'; c.onclick = () => { showModal(menuHTML(!!load()), true, 'menumodal'); }; } }
+function backToSettings() { $('#mClose').dataset.back = '1'; $('#mClose').onclick = () => { PENDING_IMPORT = null; showModal(settingsHTML(), true); }; }
 function yakuHTML() {
   const st = S.stats; const most = mostPlayedRung(); const yc = k => (S && S.stats.yaku[k]) || 0;
   const tabs = [['run', 'Run'], ['ladder', 'Play Ladder'], ['yaku', 'Yaku'], ['yakuman', 'Yakuman'], ['profile', 'Profile']];
@@ -4750,6 +4751,15 @@ function bindEvents() {
   $('#btnSettings').onclick = () => showModal(settingsHTML(), true);
   $('#btnNewRun').onclick = () => showModal(`<div class="shophead"><h2>Start a New Run?</h2></div><p class="muted" style="margin:4px 0 0">Your current run will be lost.</p><div class="shopfoot"><button id="mClose" class="ghost">Cancel</button><span style="flex:1"></span><button id="mNewRun" class="danger">New Run</button></div>`, true, 'confirmmodal');
   document.addEventListener('click', e => { const b = e.target.closest('[data-copyseed]'); if (b) copySeed(b); if (S && S.busy && skipArmed) skipAnim = true; });
+  // Closing a screen (X, a click outside, Escape, Back or Cancel) plays the leave animation first, then runs the close.
+  // Back to the board the dim fades too; back to another screen (the title, Settings, the Shop) it hands over with a pop.
+  // The close runs its action directly: a browser ignores a second click() on a button while its first click is still running.
+  $('#overlay').addEventListener('click', e => {
+    const c = e.target.closest('#mClose'); if (!c) return;
+    e.stopImmediatePropagation(); e.preventDefault();
+    const toBoard = !c.dataset.back && S && S.phase === 'blind' && !S.pack;
+    modalOut(() => { if (c.onclick) c.onclick.call(c); else { hideModal(); render(); } }, null, toBoard);
+  }, true);
   $('#overlay').addEventListener('click', e => {
     if (e.target === $('#overlay')) { if (modalClosable()) closeModal(); return; }
     const t = e.target.closest('button'); if (!t) return;
