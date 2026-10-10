@@ -173,6 +173,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 162: Collection engravings use wide cards: the sample tile sits on a felt pad at the left, the name and effect beside it, an accent edge in each engraving's colour, two or three cards per row.
 - Build 163: Engraving cards drop the coloured accent edge.
 - Build 164: Flowers in the side panel use the same hover card as tiles (a Flower label, the name and the effect) instead of the plain tooltip; the hover card now works for any element with data-hc-title.
+- Build 236: The sidebar's money always fits its box: a slightly smaller coin, and big amounts step their size down (¥1,234 at 21 px, ¥123,456 at 15 px), including after the cash-out count.
 - Build 235: Money shows thousands separators everywhere (¥1,234: the sidebar purse, the Shop's wallet, the cash-out total and rows, and while coins count up).
 - Build 234: Fix: Challenges (and New Run's setup) opened from the title screen now close back to the title, like Collection and Rules, instead of dropping you onto the run behind it.
 - Build 233: The Blind plate no longer labels a Boss as "Boss Blind" beside the Ante (its red name and rule already say so).

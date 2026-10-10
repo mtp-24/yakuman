@@ -1318,7 +1318,7 @@ function tileMotion(before, fresh) {
 }
 // Big numbers shrink to fit their box instead of wrapping onto a second line (targets, chips, Mult, totals, Round Score).
 function fitText(el, min) { if (!el) return; el.style.fontSize = ''; let fs = parseFloat(getComputedStyle(el).fontSize); while (el.scrollWidth > el.clientWidth + 1 && fs > (min || 11)) { fs -= 1; el.style.fontSize = fs + 'px'; } }
-function fitNumbers(root) { (root || document).querySelectorAll('.handbox .chipbox, .handbox .multbox, .bp-row .target, .roundscore .rs, .hb-total .tot').forEach(e => fitText(e)); (root || document).querySelectorAll('.hanfoot').forEach(fitFoot); (root || document).querySelectorAll('.hb-head .hb-title').forEach(fitTitle); }
+function fitNumbers(root) { (root || document).querySelectorAll('.handbox .chipbox, .handbox .multbox, .bp-row .target, .roundscore .rs, .hb-total .tot, #purseVal').forEach(e => fitText(e)); (root || document).querySelectorAll('.hanfoot').forEach(fitFoot); (root || document).querySelectorAll('.hb-head .hb-title').forEach(fitTitle); }
 // The Han caption always shows the tier name (Baiman, ...) on its second line; the tooltip has both.
 function fitFoot(el) { if (!el) return; const t = el.querySelector('.hantier').textContent; el.title = el.querySelector('.hanline').textContent + (t ? ' · ' + t : ''); }
 // Chips × Mult boxes for the scoring summary. Han lives in a caption strip under Mult, because Han only exists to become Mult.
@@ -2070,7 +2070,7 @@ function cashOut() {
     setTimeout(() => c.remove(), dur + i * gap + 400);   // in case frames are paused
   }
   const land = dur + (n - 1) * gap;
-  setTimeout(() => { const el = $('#purseVal'); if (el) { el.textContent = money(cur, S.money); juice(el, .8); } sfx('kaching'); }, land + 20);
+  setTimeout(() => { const el = $('#purseVal'); if (el) { el.textContent = money(cur, S.money); fitText(el); juice(el, .8); } sfx('kaching'); }, land + 20);
   setTimeout(go, land + 380);
 }
 function cashoutHTML() {
