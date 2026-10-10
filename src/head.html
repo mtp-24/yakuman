@@ -832,7 +832,7 @@ button.pulse{animation:btnpulse2 2.6s ease-out infinite}
 .tt-k{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#c9b48a;margin-bottom:2px} .tt-e.tt-body{border-top:0;padding-top:0;margin-top:2px}
 .overlay.boardonly{inset:auto;border-radius:16px 16px 0 0;padding:0 14px;overflow:hidden;background:none}
 .board.cashdim{position:relative} .board.cashdim::after{content:'';position:absolute;inset:0;z-index:15;border-radius:inherit;pointer-events:none;background:linear-gradient(180deg,rgba(5,10,9,.25) 0,rgba(5,10,9,.25) calc(var(--cut,0px) - 8px),rgba(5,10,9,.62) calc(var(--cut,0px) + 8px))}
-.overlay.boardonly .modal.cashmodal{margin-top:auto;max-height:100%;min-height:min(100%,calc(100% - var(--reach,0px)));overflow-y:auto;border:6px solid #4e351c;border-bottom:0;border-radius:18px 18px 0 0;padding:16px 20px 20px;box-shadow:inset 0 0 0 1px rgba(217,164,65,.5),0 -2px 0 rgba(255,220,160,.25),0 -12px 34px rgba(0,0,0,.6)}
+.overlay.boardonly .modal.traymodal,.overlay.boardonly .modal.cashmodal{margin-top:auto;max-height:100%;min-height:min(100%,calc(100% - var(--reach,0px)));overflow-y:auto;border:6px solid #4e351c;border-bottom:0;border-radius:18px 18px 0 0;padding:16px 20px 20px;box-shadow:inset 0 0 0 1px rgba(217,164,65,.5),0 -2px 0 rgba(255,220,160,.25),0 -12px 34px rgba(0,0,0,.6)}
 .blindplate.cleared .bp-top .label:last-child{color:var(--good)}
 .rar{display:inline-block;margin-left:6px;padding:0 6px;border-radius:999px;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;line-height:16px;vertical-align:1px;color:#fff;font-family:var(--body);font-weight:600} .rar-common{background:#2b6cb0} .rar-uncommon{background:#2f855a} .rar-rare{background:#c53030} .rar-legendary{background:linear-gradient(90deg,#7b3fbf,#b04ad0)}
 .packtileart{display:flex;justify-content:center;align-items:center;min-height:88px;margin:0 auto 6px} .packtileart .tile{cursor:default} .shopcard.tilecard{background:linear-gradient(180deg,#1e3a30,#14281f);border:1px solid rgba(240,230,200,.25)}
@@ -878,4 +878,31 @@ body.crt::after{content:'';position:fixed;inset:0;z-index:90;pointer-events:none
 /* Full CRT: the SVG filter bends the picture; a dark rounded mask hides the bent-away edges like a tube's bezel */
 body.crt-full #app,body.crt-full #overlay{filter:url(#crtfx)} #crtbezel{display:none} body.crt-full #crtbezel{display:block;position:fixed;inset:0;z-index:91;pointer-events:none;border-radius:28px/22px;box-shadow:0 0 0 40px #050806,inset 0 0 60px 18px rgba(0,0,0,.65)}
 @media (prefers-reduced-motion: reduce){body.crt-full #app,body.crt-full #overlay{filter:none}}
+/* ===== Tray Shop (and packs): rises from the bottom of the board; the Talisman row above stays clear ===== */
+.board.shopdim::after{background:linear-gradient(180deg,transparent 0,transparent calc(var(--cut,0px) + 2px),rgba(5,10,9,.55) calc(var(--cut,0px) + 2px))}
+.overlay.shoptray .modal.traymodal{min-height:100%;max-width:none;width:100%;box-sizing:border-box;padding:12px 16px 14px;background:radial-gradient(ellipse at top,rgba(217,164,65,.12),transparent 60%),linear-gradient(180deg,#2c1f11,#1c130a)}
+.shopmodal .tshead{display:flex;align-items:center;gap:14px;margin:0 2px 10px}
+.shopmodal .tstitle{display:flex;align-items:baseline;gap:12px;flex:1;min-width:0} .shopmodal .tshead h2{margin:0;font-size:28px;font-weight:500;color:var(--accent);letter-spacing:.02em}
+.shopmodal .tssub{font-size:12px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.shopmodal .tscoupon{font-size:11px;padding:3px 10px;border-radius:999px;background:rgba(111,207,151,.15);border:1px solid rgba(111,207,151,.45);color:var(--good)}
+.tsbody{display:grid;grid-template-columns:minmax(348px,1fr) auto auto 196px;gap:0;align-items:stretch;background:radial-gradient(ellipse at 50% 0%,#24543f,#173a2c 70%);border:1px solid rgba(240,220,170,.2);border-radius:14px;padding:12px 6px 14px;box-shadow:inset 0 2px 14px rgba(0,0,0,.4),0 4px 14px rgba(0,0,0,.35)}
+.tsgroup{display:flex;flex-direction:column;gap:10px;min-width:0;padding:0 14px} .tsgroup + .tsgroup{border-left:1px solid rgba(240,220,170,.12)}
+.tslabel{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#d8c48f;display:flex;align-items:center;gap:8px} .tslabel::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(216,196,143,.35),transparent)}
+.tsrow{display:flex;flex-wrap:wrap;gap:12px;align-items:stretch;padding:10px 2px 14px;position:relative;flex:1;align-content:flex-start}
+.tsrow::after{content:'';position:absolute;left:-6px;right:-6px;bottom:0;height:7px;border-radius:3px;background:linear-gradient(180deg,#8a6a3e,#4e351c);box-shadow:0 3px 6px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,230,180,.35)}
+.tsrow .shopcard{position:relative;width:152px;box-sizing:border-box;min-height:222px;padding:18px 10px 10px;border-radius:12px;text-align:center;display:flex;flex-direction:column;box-shadow:0 6px 16px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.06);transition:transform .15s,box-shadow .15s}
+.tsrow .shopcard:not(.sold):hover{transform:translateY(-3px);box-shadow:0 12px 24px rgba(0,0,0,.45)}
+.tsrow .shopcard .n{font-size:16px;line-height:1.2} .tsrow .shopcard .d{font-size:11.5px;line-height:1.4} .tsrow .shopcard .kind{justify-content:center;flex-wrap:wrap;row-gap:3px}
+.tsrow .shopcard .buy{margin-top:auto;justify-content:center;padding-top:8px} .tsrow .shopcard .buy button{width:100%} .tsrow .emblem{width:40px;height:40px} .tsrow .lvline{font-size:10.5px}
+.tsbody.many .tscards .tsrow .shopcard{width:136px;min-height:210px} .tsbody.many{grid-template-columns:minmax(316px,1fr) auto auto 196px} .tsbody.many .tscards .shopcard .d{font-size:11px}
+.tsempty{width:152px;min-height:222px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;text-align:center;padding:14px;border:1px dashed rgba(240,220,170,.25);border-radius:12px;font-size:12px;color:var(--muted)}
+.tsrail{display:flex;flex-direction:column;gap:8px;padding:22px 12px 0 14px;position:static;order:0;border-left:1px solid rgba(240,220,170,.12)}
+.tsmsg{min-height:18px;margin:8px 4px 0;font-size:12px}
+@media (max-width:1180px){.tsbody,.tsbody.many{grid-template-columns:minmax(316px,1fr) auto 196px} .tspacks{grid-column:1 / 3;border-left:0!important;border-top:1px solid rgba(240,220,170,.12);padding-top:10px} .tsrail{grid-row:1 / 3;grid-column:3}}
+@media (max-width:720px){.tsbody{grid-template-columns:1fr} .tsgroup + .tsgroup{border-left:0;border-top:1px solid rgba(240,220,170,.12);padding-top:10px} .tsrail{grid-row:1;grid-column:1;display:grid;grid-template-columns:1fr 1fr;border-left:0;padding:0 14px 10px} .tspacks{grid-column:1}}
+.slot.filled.sel{outline:2px solid var(--accent);outline-offset:1px}
+.tsrail .railbtn{white-space:nowrap}
+.tspacks .tsrow,.tsflower .tsrow{flex-wrap:nowrap}
+.overlay.shoptray .modal.shopmodal{display:flex;flex-direction:column} .overlay.shoptray .modal.shopmodal .tsbody{margin:auto 0 0} .overlay.shoptray .modal.shopmodal .tsmsg{margin:8px 4px auto}
+.overlay.shoptray .modal.packmodal{display:flex;flex-direction:column} .overlay.shoptray .modal.packmodal .packhead{margin:-12px -16px 10px;border-radius:12px 12px 0 0}
 </style>

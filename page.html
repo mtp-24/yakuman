@@ -832,7 +832,7 @@ button.pulse{animation:btnpulse2 2.6s ease-out infinite}
 .tt-k{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#c9b48a;margin-bottom:2px} .tt-e.tt-body{border-top:0;padding-top:0;margin-top:2px}
 .overlay.boardonly{inset:auto;border-radius:16px 16px 0 0;padding:0 14px;overflow:hidden;background:none}
 .board.cashdim{position:relative} .board.cashdim::after{content:'';position:absolute;inset:0;z-index:15;border-radius:inherit;pointer-events:none;background:linear-gradient(180deg,rgba(5,10,9,.25) 0,rgba(5,10,9,.25) calc(var(--cut,0px) - 8px),rgba(5,10,9,.62) calc(var(--cut,0px) + 8px))}
-.overlay.boardonly .modal.cashmodal{margin-top:auto;max-height:100%;min-height:min(100%,calc(100% - var(--reach,0px)));overflow-y:auto;border:6px solid #4e351c;border-bottom:0;border-radius:18px 18px 0 0;padding:16px 20px 20px;box-shadow:inset 0 0 0 1px rgba(217,164,65,.5),0 -2px 0 rgba(255,220,160,.25),0 -12px 34px rgba(0,0,0,.6)}
+.overlay.boardonly .modal.traymodal,.overlay.boardonly .modal.cashmodal{margin-top:auto;max-height:100%;min-height:min(100%,calc(100% - var(--reach,0px)));overflow-y:auto;border:6px solid #4e351c;border-bottom:0;border-radius:18px 18px 0 0;padding:16px 20px 20px;box-shadow:inset 0 0 0 1px rgba(217,164,65,.5),0 -2px 0 rgba(255,220,160,.25),0 -12px 34px rgba(0,0,0,.6)}
 .blindplate.cleared .bp-top .label:last-child{color:var(--good)}
 .rar{display:inline-block;margin-left:6px;padding:0 6px;border-radius:999px;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;line-height:16px;vertical-align:1px;color:#fff;font-family:var(--body);font-weight:600} .rar-common{background:#2b6cb0} .rar-uncommon{background:#2f855a} .rar-rare{background:#c53030} .rar-legendary{background:linear-gradient(90deg,#7b3fbf,#b04ad0)}
 .packtileart{display:flex;justify-content:center;align-items:center;min-height:88px;margin:0 auto 6px} .packtileart .tile{cursor:default} .shopcard.tilecard{background:linear-gradient(180deg,#1e3a30,#14281f);border:1px solid rgba(240,230,200,.25)}
@@ -878,6 +878,33 @@ body.crt::after{content:'';position:fixed;inset:0;z-index:90;pointer-events:none
 /* Full CRT: the SVG filter bends the picture; a dark rounded mask hides the bent-away edges like a tube's bezel */
 body.crt-full #app,body.crt-full #overlay{filter:url(#crtfx)} #crtbezel{display:none} body.crt-full #crtbezel{display:block;position:fixed;inset:0;z-index:91;pointer-events:none;border-radius:28px/22px;box-shadow:0 0 0 40px #050806,inset 0 0 60px 18px rgba(0,0,0,.65)}
 @media (prefers-reduced-motion: reduce){body.crt-full #app,body.crt-full #overlay{filter:none}}
+/* ===== Tray Shop (and packs): rises from the bottom of the board; the Talisman row above stays clear ===== */
+.board.shopdim::after{background:linear-gradient(180deg,transparent 0,transparent calc(var(--cut,0px) + 2px),rgba(5,10,9,.55) calc(var(--cut,0px) + 2px))}
+.overlay.shoptray .modal.traymodal{min-height:100%;max-width:none;width:100%;box-sizing:border-box;padding:12px 16px 14px;background:radial-gradient(ellipse at top,rgba(217,164,65,.12),transparent 60%),linear-gradient(180deg,#2c1f11,#1c130a)}
+.shopmodal .tshead{display:flex;align-items:center;gap:14px;margin:0 2px 10px}
+.shopmodal .tstitle{display:flex;align-items:baseline;gap:12px;flex:1;min-width:0} .shopmodal .tshead h2{margin:0;font-size:28px;font-weight:500;color:var(--accent);letter-spacing:.02em}
+.shopmodal .tssub{font-size:12px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.shopmodal .tscoupon{font-size:11px;padding:3px 10px;border-radius:999px;background:rgba(111,207,151,.15);border:1px solid rgba(111,207,151,.45);color:var(--good)}
+.tsbody{display:grid;grid-template-columns:minmax(348px,1fr) auto auto 196px;gap:0;align-items:stretch;background:radial-gradient(ellipse at 50% 0%,#24543f,#173a2c 70%);border:1px solid rgba(240,220,170,.2);border-radius:14px;padding:12px 6px 14px;box-shadow:inset 0 2px 14px rgba(0,0,0,.4),0 4px 14px rgba(0,0,0,.35)}
+.tsgroup{display:flex;flex-direction:column;gap:10px;min-width:0;padding:0 14px} .tsgroup + .tsgroup{border-left:1px solid rgba(240,220,170,.12)}
+.tslabel{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#d8c48f;display:flex;align-items:center;gap:8px} .tslabel::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(216,196,143,.35),transparent)}
+.tsrow{display:flex;flex-wrap:wrap;gap:12px;align-items:stretch;padding:10px 2px 14px;position:relative;flex:1;align-content:flex-start}
+.tsrow::after{content:'';position:absolute;left:-6px;right:-6px;bottom:0;height:7px;border-radius:3px;background:linear-gradient(180deg,#8a6a3e,#4e351c);box-shadow:0 3px 6px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,230,180,.35)}
+.tsrow .shopcard{position:relative;width:152px;box-sizing:border-box;min-height:222px;padding:18px 10px 10px;border-radius:12px;text-align:center;display:flex;flex-direction:column;box-shadow:0 6px 16px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.06);transition:transform .15s,box-shadow .15s}
+.tsrow .shopcard:not(.sold):hover{transform:translateY(-3px);box-shadow:0 12px 24px rgba(0,0,0,.45)}
+.tsrow .shopcard .n{font-size:16px;line-height:1.2} .tsrow .shopcard .d{font-size:11.5px;line-height:1.4} .tsrow .shopcard .kind{justify-content:center;flex-wrap:wrap;row-gap:3px}
+.tsrow .shopcard .buy{margin-top:auto;justify-content:center;padding-top:8px} .tsrow .shopcard .buy button{width:100%} .tsrow .emblem{width:40px;height:40px} .tsrow .lvline{font-size:10.5px}
+.tsbody.many .tscards .tsrow .shopcard{width:136px;min-height:210px} .tsbody.many{grid-template-columns:minmax(316px,1fr) auto auto 196px} .tsbody.many .tscards .shopcard .d{font-size:11px}
+.tsempty{width:152px;min-height:222px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;text-align:center;padding:14px;border:1px dashed rgba(240,220,170,.25);border-radius:12px;font-size:12px;color:var(--muted)}
+.tsrail{display:flex;flex-direction:column;gap:8px;padding:22px 12px 0 14px;position:static;order:0;border-left:1px solid rgba(240,220,170,.12)}
+.tsmsg{min-height:18px;margin:8px 4px 0;font-size:12px}
+@media (max-width:1180px){.tsbody,.tsbody.many{grid-template-columns:minmax(316px,1fr) auto 196px} .tspacks{grid-column:1 / 3;border-left:0!important;border-top:1px solid rgba(240,220,170,.12);padding-top:10px} .tsrail{grid-row:1 / 3;grid-column:3}}
+@media (max-width:720px){.tsbody{grid-template-columns:1fr} .tsgroup + .tsgroup{border-left:0;border-top:1px solid rgba(240,220,170,.12);padding-top:10px} .tsrail{grid-row:1;grid-column:1;display:grid;grid-template-columns:1fr 1fr;border-left:0;padding:0 14px 10px} .tspacks{grid-column:1}}
+.slot.filled.sel{outline:2px solid var(--accent);outline-offset:1px}
+.tsrail .railbtn{white-space:nowrap}
+.tspacks .tsrow,.tsflower .tsrow{flex-wrap:nowrap}
+.overlay.shoptray .modal.shopmodal{display:flex;flex-direction:column} .overlay.shoptray .modal.shopmodal .tsbody{margin:auto 0 0} .overlay.shoptray .modal.shopmodal .tsmsg{margin:8px 4px auto}
+.overlay.shoptray .modal.packmodal{display:flex;flex-direction:column} .overlay.shoptray .modal.packmodal .packhead{margin:-12px -16px 10px;border-radius:12px 12px 0 0}
 </style>
 <div id="app">
 <header>
@@ -904,7 +931,7 @@ body.crt-full #app,body.crt-full #overlay{filter:url(#crtfx)} #crtbezel{display:
           <div class="slots" id="talismans"></div>
         </div>
         <div class="talcol concol">
-          <div class="zhead"><span class="label">Consumables</span><span class="muted" id="conCount"></span></div>
+          <div class="zhead"><span class="label">Consumables</span><span class="muted" id="conCount"></span><span class="spacer" style="flex:1"></span><span id="conSell"></span></div>
           <div class="slots" id="consumables"></div>
         </div>
       </div>
@@ -2854,7 +2881,7 @@ function render() {
   const motionBefore = tileSnapshot(), freshTiles = new Set(S.newIds || []);
   renderBlind(); renderTalismans(); renderConsumables(); renderOpen(); renderRiver(); renderHand(); renderActions(); renderLast();
   $('#msg').textContent = S.msg || ''; $('#msg').className = 'msg' + (S.msgErr ? ' err' : '');
-  if (S.phase === 'cashout') { showModal(cashoutHTML(), false, 'cashmodal'); placeOverlay(true); animateCashout(); } else if (S.phase === 'shop' && S.pack) { showModal(packHTML(), false, 'packmodal'); fillPackTiles(); fillPackHand(); } else if (S.phase === 'shop') { showModal(shopHTML(), false, 'shopmodal'); tweenWallet(); } else if (S.phase === 'select') showModal(selectHTML(), false, 'selectmodal'); else if (S.phase === 'gameover') showModal(overHTML(false), false, 'overmodal'); else if (S.phase === 'win') showModal(overHTML(true), false, 'overmodal winmodal'); else if (!modalPinned) hideModal();
+  if (S.phase === 'cashout') { showModal(cashoutHTML(), false, 'cashmodal traymodal'); placeOverlay(true); animateCashout(); } else if (S.phase === 'shop' && S.pack) { showModal(packHTML(), false, 'packmodal traymodal'); placeOverlay(true, 'shop'); fillPackTiles(); fillPackHand(); trayIn('pack'); } else if (S.phase === 'shop') { showModal(shopHTML(), false, 'shopmodal traymodal'); placeOverlay(true, 'shop'); tweenWallet(); trayIn('shop'); } else if (S.phase === 'select') showModal(selectHTML(), false, 'selectmodal'); else if (S.phase === 'gameover') showModal(overHTML(false), false, 'overmodal'); else if (S.phase === 'win') showModal(overHTML(true), false, 'overmodal winmodal'); else if (!modalPinned) hideModal();
   $('#btnYaku').textContent = 'Run Info';
   document.querySelectorAll('.zhead > .muted').forEach(e => { e.title = e.textContent; });   // full text on hover when a header is truncated
   translateDOM($('#app')); fitNumbers();
@@ -3161,13 +3188,18 @@ function renderTalismans() {
   if (S.selTal && S.talismans.includes(S.selTal)) { const b = document.createElement('button'); b.className = 'ghost'; b.style.cssText = 'padding:3px 8px;font-size:12px'; b.textContent = isEternal(S.selTal) ? `${TAL[S.selTal].name} is Eternal` : `Sell ${TAL[S.selTal].name} for ¥${talSellValue(S.selTal)}`; if (isEternal(S.selTal)) b.disabled = true; b.onclick = () => sellTalisman(S.selTal); ts.appendChild(b); }
 }
 function renderConsumables() {
-  const box = $('#consumables'); box.innerHTML = ''; $('#conCount').textContent = `${S.consumables.length} / ${conSlots()} · click to use on selected tiles`;
+  const box = $('#consumables'); box.innerHTML = ''; $('#conCount').textContent = `${S.consumables.length} / ${conSlots()} · click one to use or sell it`;
   for (let i = 0; i < conSlots(); i++) {
     const c = S.consumables[i]; const el = document.createElement('div');
-    if (c) { const d = CONS[c.key]; el.className = 'slot filled ' + c.kind; el.innerHTML = `<div class="kind">${c.kind === 'kami' ? 'Kami Spirit' : 'Omikuji'}</div><div class="n">${d.name}</div><div class="d">${d.desc}</div>`; el.onclick = () => useConsumable(i); }
+    if (c) { const d = CONS[c.key]; el.className = 'slot filled ' + c.kind; el.innerHTML = `<div class="kind">${c.kind === 'kami' ? 'Kami Spirit' : 'Omikuji'}</div><div class="n">${d.name}</div><div class="d">${d.desc}</div>`; if (S.selCon === i) el.classList.add('sel'); el.onclick = () => { S.selCon = S.selCon === i ? null : i; render(); }; }
     else { el.className = 'slot'; el.innerHTML = `<div class="d">Empty slot</div>`; }
     box.appendChild(el);
   }
+  // Like Balatro: a selected consumable shows Use and Sell in the row's header (Use only when it can be used right now).
+  const cs = $('#conSell'); if (!cs) return; cs.innerHTML = ''; const c = S.consumables[S.selCon]; if (!c) { S.selCon = null; return; }
+  const d = CONS[c.key], canUse = S.phase === 'blind' || d.anywhere;
+  if (canUse) { const u = document.createElement('button'); u.className = 'primary'; u.style.cssText = 'padding:3px 10px;font-size:12px'; u.textContent = `Use ${d.name}`; u.onclick = () => { const i = S.selCon; S.selCon = null; useConsumable(i); }; cs.appendChild(u); }
+  const sl = document.createElement('button'); sl.className = 'ghost'; sl.style.cssText = 'padding:3px 10px;font-size:12px;margin-left:6px'; sl.textContent = `Sell ¥${conSellValue(c)}`; sl.onclick = () => { const i = S.selCon; S.selCon = null; sellConsumable(i); }; cs.appendChild(sl);
 }
 function renderOpen() {
   const box = $('#open'); box.innerHTML = '';
@@ -3584,14 +3616,20 @@ function decorateBanner(cls) {
 // Cash-out covers only the board area, like Balatro, so the left column (Blind, score and Last Play) stays in view.
 // Like Balatro, the receipt rises from the bottom edge of the screen into the board's column, over the hand and action bar.
 // On narrow layouts, where the left column stacks above the board, it stays full screen.
-function placeOverlay(boardOnly) {
-  const ov = $('#overlay'); ov.classList.remove('boardonly'); ['left', 'top', 'width', 'height'].forEach(k => ov.style[k] = '');
-  const board = document.querySelector('.board'); if (board) board.classList.remove('cashdim'); if (!boardOnly || !board || innerWidth <= 900) return;
+// mode 'shop': the tray fills the board below the Talisman row, which stays clear and clickable for selling.
+// The tray slides up once when the Shop opens (and when a pack opens), not on every redraw.
+let trayShown = '';
+function trayIn(kind) { const id = kind + ':' + S.ante + ':' + S.blindIndex + ':' + (S.pack ? S.pack.key : ''); if (trayShown === id || !motionOK || !$('#overlay').classList.contains('boardonly')) { trayShown = id; return; } trayShown = id; $('#modal').animate([{ transform: 'translateY(105%)' }, { transform: 'none' }], { duration: 340, easing: 'cubic-bezier(.2,.8,.2,1)' }); }
+function placeOverlay(boardOnly, mode) {
+  const ov = $('#overlay'); ov.classList.remove('boardonly', 'shoptray'); ['left', 'top', 'width', 'height'].forEach(k => ov.style[k] = '');
+  const board = document.querySelector('.board'); if (board) board.classList.remove('cashdim', 'shopdim'); if (!boardOnly || !board || innerWidth <= 900) return;
   const b = board.getBoundingClientRect(), top = Math.max(b.top, 0), bottom = innerHeight;   // runs to the screen's bottom edge, where the receipt rises from
   // The dimming sits on the board itself, so the page background below it keeps its colour. The Talismans stay lightly dimmed; the rest is darker.
   const tz = board.querySelector('.talzone'), cut = tz ? Math.max(0, tz.getBoundingClientRect().bottom + 4 - b.top) : 0;
-  board.classList.add('cashdim'); board.style.setProperty('--cut', cut + 'px');
-  ov.classList.add('boardonly'); Object.assign(ov.style, { left: b.left + 'px', top: top + 'px', width: b.width + 'px', height: (bottom - top) + 'px' });
+  board.classList.add('cashdim'); board.classList.toggle('shopdim', mode === 'shop'); board.style.setProperty('--cut', cut + 'px');
+  const otop = mode === 'shop' ? Math.max(0, top + cut + 2) : top;
+  ov.classList.add('boardonly'); ov.classList.toggle('shoptray', mode === 'shop'); Object.assign(ov.style, { left: b.left + 'px', top: otop + 'px', width: b.width + 'px', height: (bottom - otop) + 'px' });
+  if (mode === 'shop') { ov.style.setProperty('--reach', '0px'); return; }
   // The tray grows up from the screen's bottom edge until its contents sit around the middle of the screen
   // (and always far enough to cover the action bar).
   const m = $('#modal'), kids = [...m.children], ac = board.querySelector('.actions');
@@ -3599,7 +3637,7 @@ function placeOverlay(boardOnly) {
   let trayTop = innerHeight / 2 - contentH / 2; if (ac) trayTop = Math.min(trayTop, ac.getBoundingClientRect().top - 14);
   ov.style.setProperty('--reach', Math.max(0, trayTop - top) + 'px');
 }
-['resize', 'scroll'].forEach(ev => window.addEventListener(ev, () => { if ($('#overlay').classList.contains('boardonly')) placeOverlay(true); }));
+['resize', 'scroll'].forEach(ev => window.addEventListener(ev, () => { const ov = $('#overlay'); if (ov.classList.contains('boardonly')) placeOverlay(true, ov.classList.contains('shoptray') ? 'shop' : undefined); }));
 // Any leftover animation is cancelled first: the cash-out drawer's slide-down holds its end position, and the next modal must not inherit it.
 function showModal(html, pinned, cls) {
   placeOverlay(false); modalPinned = !!pinned; $('#modal').getAnimations().forEach(an => an.cancel()); $('#modal').className = 'modal' + (cls ? ' ' + cls : ''); $('#modal').innerHTML = html; if ($('#modal #mClose')) $('#modal').insertAdjacentHTML('afterbegin', CLOSE_X); decorateBanner(cls); syncEditions(); fillHero($('#modal')); fillColTiles($('#modal')); fillTileArt($('#modal')); $('#overlay').hidden = false; fillExamples($('#modal')); translateDOM($('#modal')); }
@@ -3656,7 +3694,7 @@ function cardHTML(it, idx) {
 // The shop wallet counts from the amount it last showed to the new one (coin clinks), then gives a small bounce.
 let walletShown = null;
 function tweenWallet() {
-  const el = $('#modal .norenbar .wallet .pv'); if (S.quiet) return;
+  const el = $('#modal .wallet .pv'); if (S.quiet) return;
   if (!el || walletShown === null || walletShown === S.money || !motionOK) { walletShown = S.money; return; }
   const cur = LANG === 'hk' ? '$' : '¥', from = walletShown, dur = Math.min(520, 160 + Math.abs(S.money - from) * 30); walletShown = S.money;
   el.textContent = cur + from; countUp(el, from, S.money, dur, cur, 'coin'); setTimeout(() => juice(el, .6), dur);
@@ -3727,27 +3765,30 @@ const walletHTML = () => `<span class="wallet purse"><span class="coin" aria-hid
 // Everything on sale, in display order: the card slots, the Flower, then the Booster Packs. Older saves had one pack and a Scroll slot.
 function shopItems() { const sh = S.shop; if (!sh.packs) { sh.packs = sh.pack ? [sh.pack] : []; if (sh.scroll) sh.cards.push(sh.scroll); delete sh.pack; delete sh.scroll; } return [...sh.cards, sh.flower, ...sh.packs].filter(Boolean); }
 function shopHTML() {
-  const r = S.reward; const items = shopItems();
+  const items = shopItems(), at = it => items.indexOf(it), tray = useTray();
   const next = ({ small: 'Small Blind', big: 'Big Blind', boss: 'Boss Blind' })[blindKind()];
   const nextBoss = blindKind() === 'boss' ? BOSSES[S.bossOrder[S.ante - 1]] : null;
-  let h = `<div class="noren"><div class="norenbar"><h2>Shop</h2>${walletHTML()}</div><div class="norenflaps" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div></div>`;
-  if (S.shop.coupon) h += `<div class="msg">Coupon Tag: Talismans and consumables are free in this shop.</div>`;
-  // Like Balatro: the action rail on the left, the rerollable cards on the top shelf, the Flower (a Voucher) and Booster Pack below.
-  const at = it => items.indexOf(it);
   const canReroll = rerollPrice() <= S.money;
-  h += `<div class="shoplayout"><aside class="shoprail">
+  // The Shop is a tray that rises from the bottom of the board, like Balatro's: your Talismans and consumables stay in view
+  // above it (select one there to sell or use it). One felt panel holds three groups and the buttons, in Balatro's order:
+  // the rerollable cards, the Ante's Flower (its Voucher), then the two Booster Packs.
+  let h = `<div class="tshead"><div class="tstitle"><h2>Shop</h2><span class="tssub">${anteLabel()} · next: ${nextBoss ? nextBoss.name : next}</span></div>${S.shop.coupon ? '<span class="tscoupon">Coupon Tag: Talismans and consumables are free</span>' : ''}${walletHTML()}</div>`;
+  h += `<div class="tsbody${S.shop.cards.length > 3 ? ' many' : ''}">
+    <section class="tsgroup tscards"><div class="tslabel">Cards</div><div class="tsrow">${S.shop.cards.map(it => cardHTML(it, at(it))).join('')}</div></section>
+    <section class="tsgroup tsflower"><div class="tslabel">Flower · this Ante</div><div class="tsrow">${S.shop.flower ? cardHTML(S.shop.flower, at(S.shop.flower)) : '<div class="tsempty">Bought. A new Flower arrives next Ante.</div>'}</div></section>
+    <section class="tsgroup tspacks"><div class="tslabel">Booster Packs</div><div class="tsrow">${S.shop.packs.map(it => cardHTML(it, at(it))).join('')}</div></section>
+    <aside class="shoprail tsrail">
     <button id="mNext" class="primary nextbtn"><span class="nb-main">Next Blind <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M3 8h9M8.5 3.5 13 8l-4.5 4.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><small>Ante ${S.ante} · ${nextBoss ? nextBoss.name : next}</small></button>
     <button id="mReroll" class="ghost railbtn rerollbtn" ${canReroll ? '' : 'disabled title="Not enough money to reroll"'}><span class="rbl"><svg class="rbico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8M4 4v4h4M4 13a8 8 0 0 0 14.3 4.9L20 16M20 20v-4h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Reroll Cards</span><b class="num">${rerollPrice() ? '¥' + rerollPrice() : 'Free'}</b></button>
     <button id="mDeck" class="ghost railbtn"><span class="rbl"><span class="wallico" aria-hidden="true"><i></i><i></i><i></i></span>View Wall</span><b class="num">${(S.deck || []).length}</b></button>
-    <button id="mRunInfo" class="ghost railbtn"><span class="rbl"><svg class="rbico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 11v6M12 7.5v.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>Run Info</span><b class="num"></b></button></aside>
-    <div class="shopmain"><div class="shelf${S.shop.cards.length > 3 ? ' many' : ''}"><div class="shelflabel">Cards</div><div class="shelfrow">${S.shop.cards.map(it => cardHTML(it, at(it))).join('')}</div></div>
-    <div class="shopbottom"><div class="shelf vouchshelf"><div class="shelflabel">Flower · this Ante</div><div class="shelfrow">${S.shop.flower ? cardHTML(S.shop.flower, at(S.shop.flower)) : '<div class="emptyvouch muted">Bought. A new Flower arrives next Ante.</div>'}</div></div>
-    <div class="shelf"><div class="shelflabel">Booster Packs</div><div class="shelfrow">${S.shop.packs.map(it => cardHTML(it, at(it))).join('')}</div></div></div>
-    ${S.shop.freePacks.length ? `<div class="freepacks">${S.shop.freePacks.map((pk, i) => `<button class="primary" data-freepack="${i}">Open Free ${PACKS[pk].name}</button>`).join('')}</div>` : ''}</div></div>`;
-  h += `<div class="msg${S.msgErr ? ' err' : ''}" style="min-height:18px;margin:6px 0">${S.msg || ''}</div>`;
-  h += ownedHTML();
+    <button id="mRunInfo" class="ghost railbtn"><span class="rbl"><svg class="rbico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 11v6M12 7.5v.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>Run Info</span><b class="num"></b></button></aside></div>`;
+  if (S.shop.freePacks.length) h += `<div class="freepacks">${S.shop.freePacks.map((pk, i) => `<button class="primary" data-freepack="${i}">Open Free ${PACKS[pk].name}</button>`).join('')}</div>`;
+  h += `<div class="msg tsmsg${S.msgErr ? ' err' : ''}">${S.msg || (tray ? 'Select a Talisman or consumable on the board above to sell or use it.' : '')}</div>`;
+  if (!tray) h += ownedHTML();   // on narrow screens the Shop covers the board, so your items are listed here
   return h;
 }
+// The Shop and packs open as a tray over the board on wide screens; on narrow ones (900px or less) they stay full screen.
+const useTray = () => innerWidth > 900;
 function ownedHTML() {
   const tal = S.talismans.map((k, i) => { const ed = S.editions[k]; const tgt = TAL[k].copies ? talTarget(S, k) : null; return `<div class="shopcard talisman owned-card${ed ? ' ed-' + ed : ''}">${stickerBadges(S.stickers && S.stickers[k])}<div class="kind">${talKindRow(k, ed, i + 1, 'owned')}</div><div class="n">${TAL[k].name}</div><div class="d">${TAL[k].desc}${tgt ? ` <b>Now: ${tgt.name}.</b>` : ''}${ed ? ` <b>${EDITIONS[ed].desc}.</b>` : ''}${TAL[k].status ? ' <b>(' + TAL[k].status(S) + ')</b>' : ''}</div><div class="buy"><span></span>${isEternal(k) ? '<span class="muted" style="font-size:11px">Eternal</span>' : `<button class="ghost" data-sell="${k}">Sell ¥${talSellValue(k)}</button>`}</div></div>`; });
   const con = S.consumables.map((c, i) => { const d = CONS[c.key]; return `<div class="shopcard ${c.kind} owned-card"><div class="kind">${c.kind === 'kami' ? 'Kami Spirit' : 'Omikuji'}</div><div class="n">${d.name}</div><div class="d">${d.desc}</div><div class="buy"><span class="muted">${d.anywhere ? 'Usable now' : 'Use during a Blind'}</span><span style="display:flex;gap:6px">${d.anywhere ? `<button class="ghost" data-usecon="${i}">Use</button>` : ''}<button class="ghost" data-sellcon="${i}">Sell ¥${conSellValue(c)}</button></span></div></div>`; });
@@ -3769,7 +3810,7 @@ function packHTML() {
   if (S.pack.hand) h += `<div class="packhandwrap"><div class="label">Your Tiles · ${(S.pack.view || S.pack.hand).length} random tiles from your Wall</div><div class="muted" style="font-size:12px;margin:2px 0 6px">${S.pack.done ? 'All picks used. Outlined tiles changed and stay that way in your Wall. Press Done to return to the shop.' : 'Select tiles, then press Use on a card. The change stays in your Wall for the rest of the run. Keep puts the card in your consumable slots instead.'}</div><div class="packhand" id="packHand"></div></div>`;
   h += `<div class="shelf packshelf"><div class="shelflabel">${S.pack.done ? 'Cards · all picks used' : `Cards · choose ${S.pack.left} more`}</div><div class="shop-grid">${S.pack.choices.map((it, i) => { const d = itemDef(it); const ed = it.edition ? EDITIONS[it.edition] : null; return `<div class="shopcard ${it.kind === 'tile' ? 'tilecard' : it.kind}${it.sold ? ' sold' : ''}${ed ? ' ed-' + it.edition : ''}"><div class="${it.kind === 'tile' ? 'packtileart' : 'emblem'}" data-pt="${i}">${it.kind === 'tile' ? '' : emblem(it.kind)}</div>${it.kind === 'talisman' ? stickerBadges(it.sticker) : ''}<div class="kind">${it.kind === 'talisman' ? talKindRow(it.key, it.edition) : { omikuji: 'Omikuji', kami: 'Kami Spirit', scroll: 'Scroll of Mastery', tile: 'Tile' }[it.kind] + (ed ? `<span class="edtag ed-${it.edition}">${ed.name}</span>` : '')}</div><div class="n">${d.name}</div><div class="d">${d.desc}${ed ? ` <b>${ed.name}: ${ed.desc}.</b>` : ''}</div>${it.kind === 'scroll' && !it.sold ? scrollLevelHTML(it.key) : it.kind === 'talisman' && !it.sold ? talPreview(it.key) : ''}<div class="buy"><span></span>${it.sold ? `<span class="muted">${it.used ? 'Used' : 'Taken'}</span>` : packButtons(it, i)}</div></div>`; }).join('')}</div></div>`;
   h += `<div class="msg${S.msgErr ? ' err' : ''}" style="min-height:18px;margin:2px 0 6px">${S.msg || ''}</div>`;
-  h += ownedHTML();
+  if (!useTray()) h += ownedHTML();
   h += `<div class="shopfoot"><button id="mDeck" class="ghost">View Wall</button><button id="mRunInfo" class="ghost">Run Info</button><span style="flex:1"></span>${S.pack.done ? '<button id="mPackDone" class="primary">Done</button>' : '<button id="mPackDone" class="ghost">Skip the Rest</button>'}</div>`;
   return h;
 }
@@ -3842,7 +3883,7 @@ function fullRulesHTML() {
   <p><b>Editions.</b> Shop Talismans sometimes come in an edition: ${Object.values(EDITIONS).map(e => `${e.name} (${e.desc})`).join(', ')}.</p>
   <h3>Between Blinds</h3>
   <p><b>Money.</b> Beating a Blind pays ¥${R.small} for a Small Blind, ¥${R.big} for a Big Blind and ¥${R.boss} for a Boss, plus ¥1 for each unused Play and ¥1 interest for every ¥${CFG.interestPer} you hold (at most ¥${CFG.interestCap}). From Red Stake up, Small Blinds pay nothing.</p>
-  <p><b>Shop.</b> Spend money on Talismans (passive, ${CFG.talismanSlots} slots), Omikuji and Kami (consumables, ${CFG.consumableSlots} slots, used on selected hand tiles), Scrolls of Mastery (permanent upgrades), Flowers (run-long perks) and Booster Packs (open one and keep one or two of what's inside). Like Balatro, each shop has two card slots (Talismans about 71%, Omikuji and Scrolls about 14% each; Kami come from packs, or the shop with the Ghost Wall), one Flower for the whole Ante, and two Booster Packs; the first shop of a run always has a Talisman pack. Rerolling changes only the cards: it costs ¥5, then ¥1 more each time in the same shop. Every pack comes in three sizes: Normal, Jumbo (more cards) and Mega (more cards and two picks). Tile Packs add new tiles to your Wall, some engraved, sealed or with an edition. One Flower is offered per Ante and waits in every shop of that Ante until you buy it; upgrades appear once you own the first Flower. Talismans and consumables can also gain sell value (Tsuchinoko, Otoshidama). Omikuji Packs and Kami Packs also deal ${PACK_HAND} random tiles from your Wall: select some and press Use on a card to change them for the rest of the run, or Keep the card for a Blind. After your last pick the pack stays open with the changed tiles outlined; press Done to return to the shop. ${CONS.indicator.name} and ${CONS.amaterasu.name} only work during a Blind. ${CONS.wealth.name} and ${CONS.raijin.name} can also be used from your slots in the shop; there ${CONS.raijin.name} destroys 2 random tiles from your Wall. Every shop has two random cards (Talismans ${Math.round(CFG.shopWeights.talisman * 100)}%, Omikuji ${Math.round(CFG.shopWeights.omikuji * 100)}%, Kami ${Math.round(CFG.shopWeights.kami * 100)}% each), plus one Scroll, one Flower and one booster pack in fixed spots. A reroll changes only the two random cards and costs ¥${CFG.rerollCost}. Selling returns half the item's value: click a Talisman on the board and press Sell, or sell from inside the shop.</p>
+  <p><b>Shop.</b> Spend money on Talismans (passive, ${CFG.talismanSlots} slots), Omikuji and Kami (consumables, ${CFG.consumableSlots} slots, used on selected hand tiles), Scrolls of Mastery (permanent upgrades), Flowers (run-long perks) and Booster Packs (open one and keep one or two of what's inside). Like Balatro, each shop has two card slots (Talismans about 71%, Omikuji and Scrolls about 14% each; Kami come from packs, or the shop with the Ghost Wall), one Flower for the whole Ante, and two Booster Packs; the first shop of a run always has a Talisman pack. Rerolling changes only the cards: it costs ¥5, then ¥1 more each time in the same shop. On wide screens the Shop and packs rise from the bottom of the board, so your Talismans and consumables stay in view above: select one there to sell or use it. Every pack comes in three sizes: Normal, Jumbo (more cards) and Mega (more cards and two picks). Tile Packs add new tiles to your Wall, some engraved, sealed or with an edition. One Flower is offered per Ante and waits in every shop of that Ante until you buy it; upgrades appear once you own the first Flower. Talismans and consumables can also gain sell value (Tsuchinoko, Otoshidama). Omikuji Packs and Kami Packs also deal ${PACK_HAND} random tiles from your Wall: select some and press Use on a card to change them for the rest of the run, or Keep the card for a Blind. After your last pick the pack stays open with the changed tiles outlined; press Done to return to the shop. ${CONS.indicator.name} and ${CONS.amaterasu.name} only work during a Blind. ${CONS.wealth.name} and ${CONS.raijin.name} can also be used from your slots in the shop; there ${CONS.raijin.name} destroys 2 random tiles from your Wall. Every shop has two random cards (Talismans ${Math.round(CFG.shopWeights.talisman * 100)}%, Omikuji ${Math.round(CFG.shopWeights.omikuji * 100)}%, Kami ${Math.round(CFG.shopWeights.kami * 100)}% each), plus one Scroll, one Flower and one booster pack in fixed spots. A reroll changes only the two random cards and costs ¥${CFG.rerollCost}. Selling returns half the item's value: click a Talisman on the board and press Sell, or sell from inside the shop.</p>
   <p><b>Blind Select.</b> After the shop you see the Ante's three blinds with their targets, rewards and the Boss's rule. A Small or Big Blind can be skipped for the Tag on its card instead of its money: free packs, editions, coupons, money, a bigger hand, a different Boss, free Rare or Uncommon Talismans, Scroll levels, a second Flower (Voucher Tag), and a Double Tag that copies the next Tag you get. Tags you hold show in the side panel.</p>
   <p><b>Setup.</b> A new run lets you choose a Wall (deck), a Stake (difficulty) and a seed. Sharing a seed replays the same Wall, shops and bosses for players with the same unlocks. Each Stake keeps every penalty of the ones below it. Winning on a Stake with a Wall unlocks the next Stake for that Wall. From Black Stake, shop Talismans can carry stickers: Eternal (can't be sold), Perishable (stops working after 5 Blinds, from Orange) and Rental (¥1 to buy, ¥3 every Blind, from Gold).</p>
   <p><b>Special Talismans.</b> Some fade: Kakigōri loses Chips with each play, Senbei loses Mult each Blind, Ramen weakens as you discard, and each leaves when it runs out. Daikoku doubles every listed chance. Yūrei saves a lost Blind once if you scored at least a quarter of the target. Selling Rikishi during a Boss Blind disables the Boss, selling Ramune gives a Double Tag, and selling Kakuremino after 2 Blinds copies another Talisman. With Kabuki, Talismans you already own can turn up again, so you can hold two copies; each copy works on its own.</p>
