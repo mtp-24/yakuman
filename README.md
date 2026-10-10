@@ -173,6 +173,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 162: Collection engravings use wide cards: the sample tile sits on a felt pad at the left, the name and effect beside it, an accent edge in each engraving's colour, two or three cards per row.
 - Build 163: Engraving cards drop the coloured accent edge.
 - Build 164: Flowers in the side panel use the same hover card as tiles (a Flower label, the name and the effect) instead of the plain tooltip; the hover card now works for any element with data-hc-title.
+- Build 213: After a pack's last pick, Skip the Rest turns into a greyed-out "All picks used" of the same size while the pack closes, so the screen no longer jumps up.
 - Build 212: In the compact (full-screen) Shop and packs, buying or taking a card no longer flies it anywhere (the board is hidden behind the screen); the card simply shows Sold and joins your list. The flights stay in the wide tray layout.
 - Build 211: In the compact (full-screen) Shop and packs, selling from Your Charms or Your Consumables no longer moves anything: the sold card burns away in place, the list holds still, and it is redrawn in its new order once the burn is done. On the board (the wide layout), the cards that slide into the gap are played by stand-in copies over the row, so nothing reflows while they move.
 - Build 210: After a sale, cards that change size as the grid's rows re-pair (each card stretches to its row's tallest) keep their old size during the dissolve, then ease to the new size with the slide.
