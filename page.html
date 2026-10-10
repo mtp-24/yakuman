@@ -1,5 +1,5 @@
 <title>Tenpai</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
 <style>
 /* Layout: a dark felt table. Left rail = blind status, right = the board (talismans, open melds, river, hand). Shop and menus are full overlays. */
 :root{
@@ -868,12 +868,15 @@ button.pulse{animation:btnpulse2 2.6s ease-out infinite}
 @keyframes hitwiggle{0%{transform:translateY(0) scale(1)}40%{transform:translateY(-18px) scale(1.2) rotate(-4deg)}70%{transform:translateY(-15px) scale(1.15) rotate(3deg)}100%{transform:translateY(-16px) scale(1.16) rotate(0)}}
 .hitpop,.talpop{position:absolute;left:50%;display:flex;flex-direction:column;align-items:center;gap:3px;pointer-events:none;z-index:40}
 .hitpop{top:-6px;transform:translate(-50%,-100%)} .talpop{top:calc(100% - 6px);transform:translateX(-50%)}
-.hp{font:700 15px/1 var(--body);padding:4px 9px 5px;border-radius:7px;color:#fff;white-space:nowrap;box-shadow:0 4px 10px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.3);text-shadow:0 1px 1px rgba(0,0,0,.35);animation:hpop .95s cubic-bezier(.2,1.3,.4,1) both}
-.hp.chips{background:linear-gradient(180deg,#4a8fd8,#2a64a8)} .hp.han{background:linear-gradient(180deg,#f0c35a,#c08722);color:#2a1a00;text-shadow:none}
-.hp.mult{background:linear-gradient(180deg,#e2604f,#a93a2e)} .hp.x{background:linear-gradient(180deg,#d8443a,#8f1f18);font-size:16px}
-.hp.again{background:linear-gradient(180deg,#f28a3a,#c4561a);font-size:13px;letter-spacing:.04em} .hp.money{background:linear-gradient(180deg,#e9c060,#b88a24);color:#2a1a00;text-shadow:none} .hp.info{background:#33403a}
-.hitpop .hp:nth-child(2){animation-delay:.04s} .hitpop .hp:nth-child(3){animation-delay:.08s} .hitpop .hp:nth-child(4){animation-delay:.12s}
-@keyframes hpop{0%{opacity:0;transform:scale(.4) translateY(6px)}18%{opacity:1;transform:scale(1.18)}32%{transform:scale(1)}72%{opacity:1;transform:translateY(-2px)}100%{opacity:0;transform:translateY(-12px)}}
+/* Scoring popups, Balatro style: flat bright badges with chunky white numbers and a hard shadow; they snap in with an
+   overshoot, jiggle while they are up, then shrink away to nothing. The font is named outright: inside a tile, --body is
+   the tile's shadow, not the body font */
+.hp{--hpc:#1e88e5;--hps:#0d5aa7;font:700 16px/1 'IBM Plex Sans','Helvetica Neue',Arial,sans-serif;letter-spacing:.01em;padding:5px 9px 6px;border-radius:6px;color:#fff;white-space:nowrap;background:var(--hpc);box-shadow:0 3px 0 var(--hps),0 6px 10px rgba(0,0,0,.35);text-shadow:0 2px 0 rgba(0,0,0,.28);animation:hpop .95s ease-in-out both}
+.hp.chips{--hpc:#1e88e5;--hps:#0d5aa7} .hp.han{--hpc:#f2b233;--hps:#a87412;color:#3a2600;text-shadow:0 1px 0 rgba(255,255,255,.35)}
+.hp.mult{--hpc:#e5484d;--hps:#9e2a2e} .hp.x{--hpc:#c62828;--hps:#7a1414;font-size:17px}
+.hp.again{--hpc:#f07c2a;--hps:#a24b10;font-size:14px;letter-spacing:.04em} .hp.money{--hpc:#f3c043;--hps:#a5800f;color:#3a2600;text-shadow:0 1px 0 rgba(255,255,255,.35)} .hp.info{--hpc:#3a4a42;--hps:#1e2823}
+.hitpop .hp:nth-child(2){animation-delay:.05s} .hitpop .hp:nth-child(3){animation-delay:.1s} .hitpop .hp:nth-child(4){animation-delay:.15s}
+@keyframes hpop{0%{transform:scale(0) rotate(-10deg)}12%{transform:scale(1.28) rotate(5deg)}22%{transform:scale(.9) rotate(-4deg)}32%{transform:scale(1.07) rotate(3deg)}42%{transform:scale(.98) rotate(-2deg)}54%{transform:scale(1.02) rotate(2deg)}66%{transform:scale(1) rotate(-1.5deg)}80%{transform:scale(1.05) rotate(1deg)}100%{transform:scale(0) rotate(6deg)}}
 @media (prefers-reduced-motion:reduce){#hand .tile.hit,#open .tile.hit{animation:none;transform:translateY(-14px) scale(1.12)} .hp{animation:none}}
 .slot{position:relative}
 /* Tile hover card */
@@ -4290,7 +4293,8 @@ function scrollLevelHTML(key) {
 function emblem(kind, inner) {
   const E = {
     talisman: '<rect x="15" y="4" width="18" height="40" rx="2" fill="#f1e6c8" stroke="#b9ab86"/><circle cx="24" cy="15" r="5.5" fill="none" stroke="#c9453a" stroke-width="2"/><circle cx="24" cy="15" r="2" fill="#c9453a"/><path d="M19 25h10M19 30h10M19 35h7" stroke="#3a3326" stroke-width="1.6" stroke-linecap="round"/>',
-    omikuji: '<rect x="12" y="10" width="24" height="30" rx="3" fill="#2b5c8f" stroke="#7fb3e0"/><rect x="21" y="3" width="6" height="12" rx="1.5" fill="#efe6d2"/><path d="M16 22h16M16 27h16M16 32h10" stroke="#cfe2f5" stroke-width="1.6" stroke-linecap="round"/>',
+    // An omikuji box: a red lacquered six-sided box with gold bands and a paper label, one fortune stick shaken out of its hole
+    omikuji: '<path d="M13 16 24 11 35 16v24l-11 5-11-5z" fill="#8f2b22" stroke="#2a0b08" stroke-width="1.2" stroke-linejoin="round"/><path d="M13 16 24 21v24l-11-5z" fill="#741f18"/><path d="M13 16 24 11 35 16 24 21z" fill="#b2453a"/><path d="M13 23.5 24 28.5 35 23.5M13 35 24 40 35 35" fill="none" stroke="#d9a441" stroke-width="2"/><path d="M27 26.6 32 24.3v9.6L27 36.2z" fill="#efe6d2"/><path d="M28.4 29h2.2M28.4 31.6h2.2" stroke="#8f2b22" stroke-width="1" stroke-linecap="round"/><ellipse cx="26.5" cy="15.6" rx="2.4" ry="1.1" fill="#1a0806"/><g transform="rotate(16 26.5 15.6)"><rect x="25" y="1" width="3.2" height="15" rx="1.4" fill="#efe2bf" stroke="#8a6a32" stroke-width=".7"/><rect x="25" y="1" width="3.2" height="5" rx="1.4" fill="#c9453a"/></g>',
     kami: '<path d="M6 13c6 2 30 2 36 0l-1.5 5c-6 1.5-27 1.5-33 0z" fill="#c9453a"/><rect x="10" y="22" width="28" height="3.5" rx="1" fill="#c9453a"/><rect x="13" y="16" width="4" height="27" rx="1" fill="#a8362c"/><rect x="31" y="16" width="4" height="27" rx="1" fill="#a8362c"/><rect x="22.5" y="18" width="3" height="5" fill="#a8362c"/>',
     scroll: '<rect x="9" y="13" width="30" height="22" fill="#e9f3e9" stroke="#6fcf97"/><rect x="5" y="10" width="6" height="28" rx="3" fill="#4f9d69"/><rect x="37" y="10" width="6" height="28" rx="3" fill="#4f9d69"/><path d="M15 20h18M15 25h18M15 30h12" stroke="#2e7d4f" stroke-width="1.6" stroke-linecap="round"/>',
     flower: '<g transform="translate(24 24)">' + [0, 72, 144, 216, 288].map(a => `<ellipse cx="0" cy="-10" rx="6.5" ry="10" fill="#f0a3b8" stroke="#d97f99" transform="rotate(${a})"/>`).join('') + '<circle r="5" fill="#d9a441"/></g>',
