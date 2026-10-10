@@ -882,12 +882,12 @@ body.crt-full #app,body.crt-full #overlay{filter:url(#crtfx)} #crtbezel{display:
 /* Below the Talisman row the board darkens gradually, like the cash-out */
 .board.shopdim::after{background:linear-gradient(180deg,transparent 0,transparent var(--cut,0px),rgba(5,10,9,.3) calc(var(--cut,0px) + 6px),rgba(5,10,9,.62) calc(var(--cut,0px) + 70px))}
 /* The Shop and packs keep their usual look (noren banner, felt shelves, rail) and slide up as a tray to the screen's bottom edge */
-.overlay.shoptray .modal.traymodal{min-height:100%;max-width:none;width:100%;box-sizing:border-box;background:var(--panel);border:1px solid var(--line);border-bottom:0;border-radius:12px 12px 0 0;box-shadow:0 -12px 34px rgba(0,0,0,.6)}
+.overlay.shoptray .modal.traymodal{min-height:var(--trayMin,100%);max-height:none;overflow:visible;margin:0;max-width:none;width:100%;box-sizing:border-box;background:var(--panel);border:1px solid var(--line);border-bottom:0;border-radius:12px 12px 0 0;box-shadow:0 -12px 34px rgba(0,0,0,.6)}
 .slot.filled.sel{outline:2px solid var(--accent);outline-offset:1px}
 html{scrollbar-gutter:stable} html.modallock{overflow:hidden}
 .wallfly{position:fixed;z-index:95;pointer-events:none} .slotfly.shelf{position:fixed;z-index:95;pointer-events:none;margin:0;padding:0;background:none;border:0;box-shadow:none;transform-origin:0 0} .slotfly.shelf::after,.slotfly.shelf::before{display:none} .slotfly .shopcard{box-shadow:0 14px 30px rgba(0,0,0,.55)} .slotfly .shopcard,.slotfly .shopcard *{animation:none!important;transition:none!important} .wallfly .tile{box-shadow:0 8px 18px rgba(0,0,0,.5)}
 .shopfoot .railbtn{width:180px;height:46px;min-height:0;box-sizing:border-box;padding:0 14px}
-.overlay.shoptray{padding:0} .overlay.shoptray .modal.shopmodal{padding-top:0} .overlay.shoptray .modal.packmodal{padding-top:20px}
+.overlay.shoptray{padding:0;position:absolute;height:auto;display:block} .overlay.shoptray .modal.shopmodal{padding-top:0} .overlay.shoptray .modal.packmodal{padding-top:20px}
 /* Shop: the buttons in a bar under the banner, the shelves side by side. Each shelf is as wide as its cards (--n of them) and they wrap. */
 /* Compact buttons in the Shop banner and pack header; Reroll is a pill on the Cards shelf */
 .shopacts,.packacts{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}

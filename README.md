@@ -173,6 +173,7 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 162: Collection engravings use wide cards: the sample tile sits on a felt pad at the left, the name and effect beside it, an accent edge in each engraving's colour, two or three cards per row.
 - Build 163: Engraving cards drop the coloured accent edge.
 - Build 164: Flowers in the side panel use the same hover card as tiles (a Flower label, the name and the effect) instead of the plain tooltip; the hover card now works for any element with data-hc-title.
+- Build 197: The Shop and pack trays are part of the page instead of floating over it: they start under the Talisman row and grow as tall as their contents, so one page scrollbar moves the board, the tray and the left column together and Last Play can be read to the end. The page behind the cash-out scrolls too. Full-screen screens (Settings, Rules, the narrow-window Shop) still hold the page still.
 - Build 196: In the full-screen Shop the wallet lines up with Next Blind: same height, same rounded corners, no downward nudge.
 - Build 195: The View Wall and Run Info buttons at the bottom of the full-screen Shop and packs, and on the Blind screen, are a matched pair: same size, icon and label on the left, the Wall count on the right.
 - Build 194: Resizing the window while the cash-out is up (or the Shop or a pack) always places it again, so after being narrow it goes back to rising from the bottom of the board instead of staying stuck as a centred box.

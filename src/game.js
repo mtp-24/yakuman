@@ -1688,10 +1688,16 @@ function placeOverlay(boardOnly, mode) {
   // The dimming sits on the board itself, so the page background below it keeps its colour. The Talismans stay lightly dimmed; the rest is darker.
   const tz = board.querySelector('.talzone'), cut = tz ? Math.max(0, tz.getBoundingClientRect().bottom + 4 - b.top) : 0;
   board.classList.add('cashdim'); board.classList.toggle('shopdim', mode === 'shop'); board.style.setProperty('--cut', cut + 'px');
-  // The Shop tray starts right under the Talisman row, measured on screen, so it stays snug when the page is scrolled.
-  const otop = mode === 'shop' ? Math.max(0, tz ? tz.getBoundingClientRect().bottom + 6 : top + cut + 2) : top;
-  ov.classList.add('boardonly'); ov.classList.toggle('shoptray', mode === 'shop'); Object.assign(ov.style, { left: b.left + 'px', top: otop + 'px', width: b.width + 'px', height: (bottom - otop) + 'px' });
-  if (mode === 'shop') { ov.style.setProperty('--reach', '0px'); return; }   // the tray spans the board's full width, border to border
+  document.documentElement.classList.remove('modallock');   // the page behind a tray still scrolls, so Last Play can be read to the end
+  if (mode === 'shop') {
+    // The Shop tray is part of the page: it starts right under the Talisman row, spans the board border to border, and runs at
+    // least to the bottom of the screen and of the board. Taller contents make the page longer, so one page scrollbar moves
+    // the board, the tray and Last Play together.
+    const t = tz ? tz.getBoundingClientRect().bottom + 6 : top + cut + 2;
+    ov.classList.add('boardonly', 'shoptray'); Object.assign(ov.style, { left: b.left + scrollX + 'px', top: t + scrollY + 'px', width: b.width + 'px' });
+    ov.style.setProperty('--trayMin', Math.max(innerHeight - t, b.bottom - t, 0) + 'px'); ov.style.setProperty('--reach', '0px'); return;
+  }
+  ov.classList.add('boardonly'); Object.assign(ov.style, { left: b.left + 'px', top: top + 'px', width: b.width + 'px', height: (bottom - top) + 'px' });
   // The tray grows up from the screen's bottom edge until its contents sit around the middle of the screen
   // (and always far enough to cover the action bar).
   const m = $('#modal'), kids = [...m.children], ac = board.querySelector('.actions');
@@ -1703,7 +1709,7 @@ function placeOverlay(boardOnly, mode) {
 // after the window was narrow; the Shop and packs redraw when they cross between tray and full screen.
 ['resize', 'scroll'].forEach(ev => window.addEventListener(ev, () => {
   const ov = $('#overlay'), cls = $('#modal').className, shop = /\b(shopmodal|packmodal)\b/.test(cls);
-  if (ov.hidden || !/\btraymodal\b/.test(cls)) return;
+  if (ov.hidden || !/\btraymodal\b/.test(cls) || (ev === 'scroll' && ov.classList.contains('shoptray'))) return;   // the Shop tray scrolls with the page by itself
   if (ev === 'resize' && shop && useTray() !== shopTray) { render(); return; }
   placeOverlay(true, shop ? 'shop' : undefined);
 }));
