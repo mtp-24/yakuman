@@ -173,6 +173,14 @@ The Debug button in the game header gives +YEN, +Plays, instant blind win, boss 
 - Build 162: Collection engravings use wide cards: the sample tile sits on a felt pad at the left, the name and effect beside it, an accent edge in each engraving's colour, two or three cards per row.
 - Build 163: Engraving cards drop the coloured accent edge.
 - Build 164: Flowers in the side panel use the same hover card as tiles (a Flower label, the name and the effect) instead of the plain tooltip; the hover card now works for any element with data-hc-title.
+- Build 178: Third Balatro batch (first-draft names and numbers).
+  - Music is a four-minute song in twelve sections before it loops (intro, four A themes, two B and two C progressions, a breakdown and an outro), with fills and small random variations; Shop and Boss layers still crossfade on top.
+  - Duplicate Talismans ('tanuki#2' keys that inherit the original). Nine new Talismans: Kakigōri, Senbei and Ramen fade away; Daikoku doubles every chance; Yūrei saves a lost Blind once at 25%; Rikishi, Ramune and Kakuremino act when sold; Kabuki lets owned Talismans turn up again.
+  - Six Walls: Plasma (Chips and Mult averaged, targets ×2), Erratic, Ghost, Magic, Anaglyph and Painted. Voucher Tag.
+  - More unlocks: the six new Walls and twelve more Talismans, with new lifetime counters.
+  - Card feel: hover tilt and shine, a dissolve when a Talisman is sold or destroyed, screen shake on big scores, an optional CRT filter.
+  - Game-over summary: tiles played and discarded, purchases, rerolls, new discoveries, most played play type.
+  - Settings: dead-tile dots text trimmed, Reset to Defaults.
 - Build 177: A Kan declared from your hand shows as a real concealed Kan (Ankan): the two end tiles face down, labelled Concealed Kan. Rules unchanged: the hand stays closed and the set counts as concealed.
 - Build 176: Music rebuilt in Balatro's style: one laid-back synth groove (D minor, 96 BPM, Dm7 – B♭maj7 – Gm7 – A7) with layers that crossfade: Normal (wobbly electric piano, syncopated bass, soft drums, a lead), Shop (adds a bouncy square arpeggio; also packs and cash-out) and Boss (adds a distorted driving bass, four-on-the-floor kick and a dark drone).
 - Build 175: Second Balatro batch (first-draft names and numbers).
