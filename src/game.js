@@ -122,6 +122,24 @@ function dissolveEl(el) {
 }
 // When a card leaves a row (sold or destroyed), the cards after it wait where they were until the dissolve has burned out,
 // then slide into the gap, so they never pass over the burning card. Positions are taken before the redraw and played after it.
+// When a new card makes a row taller (a long description, or a new line in a list), the row grows into its new height instead
+// of jumping, and a Shop tray sitting under the board's row glides down with it. Heights are read before a redraw, compared after.
+const GROW_ROWS = ['#talismans', '#consumables', '#modal .owned-grid.otal', '#modal .owned-grid.ocon'];
+let growPhase = null;
+function rowHeights() {
+  const ov = $('#overlay');
+  return { phase: S.phase + (S.pack ? ':pack' : ''), h: GROW_ROWS.map(q => { const e = document.querySelector(q); return e ? e.getBoundingClientRect().height : null; }), top: ov.classList.contains('inflow') ? ov.style.top : null };
+}
+function growRows(was) {
+  const same = growPhase === was.phase && was.phase === S.phase + (S.pack ? ':pack' : ''); growPhase = S.phase + (S.pack ? ':pack' : '');
+  if (!same || !motionOK || S.quiet) return;
+  const ease = { duration: 240, easing: 'cubic-bezier(.2,.8,.2,1)' };
+  GROW_ROWS.forEach((q, i) => {
+    const e = document.querySelector(q), h0 = was.h[i]; if (!e || h0 == null) return; const h1 = e.getBoundingClientRect().height;
+    if (h1 - h0 > 1) { e.style.overflow = 'hidden'; const done = () => { e.style.overflow = ''; }; e.animate([{ height: h0 + 'px' }, { height: h1 + 'px' }], ease).onfinish = done; setTimeout(done, 600); }
+  });
+  const ov = $('#overlay'); if (was.top && ov.classList.contains('inflow') && ov.style.top !== was.top && parseFloat(ov.style.top) > parseFloat(was.top)) ov.animate([{ top: was.top }, { top: ov.style.top }], ease);
+}
 let rowHolds = [];
 function holdRow(sel, box, gone) {
   if (!motionOK || gone < 0) return; const b = document.querySelector(box);
@@ -937,6 +955,7 @@ function tileSVG(t) {
 function render() {
   if (!S) return; if (S.bossOrder) ensureBosses(); setRules(S); checkUnlocks(); if (musicTimer) musicSetMode(musicTheme());
   if (S.phase === 'shop' && S.pack && S.pack.done && !packClosing) S.pack = null;   // a finished pack (say, reloaded while closing) goes straight back to the Shop
+  const grow = rowHeights();
   const motionBefore = tileSnapshot(), freshTiles = new Set(S.newIds || []);
   renderBlind(); renderTalismans(); renderConsumables(); renderOpen(); renderRiver(); renderHand(); renderActions(); renderLast();
   $('#msg').textContent = S.msg || ''; $('#msg').className = 'msg' + (S.msgErr ? ' err' : '');
@@ -946,7 +965,7 @@ function render() {
   translateDOM($('#app')); fitNumbers();
   if ($('#overlay').classList.contains('inflow')) placeOverlay(true, S.phase === 'shop' ? 'shop' : undefined);   // terms and fitted numbers can change the left column's height, so a tray that is part of the page is measured again
   if (S.placeholder && $('#overlay').hidden) showModal(menuHTML(false), true, 'menumodal');   // closing a screen opened from the title goes back to the title
-  tileMotion(motionBefore, freshTiles); syncEditions(); refreshTileTip(); animateWall(); animateSlots(); playRowHolds(); if (S.phase !== 'shop' && !S.quiet) walletShown = S.money;
+  tileMotion(motionBefore, freshTiles); syncEditions(); refreshTileTip(); animateWall(); animateSlots(); playRowHolds(); growRows(grow); if (S.phase !== 'shop' && !S.quiet) walletShown = S.money;
   save();
 }
 // Tiles added to the Wall fly from where they were added to the Wall counter, which ticks up as each one lands. The counter is
