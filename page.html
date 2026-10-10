@@ -669,8 +669,9 @@ header .hdr-nav .hico{width:14px;height:14px;flex:none;color:#d9a441}
 .lastplay .lp-lines{background:linear-gradient(180deg,rgba(14,24,20,.82),rgba(10,18,15,.9));border:1px solid rgba(0,0,0,.5);border-radius:8px;padding:4px 10px;box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 2px 6px rgba(0,0,0,.3)}
 .lastplay .lp-lines .row{border-bottom:1px solid rgba(255,255,255,.05);padding:3px 0}
 .lastplay .lp-lines .row:last-child{border-bottom:0}
-.lastplay .formula{font-size:11px;margin:8px 2px 0}
-.lastplay .total{margin-top:6px;padding:7px 12px;border-radius:9px;background:linear-gradient(180deg,rgba(0,0,0,.4),rgba(0,0,0,.25));border:1px solid rgba(217,164,65,.55);box-shadow:inset 0 1px 0 rgba(255,220,160,.12),0 0 14px rgba(217,164,65,.15);text-align:right;font-size:19px;color:#f3c768;text-shadow:0 0 10px rgba(243,199,104,.35)}
+.lastplay .total .formula{font-family:var(--body);font-size:11px;text-align:left;color:rgba(233,220,192,.6);text-shadow:none;padding-bottom:5px;margin-bottom:4px;border-bottom:1px solid rgba(217,164,65,.2)}
+.lastplay .total{margin-top:8px;padding:7px 12px;border-radius:9px;background:linear-gradient(180deg,rgba(0,0,0,.4),rgba(0,0,0,.25));border:1px solid rgba(217,164,65,.55);box-shadow:inset 0 1px 0 rgba(255,220,160,.12),0 0 14px rgba(217,164,65,.15);}
+.lastplay .lp-result{text-align:right;font-family:var(--display);font-size:19px;color:#f3c768;text-shadow:0 0 10px rgba(243,199,104,.35)}
 .lastplay .lp-empty{margin-top:6px;background:linear-gradient(180deg,rgba(14,24,20,.82),rgba(10,18,15,.9));border:1px solid rgba(0,0,0,.5);border-radius:8px;padding:9px 11px;box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 2px 6px rgba(0,0,0,.3);font-size:12px}
 .lastplay .lp-best{display:flex;justify-content:space-between;align-items:baseline;margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,.06)} .lastplay .lp-best b{font-family:var(--display);font-size:18px;font-weight:500;color:#f3c768}
 .lastplay .lp-bestdesc{font-size:11px;margin-top:2px}
@@ -3641,7 +3642,8 @@ function renderActions() {
 }
 // Breakdown line styling, shared by the live log and the finished Last Play.
 const lineCls = l => (l.zero ? ' bad' : '') + (l.yaku ? ' yaku' : '') + (l.tal ? ' tal' : '') + (l.convert ? ' convert' : '');
-const lastSummaryHTML = c => `<div class="formula num" style="margin-top:6px">${c.han} Han → ${c.tier} ×${c.baseMult}${c.xmult !== 1 ? ` · tiles ×${fmtMult(c.xmult)}` : ''}${c.mult !== c.baseMult * c.xmult ? ` → ×${fmtMult(c.mult)} after Talismans${c.furiten ? ' and Furiten' : ''}` : ''}</div><div class="total num">${c.chips} × ${fmtMult(c.mult)} = ${fmtN(c.total)}</div>`;
+// The result frame: how the multiplier was built, as a small caption, over the final Chips × Mult = score.
+const lastSummaryHTML = c => `<div class="total"><div class="formula num">${c.han} Han → ${c.tier} ×${c.baseMult}${c.xmult !== 1 ? ` · tiles ×${fmtMult(c.xmult)}` : ''}${c.mult !== c.baseMult * c.xmult ? ` → ×${fmtMult(c.mult)} after Talismans${c.furiten ? ' and Furiten' : ''}` : ''}</div><div class="lp-result num">${c.chips} × ${fmtMult(c.mult)} = ${fmtN(c.total)}</div></div>`;
 function renderLast() {
   const c = S.lastPlay; const box = $('#lastPlay');
   if (!c) { box.innerHTML = `<div class="label">Last Play</div><div class="lp-empty"><div class="muted">No play yet this Blind.</div><div class="lp-best"><span class="label">Best this run</span><b class="num">${fmtN(S.stats.best)}</b></div>${S.stats.bestDesc ? `<div class="muted lp-bestdesc">${S.stats.bestDesc}</div>` : ''}</div>`; return; }

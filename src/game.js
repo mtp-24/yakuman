@@ -1573,7 +1573,8 @@ function renderActions() {
 }
 // Breakdown line styling, shared by the live log and the finished Last Play.
 const lineCls = l => (l.zero ? ' bad' : '') + (l.yaku ? ' yaku' : '') + (l.tal ? ' tal' : '') + (l.convert ? ' convert' : '');
-const lastSummaryHTML = c => `<div class="formula num" style="margin-top:6px">${c.han} Han → ${c.tier} ×${c.baseMult}${c.xmult !== 1 ? ` · tiles ×${fmtMult(c.xmult)}` : ''}${c.mult !== c.baseMult * c.xmult ? ` → ×${fmtMult(c.mult)} after Talismans${c.furiten ? ' and Furiten' : ''}` : ''}</div><div class="total num">${c.chips} × ${fmtMult(c.mult)} = ${fmtN(c.total)}</div>`;
+// The result frame: how the multiplier was built, as a small caption, over the final Chips × Mult = score.
+const lastSummaryHTML = c => `<div class="total"><div class="formula num">${c.han} Han → ${c.tier} ×${c.baseMult}${c.xmult !== 1 ? ` · tiles ×${fmtMult(c.xmult)}` : ''}${c.mult !== c.baseMult * c.xmult ? ` → ×${fmtMult(c.mult)} after Talismans${c.furiten ? ' and Furiten' : ''}` : ''}</div><div class="lp-result num">${c.chips} × ${fmtMult(c.mult)} = ${fmtN(c.total)}</div></div>`;
 function renderLast() {
   const c = S.lastPlay; const box = $('#lastPlay');
   if (!c) { box.innerHTML = `<div class="label">Last Play</div><div class="lp-empty"><div class="muted">No play yet this Blind.</div><div class="lp-best"><span class="label">Best this run</span><b class="num">${fmtN(S.stats.best)}</b></div>${S.stats.bestDesc ? `<div class="muted lp-bestdesc">${S.stats.bestDesc}</div>` : ''}</div>`; return; }
