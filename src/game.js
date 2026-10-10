@@ -119,20 +119,68 @@ const talSellValue = k => Math.max(1, Math.floor(talValue(k) / 2)) + (hasF('came
 const conSellValue = c => Math.max(1, Math.floor(CONS[c.key].cost / 2)) + (c.bonus || 0);
 // Destroys a Talisman (Kamikiri, Izanagi, Izanami) and clears everything it owned. Eternal Talismans cannot be destroyed.
 // Balatro's dissolve: a copy of the card burns away where it stood, then the board redraws without it.
-function dissolveTal(k) {
+function dissolveTal(k, sold) {
   if (!motionOK) return; const i = S.talismans.indexOf(k), b = document.querySelector(`#modal [data-sell="${k}"]`);
-  if (b) return burnInList(b.closest('.shopcard'));   // the compact (full-screen) Shop's list of your cards
-  holdRow('#talismans .slot.filled', '#talismans', i); dissolveEl([...document.querySelectorAll('#talismans .slot')][i]);
+  // the compact (full-screen) Shop's list of your cards
+  if (b) return burnInList(b.closest('.shopcard'), sold);
+  holdRow('#talismans .slot.filled', '#talismans', i); const el = [...document.querySelectorAll('#talismans .slot')][i];
+  if (sold) sellFx(el, sold); else dissolveEl(el);
 }
 // In the compact layout's list of your cards nothing moves: the sold card burns away where it is, the list holds still, and
 // only once it has burned out is the list redrawn in its new order. Returns true when the redraw is left to it.
-function burnInList(el) {
+function burnInList(el, sold) {
   if (!el || !motionOK) return false; $('#modal').style.pointerEvents = 'none';
-  el.animate([{ opacity: 1, filter: 'none', transform: 'none' }, { opacity: .9, filter: 'brightness(1.6) sepia(.6) saturate(3) blur(.5px)', transform: 'scale(1.03)', offset: .3 }, { opacity: 0, filter: 'brightness(2) saturate(4) blur(6px)', transform: 'scale(.92) translateY(-10px)' }], { duration: DISSOLVE_MS, easing: 'ease-in', fill: 'forwards' });
+  if (sold) { el.animate(SELL_FRAMES, { duration: DISSOLVE_MS, easing: 'cubic-bezier(.55,0,.7,.2)', fill: 'forwards' }); sellTag(el.getBoundingClientRect(), sold); }
+  else el.animate([{ opacity: 1, filter: 'none', transform: 'none' }, { opacity: .9, filter: 'brightness(1.6) sepia(.6) saturate(3) blur(.5px)', transform: 'scale(1.03)', offset: .3 }, { opacity: 0, filter: 'brightness(2) saturate(4) blur(6px)', transform: 'scale(.92) translateY(-10px)' }], { duration: DISSOLVE_MS, easing: 'ease-in', fill: 'forwards' });
   setTimeout(() => { $('#modal').style.pointerEvents = ''; render(); }, spd(DISSOLVE_MS + 20));
   return true;
 }
 const DISSOLVE_MS = 520;
+// A copy of a card, fixed where the card stands, so it can leave while the row redraws under it.
+function ghostOf(el) { const r = el.getBoundingClientRect(), g = el.cloneNode(true); Object.assign(g.style, { position: 'fixed', left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px', margin: 0, zIndex: 60, pointerEvents: 'none' }); document.body.appendChild(g); return g; }
+// Selling: the card turns gold and flips down into a coin, a +¥ tag rises from it, and coins arc into your purse,
+// which counts up as each one lands.
+const SELL_FRAMES = [{ opacity: 1, filter: 'none', transform: 'none' }, { opacity: 1, filter: 'brightness(1.25) sepia(.7) saturate(2.2)', transform: 'translateY(-6px) scale(1.04)', offset: .3 }, { opacity: 0, filter: 'brightness(1.5) sepia(1) saturate(3)', transform: 'translateY(6px) scale(.3) rotateY(180deg)', borderRadius: '50%' }];
+function sellTag(r, v) {
+  const tag = document.createElement('div'); tag.className = 'sellpop num'; tag.textContent = '+' + money(LANG === 'hk' ? '$' : '¥', v);
+  tag.style.cssText = `left:${r.left + r.width / 2}px;top:${r.top + r.height * .4}px`; document.body.appendChild(tag);
+  tag.animate([{ transform: 'translate(-50%,-30%) scale(.7)', opacity: 0 }, { transform: 'translate(-50%,-80%) scale(1.1)', opacity: 1, offset: .25 }, { transform: 'translate(-50%,-110%)', opacity: 1, offset: .7 }, { transform: 'translate(-50%,-160%)', opacity: 0 }], { duration: 1000, easing: 'ease-out' }).onfinish = () => tag.remove();
+  setTimeout(() => tag.remove(), spd(1500));
+}
+function sellFx(el, v) {
+  if (!el || !motionOK) return; const r = el.getBoundingClientRect(); if (!r.width) return;
+  const g = ghostOf(el); g.animate(SELL_FRAMES, { duration: DISSOLVE_MS, easing: 'cubic-bezier(.55,0,.7,.2)', fill: 'forwards' }).onfinish = () => g.remove(); setTimeout(() => g.remove(), spd(DISSOLVE_MS + 400));
+  sellTag(r, v);
+  const purse = $('#purseVal'), pc = purse && purse.closest('.purse'), pico = pc && pc.querySelector('.coin'); if (!pico || !pico.getClientRects().length) return;
+  const cur = LANG === 'hk' ? '$' : '¥', before = S.money, p = pico.getBoundingClientRect();
+  const sx = r.left + r.width / 2, sy = r.top + r.height / 2, ex = p.left + p.width / 2, ey = p.top + p.height / 2, lift = Math.min(120, Math.abs(sx - ex) * .2 + 50), path = [];
+  for (let k = 0; k <= 10; k++) { const t = k / 10; path.push({ transform: `translate(${(ex - sx) * t}px,${(ey - sy) * t - Math.sin(Math.PI * t) * lift}px) scale(${1 - .25 * t})` }); }
+  // The board redraws with the new total straight away; the purse is put back to the old amount so the coins can count it up.
+  queueMicrotask(() => { const el = $('#purseVal'); if (el) el.textContent = money(cur, before); });
+  const n = Math.max(1, Math.min(5, v)), start = DISSOLVE_MS * .55, dur = 460, gap = 70;
+  for (let i = 0; i < n; i++) {
+    const c = document.createElement('div'); c.className = 'flycoin'; c.innerHTML = coinSVG(); Object.assign(c.style, { left: sx - 13 + 'px', top: sy - 13 + 'px' }); document.body.appendChild(c);
+    c.animate(path, { duration: dur, delay: start + i * gap, easing: 'cubic-bezier(.45,.05,.55,.95)', fill: 'both' }).onfinish = () => c.remove();
+    setTimeout(() => { sfx('coin'); const el = $('#purseVal'); if (el) el.textContent = money(cur, before + v * (i + 1) / n); }, spd(start + dur + i * gap));
+    setTimeout(() => c.remove(), spd(start + dur + i * gap + 400));
+  }
+  setTimeout(() => { const el = $('#purseVal'); if (el) { el.textContent = money(cur, S.money); fitText(el); juice(el, .7); } }, spd(start + dur + (n - 1) * gap + 30));
+}
+// Using a consumable: an Omikuji slip folds into a thin strip and floats up, as if tied at a shrine; a Kami Spirit
+// rises away in a glow, leaving motes of light.
+function useFx(el, kind) {
+  if (!el || !motionOK) return; const r = el.getBoundingClientRect(); if (!r.width) return; const g = ghostOf(el);
+  const frames = kind === 'kami'
+    ? [{ opacity: 1, filter: 'none', transform: 'none' }, { opacity: 1, filter: 'brightness(1.5) drop-shadow(0 0 12px rgba(255,240,200,.9))', transform: 'scale(1.05)', offset: .3 }, { opacity: 0, filter: 'brightness(2.2) blur(5px)', transform: 'translateY(-56px) scale(1.12)' }]
+    : [{ opacity: 1, filter: 'none', transform: 'none' }, { opacity: 1, filter: 'brightness(1.3)', transform: 'translateY(-8px) scale(1.04)', offset: .25 }, { opacity: 1, filter: 'brightness(1.4)', transform: 'translateY(-14px) scaleX(.22) scaleY(.92)', offset: .6 }, { opacity: 0, filter: 'brightness(1.4)', transform: 'translateY(-64px) scaleX(.12) scaleY(.5)' }];
+  g.animate(frames, { duration: 620, easing: 'cubic-bezier(.3,.1,.4,1)', fill: 'forwards' }).onfinish = () => g.remove(); setTimeout(() => g.remove(), spd(1100));
+  if (kind !== 'kami') return;
+  for (let i = 0; i < 10; i++) {
+    const m = document.createElement('i'); m.className = 'mote'; m.style.cssText = `left:${r.left + r.width * (.15 + Math.random() * .7)}px;top:${r.top + r.height * (.3 + Math.random() * .6)}px`; document.body.appendChild(m);
+    m.animate([{ transform: 'translate(-50%,-50%) scale(.4)', opacity: 0 }, { transform: 'translate(-50%,-50%) scale(1)', opacity: 1, offset: .2 }, { transform: `translate(calc(-50% + ${(Math.random() - .5) * 30}px),calc(-50% - ${50 + Math.random() * 50}px)) scale(.5)`, opacity: 0 }], { duration: 700 + Math.random() * 300, delay: 120 + Math.random() * 200, easing: 'ease-out', fill: 'both' }).onfinish = () => m.remove();
+    setTimeout(() => m.remove(), spd(1500));
+  }
+}
 function dissolveEl(el) {
   if (!el || !motionOK) return; const r = el.getBoundingClientRect(), g = el.cloneNode(true); Object.assign(g.style, { position: 'fixed', left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px', margin: 0, zIndex: 60, pointerEvents: 'none' }); document.body.appendChild(g);
   g.animate([{ opacity: 1, filter: 'none', transform: 'none' }, { opacity: .9, filter: 'brightness(1.6) sepia(.6) saturate(3) blur(.5px)', transform: 'scale(1.03)', offset: .3 }, { opacity: 0, filter: 'brightness(2) saturate(4) blur(6px)', transform: 'scale(.92) translateY(-10px)' }], { duration: DISSOLVE_MS, easing: 'ease-in' }).onfinish = () => g.remove(); setTimeout(() => g.remove(), spd(900));
@@ -632,7 +680,7 @@ function doDeclareKan() {
   render();
 }
 // A used consumable burns away from its slot on the board (the cards after it wait, then slide in), like a sold one.
-function burnSlot(i) { if (i < 0 || compactScreen()) return; holdRow('#consumables .slot.filled', '#consumables', i); dissolveEl([...document.querySelectorAll('#consumables .slot')][i]); }
+function burnSlot(i) { if (i < 0 || compactScreen()) return; holdRow('#consumables .slot.filled', '#consumables', i); useFx([...document.querySelectorAll('#consumables .slot')][i], S.consumables[i] && S.consumables[i].kind); }
 function useConsumable(i) {
   if (S.busy) return;
   const c = S.consumables[i]; const def = CONS[c.key];
@@ -668,8 +716,8 @@ function sellEffect(k) {
   if (b === 'kakuremino' && (S.talState.kakuremino || 0) >= 2) { const others = S.talismans.filter(x => x !== k); if (!others.length) return ''; const src = pick(others); const ed = S.editions[src]; const copy = newAlias(S, baseKey(src)); S.talismans.push(copy); if (ed && ed !== 'neg') S.editions[copy] = ed; return ` Kakuremino copies ${TAL[src].name}.`; }
   return '';
 }
-function sellTalisman(k) { const i = S.talismans.indexOf(k); if (i < 0) return; if (isEternal(k)) { setMsg(`${TAL[k].name} is Eternal and can never be sold.`, true); return render(); } if (S.stickers) delete S.stickers[k]; if (S.phase === 'blind') S.leafCut = true; if (S.crimsonOff === k) S.crimsonOff = null; const v = talSellValue(k); const later = dissolveTal(k) === true; S.talismans.splice(i, 1); const eff = sellEffect(k); if (S.sellBonus) delete S.sellBonus[k]; S.money += v; sfx('sell'); delete S.editions[k]; S.selTal = null; for (const t of S.talismans) if (TAL[t].onSell) TAL[t].onSell(S); PROFILE.sold++; saveProfile(); setMsg(`Sold ${TAL[k].name} for ¥${v}.${eff}`); if (!later) render(); }
-function sellConsumable(i) { const c = S.consumables[i]; if (!c) return; const v = conSellValue(c); const b = document.querySelector(`#modal [data-sellcon="${i}"]`), later = !!b && burnInList(b.closest('.shopcard')); if (!b) { holdRow('#consumables .slot.filled', '#consumables', i); dissolveEl([...document.querySelectorAll('#consumables .slot')][i]); } S.consumables.splice(i, 1); S.money += v; sfx('sell'); setMsg(`Sold ${CONS[c.key].name} for ¥${v}.`); if (!later) render(); }
+function sellTalisman(k) { const i = S.talismans.indexOf(k); if (i < 0) return; if (isEternal(k)) { setMsg(`${TAL[k].name} is Eternal and can never be sold.`, true); return render(); } if (S.stickers) delete S.stickers[k]; if (S.phase === 'blind') S.leafCut = true; if (S.crimsonOff === k) S.crimsonOff = null; const v = talSellValue(k); const later = dissolveTal(k, v) === true; S.talismans.splice(i, 1); const eff = sellEffect(k); if (S.sellBonus) delete S.sellBonus[k]; S.money += v; sfx('sell'); delete S.editions[k]; S.selTal = null; for (const t of S.talismans) if (TAL[t].onSell) TAL[t].onSell(S); PROFILE.sold++; saveProfile(); setMsg(`Sold ${TAL[k].name} for ¥${v}.${eff}`); if (!later) render(); }
+function sellConsumable(i) { const c = S.consumables[i]; if (!c) return; const v = conSellValue(c); const b = document.querySelector(`#modal [data-sellcon="${i}"]`), later = !!b && burnInList(b.closest('.shopcard'), v); if (!b) { holdRow('#consumables .slot.filled', '#consumables', i); sellFx([...document.querySelectorAll('#consumables .slot')][i], v); } S.consumables.splice(i, 1); S.money += v; sfx('sell'); setMsg(`Sold ${CONS[c.key].name} for ¥${v}.`); if (!later) render(); }
 
 // ===================== SHOP =====================
 function rollCard() {

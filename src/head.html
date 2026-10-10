@@ -921,10 +921,11 @@ button.pulse{animation:btnpulse2 2.6s ease-out infinite}
 .order.rar-dot-common{background:#2b6cb0;color:#fff;border-color:#6fb0f0} .order.rar-dot-uncommon{background:#2f855a;color:#fff;border-color:#6fd39a} .order.rar-dot-rare{background:#c53030;color:#fff;border-color:#ff7a6b} .order.rar-dot-legendary{background:linear-gradient(135deg,#7b3fbf,#c04ad0);color:#fff;border-color:#e0b0ff}
 .slot .kind .rarity{font-size:8.5px;letter-spacing:.06em;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:0 1 auto}
 /* Tile editions and the new engravings */
-.tile .tedfx{position:absolute;inset:0;border-radius:inherit;pointer-events:none;mix-blend-mode:screen;opacity:.55}
-.tile.ted-foil .tedfx{background:linear-gradient(115deg,transparent 30%,rgba(200,225,255,.85) 46%,rgba(150,190,255,.3) 54%,transparent 66%)}
-.tile.ted-holo .tedfx{background:linear-gradient(135deg,rgba(255,126,179,.55),rgba(122,252,255,.55),rgba(254,255,156,.55),rgba(255,126,179,.55))}
-.tile.ted-poly .tedfx{background:linear-gradient(135deg,rgba(249,115,22,.5),rgba(234,179,8,.5),rgba(34,197,94,.5),rgba(59,130,246,.5),rgba(168,85,247,.5))}
+/* A tile edition tints the ivory face (multiply, so it shows on a light tile) and rims it in the edition's colour */
+.tile .tedfx{position:absolute;inset:0;border-radius:inherit;pointer-events:none;mix-blend-mode:multiply}
+.tile.ted-foil .tedfx{background:linear-gradient(125deg,#bcd2f2 0%,#f1f6ff 30%,#9dbbe6 50%,#eef4ff 70%,#b3cbee 100%);box-shadow:inset 0 0 0 2px #7f9fd0}
+.tile.ted-holo .tedfx{background:radial-gradient(circle,rgba(150,90,200,.35) 0 1px,transparent 1.4px) 0 0/5px 5px,linear-gradient(135deg,#ffb8d6,#bdf8ff 35%,#fffab4 65%,#ffb8d6);box-shadow:inset 0 0 0 2px #e389bb}
+.tile.ted-poly .tedfx{background:linear-gradient(135deg,#ffbf8f,#ffe680 25%,#9eeab0 50%,#a3c2ff 75%,#d6a8ff);box-shadow:inset 0 0 0 2px #a97de6}
 .tile .emark{position:absolute;right:3px;top:3px;width:clamp(11px,calc(var(--tw,48px) * .27),20px);aspect-ratio:1;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 2px rgba(0,0,0,.4),inset 0 0 0 1px rgba(255,255,255,.25)} .tile .emark svg{width:72%;height:72%;display:block}
 .tile.small .emark{width:10px;right:2px;top:2px}
 .emark-wild{background:conic-gradient(#e53e3e,#dd6b20,#38a169,#3182ce,#805ad5,#e53e3e)} .emark-lucky{background:#2f855a} .emark-mult{background:#c53030}
@@ -1025,4 +1026,6 @@ body.reducemotion *,body.reducemotion *::before,body.reducemotion *::after,body.
 .shophd .wallet{border-color:rgba(246,234,210,.45);background:rgba(0,0,0,.22)} .shophd .wallet .v{color:#f3c768} .shophd .wallet .cur{color:rgba(246,234,210,.7)}
 .blindcard .bossbox{border-color:rgba(232,110,92,.45);background:rgba(201,69,58,.08)} .bossbox .skipdesc{color:var(--fg)} .tagchip.showchip{border-color:transparent;color:#fff;background:linear-gradient(90deg,#6b2fb3,#a8362c);font-size:11px;letter-spacing:.06em;text-transform:uppercase}
 .modal.confirmmodal{position:relative} .modal.confirmmodal .modal-x{position:absolute;top:14px;right:14px;margin:0;float:none;z-index:5;background:rgba(0,0,0,.28);border-color:rgba(246,234,210,.35);color:#f6ead2}
+.sellpop{position:fixed;z-index:97;pointer-events:none;white-space:nowrap;padding:3px 11px;border-radius:999px;background:linear-gradient(180deg,#f3c768,#c99a3a);color:#2a1d0a;font-family:var(--display);font-size:16px;font-weight:600;box-shadow:0 6px 16px rgba(0,0,0,.45),0 0 14px rgba(243,199,104,.5)}
+.mote{position:fixed;z-index:61;pointer-events:none;width:6px;height:6px;border-radius:50%;background:#fff6dc;box-shadow:0 0 8px 2px rgba(255,236,180,.85)}
 </style>
