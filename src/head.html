@@ -665,7 +665,15 @@ header{background:linear-gradient(180deg,#3a2716,#24170c);border-bottom:2px soli
 .zone .zhead .label{background:linear-gradient(180deg,#e4c27a,#b48a3e);color:#2b1d0b;padding:2px 9px;border-radius:4px;box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 1px 2px rgba(0,0,0,.4);font-size:10px}
 .zone .zhead .muted{color:#b9cbbf}
 .slot{background:rgba(0,0,0,.18);border-color:rgba(255,230,180,.15)}
-aside .card{background:linear-gradient(180deg,#2a1d10,#1d140a);border:1px solid #6d5130;box-shadow:inset 0 1px 0 rgba(255,220,160,.15),0 6px 16px rgba(0,0,0,.35)}
+/* The side panel is built like the board: a wooden frame (lit along the top edge) around green felt, and the boxes on it sit
+   in the felt like the board's card slots: dark, recessed, with a faint top highlight. */
+aside .card{position:relative;border:7px solid transparent;border-radius:16px;background:radial-gradient(140% 120% at 50% 0%,#1f5a45 0%,#174635 55%,#113526 100%) padding-box,linear-gradient(180deg,#6a4828,#3c2814) border-box;box-shadow:0 10px 30px rgba(0,0,0,.5),inset 0 2px 8px rgba(0,0,0,.45)}
+aside .card::before{content:'';position:absolute;inset:-7px;border-radius:16px;pointer-events:none;box-shadow:inset 0 2px 0 rgba(255,220,160,.22),inset 0 -3px 0 rgba(0,0,0,.4),inset 0 0 0 1px rgba(0,0,0,.35)}
+aside .blindplate,aside .roundscore,aside .handbox,aside .stats .stat{background:linear-gradient(180deg,rgba(14,24,20,.82),rgba(10,18,15,.9));border:1px solid rgba(0,0,0,.5);box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 2px 6px rgba(0,0,0,.3)}
+aside .blindplate.bossplate{border-color:rgba(201,69,58,.6);background:linear-gradient(180deg,rgba(201,69,58,.2),rgba(201,69,58,.05)),linear-gradient(180deg,rgba(14,24,20,.85),rgba(10,18,15,.92))}
+aside .handbox.empty{border-style:solid}
+aside .card > .label{color:#cfe0d4;text-shadow:0 1px 1px rgba(0,0,0,.5)}
+aside .lastplay{color:#e8efe9}
 /* ===== Action bar: what each button will do, its key, and what is left ===== */
 .actions{gap:10px;flex-wrap:wrap;align-items:stretch}
 .act{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto auto;column-gap:10px;row-gap:1px;align-items:center;text-align:left;padding:7px 14px 7px 10px;flex:1 1 0;min-width:150px;max-width:240px;border-radius:10px;font-family:var(--body);border:1px solid rgba(0,0,0,.4);box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 3px 0 rgba(0,0,0,.35),0 6px 12px rgba(0,0,0,.3);transition:transform .08s,filter .12s}
