@@ -569,19 +569,16 @@ button.pulse{animation:btnpulse 1s ease-in-out infinite;box-shadow:0 0 0 0 rgba(
 .packshelf{margin-top:18px} .packshelf .shop-grid{margin:0}
 .endlessbadge{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--bad);border:1px solid rgba(232,107,95,.5);background:rgba(232,107,95,.1);border-radius:999px;padding:3px 12px}
 
-/* ===== Shared noren banner for every screen (the shop has its own) ===== */
-.modal>.banner{--bn1:#74271f;--bn2:#561b16;--bnink:#f6ead2;position:relative;margin:-20px -20px 34px;padding:24px 22px 14px;border-radius:12px 12px 0 0;color:var(--bnink);
-  background:radial-gradient(90% 160% at 12% 0%,rgba(255,255,255,.09),transparent 60%),linear-gradient(180deg,var(--bn1),var(--bn2))}
-.modal>.banner::before{content:'';position:absolute;left:0;right:0;top:0;height:7px;border-radius:12px 12px 0 0;background:linear-gradient(#94713f,#5c4426);box-shadow:0 2px 3px rgba(0,0,0,.35)}
-.modal>.banner h2,.modal>.banner h2.lost{color:var(--bnink);margin:0;font-size:28px;letter-spacing:.02em;text-shadow:0 2px 6px rgba(0,0,0,.35)}
-.modal>.banner .label,.modal>.banner .muted,.modal>.banner .sub{color:rgba(246,234,210,.72)}
-.modal>.banner .bannerflaps{position:absolute;left:0;right:0;top:100%;display:grid;grid-template-columns:repeat(5,1fr);gap:7px;height:18px} .modal>.banner .bannerflaps i{background:var(--bn2);border-radius:0 0 7px 7px;box-shadow:inset 0 -2px 0 rgba(0,0,0,.25)}
-.modal>.banner.bn-indigo{--bn1:#2c3a72;--bn2:#1d264e} .modal>.banner.bn-teal{--bn1:#22564a;--bn2:#173b33} .modal>.banner.bn-ink{--bn1:#33393a;--bn2:#222727}
-.modal>.banner.bn-gold{--bn1:#946f22;--bn2:#6a4e15;--bnink:#fff4da} .modal>.banner.bn-gold h2{text-shadow:0 0 18px rgba(255,220,140,.45),0 2px 6px rgba(0,0,0,.35)}
-.modal>.banner input{background:rgba(0,0,0,.25);border-color:rgba(246,234,210,.3);color:var(--bnink)} .modal>.banner input::placeholder{color:rgba(246,234,210,.55)}
-.modal>.banner .antepips i{background:rgba(246,234,210,.25)} .modal>.banner .antepips i.done{background:#f3c768} .modal>.banner .antepips i.now{border-color:#f3c768}
+/* ===== Every screen's header, in the Booster Pack header's style ===== */
+.modal>.banner{--pc:100,200,170;position:relative;margin:-20px -20px 18px;padding:18px 22px;border-radius:12px 12px 0 0;background:radial-gradient(80% 160% at 0% 0%,rgba(var(--pc),.26),transparent 65%),linear-gradient(180deg,rgba(var(--pc),.09),transparent);border-bottom:1px solid rgba(var(--pc),.35)}
+.modal>.banner h2,.modal>.banner h2.lost{color:rgb(var(--pc));margin:0;font-size:28px;letter-spacing:.02em}
+.modal>.banner .bnart{width:50px;height:50px;flex:0 0 auto;color:rgb(var(--pc));transform:rotate(-6deg);filter:drop-shadow(0 5px 7px rgba(0,0,0,.5))} .modal>.banner .bnart svg{width:100%;height:100%;display:block}
+.modal>.banner.shophead.withart{justify-content:flex-start;gap:14px} .modal>.banner.shophead.withart>h2+*{margin-left:auto}
+.modal>.banner.overhead.withart{display:grid;grid-template-columns:auto 1fr;column-gap:16px;align-items:center} .modal>.banner.overhead .bnart{grid-row:span 2} .modal>.banner.overhead h2{margin:0}
+.modal>.banner.bn-indigo{--pc:140,162,240} .modal>.banner.bn-teal{--pc:100,200,170} .modal>.banner.bn-ink{--pc:200,208,206} .modal>.banner.bn-red{--pc:232,110,92}
+.modal>.banner.bn-gold{--pc:243,199,104} .modal>.banner.bn-gold h2{text-shadow:0 0 18px rgba(255,220,140,.35)}
 .modal>.banner .cashscore b{color:#bff3d1}
-.modal.hasbanner .modal-x{z-index:5;float:none;display:flex;margin:-6px -6px -46px auto;background:rgba(0,0,0,.28);border-color:rgba(246,234,210,.35);color:#f6ead2}
+.modal.hasbanner .modal-x{z-index:5;float:none;display:flex;margin:-6px -6px -38px auto;background:rgba(0,0,0,.28);border-color:rgba(255,255,255,.22)}
 .modal.hasbanner>.banner.shophead{padding-right:64px}
 .overmodal>.banner,.cashmodal>.banner{text-align:left}
 /* Ante screen chips */
@@ -1107,7 +1104,7 @@ const CFG = {
   blindReward: { small: 3, big: 4, boss: 5 },
   interestPer: 5, interestCap: 5,
   rerollCost: 5,
-  // Base values per play type. Manuals add +10 chips and +1 Han per level.
+  // Base values per play type. Scrolls of Mastery add +10 chips and +1 Han per level.
   meldBase: { single: { chips: 0, han: 0 }, pair: { chips: 5, han: 0 }, twopair: { chips: 15, han: 1 }, chi: { chips: 10, han: 1 }, pon: { chips: 20, han: 1 }, kan: { chips: 40, han: 2 }, hand: { chips: 120, han: 2 } },
   // Multi-meld plays ("ladder B"). Key = melds,pair. A single meld + pair uses the meld's base +10 chips.
   rungs: { '2,0': { name: 'Two Melds', chips: 30, han: 1 }, '2,1': { name: 'Two Melds + Pair', chips: 40, han: 1 }, '3,0': { name: 'Three Melds', chips: 60, han: 2 }, '3,1': { name: 'Ready Hand', chips: 80, han: 2 }, '4,0': { name: 'Four Melds', chips: 100, han: 2 }, '4,1': { name: 'Four Melds + Pair', chips: 110, han: 2 } },
@@ -1126,7 +1123,7 @@ const CFG = {
   // Playtest 23: Talismans fire in slot order after the Han table; flat +Mult class; drag to reorder Talismans.
   hanTable: [1, 2, 4, 8, 15, 15, 25, 25, 40, 40, 40, 60, 60, 100],
   tierNames: ['None', 'Standard', 'Advanced', 'Master', 'Mangan', 'Mangan', 'Haneman', 'Haneman', 'Baiman', 'Baiman', 'Baiman', 'Sanbaiman', 'Sanbaiman', 'Yakuman'],
-  // Shop card odds, as in Balatro (Jokers 20, Tarot 4, Planet 4, no Spectrals): Talismans 71%, Omikuji 14%, Manuals 14%.
+  // Shop card odds, as in Balatro (Jokers 20, Tarot 4, Planet 4, no Spectrals): Talismans 71%, Omikuji 14%, Scrolls 14%.
   shopWeights: { talisman: 20 / 28, omikuji: 4 / 28, scroll: 4 / 28, kami: 0 },
   // Booster pack weights per type, Normal / Jumbo / Mega, as in Balatro (Arcana, Celestial, Standard, Buffoon, Spectral).
   packWeights: { omikuji: [4, 2, .5], scroll: [4, 2, .5], tile: [4, 2, .5], talisman: [1.2, .6, .15], kami: [.6, .3, .07] },
@@ -1249,7 +1246,7 @@ function wildVariants(tiles) {
 const SEALS = {
   red: { name: 'Red Seal', desc: 'This tile scores twice.' },
   gold: { name: 'Gold Seal', desc: 'Earn ¥3 whenever this tile scores.' },
-  blue: { name: 'Blue Seal', desc: 'If this tile is still in your hand when you win a Blind, the Manual for your final play levels up by 1.' },
+  blue: { name: 'Blue Seal', desc: 'If this tile is still in your hand when you win a Blind, the Scroll for your final play levels up by 1.' },
   purple: { name: 'Purple Seal', desc: 'When you discard this tile, gain a random Omikuji if you have a free consumable slot.' },
 };
 // Older saves engraved Red Seals; they now live in the seal slot.
@@ -1350,7 +1347,7 @@ const TALISMANS = [
   { key: 'aobozu', name: 'Aobōzu', cost: 5, desc: '+1 Mult per play, −1 Mult per Discard (never below 0).', onScore: (c, S) => S.talState.aobozu ? { mult: S.talState.aobozu } : null, afterScore: (c, S) => { S.talState.aobozu = (S.talState.aobozu || 0) + 1; }, onDiscard: S => { S.talState.aobozu = Math.max(0, (S.talState.aobozu || 0) - 1); }, status: S => `now +${S.talState.aobozu || 0} Mult` },
   { key: 'shiro', name: 'Shiro', cost: 5, desc: 'Each Blind picks a suit. Gains +3 Chips for every tile of that suit you discard.', onBlindStart: S => { S.talState.shiroSuit = pick(['m', 'p', 's']); }, onDiscard: (S, tiles) => { S.talState.shiro = (S.talState.shiro || 0) + 3 * tiles.filter(t => t.suit === S.talState.shiroSuit).length; }, onScore: (c, S) => S.talState.shiro ? { chips: S.talState.shiro } : null, status: S => `${S.talState.shiroSuit ? SUIT_EN[S.talState.shiroSuit] + ' this Blind, ' : ''}now +${S.talState.shiro || 0} Chips` },
   { key: 'takibi', name: 'Takibi', cost: 6, desc: 'Gains x0.25 Mult every time you sell a Talisman.', onSell: S => { S.talState.takibi = (S.talState.takibi || 0) + 1; }, onScore: (c, S) => S.talState.takibi ? { xmult: 1 + 0.25 * S.talState.takibi } : null, status: S => `now x${(1 + 0.25 * (S.talState.takibi || 0)).toFixed(2)}` },
-  { key: 'hoshizora', name: 'Hoshizora', cost: 6, desc: 'Gains x0.1 Mult every time you use a Manual.', onScroll: S => { S.talState.hoshizora = (S.talState.hoshizora || 0) + 1; }, onScore: (c, S) => S.talState.hoshizora ? { xmult: 1 + 0.1 * S.talState.hoshizora } : null, status: S => `now x${(1 + 0.1 * (S.talState.hoshizora || 0)).toFixed(1)}` },
+  { key: 'hoshizora', name: 'Hoshizora', cost: 6, desc: 'Gains x0.1 Mult every time you use a Scroll of Mastery.', onScroll: S => { S.talState.hoshizora = (S.talState.hoshizora || 0) + 1; }, onScore: (c, S) => S.talState.hoshizora ? { xmult: 1 + 0.1 * S.talState.hoshizora } : null, status: S => `now x${(1 + 0.1 * (S.talState.hoshizora || 0)).toFixed(1)}` },
   { key: 'mabo', name: 'Mabo', cost: 6, desc: 'Gains x0.25 Mult every time a tile is added to your Wall.', onTileAdded: (S, n) => { S.talState.mabo = (S.talState.mabo || 0) + n; }, onScore: (c, S) => S.talState.mabo ? { xmult: 1 + 0.25 * S.talState.mabo } : null, status: S => `now x${(1 + 0.25 * (S.talState.mabo || 0)).toFixed(2)}` },
   { key: 'chochin', name: 'Chōchin', cost: 6, desc: 'x4 Mult on every sixth play.', onScore: (c, S) => (((S.talState.chochin || 0) + 1) % 6 === 0) ? { xmult: 4 } : null, afterScore: (c, S) => { S.talState.chochin = (S.talState.chochin || 0) + 1; }, status: S => { const left = 6 - (((S.talState.chochin || 0)) % 6); return left === 6 ? 'fires in 6 plays' : left === 1 ? 'fires next play' : `fires in ${left} plays`; } },
   // --- Run-info powers
@@ -1387,7 +1384,7 @@ const TALISMANS = [
     onBlindEnd: S => (S.discardsUsed || 0) === 0 ? 2 * Math.max(0, S.discards) : 0, status: S => S.phase === 'blind' ? (S.discardsUsed ? 'no payout this Blind' : `¥${2 * S.discards} if you keep it up`) : '' },
   { key: 'fukusuke', name: 'Fukusuke', cost: 5, desc: 'Earn ¥1 at the end of each Blind for every three 8 tiles in your Wall.',
     onBlindEnd: S => Math.floor(allTiles(S).filter(t => t.suit !== 'z' && t.rank === 8).length / 3), status: S => `pays ¥${Math.floor(allTiles(S).filter(t => t.suit !== 'z' && t.rank === 8).length / 3)} now` },
-  { key: 'ebisu', name: 'Ebisu', cost: 6, desc: 'Earn ¥1 at the end of each Blind for each different Manual you have used this run.',
+  { key: 'ebisu', name: 'Ebisu', cost: 6, desc: 'Earn ¥1 at the end of each Blind for each different Scroll of Mastery you have used this run.',
     onBlindEnd: S => scrollKinds(S), status: S => `pays ¥${scrollKinds(S)} now` },
   { key: 'kamaitachi', name: 'Kamaitachi', cost: 6, desc: 'Earn ¥5 if you clear the Blind with your first Play.', onBlindEnd: S => S.playsMade === 1 ? 5 : 0 },
   // --- Makers and growers (Balatro's Cartomancer, Riff-raff, Egg, Gift Card, Ceremonial Dagger, Space Joker and Seance).
@@ -1403,7 +1400,7 @@ const TALISMANS = [
   { key: 'kamikiri', name: 'Kamikiri', cost: 6, desc: 'When a Blind starts, destroys the Talisman to its right (unless Eternal) and permanently gains +Mult equal to twice its sell value.',
     onBlindStart: S => { if (typeof destroyTalisman !== 'function') return; const right = S.talismans[S.talismans.indexOf('kamikiri') + 1]; if (!right) return; const v = talSellValue(right); if (destroyTalisman(right)) S.talState.kamikiri = (S.talState.kamikiri || 0) + 2 * v; },
     onScore: (c, S) => S.talState.kamikiri ? { mult: S.talState.kamikiri } : null, status: S => `+${S.talState.kamikiri || 0} Mult` },
-  { key: 'kotodama', name: 'Kotodama', cost: 6, desc: '1 in 4 chance to level up the Manual for the play type you score.',
+  { key: 'kotodama', name: 'Kotodama', cost: 6, desc: '1 in 4 chance to level up the Scroll for the play type you score.',
     afterScore: (c, S) => { if (rand() >= chance(S, 0.25)) return; const k = c.kind === 'hand' ? 'hand' : c.nKan ? 'kan' : c.nPon ? 'pon' : c.nChi ? 'chi' : 'pair'; S.scrolls.meld[k] = (S.scrolls.meld[k] || 0) + 1; if (typeof toast === 'function') toast(`<div class="label">Kotodama</div><b>${SCR['m:' + k].name}</b><div class="muted" style="font-size:11px">+1 level</div>`); } },
   { key: 'itako', name: 'Itako', cost: 7, desc: 'When you score a Complete Hand with 3 or more Yaku, create a random Kami if you have a free consumable slot.',
     afterScore: (c, S) => { if (c.kind !== 'hand' || c.yaku.length < 3 || typeof conSlots !== 'function' || S.consumables.length >= conSlots()) return; S.consumables.push({ kind: 'kami', key: pick(KAMI.filter(k => !k.soul)).key }); } },
@@ -1495,7 +1492,7 @@ const OMIKUJI = [
   { key: 'echo', name: 'Slip of Echoes', cost: 3, sel: [0, 0], anywhere: true, desc: 'Create a copy of the last Omikuji or Kami you used (not Slip of Echoes).', use: S => { if (!S.lastCons || !CONS[S.lastCons]) return false; S.consumables.push({ kind: CONS[S.lastCons].kind, key: S.lastCons }); } },
   { key: 'judgement', name: 'Slip of Judgement', cost: 3, sel: [0, 0], anywhere: true, desc: 'Create a random Talisman. Needs a free Talisman slot.', use: S => { if (typeof talPool !== 'function' || S.talismans.length >= talSlots()) return false; const t = pickTalisman(talPool()); if (!t) return false; gainTalisman(t.key); } },
   { key: 'emperor', name: 'Slip of the Emperor', cost: 3, sel: [0, 0], anywhere: true, desc: 'Create up to 2 random Omikuji (room permitting, counting this slot).', use: S => { const room = (typeof conSlots === 'function' ? conSlots() : 2) - S.consumables.length + 1; for (let i = 0; i < Math.min(2, room); i++) S.consumables.push({ kind: 'omikuji', key: pick(OMIKUJI.filter(o => o.key !== 'emperor')).key }); } },
-  { key: 'priestess', name: 'Slip of the Priestess', cost: 3, sel: [0, 0], anywhere: true, desc: '2 random Manuals level up by 1.', use: S => { for (const sc of shuffle(SCROLLS.slice()).slice(0, 2)) { const [t, k] = sc.key.split(':'); const b = S.scrolls[t === 'm' ? 'meld' : 'yaku']; b[k] = (b[k] || 0) + 1; } } },
+  { key: 'priestess', name: 'Slip of the Priestess', cost: 3, sel: [0, 0], anywhere: true, desc: '2 random Scrolls of Mastery level up by 1.', use: S => { for (const sc of shuffle(SCROLLS.slice()).slice(0, 2)) { const [t, k] = sc.key.split(':'); const b = S.scrolls[t === 'm' ? 'meld' : 'yaku']; b[k] = (b[k] || 0) + 1; } } },
   { key: 'hermit', name: 'Slip of the Hermit', cost: 3, sel: [0, 0], anywhere: true, desc: 'Double your money (at most +¥20).', use: S => { S.money += Math.min(20, S.money); } },
   { key: 'temperance', name: 'Slip of Temperance', cost: 3, sel: [0, 0], anywhere: true, desc: 'Gain the total sell value of your Talismans (at most ¥50).', use: S => { if (typeof talSellValue !== 'function') return false; S.money += Math.min(50, S.talismans.reduce((a, k) => a + talSellValue(k), 0)); } },
   { key: 'fortune', name: 'Slip of Fortune', cost: 3, sel: [0, 0], anywhere: true, desc: '1 in 4 chance: a random Talisman with no edition becomes Foil, Holographic or Polychrome.', use: S => { const pool = S.talismans.filter(k => !S.editions[k]); if (!pool.length) return false; if (rand() < chance(S, 0.25)) { const k = pick(pool); S.editions[k] = pick(['foil', 'holo', 'poly']); S.fortuneHit = k; } else S.fortuneHit = null; } },
@@ -1513,7 +1510,7 @@ const KAMI = [
     use: (S) => { S.revealed = true; S.money = Math.max(0, S.money - 3); for (let i = 0; i < 2 && S.wall.length; i++) { const t = S.wall.pop(); S.indicators.push(t); S.dora.push(nextDora(idx(t))); } } },
   // Seal spirits, like Balatro's Talisman, Trance and Medium Spectral cards.
   { key: 'benzaiten', name: 'Benzaiten', cost: 4, sel: [1, 1], desc: 'Put a Gold Seal on 1 selected tile: earn ¥3 whenever it scores.', use: (S, sel) => { sel[0].seal = 'gold'; } },
-  { key: 'hachiman', name: 'Hachiman', cost: 4, sel: [1, 1], desc: 'Put a Blue Seal on 1 selected tile: if it is still in your hand when you win a Blind, the Manual for your final play levels up.', use: (S, sel) => { sel[0].seal = 'blue'; } },
+  { key: 'hachiman', name: 'Hachiman', cost: 4, sel: [1, 1], desc: 'Put a Blue Seal on 1 selected tile: if it is still in your hand when you win a Blind, the Scroll for your final play levels up.', use: (S, sel) => { sel[0].seal = 'blue'; } },
   { key: 'fujin', name: 'Fūjin', cost: 4, sel: [1, 1], desc: 'Put a Purple Seal on 1 selected tile: discarding it gives you a random Omikuji.', use: (S, sel) => { sel[0].seal = 'purple'; } },
 ];
 KAMI.push({ key: 'hitodama', name: 'Hitodama', cost: 4, sel: [0, 0], anywhere: true, soul: true, rare: true, desc: 'Create a Legendary Talisman. Needs a free Talisman slot.',
@@ -1528,7 +1525,7 @@ KAMI.push(
     use: S => { const pool = S.talismans.filter(k => !S.editions[k]); if (!pool.length || typeof destroyTalisman !== 'function') return false; const k = pick(pool); S.editions[k] = 'poly'; for (const o of S.talismans.slice()) if (o !== k) destroyTalisman(o); } },
   { key: 'okuninushi', name: 'Ōkuninushi', cost: 4, sel: [0, 0], anywhere: true, desc: 'A random Talisman with no edition becomes Negative (+1 slot). −1 hand size for the rest of the run.',
     use: S => { const pool = S.talismans.filter(k => !S.editions[k]); if (!pool.length) return false; S.editions[pick(pool)] = 'neg'; S.handMod = (S.handMod || 0) - 1; } },
-  { key: 'minakanushi', name: 'Minakanushi', cost: 4, sel: [0, 0], anywhere: true, rare: true, desc: 'Every Manual levels up by 1.',
+  { key: 'minakanushi', name: 'Minakanushi', cost: 4, sel: [0, 0], anywhere: true, rare: true, desc: 'Every Scroll of Mastery levels up by 1.',
     use: S => { for (const sc of SCROLLS) { const [t, k] = sc.key.split(':'); const b = S.scrolls[t === 'm' ? 'meld' : 'yaku']; b[k] = (b[k] || 0) + 1; } } },
   { key: 'hiruko', name: 'Hiruko', cost: 4, sel: [1, 1], desc: 'Create 2 copies of 1 selected tile, engraving, Seal and edition included. They join your hand and stay in your Wall.',
     use: (S, sel) => { const t = sel[0]; for (let i = 0; i < 2; i++) { const c = mkTile(t.suit, t.rank, t.red); c.eng = t.eng; c.seal = t.seal; c.ed = t.ed; S.hand.push(c); } } },
@@ -1541,21 +1538,21 @@ const CONS = {}; OMIKUJI.forEach(o => CONS[o.key] = Object.assign({ kind: 'omiku
 
 // ===================== SCROLLS OF MASTERY (Planets) =====================
 const SCROLLS = [
-  { key: 'm:pair', name: 'Pairs Manual', cost: 3, desc: 'Every Pair in a play: +10 Chips. Any play with a Pair: +1 Han. Permanent, stacks per level.' },
-  { key: 'm:chi', name: 'Chi Manual', cost: 3, desc: 'Every Chi in a play: +10 Chips. Any play with a Chi: +1 Han. Permanent, stacks per level.' },
-  { key: 'm:pon', name: 'Pon Manual', cost: 3, desc: 'Every Pon in a play: +10 Chips. Any play with a Pon: +1 Han. Permanent, stacks per level.' },
-  { key: 'm:kan', name: 'Kan Manual', cost: 3, desc: 'Every Kan in a play: +10 Chips. Any play with a Kan: +1 Han. Permanent, stacks per level.' },
-  { key: 'm:hand', name: 'Completion Manual', cost: 4, desc: 'Complete Hands: +10 Chips and +1 Han, permanently.' },
-  { key: 'y:tanyao', name: 'Tanyao Manual', cost: 3, desc: '+1 Han whenever Tanyao scores.' },
-  { key: 'y:pinfu', name: 'Pinfu Manual', cost: 3, desc: '+1 Han whenever Pinfu scores.' },
-  { key: 'y:yakuhai', name: 'Yakuhai Manual', cost: 3, desc: '+1 Han for each Yakuhai that scores, including Honor Pon partial plays.' },
-  { key: 'y:honitsu', name: 'Honitsu Manual', cost: 3, desc: '+1 Han whenever Honitsu scores.' },
-  { key: 'y:chinitsu', name: 'Chinitsu Manual', cost: 3, desc: '+1 Han whenever Chinitsu scores.' },
-  { key: 'y:toitoi', name: 'Toitoi Manual', cost: 3, desc: '+1 Han whenever Toitoi scores.' },
-  { key: 'y:chiitoitsu', name: 'Chiitoitsu Manual', cost: 3, desc: '+1 Han whenever Chiitoitsu scores.' },
-  { key: 'y:sanshoku', name: 'Sanshoku Manual', cost: 3, desc: '+1 Han whenever Sanshoku Doujun scores.' },
-  { key: 'y:ittsu', name: 'Ittsu Manual', cost: 3, desc: '+1 Han whenever Ittsu scores.' },
-  { key: 'y:chanta', name: 'Chanta Manual', cost: 3, desc: '+1 Han whenever Chanta scores.' },
+  { key: 'm:pair', name: 'Scroll of Pairs', cost: 3, desc: 'Every Pair in a play: +10 Chips. Any play with a Pair: +1 Han. Permanent, stacks per level.' },
+  { key: 'm:chi', name: 'Scroll of Sequences', cost: 3, desc: 'Every Chi in a play: +10 Chips. Any play with a Chi: +1 Han. Permanent, stacks per level.' },
+  { key: 'm:pon', name: 'Scroll of Triplets', cost: 3, desc: 'Every Pon in a play: +10 Chips. Any play with a Pon: +1 Han. Permanent, stacks per level.' },
+  { key: 'm:kan', name: 'Scroll of Quads', cost: 3, desc: 'Every Kan in a play: +10 Chips. Any play with a Kan: +1 Han. Permanent, stacks per level.' },
+  { key: 'm:hand', name: 'Scroll of Completion', cost: 4, desc: 'Complete Hands: +10 Chips and +1 Han, permanently.' },
+  { key: 'y:tanyao', name: 'Scroll of Tanyao', cost: 3, desc: '+1 Han whenever Tanyao scores.' },
+  { key: 'y:pinfu', name: 'Scroll of Pinfu', cost: 3, desc: '+1 Han whenever Pinfu scores.' },
+  { key: 'y:yakuhai', name: 'Scroll of Yakuhai', cost: 3, desc: '+1 Han for each Yakuhai that scores, including Honor Pon partial plays.' },
+  { key: 'y:honitsu', name: 'Scroll of Honitsu', cost: 3, desc: '+1 Han whenever Honitsu scores.' },
+  { key: 'y:chinitsu', name: 'Scroll of Chinitsu', cost: 3, desc: '+1 Han whenever Chinitsu scores.' },
+  { key: 'y:toitoi', name: 'Scroll of Toitoi', cost: 3, desc: '+1 Han whenever Toitoi scores.' },
+  { key: 'y:chiitoitsu', name: 'Scroll of Seven Pairs', cost: 3, desc: '+1 Han whenever Chiitoitsu scores.' },
+  { key: 'y:sanshoku', name: 'Scroll of Three Colours', cost: 3, desc: '+1 Han whenever Sanshoku Doujun scores.' },
+  { key: 'y:ittsu', name: 'Scroll of the Straight', cost: 3, desc: '+1 Han whenever Ittsu scores.' },
+  { key: 'y:chanta', name: 'Scroll of Edges', cost: 3, desc: '+1 Han whenever Chanta scores.' },
 ];
 const SCR = {}; SCROLLS.forEach(s => SCR[s.key] = s);
 
@@ -1603,7 +1600,7 @@ const TAGS = {
   poly: { name: 'Polychrome Tag', desc: 'The first Talisman in the next shop is Polychrome.' },
   neg: { name: 'Negative Tag', desc: 'The first Talisman in the next shop is Negative (+1 slot).' },
   omikuji: { name: 'Charm Tag', desc: 'A free Omikuji pack opens in the next shop.' },
-  scroll: { name: 'Manual Tag', desc: 'A free Manual pack opens in the next shop.' },
+  scroll: { name: 'Scroll Tag', desc: 'A free Scroll pack opens in the next shop.' },
   talisman: { name: 'Buffoon Tag', desc: 'A free Talisman pack opens in the next shop.' },
   kami: { name: 'Kami Tag', desc: 'A free Kami pack opens in the next shop.' },
   investment: { name: 'Investment Tag', desc: '+¥25 after you defeat the next Boss.' },
@@ -1616,7 +1613,7 @@ const TAGS = {
   uncommon: { name: 'Uncommon Tag', desc: 'The next shop has a free Uncommon Talisman.' },
   rare: { name: 'Rare Tag', desc: 'The next shop has a free Rare Talisman.' },
   double: { name: 'Double Tag', desc: 'The next Tag you get counts twice (except another Double Tag).' },
-  orbital: { name: 'Orbital Tag', desc: 'Levels up a random meld Manual by 3, right away.' },
+  orbital: { name: 'Orbital Tag', desc: 'Levels up a random meld Scroll by 3, right away.' },
   topup: { name: 'Top-up Tag', desc: 'Creates up to 2 Common Talismans right away, if you have room.' },
   d6: { name: 'D6 Tag', desc: 'Rerolls in the next shop start at ¥0 and cost ¥1 more each time.' },
   handy: { name: 'Handy Tag', desc: '+¥1 for every Play you have used this run, right away.' },
@@ -1627,7 +1624,7 @@ const TAGS = {
 // Mega Omikuji ('mega') and Mega Tile ('megatile') keep their old keys so saved runs still open them.
 const PACK_TYPES = {
   omikuji: { label: 'Omikuji', show: 3, cost: 4, desc: (n, k) => `Open ${n} Omikuji. Use ${k === 1 ? '1' : k} on tiles from your Wall now, or keep ${k === 1 ? 'it' : 'them'}.` },
-  scroll: { label: 'Manual', show: 3, cost: 4, desc: (n, k) => `Open ${n} Manuals, use ${k} now.` },
+  scroll: { label: 'Scroll', show: 3, cost: 4, desc: (n, k) => `Open ${n} Scrolls of Mastery, use ${k} now.` },
   talisman: { label: 'Talisman', show: 2, cost: 6, desc: (n, k) => `Open ${n} Talismans, keep ${k}.` },
   kami: { label: 'Kami', show: 2, cost: 6, desc: (n, k) => `Open ${n} Kami Spirits. Use ${k === 1 ? '1' : k} on tiles from your Wall now, or keep ${k === 1 ? 'it' : 'them'}.` },
   tile: { label: 'Tile', show: 4, cost: 4, desc: (n, k) => `Open ${n} tiles and add ${k} to your Wall. Some come engraved or sealed.` },
@@ -1945,17 +1942,17 @@ function scoreCtxInner(S, kind, tiles, info) {
   if (S.boss === 'flint') rung = Object.assign({}, rung, { chips: Math.floor(rung.chips / 2), han: Math.floor(rung.han / 2), name: rung.name + ' (halved)' });
   ctx.chips += rung.chips; ctx.han += rung.han;
   L(rung.name, `+${rung.chips} Chips` + (rung.han ? `, +${rung.han} Han` : ''), { chips: rung.chips, han: rung.han, base: true });
-  // Manual bonuses per component (Chi, Pon, Kan, Pair) apply to every play that contains them, complete hands included,
+  // Scroll bonuses per component (Chi, Pon, Kan, Pair) apply to every play that contains them, complete hands included,
   // so a complete hand always outscores the ready hand inside it. Kans inside multi-meld plays and complete hands add a bonus.
   {
     const byType = {}; for (const m of melds) byType[m.type] = (byType[m.type] || 0) + 1; if (pairs.length) byType.pair = pairs.length;
     // Chips per component (four Chi pay more than one), Han once per component type present (like a Balatro Planet level).
-    for (const [t, n] of Object.entries(byType)) { const lvl = S.scrolls.meld[t] || 0; if (lvl) { const c = lvl * CFG.scrollChips * n, h = lvl * CFG.scrollHan; ctx.chips += c; ctx.han += h; L(`Manual: ${MELD_LABEL[t]}${n > 1 ? ' ×' + n : ''}`, `+${c} Chips, +${h} Han`, { chips: c, han: h }); } }
+    for (const [t, n] of Object.entries(byType)) { const lvl = S.scrolls.meld[t] || 0; if (lvl) { const c = lvl * CFG.scrollChips * n, h = lvl * CFG.scrollHan; ctx.chips += c; ctx.han += h; L(`Scroll: ${MELD_LABEL[t]}${n > 1 ? ' ×' + n : ''}`, `+${c} Chips, +${h} Han`, { chips: c, han: h }); } }
     if (melds.length >= 2 && ctx.nKan) { const c = CFG.kanBonus.chips * ctx.nKan, h = CFG.kanBonus.han * ctx.nKan; ctx.chips += c; ctx.han += h; L(`Kan ×${ctx.nKan}`, `+${c} Chips, +${h} Han`, { chips: c, han: h }); }
   }
   if (kind === 'meld') {
     // Yakuhai per honor set on partial plays (complete hands get it through their Yaku)
-    for (const m of melds) if (m.type !== 'chi' && m.i >= 27 && !(S.boss === 'typhoon' && m.i <= 30)) { ctx.han += 1; L(`Yakuhai (${HONOR_EN[m.i - 26]})`, '+1 Han', { han: 1 }); ctx.yaku.push({ key: 'yakuhai', name: `Yakuhai (${HONOR_EN[m.i - 26]})`, han: 1 }); const b = S.scrolls.yaku.yakuhai || 0; if (b) { ctx.han += b; L('Manual: Yakuhai', `+${b} Han`, { han: b }); } }
+    for (const m of melds) if (m.type !== 'chi' && m.i >= 27 && !(S.boss === 'typhoon' && m.i <= 30)) { ctx.han += 1; L(`Yakuhai (${HONOR_EN[m.i - 26]})`, '+1 Han', { han: 1 }); ctx.yaku.push({ key: 'yakuhai', name: `Yakuhai (${HONOR_EN[m.i - 26]})`, han: 1 }); const b = S.scrolls.yaku.yakuhai || 0; if (b) { ctx.han += b; L('Scroll: Yakuhai', `+${b} Han`, { han: b }); } }
     const t0 = tiles[0];
     if (info.part.single) ctx.desc = 'Lone ' + tileName(t0);
     else if (melds.length === 1 && !pairs.length) ctx.desc = rung.name + ' of ' + (isHonor(t0) ? HONOR_EN[t0.rank] : (melds[0].type === 'chi' ? sortTiles(tiles).map(t => t.rank).join('') + ' ' + SUIT_EN[t0.suit] : t0.rank + ' ' + SUIT_EN[t0.suit]));
@@ -2016,7 +2013,7 @@ function scoreCtxInner(S, kind, tiles, info) {
     for (const yk of y.list) L(yk.name, `+${yk.han} Han`, { han: yk.han, yaku: true });
     ctx.han += y.han; ctx.yaku = y.list;
     if (y.han === 0) { ctx.han += 1; L('Complete Hand (no Yaku)', '+1 Han', { han: 1, yaku: true }); }
-    for (const yk of y.list) { const b = S.scrolls.yaku[yk.key] || 0; if (b) { ctx.han += b; L(`Manual: ${yk.name}`, `+${b} Han`, { han: b }); } }
+    for (const yk of y.list) { const b = S.scrolls.yaku[yk.key] || 0; if (b) { ctx.han += b; L(`Scroll: ${yk.name}`, `+${b} Han`, { han: b }); } }
     ctx.desc = y.list.length ? y.list.map(k => k.name).join(', ') : 'Complete Hand';
     // Furiten: the winning tile is the most recently drawn concealed tile in the played hand. If a copy of it sits in your River, the hand is in Furiten.
     // A claimed tile came out of your River, so it always counts as one copy there.
@@ -2427,7 +2424,7 @@ const UNLOCKS = [
   { kind: 'tal', key: 'hashi', goal: 'Score Ittsu', prog: P => [yakuN(P, 'ittsu'), 1] },
   { kind: 'tal', key: 'ryu', goal: 'Score Yakuhai 10 times', prog: P => [yakuN(P, 'yakuhai'), 10] },
   { kind: 'tal', key: 'takibi', goal: 'Sell 10 Talismans', prog: P => [P.sold, 10] },
-  { kind: 'tal', key: 'hoshizora', goal: 'Use 15 Manuals', prog: P => [P.scrollsUsed, 15] },
+  { kind: 'tal', key: 'hoshizora', goal: 'Use 15 Scrolls of Mastery', prog: P => [P.scrollsUsed, 15] },
   { kind: 'tal', key: 'ryujin', goal: 'Make 25 Calls', prog: P => [P.calls, 25] },
   { kind: 'tal', key: 'rokurokubi', goal: 'Score a Complete Hand with 3 open melds', prog: P => [P.openHands3, 1] },
   { kind: 'tal', key: 'kawauso', goal: 'Score 3 Complete Hands in Furiten', prog: P => [P.furitenHands, 3] },
@@ -2443,7 +2440,7 @@ const UNLOCKS = [
   { kind: 'wall', key: 'painted', goal: 'Win with 3 different Walls', prog: P => [Object.keys(P.wallsWon).length, 3] },
   { kind: 'tal', key: 'shojo', goal: 'Play 50 Complete Hands', prog: P => [P.hands, 50] },
   { kind: 'tal', key: 'omagatoki', goal: 'Win 5 Blinds on your last Play', prog: P => [P.lastPlayWins || 0, 5] },
-  { kind: 'tal', key: 'kotodama', goal: 'Use 25 Manuals', prog: P => [P.scrollsUsed, 25] },
+  { kind: 'tal', key: 'kotodama', goal: 'Use 25 Scrolls of Mastery', prog: P => [P.scrollsUsed, 25] },
   { kind: 'tal', key: 'itako', goal: 'Score a Complete Hand with 4 or more Yaku', prog: P => [P.bigYakuHands || 0, 1] },
   { kind: 'tal', key: 'kamikiri', goal: 'Sell 20 Talismans', prog: P => [P.sold, 20] },
   { kind: 'tal', key: 'binbogami', goal: 'Win 10 Blinds without using a Discard', prog: P => [P.noDiscardWins || 0, 10] },
@@ -2499,7 +2496,7 @@ function stakeLockAny(stake) {
 // (older saves stored 'stake:red' without a Wall).
 function unlockLabel(id) { const [kind, key, wall] = id.split(':'); if (kind === 'stake') return STAKES[key] ? { kind: 'Stake', name: DECKS[wall] ? `${STAKES[key].name} · ${DECKS[wall].name}` : STAKES[key].name } : null; const u = LOCKS[id]; return u ? { kind: UNLOCK_KIND[u.kind], name: unlockName(u) } : null; }
 // ===================== DISCOVERY =====================
-// Like Balatro's Collection: Talismans, consumables, Manuals, Flowers, packs, Tags and Bosses show as "?" until you come across one.
+// Like Balatro's Collection: Talismans, consumables, Scrolls, Flowers, packs, Tags and Bosses show as "?" until you come across one.
 const DISCOVER = ['tal', 'omikuji', 'kami', 'scroll', 'flower', 'pack', 'tag', 'boss'];
 function isSeen(kind, key) { return UNLOCK_ALL || !!PROFILE.seen[`${kind}:${key}`] || (kind === 'boss' && !!PROFILE.bosses[key]); }
 function markSeen() {
@@ -2746,7 +2743,7 @@ function purpleSeals(tiles) {
   for (const t of tiles) if (t.seal === 'purple' && S.consumables.length < conSlots()) { const o = pick(OMIKUJI); S.consumables.push({ kind: 'omikuji', key: o.key }); got.push(o.name); }
   return got;
 }
-// Blue Seals: each one still in hand when a Blind is won levels up the Manual for the final play.
+// Blue Seals: each one still in hand when a Blind is won levels up the Scroll for the final play.
 function blueSeals() {
   const n = S.hand.filter(t => t.seal === 'blue').length, lp = S.lastPlay; if (!n || !lp) return null;
   const k = lp.kind === 'hand' ? 'hand' : lp.nKan && lp.nKan >= lp.nPon && lp.nKan >= lp.nChi ? 'kan' : lp.nPon && lp.nPon >= lp.nChi ? 'pon' : lp.nChi ? 'chi' : 'pair';
@@ -3231,7 +3228,7 @@ let slotFlights = [];
 // and a small tag with the new level rises off it.
 function queueScrollFlight(card, key) {
   if (!card || !motionOK || compactScreen()) return; const [t, k] = key.split(':'), n = (S.scrolls[t === 'm' ? 'meld' : 'yaku'][k] || 0), em = card.querySelector('.emblem') || card;
-  const what = t === 'y' ? itemDef({ kind: 'scroll', key }).name.replace(/ Manual$/, '') : k === 'hand' ? 'Complete Hand' : (MELD_LABEL[k] || k);
+  const what = t === 'y' ? itemDef({ kind: 'scroll', key }).name.replace(/^Scroll of (the )?/, '') : k === 'hand' ? 'Complete Hand' : (MELD_LABEL[k] || k);
   slotFlights.push({ scroll: true, rect: em.getBoundingClientRect(), text: `${what} <b>${t === 'y' ? '+' + n + ' Han' : 'Lv.' + (n + 1)}</b>` });
 }
 function playScrollFlight(f) {
@@ -3970,7 +3967,7 @@ async function animateScore(ctx) {
     if (lvl === 3 && !fwTimer) fwTimer = setInterval(launch, 700);
   };
   setMath();
-  // Start from exactly what the hand box previewed: the play's base, its Manual levels and the Yaku that name the hand.
+  // Start from exactly what the hand box previewed: the play's base, its Scroll levels and the Yaku that name the hand.
   // Tiles, Dora, engravings and Talismans are then revealed on top of that, so the Han count only ever climbs.
   const isStart = l => l.base || l.yaku || /^(Manual|Scroll):/.test(l.label) || (ctx.kind === 'hand' && /^Yakuhai/.test(l.label));
   for (const l of ctx.lines) if (isStart(l)) { showLine(l); applyLine(l); }
@@ -4047,13 +4044,35 @@ const CLOSE_X = '<button class="modal-x ghost" id="mX" title="Close" aria-label=
 // A modal with a Close or Cancel button can also be closed with the corner X, a click outside it, or Esc. Game-flow screens (cash-out, shop, packs, blind select) have none, so they stay put.
 function modalClosable() { return !$('#overlay').hidden && !!$('#modal #mClose'); }
 function closeModal() { const c = $('#modal #mClose'); if (c) c.click(); }
-// Every screen's header becomes a noren banner like the shop's, coloured by context.
+// Every screen's header takes the Booster Pack header's look: a soft glow in the screen's colour, an icon for the screen
+// beside the title, and a thin rule underneath.
 const BANNER_TONES = { selectmodal: 'indigo', setupmodal: 'teal', colmodal: 'teal', datamodal: 'ink', confirmmodal: 'ink', cashmodal: 'gold', overmodal: 'red', winmodal: 'gold' };
+const TILE_IC = (x, y, r = 0) => `<g transform="rotate(${r} ${x + 9} ${y + 13})"><rect x="${x}" y="${y}" width="18" height="26" rx="3" fill="#efe6d2" stroke="#9c8f6c"/></g>`;
+const BANNER_ICONS = {
+  gear: '<g transform="translate(24 24)" fill="currentColor">' + [0, 45, 90, 135, 180, 225, 270, 315].map(a => `<rect x="-3.6" y="-20" width="7.2" height="9" rx="1.6" transform="rotate(${a})"/>`).join('') + '<circle r="13.5"/><circle r="5.5" fill="#1a2420"/></g>',
+  book: '<path d="M5 11c7-3 13-2 19 2v28c-6-4-12-5-19-2z" fill="#efe6d2" stroke="#9c8f6c"/><path d="M43 11c-7-3-13-2-19 2v28c6-4 12-5 19-2z" fill="#f6eedc" stroke="#9c8f6c"/><path d="M10 18h9M10 23h9M10 28h7M29 18h9M29 23h9M29 28h7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>',
+  cards: TILE_IC(6, 12, -16) + TILE_IC(24, 12, 16) + TILE_IC(15, 8) + '<circle cx="24" cy="20" r="4.5" fill="none" stroke="#c9453a" stroke-width="2"/><path d="M20 28h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+  ledger: '<rect x="10" y="5" width="28" height="38" rx="3" fill="#efe6d2" stroke="#9c8f6c"/><rect x="10" y="5" width="5" height="38" rx="2" fill="currentColor"/><path d="M19 15h14M19 21h14M19 27h14M19 33h9" stroke="#8a7a5a" stroke-width="1.7" stroke-linecap="round"/><path d="M31 3h6v13l-3-2.6-3 2.6z" fill="#c9453a"/>',
+  wall: TILE_IC(4, 18) + TILE_IC(15, 18) + TILE_IC(26, 18) + TILE_IC(9.5, 6) + TILE_IC(20.5, 6) + '<path d="M4 44h40" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>',
+  chip: '<circle cx="24" cy="24" r="19" fill="currentColor" stroke="rgba(0,0,0,.35)"/><circle cx="24" cy="24" r="16" fill="none" stroke="#efe6d2" stroke-width="4.5" stroke-dasharray="5.5 7"/><circle cx="24" cy="24" r="10" fill="#1a2420" opacity=".4"/><circle cx="24" cy="24" r="5" fill="#efe6d2"/>',
+  flag: '<path d="M12 5v39" stroke="#9c8f6c" stroke-width="3" stroke-linecap="round"/><path d="M14 7h25l-6 9 6 9H14z" fill="currentColor" stroke="rgba(0,0,0,.3)"/><circle cx="25" cy="16" r="3.5" fill="#efe6d2"/>',
+  up: '<rect x="7" y="22" width="34" height="21" rx="3" fill="#efe6d2" stroke="#9c8f6c"/><path d="M24 31V6M15 15l9-10 9 10" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>',
+  down: '<rect x="7" y="22" width="34" height="21" rx="3" fill="#efe6d2" stroke="#9c8f6c"/><path d="M24 4v27M15 22l9 10 9-10" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>',
+  crown: '<path d="M7 35 5 13l10 9 9-15 9 15 10-9-2 22z" fill="currentColor" stroke="rgba(0,0,0,.35)"/><rect x="7" y="35" width="34" height="6" rx="2" fill="currentColor" stroke="rgba(0,0,0,.35)"/><circle cx="24" cy="25" r="3.4" fill="#c9453a"/><circle cx="14" cy="27" r="2.4" fill="#2e7d4f"/><circle cx="34" cy="27" r="2.4" fill="#2b5c8f"/>',
+  cracked: '<rect x="12" y="5" width="24" height="35" rx="3.5" fill="#efe6d2" stroke="#9c8f6c"/><rect x="12" y="37" width="24" height="5" rx="2" fill="#2e7d4f"/><path d="M25 5l-4 9 6 5-5 8 4 6-3 7" fill="none" stroke="#1a2420" stroke-width="2.2" stroke-linejoin="round"/><circle cx="18" cy="15" r="2.5" fill="currentColor"/>',
+};
+function bannerIcon(cls, title) {
+  if (/winmodal/.test(cls)) return 'crown'; if (/overmodal/.test(cls)) return 'cracked';
+  const t = title || '';
+  return /^Settings/.test(t) ? 'gear' : /^How to Play/.test(t) ? 'book' : /^Collection/.test(t) ? 'cards' : /^Run Info/.test(t) ? 'ledger' : /^The Wall/.test(t) ? 'wall' : /^Ante/.test(t) ? 'chip' : /^Challenges/.test(t) ? 'flag' : /^New Run/.test(t) ? 'newrun' : /^Export/.test(t) ? 'up' : /^(Import|Replace)/.test(t) ? 'down' : null;
+}
 function decorateBanner(cls) {
   const m = $('#modal'); if (m.classList.contains('shopmodal') || m.classList.contains('menumodal')) return;
   const head = [...m.children].find(el => el.matches('.shophead, .cashhead, .overhead')); if (!head) return;
   const tone = (cls || '').split(' ').map(c => BANNER_TONES[c]).filter(Boolean).pop() || 'teal';
-  head.classList.add('banner', 'bn-' + tone); head.insertAdjacentHTML('beforeend', '<div class="bannerflaps" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>'); m.classList.add('hasbanner');
+  head.classList.add('banner', 'bn-' + tone); m.classList.add('hasbanner');
+  const h2 = head.querySelector('h2'), ic = bannerIcon(cls || '', h2 ? h2.textContent : ''), svg = ic && (BANNER_ICONS[ic] || CONFIRM_ICONS[ic]);
+  if (svg) { head.classList.add('withart'); head.insertAdjacentHTML('afterbegin', `<div class="bnart"><svg viewBox="0 0 48 48" aria-hidden="true">${svg}</svg></div>`); }
 }
 // Cash-out covers only the board area, like Balatro, so the left column (Blind, score and Last Play) stays in view.
 // Like Balatro, the receipt rises from the bottom edge of the screen into the board's column, over the hand and action bar.
@@ -4194,7 +4213,7 @@ function slotsFullMsg(it) {
   if ((it.kind === 'omikuji' || it.kind === 'kami') && S.consumables.length >= conSlots()) return `All ${conSlots()} consumable slots are full. Use or sell one first.`;
   return null;
 }
-// Current and next level of a Manual, like a Planet card's level in Balatro.
+// Current and next level of a Scroll of Mastery, like a Planet card's level in Balatro.
 function scrollLevelHTML(key) {
   const [t, k] = key.split(':');
   if (t === 'y') { const n = S.scrolls.yaku[k] || 0; return `<div class="lvline">Now <b>+${n} Han</b> → <b>+${n + 1} Han</b> whenever it scores</div>`; }
@@ -4221,7 +4240,7 @@ function emblem(kind, inner) {
 }
 function cardHTML(it, idx) {
   const d = itemDef(it); const p = it.free ? 0 : itemPrice(it);
-  const kindLabel = { talisman: 'Talisman', omikuji: 'Omikuji', kami: 'Kami Spirit', scroll: 'Manual', flower: 'Flower / Season', pack: 'Booster pack' }[it.kind];
+  const kindLabel = { talisman: 'Talisman', omikuji: 'Omikuji', kami: 'Kami Spirit', scroll: 'Scroll of Mastery', flower: 'Flower / Season', pack: 'Booster pack' }[it.kind];
   const ed = it.edition ? EDITIONS[it.edition] : null;
   const full = slotsFullMsg(it), no = p > S.money ? `You have ¥${S.money}; this costs ¥${p}` : full;
   const action = it.sold ? '<span class="muted soldnote">Sold</span>' : `<button class="primary" data-buy="${idx}" ${no ? `disabled title="${no}"` : ''}>${it.kind === 'pack' ? 'Open' : full ? 'Slots Full' : 'Buy'}</button>`;
@@ -4299,7 +4318,7 @@ function cashoutHTML() {
 }
 // Same look as the play area's purse: the coin, the amount, and JPY or HKD underneath.
 const walletHTML = () => `<span class="wallet purse"><span class="coin" aria-hidden="true">${coinSVG()}</span><span class="wtx"><span class="pv num">${money('¥', S.money)}</span><span class="wl" data-notr>${LANG === 'hk' ? 'HKD' : 'JPY'}</span></span></span>`;
-// Everything on sale, in display order: the card slots, the Flower, then the Booster Packs. Older saves had one pack and a Manual slot.
+// Everything on sale, in display order: the card slots, the Flower, then the Booster Packs. Older saves had one pack and a Scroll slot.
 function shopItems() { const sh = S.shop; if (!sh.packs) { sh.packs = sh.pack ? [sh.pack] : []; if (sh.scroll) sh.cards.push(sh.scroll); delete sh.pack; delete sh.scroll; } return [...sh.cards, sh.flower, ...sh.packs].filter(Boolean); }
 function shopHTML() {
   const items = shopItems(), tray = shopTray = useTray();
@@ -4354,7 +4373,7 @@ function packHTML() {
   // Skip the Rest or Done sits in the header beside the picks left, so it is always in view.
   let h = `<div class="packhead ${tone}"><div class="packart">${emblem('pack', pk.type)}</div><div class="packtitle"><div class="label">Booster pack${S.pack.free ? ' · free from a Tag' : ''}</div><h2>${pk.name}</h2><p>${pk.desc}</p></div><div class="packacts">${S.pack.done ? '<button class="ghost hbtn" disabled>All picks used</button>' : '<button id="mPackDone" class="ghost hbtn">Skip the Rest</button>'}</div><div class="packpicks"><b class="num">${S.pack.done ? 0 : S.pack.left}</b><span>${S.pack.done || S.pack.left !== 1 ? 'picks' : 'pick'} left</span></div></div>`;
   if (S.pack.hand) h += `<div class="packhandwrap"><div class="label">Your Tiles · ${(S.pack.view || S.pack.hand).length} random tiles from your Wall</div><div class="muted" style="font-size:12px;margin:2px 0 6px">${S.pack.done ? 'All picks used. Outlined tiles changed and stay that way in your Wall.' : 'Select tiles, then press Use on a card. The change stays in your Wall for the rest of the run. Keep puts the card in your consumable slots instead.'}</div><div class="packhand" id="packHand"></div></div>`;
-  h += `<div class="shelf packshelf"><div class="shelflabel">${S.pack.done ? 'Cards · all picks used' : `Cards · choose ${S.pack.left} more`}</div><div class="shop-grid" style="--n:${S.pack.choices.length}">${S.pack.choices.map((it, i) => { const d = itemDef(it); const ed = it.edition ? EDITIONS[it.edition] : null; return `<div class="shopcard ${it.kind === 'tile' ? 'tilecard' : it.kind}${it.sold ? ' sold' : ''}${ed ? ' ed-' + it.edition : ''}"><div class="${it.kind === 'tile' ? 'packtileart' : 'emblem'}" data-pt="${i}">${it.kind === 'tile' ? '' : emblem(it.kind)}</div>${it.kind === 'talisman' ? stickerBadges(it.sticker) : ''}<div class="kind">${it.kind === 'talisman' ? talKindRow(it.key, it.edition) : { omikuji: 'Omikuji', kami: 'Kami Spirit', scroll: 'Manual', tile: 'Tile' }[it.kind] + (ed ? `<span class="edtag ed-${it.edition}">${ed.name}</span>` : '')}</div><div class="n">${d.name}</div><div class="d">${d.desc}${ed ? ` <b>${ed.name}: ${ed.desc}.</b>` : ''}</div>${it.kind === 'scroll' && !it.sold ? scrollLevelHTML(it.key) : it.kind === 'talisman' && !it.sold ? talPreview(it.key) : ''}<div class="buy"><span></span>${it.sold ? `<span class="muted">${it.used ? 'Used' : 'Taken'}</span>` : packButtons(it, i)}</div></div>`; }).join('')}</div></div>`;
+  h += `<div class="shelf packshelf"><div class="shelflabel">${S.pack.done ? 'Cards · all picks used' : `Cards · choose ${S.pack.left} more`}</div><div class="shop-grid" style="--n:${S.pack.choices.length}">${S.pack.choices.map((it, i) => { const d = itemDef(it); const ed = it.edition ? EDITIONS[it.edition] : null; return `<div class="shopcard ${it.kind === 'tile' ? 'tilecard' : it.kind}${it.sold ? ' sold' : ''}${ed ? ' ed-' + it.edition : ''}"><div class="${it.kind === 'tile' ? 'packtileart' : 'emblem'}" data-pt="${i}">${it.kind === 'tile' ? '' : emblem(it.kind)}</div>${it.kind === 'talisman' ? stickerBadges(it.sticker) : ''}<div class="kind">${it.kind === 'talisman' ? talKindRow(it.key, it.edition) : { omikuji: 'Omikuji', kami: 'Kami Spirit', scroll: 'Scroll of Mastery', tile: 'Tile' }[it.kind] + (ed ? `<span class="edtag ed-${it.edition}">${ed.name}</span>` : '')}</div><div class="n">${d.name}</div><div class="d">${d.desc}${ed ? ` <b>${ed.name}: ${ed.desc}.</b>` : ''}</div>${it.kind === 'scroll' && !it.sold ? scrollLevelHTML(it.key) : it.kind === 'talisman' && !it.sold ? talPreview(it.key) : ''}<div class="buy"><span></span>${it.sold ? `<span class="muted">${it.used ? 'Used' : 'Taken'}</span>` : packButtons(it, i)}</div></div>`; }).join('')}</div></div>`;
   h += `<div class="msg${S.msgErr ? ' err' : ''}" style="min-height:18px;margin:2px 0 6px">${S.msg || ''}</div>`;
   if (!tray) h += ownedHTML() + footHTML();
   return h;
@@ -4446,10 +4465,10 @@ function fullRulesHTML() {
   <p><b>Bosses.</b> Every Ante ends with a Yakuza Boss Blind with a rule twist, shown in red on the blind plate and on the Blind Select screen. Each run meets ${CFG.antes} of the ${Object.keys(BOSSES).length} bosses. Some only turn up from a later Ante, and Ante ${CFG.antes} (and every ${CFG.antes}th Ante in Endless) is always a tougher Showdown Boss. Face-down tiles (The Purist, The House, The Wheel, The Mark) are revealed when played or discarded, and the helper does not count them. Debuffed tiles (The Pillar, The Plant) are crossed out: they still count for melds and Yaku but score nothing. The Peony Flower lets you reroll the Boss for ¥10.</p>
   <h3>Scoring</h3>
   <p><b>Score = Chips × Mult.</b> The play's rung gives base Chips and Han. Every scored tile then adds Chips: 2–8 are worth their face value, and 1s, 9s and Honors are worth 10.</p>
-  <p><b>Han becomes Mult.</b> All Han from the rung, Yaku, tiles, Manuals and Talismans converts once through this table: ${hanTableText()}.</p>
+  <p><b>Han becomes Mult.</b> All Han from the rung, Yaku, tiles, Scrolls and Talismans converts once through this table: ${hanTableText()}.</p>
   <p><b>Extra Han.</b> Each Red Five scored gives +1 Han. A Dora indicator is a tile flipped from the Wall; the next tile in sequence after it is the Dora (9 wraps to 1, Winds go East, South, West, North, Dragons go White, Green, Red), and each Dora scored gives +1 Han. Indicators last for the current Blind. In partial plays, a Pon or Kan of Winds or Dragons scores Yakuhai (+1 Han). Each Kan in a play with two or more melds adds +${K.chips} Chips and +${K.han} Han.</p>
   <p><b>Talismans.</b> Han from Talismans and the Holographic edition is counted before the table converts. Everything else fires after it, left to right: some Talismans add Chips, some add flat Mult (+4 Mult), some multiply (×1.5 Mult). A +Mult Talisman placed before a ×Mult Talisman scores more than the reverse. Drag Talismans to reorder them; the number on each card is its firing order. Some Talismans grow as you play and show their current value on the card, and some copy another Talisman. A Talisman you sell and buy again starts fresh.</p>
-  <p><b>Manuals.</b> Each level of a meld Manual gives +${CFG.scrollChips} Chips for every matching meld or pair in a play and +${CFG.scrollHan} Han once per play. Levels apply inside complete hands too, so a complete hand always beats the Ready Hand inside it. Other Manuals are named after a hand pattern, such as Tanyao, and add Han whenever it scores.</p>
+  <p><b>Scrolls of Mastery.</b> Each level of a meld Scroll gives +${CFG.scrollChips} Chips for every matching meld or pair in a play and +${CFG.scrollHan} Han once per play. Levels apply inside complete hands too, so a complete hand always beats the Ready Hand inside it. Other Scrolls are named after a hand pattern, such as Tanyao, and add Han whenever it scores.</p>
   <p><b>Engravings.</b> Omikuji can engrave tiles, and you can see it on the tile: Gold Foil (gold face, ¥1 when scored), Obsidian (dark stone face, +20 Chips), Jade (green face, ×1.5 Mult), Steel (brushed metal face, ×1.5 Mult while held in hand), Glass (clear blue face, ×2 Mult, 1 in 4 chance to shatter and leave your Wall), and Dragon Mark (a red emblem in the corner, +1 Han). Hover a tile for its exact effect.</p>
   <p><b>Seals.</b> A tile can also carry one Seal beside its engraving, shown as a wax dot on top: ${Object.values(SEALS).map(e => `${e.name} (${e.desc.replace(/\.$/, '').toLowerCase()})`).join('; ')}. Slip of the Red Seal and the Kami Benzaiten, Hachiman and Fūjin add them.</p>
   <p><b>Tile editions.</b> Like Balatro's playing cards, a tile can carry an edition beside its engraving and Seal: ${Object.values(TILE_EDS).map(e => `${e.name} (${e.desc.replace(/\.$/, '').toLowerCase()})`).join(', ')}. Tile +Mult (Holographic, Crimson Inlay, Lucky Inlay) is added after Han becomes Mult, and before the Talismans fire.</p>
@@ -4458,8 +4477,8 @@ function fullRulesHTML() {
   <p><b>Editions.</b> Shop Talismans sometimes come in an edition: ${Object.values(EDITIONS).map(e => `${e.name} (${e.desc})`).join(', ')}.</p>
   <h3>Between Blinds</h3>
   <p><b>Money.</b> Beating a Blind pays ¥${R.small} for a Small Blind, ¥${R.big} for a Big Blind and ¥${R.boss} for a Boss, plus ¥1 for each unused Play and ¥1 interest for every ¥${CFG.interestPer} you hold (at most ¥${CFG.interestCap}). From Red Stake up, Small Blinds pay nothing.</p>
-  <p><b>Shop.</b> Spend money on Talismans (passive, ${CFG.talismanSlots} slots), Omikuji and Kami (consumables, ${CFG.consumableSlots} slots, used on selected hand tiles), Manuals (permanent upgrades), Flowers (run-long perks) and Booster Packs (open one and keep one or two of what's inside). Like Balatro, each shop has two card slots (Talismans about 71%, Omikuji and Manuals about 14% each; Kami come from packs, or the shop with the Ghost Wall), one Flower for the whole Ante, and two Booster Packs; the first shop of a run always has a Talisman pack. Rerolling changes only the cards: it costs ¥5, then ¥1 more each time in the same shop. On wide screens the Shop and packs rise from the bottom of the board, so your Talismans and consumables stay in view above: select one there to sell or use it. Every pack comes in three sizes: Normal, Jumbo (more cards) and Mega (more cards and two picks). Tile Packs add new tiles to your Wall, some engraved, sealed or with an edition. One Flower is offered per Ante and waits in every shop of that Ante until you buy it; upgrades appear once you own the first Flower. Talismans and consumables can also gain sell value (Tsuchinoko, Otoshidama). Omikuji Packs and Kami Packs also deal ${PACK_HAND} random tiles from your Wall: select some and press Use on a card to change them for the rest of the run, or Keep the card for a Blind. After your last pick the changed tiles light up for a moment, then the pack closes back to the shop. ${CONS.indicator.name} and ${CONS.amaterasu.name} only work during a Blind. ${CONS.wealth.name} and ${CONS.raijin.name} can also be used from your slots in the shop; there ${CONS.raijin.name} destroys 2 random tiles from your Wall. Every shop has two random cards (Talismans ${Math.round(CFG.shopWeights.talisman * 100)}%, Omikuji ${Math.round(CFG.shopWeights.omikuji * 100)}%, Kami ${Math.round(CFG.shopWeights.kami * 100)}% each), plus one Manual, one Flower and one booster pack in fixed spots. A reroll changes only the two random cards and costs ¥${CFG.rerollCost}. Selling returns half the item's value: click a Talisman on the board and press Sell, or sell from inside the shop.</p>
-  <p><b>Blind Select.</b> After the shop you see the Ante's three blinds with their targets, rewards and the Boss's rule. A Small or Big Blind can be skipped for the Tag on its card instead of its money: free packs, editions, coupons, money, a bigger hand, a different Boss, free Rare or Uncommon Talismans, Manual levels, a second Flower (Voucher Tag), and a Double Tag that copies the next Tag you get. Tags you hold show in the side panel.</p>
+  <p><b>Shop.</b> Spend money on Talismans (passive, ${CFG.talismanSlots} slots), Omikuji and Kami (consumables, ${CFG.consumableSlots} slots, used on selected hand tiles), Scrolls of Mastery (permanent upgrades), Flowers (run-long perks) and Booster Packs (open one and keep one or two of what's inside). Like Balatro, each shop has two card slots (Talismans about 71%, Omikuji and Scrolls about 14% each; Kami come from packs, or the shop with the Ghost Wall), one Flower for the whole Ante, and two Booster Packs; the first shop of a run always has a Talisman pack. Rerolling changes only the cards: it costs ¥5, then ¥1 more each time in the same shop. On wide screens the Shop and packs rise from the bottom of the board, so your Talismans and consumables stay in view above: select one there to sell or use it. Every pack comes in three sizes: Normal, Jumbo (more cards) and Mega (more cards and two picks). Tile Packs add new tiles to your Wall, some engraved, sealed or with an edition. One Flower is offered per Ante and waits in every shop of that Ante until you buy it; upgrades appear once you own the first Flower. Talismans and consumables can also gain sell value (Tsuchinoko, Otoshidama). Omikuji Packs and Kami Packs also deal ${PACK_HAND} random tiles from your Wall: select some and press Use on a card to change them for the rest of the run, or Keep the card for a Blind. After your last pick the changed tiles light up for a moment, then the pack closes back to the shop. ${CONS.indicator.name} and ${CONS.amaterasu.name} only work during a Blind. ${CONS.wealth.name} and ${CONS.raijin.name} can also be used from your slots in the shop; there ${CONS.raijin.name} destroys 2 random tiles from your Wall. Every shop has two random cards (Talismans ${Math.round(CFG.shopWeights.talisman * 100)}%, Omikuji ${Math.round(CFG.shopWeights.omikuji * 100)}%, Kami ${Math.round(CFG.shopWeights.kami * 100)}% each), plus one Scroll, one Flower and one booster pack in fixed spots. A reroll changes only the two random cards and costs ¥${CFG.rerollCost}. Selling returns half the item's value: click a Talisman on the board and press Sell, or sell from inside the shop.</p>
+  <p><b>Blind Select.</b> After the shop you see the Ante's three blinds with their targets, rewards and the Boss's rule. A Small or Big Blind can be skipped for the Tag on its card instead of its money: free packs, editions, coupons, money, a bigger hand, a different Boss, free Rare or Uncommon Talismans, Scroll levels, a second Flower (Voucher Tag), and a Double Tag that copies the next Tag you get. Tags you hold show in the side panel.</p>
   <p><b>Setup.</b> A new run lets you choose a Wall (deck), a Stake (difficulty) and a seed. Sharing a seed replays the same Wall, shops and bosses for players with the same unlocks. Each Stake keeps every penalty of the ones below it. Winning on a Stake with a Wall unlocks the next Stake for that Wall. From Black Stake, shop Talismans can carry stickers: Eternal (can't be sold), Perishable (stops working after 5 Blinds, from Orange) and Rental (¥1 to buy, ¥3 every Blind, from Gold).</p>
   <p><b>Special Talismans.</b> Some fade: Kakigōri loses Chips with each play, Senbei loses Mult each Blind, Ramen weakens as you discard, and each leaves when it runs out. Daikoku doubles every listed chance. Yūrei saves a lost Blind once if you scored at least a quarter of the target. Selling Rikishi during a Boss Blind disables the Boss, selling Ramune gives a Double Tag, and selling Kakuremino after 2 Blinds copies another Talisman. With Kabuki, Talismans you already own can turn up again, so you can hold two copies; each copy works on its own.</p>
   <p><b>Walls.</b> Each Wall changes the run: the Plasma Wall averages Chips and Mult before they multiply (targets ×2), the Erratic Wall is 136 random tiles, the Ghost Wall brings Kami to the shop, the Magic Wall starts with Spring and two Slips of Echoes, the Anaglyph Wall gives a Double Tag after every Boss, and the Painted Wall trades a Talisman slot for +2 hand size. Most Walls unlock through goals; the Collection shows them.</p>
@@ -4469,7 +4488,7 @@ function fullRulesHTML() {
   <p><b>Helper.</b> Under your hand the game shows how many tiles you are from a complete hand. Settings can turn that off, and can turn on two more hints: which tiles you are waiting on, and whether the tiles you select can go without setting you back. Against The Purist they only count your visible tiles. Another assist marks dead tiles with green dots.</p>
   <p><b>Arranging.</b> Drag hand tiles to reorder them. Dragging turns off auto-sort; Sort Hand sorts again. Tiles score in the order they sit, which matters for Shikigami. Sorting also works against The Purist, so face-down tiles sit in their sorted place. A selection with face-down tiles always plays: if it isn't a valid play, its best part scores and the other selected tiles go to the River.</p>
   <p><b>Saving.</b> Your run saves automatically after every action. Run Info, Profile tab, keeps lifetime stats across runs. Settings, Your data, exports your profile, settings and current run as a code or file, so you can import them on another device or browser.</p>
-  <p><b>Unlocks.</b> Most of the game is open from your first run. ${UNLOCKS.filter(u => u.kind === 'tal').length} Talismans, ${UNLOCKS.filter(u => u.kind === 'wall').length} Walls unlock as you reach goals across runs, such as reaching Ante 6 or winning a run, and each Wall climbs the Stakes on its own. The Collection and Run Info, Profile tab, show each goal and your progress. Locked items never appear in shops or packs. Talismans, consumables, Manuals, Flowers, packs, Tags and Bosses also stay hidden in the Collection until you first come across them. Settings, Advanced, can unlock and reveal everything for playtesting.</p>
+  <p><b>Unlocks.</b> Most of the game is open from your first run. ${UNLOCKS.filter(u => u.kind === 'tal').length} Talismans, ${UNLOCKS.filter(u => u.kind === 'wall').length} Walls unlock as you reach goals across runs, such as reaching Ante 6 or winning a run, and each Wall climbs the Stakes on its own. The Collection and Run Info, Profile tab, show each goal and your progress. Locked items never appear in shops or packs. Talismans, consumables, Scrolls, Flowers, packs, Tags and Bosses also stay hidden in the Collection until you first come across them. Settings, Advanced, can unlock and reveal everything for playtesting.</p>
   <p><b>Tile numbers.</b> Characters show their number and Winds their letter in the corner. Dots and Bamboo have none by default, since you count their pips. Settings can show numbers on all tiles or on none.</p>
   <p><b>Keys.</b> Enter or P plays, D discards, C calls, K declares a Kan, Esc clears your selection. Click anywhere or press any key while a play scores to skip the animation. Esc or a click outside closes Rules, Wall, Run Info and Settings.</p>
   </div>`;
@@ -4482,7 +4501,7 @@ function quickRulesHTML() {
   <li><b>Score = Chips × Mult.</b> Tiles and melds give Chips. Han from hand patterns (Yaku) becomes Mult. The box in the side panel shows the play before you press Play.</li>
   <li><b>The River.</b> Your discards stay there all Blind. Call a River tile to finish a meld; it costs a Play.</li>
   <li><b>Talismans.</b> They fire left to right after each play. Put +Mult before ×Mult, and drag them to reorder. The coloured word is their rarity; corner badges are stickers (∞ Eternal, a number for Perishable, ¥ Rental).</li>
-  <li><b>Between Blinds.</b> Spend money on Talismans, tile-changing Omikuji and Kami, Manuals that level up your plays, packs (Tile Packs add tiles to your Wall) and one Flower per Ante for the rest of the run.</li>
+  <li><b>Between Blinds.</b> Spend money on Talismans, tile-changing Omikuji and Kami, Scrolls that level up your plays, packs (Tile Packs add tiles to your Wall) and one Flower per Ante for the rest of the run.</li>
   <li><b>Skipping.</b> Skip a Small or Big Blind for its Tag instead of its money: free Talismans, packs, editions or cash.</li>
   <li><b>Selling.</b> Sell Talismans for money and room. A few do something when sold (Rikishi disables a Boss, Ramune gives a Double Tag), and some fade away on their own (Kakigōri, Senbei, Ramen).</li>
   <li><b>Bosses.</b> Each Ante ends with a Boss that bends one rule; Ante ${CFG.antes} has a tougher Showdown Boss. Read its red box. Some Bosses deal tiles face down or make tiles score nothing.</li>
@@ -4506,14 +4525,14 @@ function collectionHTML() {
   // Undiscovered: a face-down card that keeps its type but hides the name and text.
   const hidden = (cls, kind) => `<div class="shopcard ${cls} colcard undisc"><div class="kind">${kind}</div><div class="n">?</div><div class="d muted">Not discovered yet.</div></div>`;
   const tabs = [
-    ['tal', 'Talismans', count('tal', TALISMANS.map(t => t.key))], ['omi', LANG === 'hk' ? 'Fortune Sticks' : 'Omikuji', count('omikuji', OMIKUJI.map(o => o.key))], ['kami', 'Kami Spirits', count('kami', KAMI.map(o => o.key))], ['scroll', 'Manuals', count('scroll', SCROLLS.map(o => o.key))], ['flower', 'Flowers', count('flower', FLOWERS.map(o => o.key))], ['pack', 'Packs', count('pack', Object.keys(PACKS))],
+    ['tal', 'Talismans', count('tal', TALISMANS.map(t => t.key))], ['omi', LANG === 'hk' ? 'Fortune Sticks' : 'Omikuji', count('omikuji', OMIKUJI.map(o => o.key))], ['kami', 'Kami Spirits', count('kami', KAMI.map(o => o.key))], ['scroll', 'Scrolls', count('scroll', SCROLLS.map(o => o.key))], ['flower', 'Flowers', count('flower', FLOWERS.map(o => o.key))], ['pack', 'Packs', count('pack', Object.keys(PACKS))],
     ['eng', 'Engravings', Object.keys(ENG).length], ['seal', 'Seals', Object.keys(SEALS).length], ['ed', 'Editions', Object.keys(EDITIONS).length], ['stk', 'Stickers', Object.keys(STICKERS).length], ['tag', 'Tags', count('tag', Object.keys(TAGS))], ['boss', 'Bosses', count('boss', Object.keys(BOSSES))], ['wall', 'Walls', count('wall', Object.keys(DECKS))], ['stake', 'Stakes', count('stake', Object.keys(STAKES))]];
   const cons = (list, kind) => list.map(c => !isSeen(kind, c.key) ? hidden(kind, kind === 'kami' ? 'Kami Spirit' : 'Omikuji') : card(kind, `${kind === 'kami' ? 'Kami Spirit' : 'Omikuji'} · ¥${c.cost}`, c.name, c.desc, '', c.blindOnly ? 'Blind only' : c.anywhere ? 'Usable anytime' : '')).join('');
   let body = '';
   if (colTab === 'tal') body = TALISMANS.map(t => !lockOf('tal', t.key) && !isSeen('tal', t.key) ? hidden('talisman', 'Talisman') : card('talisman', `${talKindRow(t.key)}<span>· ¥${t.cost}</span>`, t.name, t.desc, '', run && S.talismans.includes(t.key) ? 'Owned' : '', lockOf('tal', t.key))).join('');
   else if (colTab === 'omi') body = cons(OMIKUJI, 'omikuji');
   else if (colTab === 'kami') body = cons(KAMI, 'kami');
-  else if (colTab === 'scroll') body = SCROLLS.map(sc => !isSeen('scroll', sc.key) ? hidden('scroll', 'Manual') : card('scroll', `Manual · ¥${sc.cost}`, sc.name, sc.desc, run ? scrollLevelHTML(sc.key) : '')).join('');
+  else if (colTab === 'scroll') body = SCROLLS.map(sc => !isSeen('scroll', sc.key) ? hidden('scroll', 'Scroll of Mastery') : card('scroll', `Scroll of Mastery · ¥${sc.cost}`, sc.name, sc.desc, run ? scrollLevelHTML(sc.key) : '')).join('');
   else if (colTab === 'flower') body = FLOWERS.map(f => !isSeen('flower', f.key) ? hidden('flower', 'Flower') : card('flower', `Flower · ¥${f.cost}${f.needs ? ` · upgrades ${FLW[f.needs].name}` : ''}`, f.name, f.desc, '', run && S.flowers.includes(f.key) ? 'Owned' : '')).join('');
   else if (colTab === 'pack') body = Object.entries(PACKS).map(([pk, p]) => !isSeen('pack', pk) ? hidden('pack', 'Booster pack') : card('pack', `Booster pack · ¥${p.cost}`, p.name, p.desc)).join('');
   else if (colTab === 'eng') body = Object.entries(ENG).map(([k, e]) => card(`omikuji engcard eng-${k}`, 'Engraving', e.name, e.desc, `<div class="coltile" data-eng="${k}"></div>`)).join('');
@@ -4637,7 +4656,7 @@ function yakuHTML() {
     const talRows = S.talismans.map((k, i) => { const ed = S.editions[k]; return `<div class="kv"><span><span class="order">${i + 1}</span>${TAL[k].name}${ed ? ` <span class="edtag ed-${ed}">${EDITIONS[ed].name}</span>` : ''}</span><b class="muted" style="font-weight:400;text-align:right;max-width:60%">${TAL[k].status ? TAL[k].status(S) : ''}</b></div>`; }).join('');
     h += `<div class="infocard"><div class="label">Talismans · ${S.talismans.length}/${talSlots()} · fire in this order</div>${talRows || '<div class="muted">None</div>'}</div>`;
     const sc = Object.entries(S.scrolls.meld).filter(([, v]) => v).map(([k, v]) => kv(MELD_LABEL[k], `Lv.${v + 1}`)).concat(Object.entries(S.scrolls.yaku).filter(([, v]) => v).map(([k, v]) => kv((YAKU_SHEET.find(y => y.k === k) || { n: k }).n, `+${v} Han`)));
-    h += `<div class="infocard"><div class="label">Manuals</div>${sc.join('') || '<div class="muted">No Manuals yet</div>'}</div>`;
+    h += `<div class="infocard"><div class="label">Scrolls</div>${sc.join('') || '<div class="muted">No Scrolls yet</div>'}</div>`;
     h += `<div class="infocard"><div class="label">Flowers &amp; Seasons</div>${S.flowers.map(f => kv(FLW[f].name, `<span class="muted" style="font-weight:400">${FLW[f].desc}</span>`)).join('') || '<div class="muted">None</div>'}</div>`;
     h += `<div class="infocard"><div class="label">Tags held</div>${(S.tags || []).map(t => kv(TAGS[t].name, `<span class="muted" style="font-weight:400">${TAGS[t].desc}</span>`)).join('') || '<div class="muted">None</div>'}</div>`;
     h += `</div>`;
@@ -4647,20 +4666,20 @@ function yakuHTML() {
     const lv = k => (S && S.scrolls.meld[k]) || 0; const lvTag = k => lv(k) ? ` <span class="tag">Lv.${lv(k) + 1}</span>` : '';
     const val = k => `${CFG.meldBase[k].chips + lv(k) * CFG.scrollChips} chips, ${CFG.meldBase[k].han + lv(k) * CFG.scrollHan} Han`;
     const played = k => { const n = (S && S.stats.rungs[k]) || 0; return `<td class="num">${n || '—'}${k === most && n ? ' <span class="tag">Most played</span>' : ''}</td>`; };
-    h += `<p class="muted" style="margin:8px 0">Base values after your Manual levels. "Played" counts this run; the most-played rung is marked.</p><div style="overflow-x:auto"><table class="sheet"><thead><tr><th>Play</th><th>Base</th><th>Played</th><th>Example</th></tr></thead><tbody>`;
+    h += `<p class="muted" style="margin:8px 0">Base values after your Scroll levels. "Played" counts this run; the most-played rung is marked.</p><div style="overflow-x:auto"><table class="sheet"><thead><tr><th>Play</th><th>Base</th><th>Played</th><th>Example</th></tr></thead><tbody>`;
     const exs = { single: '7p', pair: '77p', twopair: '33m 77p', chi: '456s', pon: '555z', kan: '8888m' };
     for (const k of ['single', 'pair', 'twopair', 'chi', 'pon', 'kan']) h += `<tr><td><b>${MELD_LABEL[k]}</b>${lvTag(k)}</td><td class="num">${val(k)}</td>${played(k)}<td>${exampleHTML(exs[k])}</td></tr>`;
     const rex = { '2,0': '234m 777p', '2,1': '234m 777p 55s', '3,0': '234m 777p 456s', '3,1': '234m 777p 456s 55s', '4,0': '234m 777p 456s 678p', '4,1': '234m 777p 456s 678p 55s' };
     for (const [k, r] of Object.entries(CFG.rungs)) h += `<tr><td><b>${r.name}</b></td><td class="num">${r.chips} chips, ${r.han} Han</td>${played('rung' + k.replace(',', ''))}<td>${exampleHTML(rex[k])}</td></tr>`;
     h += `<tr><td><b>Complete Hand</b>${lvTag('hand')}</td><td class="num">${val('hand')}</td>${played('hand')}<td>${exampleHTML('234m 777p 456s 678p 55s')}</td></tr>`;
-    h += `</tbody></table></div><p class="muted" style="font-size:12px">Each Kan inside a multi-meld play adds +${CFG.kanBonus.chips} chips and +${CFG.kanBonus.han} Han. Honor sets add Yakuhai. Manual levels apply to every play containing that component: +10 Chips per level for each such component, and +1 Han per level once for the play.</p>`;
+    h += `</tbody></table></div><p class="muted" style="font-size:12px">Each Kan inside a multi-meld play adds +${CFG.kanBonus.chips} chips and +${CFG.kanBonus.han} Han. Honor sets add Yakuhai. Scroll levels apply to every play containing that component: +10 Chips per level for each such component, and +1 Han per level once for the play.</p>`;
     h += `<div style="overflow-x:auto;margin-top:10px"><table class="sheet"><thead><tr><th>Han</th><th>Mult</th><th>Tier</th></tr></thead><tbody>`;
     for (const [hh, m, t] of [[0, 1, '—'], [1, 2, 'Standard'], [2, 4, 'Advanced'], [3, 8, 'Master'], ['4–5', 15, 'Mangan'], ['6–7', 25, 'Haneman'], ['8–10', 40, 'Baiman'], ['11–12', 60, 'Sanbaiman'], ['13+', 100, 'Yakuman']]) h += `<tr><td class="num">${hh}</td><td class="num">×${m}</td><td>${t}</td></tr>`;
     h += `</tbody></table></div><p style="margin:10px 0 0;font-size:12px"><b>Extra Han on any play:</b> each Red Five +1 (Koi: +2). Each tile matching a flipped Dora indicator +1. Dragon Mark engraving +1. Han is converted through the table once; after that Talismans fire left to right, adding Chips, adding flat Mult or multiplying Mult, so put +Mult Talismans before ×Mult ones. Furiten (the newest-drawn tile of your complete hand has a copy in your River) halves the final Mult.</p>`;
   } else {
     const list = infoTab === 'yaku' ? YAKU_SHEET : YAKUMAN_SHEET;
     h += `<p class="muted" style="margin:8px 0">${infoTab === 'yaku' ? 'A complete hand is 4 melds + 1 pair (14 tiles) unless noted. Han is shown as closed / open; a hand is Open once you have Called from the River. A complete hand with no Yaku still counts as 1 Han.' : 'Each Yakuman is worth 13 Han (×100). Several in one hand stack.'} Examples are drawn with tiles; a Kan shows as four of a kind.</p>`;
-    h += `<div class="yakulist">` + list.map(y => { const b = y.k && S.scrolls.yaku[y.k]; const n = y.k ? yc(y.k) : 0; return `<div class="yakucard"><div class="yh"><b>${y.n}</b>${y.c ? ' <span class="tag">Closed only</span>' : ''}${b ? ` <span class="tag">Manual +${b}</span>` : ''}<span class="num" style="margin-left:auto;color:var(--accent)">${y.h} Han</span><span class="muted num" style="margin-left:10px">${n ? 'Scored ×' + n : 'Not yet scored'}</span></div><div class="yd">${y.d}</div>${y.ex ? exampleHTML(y.ex) : ''}</div>`; }).join('') + `</div>`;
+    h += `<div class="yakulist">` + list.map(y => { const b = y.k && S.scrolls.yaku[y.k]; const n = y.k ? yc(y.k) : 0; return `<div class="yakucard"><div class="yh"><b>${y.n}</b>${y.c ? ' <span class="tag">Closed only</span>' : ''}${b ? ` <span class="tag">Scroll +${b}</span>` : ''}<span class="num" style="margin-left:auto;color:var(--accent)">${y.h} Han</span><span class="muted num" style="margin-left:10px">${n ? 'Scored ×' + n : 'Not yet scored'}</span></div><div class="yd">${y.d}</div>${y.ex ? exampleHTML(y.ex) : ''}</div>`; }).join('') + `</div>`;
   }
   h += `<button id="mClose" hidden>Close</button>`;
   return h;
@@ -4772,8 +4791,8 @@ function renderDebug() {
   $('#dbgStake').onchange = e => { const k = e.target.value; e.target.value = ''; if (!k) return; S.stake = k; setMsg(`Stake set to ${STAKES[k].name} for this run.`); render(); };
   $('#dbgFlw').onchange = e => { const k = e.target.value; if (!k) return; if (!S.flowers.includes(k)) S.flowers.push(k); e.target.value = ''; render(); };
 }
-// A staged complete hand that exercises every counter: chips (Obsidian tile, Daruma, Manual chips), Han (four Yaku, Red Five, Dora,
-// Dragon Mark, Manual Han), and Mult (+Mult from Tengu, Kitsune and Kasa-obake, then x3 from Hannya and x1.5 from its Polychrome edition).
+// A staged complete hand that exercises every counter: chips (Obsidian tile, Daruma, Scroll chips), Han (four Yaku, Red Five, Dora,
+// Dragon Mark, Scroll Han), and Mult (+Mult from Tengu, Kitsune and Kasa-obake, then x3 from Hannya and x1.5 from its Polychrome edition).
 function stageDemoHand() {
   if (S.phase !== 'blind') { setMsg('Start a blind first, then stage the demo hand.', true); return render(); }
   S.wall.push(...S.hand); S.hand = []; S.open = []; S.pendingDiscard = 0; S.selected = []; S.river = [];

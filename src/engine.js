@@ -204,17 +204,17 @@ function scoreCtxInner(S, kind, tiles, info) {
   if (S.boss === 'flint') rung = Object.assign({}, rung, { chips: Math.floor(rung.chips / 2), han: Math.floor(rung.han / 2), name: rung.name + ' (halved)' });
   ctx.chips += rung.chips; ctx.han += rung.han;
   L(rung.name, `+${rung.chips} Chips` + (rung.han ? `, +${rung.han} Han` : ''), { chips: rung.chips, han: rung.han, base: true });
-  // Manual bonuses per component (Chi, Pon, Kan, Pair) apply to every play that contains them, complete hands included,
+  // Scroll bonuses per component (Chi, Pon, Kan, Pair) apply to every play that contains them, complete hands included,
   // so a complete hand always outscores the ready hand inside it. Kans inside multi-meld plays and complete hands add a bonus.
   {
     const byType = {}; for (const m of melds) byType[m.type] = (byType[m.type] || 0) + 1; if (pairs.length) byType.pair = pairs.length;
     // Chips per component (four Chi pay more than one), Han once per component type present (like a Balatro Planet level).
-    for (const [t, n] of Object.entries(byType)) { const lvl = S.scrolls.meld[t] || 0; if (lvl) { const c = lvl * CFG.scrollChips * n, h = lvl * CFG.scrollHan; ctx.chips += c; ctx.han += h; L(`Manual: ${MELD_LABEL[t]}${n > 1 ? ' ×' + n : ''}`, `+${c} Chips, +${h} Han`, { chips: c, han: h }); } }
+    for (const [t, n] of Object.entries(byType)) { const lvl = S.scrolls.meld[t] || 0; if (lvl) { const c = lvl * CFG.scrollChips * n, h = lvl * CFG.scrollHan; ctx.chips += c; ctx.han += h; L(`Scroll: ${MELD_LABEL[t]}${n > 1 ? ' ×' + n : ''}`, `+${c} Chips, +${h} Han`, { chips: c, han: h }); } }
     if (melds.length >= 2 && ctx.nKan) { const c = CFG.kanBonus.chips * ctx.nKan, h = CFG.kanBonus.han * ctx.nKan; ctx.chips += c; ctx.han += h; L(`Kan ×${ctx.nKan}`, `+${c} Chips, +${h} Han`, { chips: c, han: h }); }
   }
   if (kind === 'meld') {
     // Yakuhai per honor set on partial plays (complete hands get it through their Yaku)
-    for (const m of melds) if (m.type !== 'chi' && m.i >= 27 && !(S.boss === 'typhoon' && m.i <= 30)) { ctx.han += 1; L(`Yakuhai (${HONOR_EN[m.i - 26]})`, '+1 Han', { han: 1 }); ctx.yaku.push({ key: 'yakuhai', name: `Yakuhai (${HONOR_EN[m.i - 26]})`, han: 1 }); const b = S.scrolls.yaku.yakuhai || 0; if (b) { ctx.han += b; L('Manual: Yakuhai', `+${b} Han`, { han: b }); } }
+    for (const m of melds) if (m.type !== 'chi' && m.i >= 27 && !(S.boss === 'typhoon' && m.i <= 30)) { ctx.han += 1; L(`Yakuhai (${HONOR_EN[m.i - 26]})`, '+1 Han', { han: 1 }); ctx.yaku.push({ key: 'yakuhai', name: `Yakuhai (${HONOR_EN[m.i - 26]})`, han: 1 }); const b = S.scrolls.yaku.yakuhai || 0; if (b) { ctx.han += b; L('Scroll: Yakuhai', `+${b} Han`, { han: b }); } }
     const t0 = tiles[0];
     if (info.part.single) ctx.desc = 'Lone ' + tileName(t0);
     else if (melds.length === 1 && !pairs.length) ctx.desc = rung.name + ' of ' + (isHonor(t0) ? HONOR_EN[t0.rank] : (melds[0].type === 'chi' ? sortTiles(tiles).map(t => t.rank).join('') + ' ' + SUIT_EN[t0.suit] : t0.rank + ' ' + SUIT_EN[t0.suit]));
@@ -275,7 +275,7 @@ function scoreCtxInner(S, kind, tiles, info) {
     for (const yk of y.list) L(yk.name, `+${yk.han} Han`, { han: yk.han, yaku: true });
     ctx.han += y.han; ctx.yaku = y.list;
     if (y.han === 0) { ctx.han += 1; L('Complete Hand (no Yaku)', '+1 Han', { han: 1, yaku: true }); }
-    for (const yk of y.list) { const b = S.scrolls.yaku[yk.key] || 0; if (b) { ctx.han += b; L(`Manual: ${yk.name}`, `+${b} Han`, { han: b }); } }
+    for (const yk of y.list) { const b = S.scrolls.yaku[yk.key] || 0; if (b) { ctx.han += b; L(`Scroll: ${yk.name}`, `+${b} Han`, { han: b }); } }
     ctx.desc = y.list.length ? y.list.map(k => k.name).join(', ') : 'Complete Hand';
     // Furiten: the winning tile is the most recently drawn concealed tile in the played hand. If a copy of it sits in your River, the hand is in Furiten.
     // A claimed tile came out of your River, so it always counts as one copy there.
