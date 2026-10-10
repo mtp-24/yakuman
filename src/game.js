@@ -778,7 +778,7 @@ function selectHTML() {
   });
   h += `</div>`;
   if (S.tags.length) h += `<div class="label" style="margin:12px 0 6px">Tags held</div><div class="overtals">${S.tags.map(t => `<span class="tagchip" data-hc-kind="Tag" data-hc-title="${TAGS[t].name}" data-hc-body="${TAGS[t].desc.replace(/"/g, '&quot;')}">${TAGS[t].name}</span>`).join('')}</div>`;
-  h += `<div class="msg${S.msgErr ? ' err' : ''}" style="margin-top:8px;min-height:18px">${S.msg || ''}</div><div class="shopfoot"><button id="mDeck" class="ghost">View Wall</button><button id="mRunInfo" class="ghost">Run Info</button>${hasF('peony') ? `<span style="flex:1"></span><button id="mRerollBoss" class="ghost" ${canRerollBoss() ? '' : `disabled title="${S.money < 10 ? 'Needs ¥10' : 'Already rerolled this Ante'}"`}>Reroll Boss ¥10</button>` : ''}</div>`;
+  h += `<div class="msg${S.msgErr ? ' err' : ''}" style="margin-top:8px;min-height:18px">${S.msg || ''}</div><div class="shopfoot"><button id="mDeck" class="ghost railbtn"><span class="rbl"><span class="wallico" aria-hidden="true"><i></i><i></i><i></i></span>View Wall</span><b class="num">${(S.deck || []).length}</b></button><button id="mRunInfo" class="ghost railbtn"><span class="rbl"><svg class="rbico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 11v6M12 7.5v.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>Run Info</span></button>${hasF('peony') ? `<span style="flex:1"></span><button id="mRerollBoss" class="ghost" ${canRerollBoss() ? '' : `disabled title="${S.money < 10 ? 'Needs ¥10' : 'Already rerolled this Ante'}"`}>Reroll Boss ¥10</button>` : ''}</div>`;
   return h;
 }
 
@@ -1859,7 +1859,7 @@ function shopHTML() {
   return h;
 }
 // View Wall and Run Info, for the full-screen Shop and packs (in the tray the board's own buttons are in view).
-const footHTML = () => `<div class="shopfoot"><button id="mDeck" class="ghost"><span class="wallico" aria-hidden="true"><i></i><i></i><i></i></span>View Wall <b class="num">${(S.deck || []).length}</b></button><button id="mRunInfo" class="ghost">Run Info</button></div>`;
+const footHTML = () => `<div class="shopfoot"><button id="mDeck" class="ghost railbtn"><span class="rbl"><span class="wallico" aria-hidden="true"><i></i><i></i><i></i></span>View Wall</span><b class="num">${(S.deck || []).length}</b></button><button id="mRunInfo" class="ghost railbtn"><span class="rbl"><svg class="rbico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 11v6M12 7.5v.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>Run Info</span></button></div>`;
 // The Shop and packs open as a tray over the board on wide screens. On narrow ones (900px or less), or when the window is too
 // short to fit the tray below your Talismans, they open full screen and list your items so you can still sell them.
 const TRAY_MIN_H = 400;

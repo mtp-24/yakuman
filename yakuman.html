@@ -887,7 +887,7 @@ body.crt-full #app,body.crt-full #overlay{filter:url(#crtfx)} #crtbezel{display:
 .slot.filled.sel{outline:2px solid var(--accent);outline-offset:1px}
 html{scrollbar-gutter:stable} html.modallock{overflow:hidden}
 .wallfly{position:fixed;z-index:95;pointer-events:none} .slotfly.shelf{position:fixed;z-index:95;pointer-events:none;margin:0;padding:0;background:none;border:0;box-shadow:none;transform-origin:0 0} .slotfly.shelf::after,.slotfly.shelf::before{display:none} .slotfly .shopcard{box-shadow:0 14px 30px rgba(0,0,0,.55)} .slotfly .shopcard,.slotfly .shopcard *{animation:none!important;transition:none!important} .wallfly .tile{box-shadow:0 8px 18px rgba(0,0,0,.5)}
-.shopfoot .wallico{transform:scale(.62);width:16px;margin:0 2px 0 -2px;display:inline-block;vertical-align:middle} .shopfoot b.num{font-family:var(--display);font-weight:500;color:var(--muted);margin-left:6px}
+.shopfoot .railbtn{width:180px;height:46px;min-height:0;box-sizing:border-box;padding:0 14px}
 .overlay.shoptray{padding:0} .overlay.shoptray .modal.shopmodal{padding-top:0} .overlay.shoptray .modal.packmodal{padding-top:20px}
 /* Shop: the buttons in a bar under the banner, the shelves side by side. Each shelf is as wide as its cards (--n of them) and they wrap. */
 /* Compact buttons in the Shop banner and pack header; Reroll is a pill on the Cards shelf */
@@ -2777,7 +2777,7 @@ function selectHTML() {
   });
   h += `</div>`;
   if (S.tags.length) h += `<div class="label" style="margin:12px 0 6px">Tags held</div><div class="overtals">${S.tags.map(t => `<span class="tagchip" data-hc-kind="Tag" data-hc-title="${TAGS[t].name}" data-hc-body="${TAGS[t].desc.replace(/"/g, '&quot;')}">${TAGS[t].name}</span>`).join('')}</div>`;
-  h += `<div class="msg${S.msgErr ? ' err' : ''}" style="margin-top:8px;min-height:18px">${S.msg || ''}</div><div class="shopfoot"><button id="mDeck" class="ghost">View Wall</button><button id="mRunInfo" class="ghost">Run Info</button>${hasF('peony') ? `<span style="flex:1"></span><button id="mRerollBoss" class="ghost" ${canRerollBoss() ? '' : `disabled title="${S.money < 10 ? 'Needs ¥10' : 'Already rerolled this Ante'}"`}>Reroll Boss ¥10</button>` : ''}</div>`;
+  h += `<div class="msg${S.msgErr ? ' err' : ''}" style="margin-top:8px;min-height:18px">${S.msg || ''}</div><div class="shopfoot"><button id="mDeck" class="ghost railbtn"><span class="rbl"><span class="wallico" aria-hidden="true"><i></i><i></i><i></i></span>View Wall</span><b class="num">${(S.deck || []).length}</b></button><button id="mRunInfo" class="ghost railbtn"><span class="rbl"><svg class="rbico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 11v6M12 7.5v.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>Run Info</span></button>${hasF('peony') ? `<span style="flex:1"></span><button id="mRerollBoss" class="ghost" ${canRerollBoss() ? '' : `disabled title="${S.money < 10 ? 'Needs ¥10' : 'Already rerolled this Ante'}"`}>Reroll Boss ¥10</button>` : ''}</div>`;
   return h;
 }
 
@@ -3858,7 +3858,7 @@ function shopHTML() {
   return h;
 }
 // View Wall and Run Info, for the full-screen Shop and packs (in the tray the board's own buttons are in view).
-const footHTML = () => `<div class="shopfoot"><button id="mDeck" class="ghost"><span class="wallico" aria-hidden="true"><i></i><i></i><i></i></span>View Wall <b class="num">${(S.deck || []).length}</b></button><button id="mRunInfo" class="ghost">Run Info</button></div>`;
+const footHTML = () => `<div class="shopfoot"><button id="mDeck" class="ghost railbtn"><span class="rbl"><span class="wallico" aria-hidden="true"><i></i><i></i><i></i></span>View Wall</span><b class="num">${(S.deck || []).length}</b></button><button id="mRunInfo" class="ghost railbtn"><span class="rbl"><svg class="rbico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 11v6M12 7.5v.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>Run Info</span></button></div>`;
 // The Shop and packs open as a tray over the board on wide screens. On narrow ones (900px or less), or when the window is too
 // short to fit the tray below your Talismans, they open full screen and list your items so you can still sell them.
 const TRAY_MIN_H = 400;
