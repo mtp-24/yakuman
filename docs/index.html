@@ -4499,6 +4499,8 @@ async function saveCodeFile(btn) {
   }
   try { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([EXPORT_CODE], { type: 'text/plain' })); a.download = filename; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); say('Saved'); } catch (e) { say('Could not save: copy the code'); }
 }
+// Screens opened from the title (New Run, Challenges, Collection, Rules) close back to the title, not to the run behind it.
+function backToTitle() { const c = $('#mClose'); if (c) c.onclick = () => { showModal(menuHTML(!!load()), true, 'menumodal'); }; }
 function backToSettings() { $('#mClose').onclick = () => { PENDING_IMPORT = null; showModal(settingsHTML(), true); }; }
 function yakuHTML() {
   const st = S.stats; const most = mostPlayedRung(); const yc = k => (S && S.stats.yaku[k]) || 0;
@@ -4760,14 +4762,14 @@ function bindEvents() {
     if (t.id === 'mConfirmReset') { PROFILE = blankProfile(); saveProfile(); showModal(settingsHTML(), true); return; }
     if (t.id === 'mClose') { if (!t.onclick) { hideModal(); render(); } }   // a custom back action (to the menu or Settings) has already run
     else if (t.id === 'mEndless') { S.endless = true; ensureBosses(); genShop(); S.phase = 'cashout'; setMsg(''); render(); }
-    else if (t.id === 'mNewRun' || t.id === 'mStart') modalOut(() => showModal(setupHTML(), true, 'setupmodal'));
-    else if (t.id === 'mChallenges') { showModal(challengesHTML(), true, 'setupmodal'); }
+    else if (t.id === 'mNewRun' || t.id === 'mStart') { const fromTitle = $('#modal').classList.contains('menumodal'); modalOut(() => { showModal(setupHTML(), true, 'setupmodal'); if (fromTitle) backToTitle(); }); }
+    else if (t.id === 'mChallenges') { showModal(challengesHTML(), true, 'setupmodal'); backToTitle(); }
     else if (t.dataset.chal) { hideModal(); newRun({ challenge: t.dataset.chal }); }
     else if (t.dataset.nav || t.dataset.goto) { const [name, d] = (t.dataset.nav || t.dataset.goto).split(':'); const seed = ($('#seedInput') || {}).value || ''; const before = setupKeys(name).indexOf(setupKey(name)); if (t.dataset.nav) setupSel[name] += +d; else setupSel[name] = +d; setupDir[name] = t.dataset.nav ? +d : Math.sign(+d - before); showModal(setupHTML(), true, 'setupmodal'); $('#seedInput').value = seed; }
     else if (t.id === 'mStartRun') { if (lockOf('wall', setupKey('deck')) || stakeLock(setupKey('deck'), setupKey('stake'))) return; const deck = ($('#modal input[name=deck]') || {}).value, stake = ($('#modal input[name=stake]') || {}).value, seed = ($('#seedInput') || {}).value; modalOut(() => { hideModal(); newRun({ deck, stake, seed }); }); }
     else if (t.id === 'mContinue') modalOut(() => { hideModal(); render(); }, null, true);
-    else if (t.id === 'mCollection') { showModal(collectionHTML(), true, 'colmodal'); $('#mClose').onclick = () => { showModal(menuHTML(!!load()), true, 'menumodal'); }; }
-    else if (t.id === 'mRules') { showModal(rulesHTML() + '', true); $('#mClose').onclick = () => { showModal(menuHTML(!!load()), true, 'menumodal'); }; }
+    else if (t.id === 'mCollection') { showModal(collectionHTML(), true, 'colmodal'); backToTitle(); }
+    else if (t.id === 'mRules') { showModal(rulesHTML() + '', true); backToTitle(); }
     else if (t.id === 'mCashOut') cashOut();
     else if (t.id === 'mNext') trayOut(() => { S.shop = null; S.pack = null; S.msg = ''; S.phase = 'select'; render(); });
     else if (t.id === 'mPlayBlind') modalOut(() => { S.msg = ''; startBlind(); render(); }, t.closest('.blindcard'), true);
