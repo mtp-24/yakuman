@@ -3005,7 +3005,7 @@ function render() {
 // Tiles added to the Wall fly from where they were added to the Wall counter, which ticks up as each one lands. The counter is
 // the left panel's Wall button, or the View Wall button when a full-screen Shop covers the board.
 let flyShown = null, wallFlights = [];
-function queueWallFlight(el, tile) { if (el) wallFlights.push({ rect: (el.firstElementChild || el).getBoundingClientRect(), tile }); }
+function queueWallFlight(el, tile) { if (el && !compactScreen()) wallFlights.push({ rect: (el.firstElementChild || el).getBoundingClientRect(), tile }); }
 function animateWall() {
   const ov = $('#overlay'), board = ov.hidden || ov.classList.contains('boardonly');
   const btn = board ? $('#wallBtn') : $('#modal #mDeck') || $('#wallBtn'), v = btn && btn.querySelector('.wv, .num');
@@ -3042,7 +3042,9 @@ function playLevelStamp(f) {
   const a = el.animate([{ transform: 'translate(-50%,-50%) scale(.6) rotate(-6deg)', opacity: 0 }, { transform: 'translate(-50%,-50%) scale(1.12) rotate(-6deg)', opacity: 1, offset: .25 }, { transform: 'translate(-50%,-50%) scale(1) rotate(-6deg)', opacity: 1, offset: .6 }, { transform: 'translate(-50%,-90%) scale(1) rotate(-6deg)', opacity: 0 }], { duration: 900, easing: 'ease-out' });
   a.onfinish = () => el.remove(); setTimeout(() => el.remove(), 1500);
 }
-function queueSlotFlight(card, row) { if (card && motionOK) slotFlights.push({ rect: card.getBoundingClientRect(), node: card.cloneNode(true), row }); }
+// In the compact (full-screen) layout the board is hidden behind the screen, so nothing flies there.
+const compactScreen = () => { const ov = $('#overlay'); return !ov.hidden && !ov.classList.contains('boardonly'); };
+function queueSlotFlight(card, row) { if (card && motionOK && !compactScreen()) slotFlights.push({ rect: card.getBoundingClientRect(), node: card.cloneNode(true), row }); }
 function animateSlots() {
   const flights = slotFlights; slotFlights = []; if (!flights.length || S.quiet) return;
   const filled = { tal: [...document.querySelectorAll('#talismans .slot.filled:not(.rowghost)')], con: [...document.querySelectorAll('#consumables .slot.filled:not(.rowghost)')] };
