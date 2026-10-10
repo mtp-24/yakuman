@@ -1913,18 +1913,22 @@ async function animateScore(ctx) {
   const popSound = kind => kind === 'chips' ? sfx('chip', chipN++) : kind === 'han' || kind === 'mult' ? sfx('mult', multN++) : kind === 'x' ? sfx('xmult') : kind === 'money' ? sfx('coin') : kind === 'again' ? sfx('call') : null;
   const applyLine = (l, quiet) => { if (l.zero) chips = 0; else { chips += l.chips || 0; han += l.han || 0; if (l.convert) mult = hanMult(han) * tileX + tileM; if (l.mult) mult = (mult === null ? hanMult(han) * tileX + tileM : mult) + l.mult; if (l.xmult && mult !== null) mult *= l.xmult; } setMath(quiet); };
   let fire = 0;
-  // Hanabi: once a play beats the target, rockets shoot up from below the Chips and Mult boxes and burst above them.
-  // One rocket at 1x the target, two more at 3x, three more at 10x and then one every 0.7 s until scoring ends.
+  // Hanabi: once a play beats the target, rockets shoot up from below the Chips and Mult boxes and burst above them. They
+  // build with the fire's heat on an exponential curve (see fwHeat): from 1 rocket up to 12, then past about 10x a barrage
+  // that fires faster and faster until scoring ends; bursts grow bigger and rockets climb higher, with a second ring on top.
   // Only transform and opacity animate, so it stays smooth.
   const fx = document.createElement('div'); fx.className = 'fxlayer'; fx.setAttribute('aria-hidden', 'true'); box.appendChild(fx);
   const FW = ['#ffd27a', '#7fd0ff', '#ff8a7a', '#f6b6c8', '#c9a7e8', '#bff3d1'];
   let fwTimer = null;
   const burst = (x, y, col) => {
     if (!fx.isConnected) return; sfx('pop');
-    const n = 16 + fire * 4, R = 24 + fire * 9;
+    const hh = fwHeat(), n = Math.round(14 + hh * 36), R = 22 + hh * 46;
     const fl = document.createElement('i'); fl.className = 'fwflash'; fl.style.cssText = `left:${x}px;top:${y}px;--c:${col}`; fx.appendChild(fl);
-    fl.animate([{ transform: 'translate(-50%,-50%) scale(.2)', opacity: .95 }, { transform: 'translate(-50%,-50%) scale(1.7)', opacity: 0 }], { duration: 380, easing: 'ease-out', fill: 'both' }).onfinish = () => fl.remove();
-    for (let k = 0; k < n; k++) {
+    fl.animate([{ transform: 'translate(-50%,-50%) scale(.2)', opacity: .95 }, { transform: `translate(-50%,-50%) scale(${1.7 + hh * 1.6})`, opacity: 0 }], { duration: 380 + hh * 160, easing: 'ease-out', fill: 'both' }).onfinish = () => fl.remove();
+    // the biggest bursts get a second, inner ring of sparks in a contrasting colour
+    const rings = hh > .7 ? [[n, R, col], [Math.round(n * .5), R * .5, FW[(FW.indexOf(col) + 3) % FW.length]]] : [[n, R, col]];
+    for (const [rn, rR, rc] of rings) for (let k = 0; k < rn; k++) {
+      const n = rn, R = rR, col = rc;
       const a = k / n * Math.PI * 2 + Math.random() * .25, d = R * (.75 + Math.random() * .4), dx = Math.cos(a) * d, dy = Math.sin(a) * d;
       const sp = document.createElement('i'); sp.className = 'fwspark'; sp.style.cssText = `left:${x}px;top:${y}px;background:${Math.random() < .25 ? '#fff8e6' : col}`; fx.appendChild(sp);
       sp.animate([{ transform: 'translate(-50%,-50%) scale(1)', opacity: 1 }, { transform: `translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px)) scale(.85)`, opacity: 1, offset: .55 }, { transform: `translate(calc(-50% + ${dx * 1.1}px),calc(-50% + ${dy * 1.1 + 16}px)) scale(.3)`, opacity: 0 }],
@@ -1933,7 +1937,7 @@ async function animateScore(ctx) {
   };
   const launch = () => {
     if (!motionOK || skipAnim || !fx.isConnected) return;
-    const W = box.clientWidth, top = mathEl.offsetTop, y0 = top + mathEl.offsetHeight - 4, x = W * (.12 + Math.random() * .76), y1 = top - 18 - Math.random() * 46, col = FW[Math.floor(Math.random() * FW.length)];
+    const W = box.clientWidth, top = mathEl.offsetTop, y0 = top + mathEl.offsetHeight - 4, x = W * (.12 + Math.random() * .76), y1 = top - 18 - Math.random() * (46 + fwHeat() * 70), col = FW[Math.floor(Math.random() * FW.length)];
     const r = document.createElement('i'); r.className = 'fwrocket'; r.style.cssText = `left:${x}px;top:${y0}px;--c:${col}`; fx.appendChild(r);
     r.animate([{ transform: 'translateY(0)', opacity: 1 }, { transform: `translateY(${y1 - y0}px)`, opacity: 1 }], { duration: 420 + Math.random() * 140, easing: 'cubic-bezier(.25,.6,.45,1)', fill: 'both' }).onfinish = () => { r.remove(); burst(x, y1, col); };
   };
@@ -1941,20 +1945,26 @@ async function animateScore(ctx) {
   // boxes (more of them, bigger, brighter and faster), a heat glow under them and the total's glow start at 1x the target
   // and keep building to full strength at 100x. The fireworks and
   // the screen shake still come in steps, at 1x, 3x and 10x.
-  let flameH = 0;
+  let flameH = 0, rockets = 0, fwDone = false;
+  // the embers and fireworks follow the heat on an exponential curve, so they stay modest on smaller wins and only escalate
+  // near the top: 1 rocket and 6 embers at 1x the target, 2 rockets and 12 embers at 3x, 4 and 22 at 10x (where the
+  // barrage starts), 7 and 37 at 30x, 12 and 60 at 100x
+  const fwHeat = () => Math.pow(flameH, 2.2);
   const heat = () => {
     const tot = Math.max(0, chips) * curMult(), q = S.target ? tot / S.target : 0, lvl = q >= 10 ? 3 : q >= 3 ? 2 : q >= 1 ? 1 : 0;
     const h = q < 1 ? 0 : Math.min(1, .15 + .85 * Math.log10(q) / 2);
     if (h > flameH) {
-      flameH = h; box.style.setProperty('--heat', h.toFixed(3));
+      flameH = h; const e = fwHeat(); box.style.setProperty('--heat', e.toFixed(3));
       let embers = box.querySelector('.emberlayer'); if (!embers) { embers = document.createElement('div'); embers.className = 'emberlayer'; embers.setAttribute('aria-hidden', 'true'); box.insertBefore(embers, box.firstChild); }
-      const want = Math.round(6 + h * 54); for (let i = embers.querySelectorAll('.ember').length; i < want; i++) { const em = document.createElement('i'); em.className = 'ember'; em.style.left = (4 + Math.random() * 92) + '%'; em.style.animationDelay = (Math.random() * 1.2) + 's'; em.style.animationDuration = (1.5 - h * .8 + Math.random() * .6) + 's'; embers.appendChild(em); }
-      embers.querySelectorAll('.ember').forEach(em => { em.style.animationDuration = (1.5 - h * .8 + Math.random() * .6).toFixed(2) + 's'; });
+      const want = Math.round(6 + e * 54); for (let i = embers.querySelectorAll('.ember').length; i < want; i++) { const em = document.createElement('i'); em.className = 'ember'; em.style.left = (4 + Math.random() * 92) + '%'; em.style.animationDelay = (Math.random() * 1.2) + 's'; em.style.animationDuration = (1.5 - e * .8 + Math.random() * .6) + 's'; embers.appendChild(em); }
+      embers.querySelectorAll('.ember').forEach(em => { em.style.animationDuration = (1.5 - e * .8 + Math.random() * .6).toFixed(2) + 's'; });
+      // rockets: 1 just past the target, up to 12 at full heat, then a barrage past about 10x that speeds up with the heat
+      const wantR = Math.round(1 + fwHeat() * 11); for (let k = 0; rockets < wantR; k++, rockets++) setTimeout(launch, spd(k * 140));
+      if (fwHeat() >= .28 && !fwTimer) { const barrage = () => { if (fwDone || !fx.isConnected) return; launch(); fwTimer = setTimeout(barrage, spd(900 - fwHeat() * 650)); }; fwTimer = setTimeout(barrage, spd(400)); }
     }
     if (lvl <= fire) return; const prev = fire; fire = lvl; box.dataset.fire = lvl; box.classList.toggle('hot', lvl >= 1);
     if (lvl >= 2 && SHAKE && motionOK) { const bd = document.querySelector('.board'); if (bd) bd.animate([{ transform: 'none' }, { transform: 'translate(-3px,1px)' }, { transform: 'translate(3px,-2px)' }, { transform: 'translate(-2px,2px)' }, { transform: 'translate(2px,-1px)' }, { transform: 'none' }], { duration: lvl === 3 ? 420 : 300, easing: 'ease-out' }); }
-    const n = [0, 1, 3, 6][lvl] - [0, 1, 3, 6][prev]; for (let k = 0; k < n; k++) setTimeout(launch, spd(k * 170));
-    if (lvl === 3 && !fwTimer) fwTimer = setInterval(launch, 700);
+
   };
   setMath();
   // Start from exactly what the hand box previewed: the play's base, its Scroll levels and the Yaku that name the hand.
@@ -2037,7 +2047,7 @@ async function animateScore(ctx) {
   if (dur > 0) { const t0 = performance.now(); await new Promise(res => { const step = now => { const k = Math.min(1, (now - t0) / dur); const e = 1 - Math.pow(1 - k, 3); totEl.textContent = fmtN(Math.round(ctx.total * (1 - e))); if (rsEl) { const v = from + (to - from) * e; rsEl.textContent = fmtN(Math.round(v)); sfx('tick'); rsEl.classList.toggle('met', v >= S.target); const bar = $('#roundBar'); if (bar) bar.style.width = Math.min(100, 100 * v / S.target) + '%'; } if (k < 1) requestAnimationFrame(step); else res(); }; requestAnimationFrame(step); setTimeout(res, dur + 500); }); }
   if (rsEl) { rsEl.textContent = fmtN(to); fitText(rsEl); rsEl.classList.remove('bump'); void rsEl.offsetWidth; rsEl.classList.add('bump'); }
   await wait(250);
-  if (fwTimer) clearInterval(fwTimer);
+  fwDone = true; if (fwTimer) clearTimeout(fwTimer);
   skipAnim = false;
 }
 // ===================== MODALS =====================
